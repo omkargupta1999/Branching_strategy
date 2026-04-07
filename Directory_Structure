@@ -1,41 +1,21 @@
-# Base image (as seen in history)
 FROM registry.access.redhat.com/ubi9/openjdk-21:latest
 
-# Switch to root for installations
 USER root
 
-# Install required packages
-RUN dnf install -y unzip && \
-    dnf clean all
+RUN dnf install -y unzip && dnf clean all
 
-# Set working directory
 WORKDIR /app
 
-# Create Gradle directory
-RUN mkdir -p /opt/gradle
-
-# Copy Gradle distribution (you need to provide this)
+# Copy Gradle (offline safe)
 COPY gradle-8.9 /opt/gradle/
 
-# Set environment variables
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH=$PATH:$GRADLE_HOME/bin
 
-# Fix permissions (as seen in history)
 RUN chmod -R 777 /opt/gradle
 
-# (Optional) Import certificates if required
-# COPY your-cert.crt /tmp/
-# RUN keytool -import -trustcacerts -alias mycert \
-#     -file /tmp/your-cert.crt \
-#     -keystore $JAVA_HOME/lib/security/cacerts \
-#     -storepass changeit -noprompt
-
-# Switch back to non-root user (important for OpenShift)
 USER 185
 
-# Expose ports (from inspect)
 EXPOSE 8080 8443
 
-# Default command
 CMD ["bash"]
