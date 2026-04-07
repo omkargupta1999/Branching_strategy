@@ -1,206 +1,41 @@
-[osuser@registry ~]$ sudo podman inspect registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6 | jq '.[0].Config'
-{
-  "User": "0",
-  "ExposedPorts": {
-    "8080/tcp": {},
-    "8443/tcp": {}
-  },
-  "Env": [
-    "container=oci",
-    "GECOS=Default user",
-    "HOME=/home/default",
-    "UID=185",
-    "USER=default",
-    "JAVA_HOME=/usr/lib/jvm/java-21",
-    "JAVA_VENDOR=openjdk",
-    "JAVA_VERSION=21",
-    "JBOSS_CONTAINER_OPENJDK_JDK_MODULE=/opt/jboss/container/openjdk/jdk",
-    "JBOSS_CONTAINER_MAVEN_38_MODULE=/opt/jboss/container/maven/38/",
-    "MAVEN_VERSION=3.8",
-    "JBOSS_CONTAINER_S2I_CORE_MODULE=/opt/jboss/container/s2i/core/",
-    "S2I_SOURCE_DEPLOYMENTS_FILTER=*.jar quarkus-app",
-    "JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy",
-    "JBOSS_CONTAINER_JAVA_JVM_MODULE=/opt/jboss/container/java/jvm",
-    "JBOSS_CONTAINER_UTIL_LOGGING_MODULE=/opt/jboss/container/util/logging/",
-    "JBOSS_CONTAINER_MAVEN_DEFAULT_MODULE=/opt/jboss/container/maven/default/",
-    "JBOSS_CONTAINER_MAVEN_S2I_MODULE=/opt/jboss/container/maven/s2i",
-    "JAVA_DATA_DIR=/deployments/data",
-    "JBOSS_CONTAINER_JAVA_RUN_MODULE=/opt/jboss/container/java/run",
-    "JBOSS_CONTAINER_JAVA_S2I_MODULE=/opt/jboss/container/java/s2i",
-    "JBOSS_IMAGE_NAME=ubi9/openjdk-21",
-    "JBOSS_IMAGE_VERSION=1.21",
-    "LANG=C.utf8",
-    "GRADLE_HOME=/opt/gradle",
-    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/s2i:/opt/gradle/bin"
-  ],
-  "Cmd": [
-    "bash"
-  ],
-  "WorkingDir": "/app",
-  "Labels": {
-    "architecture": "x86_64",
-    "build-date": "2025-01-15T06:57:58",
-    "com.redhat.component": "openjdk-21-ubi9-container",
-    "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
-    "description": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
-    "distribution-scope": "public",
-    "io.buildah.version": "1.29.0",
-    "io.cekit.version": "4.13.0.dev0",
-    "io.k8s.description": "Platform for building and running plain Java applications (fat-jar and flat classpath)",
-    "io.k8s.display-name": "Java Applications",
-    "io.openshift.expose-services": "",
-    "io.openshift.s2i.destination": "/tmp",
-    "io.openshift.s2i.scripts-url": "image:///usr/local/s2i",
-    "io.openshift.tags": "builder,java",
-    "maintainer": "Red Hat OpenJDK <openjdk@redhat.com>",
-    "name": "ubi9/openjdk-21",
-    "org.jboss.container.deployments-dir": "/deployments",
-    "org.jboss.product": "openjdk",
-    "org.jboss.product.openjdk.version": "21",
-    "org.jboss.product.version": "21",
-    "org.opencontainers.image.documentation": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
-    "release": "3.1736923862",
-    "summary": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
-    "url": "https://access.redhat.com/containers/#/registry.access.redhat.com/ubi9/openjdk-21/images/1.21-3.1736923862",
-    "usage": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
-    "vcs-ref": "56628532431819cede459a1d0fcf7d7f9834b70b",
-    "vcs-type": "git",
-    "vendor": "Red Hat, Inc.",
-    "version": "1.21"
-  }
-}
-[osuser@registry ~]$ \
-> ^C
-[osuser@registry ~]$
-[osuser@registry ~]$ sudo podman history  registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
-ID            CREATED        CREATED BY                                     SIZE        COMMENT
-ea3d886c09f7  13 months ago  /bin/sh -c #(nop) CMD ["bash"]                 0B          FROM ea3d886c09f7
-<missing>     13 months ago  /bin/sh -c yes | keytool -import -trustcac...  174kB       FROM 7b2d1a7bb8f9
-7b2d1a7bb8f9  13 months ago  /bin/sh -c cd /usr/lib/jvm/java-21/bin         1.02kB      FROM 71e7b3384716
-c68168d45f72  13 months ago  /bin/sh -c #(nop) USER 0                       0B          FROM c68168d45f72
-<missing>     13 months ago  /bin/sh -c #(nop) COPY file:c3d220a79e398f...  5.63kB      FROM f53d718fc75e
-f53d718fc75e  13 months ago  /bin/sh -c chmod -R 777 /opt/gradle            151MB       FROM 00cec2d6656d
-f7802647e0b6  13 months ago  /bin/sh -c #(nop) USER root                    0B          FROM f7802647e0b6
-<missing>     13 months ago  /bin/sh -c #(nop) COPY file:32a679c74edc6b...  3.07kB      FROM 2bad0b23eedf
-ef54af24ad30  13 months ago  /bin/sh -c #(nop) ENV PATH=$PATH:$GRADLE_H...  0B          FROM 188dfb797869
-<missing>     13 months ago  /bin/sh -c #(nop) ENV GRADLE_HOME=/opt/gradle  0B          FROM ef54af24ad30
-<missing>     13 months ago  /bin/sh -c #(nop) COPY dir:def7de9f8f96a70...  151MB       FROM d7cf05c1753f
-d7cf05c1753f  13 months ago  /bin/sh -c mkdir -p /opt/gradle/               2.05kB      FROM c3be91bb1344
-c3be91bb1344  13 months ago  /bin/sh -c dnf install -y unzip || true        3.58kB      FROM f2cca0f2b28a
-d41ae71b0315  13 months ago  /bin/sh -c #(nop) WORKDIR /app                 0B          FROM registry.access.redhat.com/ubi9/openjdk-21:latest
-<missing>     14 months ago  /bin/sh -c #(nop) USER 185                     315MB       FROM registry-proxy.engineering.redhat.com/rh-osbs/ubi9-minimal@sha256:db476d544c0bb716a4ba89248bde00d72724ebe015aabe5f026d40f02195d9e2
-<missing>     14 months ago  /bin/sh -c mv -fZ /tmp/ubi.repo /etc/yum.r...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER 185                     0B
-<missing>     14 months ago  /bin/sh -c rm -f /tmp/tls-ca-bundle.pem        0B
-<missing>     14 months ago  /bin/sh -c rm -f '/etc/yum.repos.d/odcs-38...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) LABEL "release"="3.17369...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ADD file:9fd8274aa6dbf54...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ADD file:91a42ad0a3efb2c...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ADD file:c2c5314e7f237e5...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) CMD ["/usr/local/s2i/run"]   0B
-<missing>     14 months ago  /bin/sh -c #(nop) WORKDIR /home/default        0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER 185                     0B
-<missing>     14 months ago  /bin/sh -c rm -rf "/var/cache/yum" "/var/l...  0B
-<missing>     14 months ago  /bin/sh -c rm -rf "/tmp/scripts" "/tmp/art...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) EXPOSE 8080 8443             0B
-<missing>     14 months ago  /bin/sh -c #(nop) LABEL             com.re...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_IM...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:1da9c9eed9ba99e...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JAVA_DAT...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:9f4a39ae8fe4337...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:fcaabbf6fe5e52b...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:c772def80c58b9b...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:619913c97142c71...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:e5cf9a3b6c5608e...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:b7e8e60486dec22...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) LABEL             io.ope...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:2414dfda6422253...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:24dd93fb8c27b0a...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JBOSS_CO...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:76319aedde1f49e...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:cd1afef66aa888d...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) LABEL             org.jb...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             JAVA_HOM...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:63a7daebc478c51...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ENV             GECOS="D...  0B
-<missing>     14 months ago  /bin/sh -c microdnf --setopt=install_weak_...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:205100a0e2d33e5...  0B
-<missing>     14 months ago  /bin/sh -c [ "sh", "-x", "/tmp/scripts/jbo...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) COPY dir:54dcc7b102ac01b...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) USER root                    0B
-<missing>     14 months ago  /bin/sh -c #(nop) ADD multi:432f95c21dfbd6...  0B
-<missing>     14 months ago  /bin/sh -c #(nop) ADD file:df13b6a4fdeac46...  0B
-<missing>     14 months ago  /bin/sh -c mv -f /etc/yum.repos.d/ubi.repo...  0B
-<missing>     17 months ago  /bin/sh -c mv -fZ /tmp/ubi.repo /etc/yum.r...  102MB
-<missing>     17 months ago  /bin/sh -c rm -f /tmp/tls-ca-bundle.pem        0B
-<missing>     17 months ago  /bin/sh -c rm -f '/etc/yum.repos.d/repo-a2...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL "distribution-scop...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ADD file:858e004db2c4a68...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ADD file:8d478df9f2cae09...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL release=1312           0B
-<missing>     17 months ago  /bin/sh -c rm -rf /var/log/*                   0B
-<missing>     17 months ago  /bin/sh -c #(nop) CMD ["/bin/bash"]            0B
-<missing>     17 months ago  /bin/sh -c #(nop) ENV PATH /usr/local/sbin...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ENV container oci            0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL io.openshift.tags=...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL io.openshift.expos...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL io.k8s.display-nam...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL description="The U...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL summary="Provides ...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL com.redhat.license...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL com.redhat.compone...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) LABEL maintainer="Red Ha...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ADD multi:a7f6e4b1f953d8...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ADD file:5b1f650e1376d79...  0B
-<missing>     17 months ago  /bin/sh -c mv -f /etc/yum.repos.d/ubi.repo...  0B
-<missing>     17 months ago  /bin/sh -c #(nop) ADD file:25aa8753c1b1ee6...  0B
+# Base image (as seen in history)
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest
+
+# Switch to root for installations
+USER root
+
+# Install required packages
+RUN dnf install -y unzip && \
+    dnf clean all
+
+# Set working directory
+WORKDIR /app
+
+# Create Gradle directory
+RUN mkdir -p /opt/gradle
+
+# Copy Gradle distribution (you need to provide this)
+COPY gradle-8.9 /opt/gradle/
+
+# Set environment variables
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Fix permissions (as seen in history)
+RUN chmod -R 777 /opt/gradle
+
+# (Optional) Import certificates if required
+# COPY your-cert.crt /tmp/
+# RUN keytool -import -trustcacerts -alias mycert \
+#     -file /tmp/your-cert.crt \
+#     -keystore $JAVA_HOME/lib/security/cacerts \
+#     -storepass changeit -noprompt
+
+# Switch back to non-root user (important for OpenShift)
+USER 185
+
+# Expose ports (from inspect)
+EXPOSE 8080 8443
+
+# Default command
+CMD ["bash"]
