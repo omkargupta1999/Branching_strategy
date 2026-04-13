@@ -1,0 +1,129 @@
+.reverse-sync:
+  stage: release
+  image: registry.dev.sbiepay.sbi:8443/library/reverse-sync-tools:1.0
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo " Starting Reverse Sync Process..."
+    - echo "Current branch: $CI_COMMIT_BRANCH"
+
+    # Function to check if an MR already exists
+    - |
+      mr_exists() {
+        SOURCE=$1
+        TARGET=$2
+
+        echo "Checking if MR exists for $SOURCE → $TARGET"
+
+        EXISTING=$(curl --silent \
+          --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests?state=opened&source_branch=$SOURCE&target_branch=$TARGET")
+
+        COUNT=$(echo "$EXISTING" | jq length)
+
+        if [ "$COUNT" -gt 0 ]; then
+          echo "MR already exists for $SOURCE → $TARGET. Skipping."
+          return 0
+        else
+          return 1
+        fi
+      }
+
+    # Function to create and auto-merge MR
+    - |
+      create_and_merge_mr() {
+        SOURCE=$1
+        TARGET=$2
+
+        if mr_exists "$SOURCE" "$TARGET"; then
+          return
+        fi
+
+        echo "Creating MR from $SOURCE to $TARGET"
+
+        MR_RESPONSE=$(curl --silent --request POST \
+          --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          --header "Content-Type: application/json" \
+          --data "{
+            \"source_branch\": \"$SOURCE\",
+            \"target_branch\": \"$TARGET\",
+            \"title\": \"Reverse Sync: $SOURCE → $TARGET\",
+            \"remove_source_branch\": false,
+            \"squash\": false,
+            \"labels\": \"reverse-sync\"$( [ -n \"$RELEASE_MANAGER_ID\" ] && echo ", \"assignee_id\": $RELEASE_MANAGER_ID" )
+          }" \
+
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests")
+
+        echo "MR Response: $MR_RESPONSE"
+
+        MR_IID=$(echo "$MR_RESPONSE" | jq -r '.iid')
+
+        if [ "$MR_IID" != "null" ] && [ -n "$MR_IID" ]; then
+          echo "Enabling auto-merge for MR IID: $MR_IID"
+
+          curl --silent --request PUT \
+            --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data "{
+              \"merge_when_pipeline_succeeds\": true,
+              \"should_remove_source_branch\": false
+            }" \
+            "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$MR_IID/merge"
+
+          echo " Auto-merge enabled for MR $MR_IID"
+        else
+          echo " Failed to create MR for $SOURCE → $TARGET"
+          exit 1
+        fi
+      }
+
+    # ---------------- Reverse Sync Logic ----------------
+
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        echo " Reverse syncing from MAIN branch"
+
+        # Sync main → develop
+        create_and_merge_mr "main" "develop"
+
+        # Fetch all active release branches
+        echo "Fetching active release branches..."
+        RELEASE_BRANCHES=$(curl --silent \
+          --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/branches?search=release/" \
+          | jq -r '.[].name')
+
+        for branch in $RELEASE_BRANCHES; do
+          if [[ "$branch" != "main" && "$branch" != "develop" ]]; then
+            echo "Reverse syncing main → $branch"
+            create_and_merge_mr "main" "$branch"
+          fi
+        done
+
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/.*$ ]]; then
+        echo " Reverse syncing from RELEASE branch"
+
+        # Sync release/* → develop (bugfix scenario)
+        create_and_merge_mr "$CI_COMMIT_BRANCH" "develop"
+
+      else
+        echo "No reverse sync required for this branch."
+      fi
+
+  rules:
+    # Trigger when pipeline runs on main
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+
+    # Trigger when pipeline runs on release branches
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*$/'
+      when: on_success
+
+    - when: never
+
+# Executable job
+reverse-sync:
+  extends: .reverse-sync
