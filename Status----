@@ -1,0 +1,27 @@
+
+
+🧱 IMPLEMENTATION PLAN (FROM SCRATCH)
+
+We’ll implement this in 4 layers:
+
+Branch Strategy Creation
+GitLab Branch Protection -- Done 
+
+
+---  STEP 2 — Protect main Branch (CRITICAL)
+GitLab UI:
+
+Go to:
+
+Project → Settings → Repository → Protected Branches
+=-----------------------------------------------------------
+Push Rules (Regex Enforcement) -- Done
+
+GitLab UI:
+Project → Settings → Repository → Push Rules
+Add:
+Branch Name Regex:
+^(main|feature\/[a-z0-9-]+)$
+
+____________---------------------------
+CI Pipeline Enforcement (Code-level)
