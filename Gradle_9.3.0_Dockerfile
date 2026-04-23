@@ -1,3 +1,44 @@
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+
+ENV GRADLE_VERSION=9.3.0
+
+USER root
+
+# Copy extracted Gradle directory
+COPY gradle-9.3.0 /opt/gradle-9.3.0
+
+# Create symlink
+RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Create non-root user
+RUN useradd -u 1001 -m gradle
+
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle*
+
+# Import certificate
+COPY jfrog-chain.crt /tmp/
+
+RUN keytool -import -trustcacerts \
+    -file /tmp/jfrog-chain.crt \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -alias sbi-internal \
+    -storepass changeit -noprompt \
+    && rm -f /tmp/jfrog-chain.crt
+
+USER gradle
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
+
+========================================================================
+
+
 [osuser@bastion Gradle_9.3]$ podman build -t gradle:9.3 .
 STEP 1/16: FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
 STEP 2/16: ENV GRADLE_VERSION=9.3.0
