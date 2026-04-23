@@ -1,3 +1,64 @@
+
+[osuser@bastion Gradle_9.3]$ podman build -t gradle:9.3 .
+STEP 1/15: FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+STEP 2/15: ENV GRADLE_VERSION=9.3.0
+--> Using cache e402595a292cb5d6b3a92a841c83d2e94f90f11c5d3e8a1da6bf94934e4f856e
+--> e402595a292c
+STEP 3/15: USER root
+--> Using cache 35a7b3f7fbd5cc8db4dad4e082f1b459b2789c64dc16b8c39632c505fb2766fd
+--> 35a7b3f7fbd5
+STEP 4/15: COPY gradle-9.3.0 /opt/gradle-9.3.0
+--> 2ca046360fa0
+STEP 5/15: RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+WARN[0006] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+--> d1da714e9e69
+STEP 6/15: ENV GRADLE_HOME=/opt/gradle
+--> 41b2b24d9a59
+STEP 7/15: ENV PATH=$PATH:$GRADLE_HOME/bin
+--> 250ba903d88a
+STEP 8/15: RUN useradd -u 1001 -m gradle
+WARN[0008] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+--> f3cafb46e99c
+STEP 9/15: ENV GRADLE_USER_HOME=/home/gradle/.gradle
+--> 98f64a362082
+STEP 10/15: RUN mkdir -p $GRADLE_USER_HOME     && chown -R gradle:gradle /home/gradle /opt/gradle*
+WARN[0010] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+--> 0c8e4355845a
+STEP 11/15: COPY jfrog-chain.crt /tmp/
+--> 451c746a3127
+STEP 12/15: RUN keytool -import -trustcacerts     -file /tmp/jfrog-chain.crt     -keystore $JAVA_HOME/lib/security/cacerts     -alias sbi-internal     -storepass changeit -noprompt     && rm -f /tmp/jfrog-chain.crt
+WARN[0016] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+Warning: use -cacerts option to access cacerts keystore
+Certificate was added to keystore
+--> 3566c67ad27a
+STEP 13/15: USER gradle
+--> f6a9025686c6
+STEP 14/15: WORKDIR /workspace
+--> df72bc8365aa
+STEP 15/15: CMD ["gradle", "--version"]
+COMMIT gradle:9.3
+--> 6f4a4dc5d979
+Successfully tagged localhost/gradle:9.3
+6f4a4dc5d97965ca9d3bf4f1445d19fcc7d23c4666958f53b7d5272adecaa4a8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
 
 ENV GRADLE_VERSION=9.3.0
