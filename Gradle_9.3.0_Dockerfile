@@ -1,0 +1,51 @@
+FROM registry.access.redhat.com/ubi9/openjdk-21
+
+ENV GRADLE_VERSION=9.3.0
+
+# 🔥 IMPORTANT: switch to root
+USER root
+
+# Fix permissions (sometimes required in UBI)
+RUN mkdir -p /var/cache/yum && chmod -R 777 /var/cache
+
+# Install packages
+RUN microdnf install -y \
+        unzip \
+        tar \
+        gzip \
+        shadow-utils \
+    && microdnf clean all
+
+# Install Gradle
+RUN curl -fsSL https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o /tmp/gradle.zip \
+    && unzip /tmp/gradle.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
+    && rm -f /tmp/gradle.zip
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Create non-root user
+RUN useradd -u 1001 -m gradle
+
+# Gradle cache
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle
+
+# Import certificate
+COPY jfrog-chain.cert /tmp/
+
+RUN keytool -import -trustcacerts \
+    -file /tmp/jfrog-chain.cert \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -alias SBI-INTERNAL \
+    -storepass changeit -noprompt
+
+# Switch back to non-root
+USER gradle
+
+WORKDIR /workspace
+
+CMD ["gradle"]
