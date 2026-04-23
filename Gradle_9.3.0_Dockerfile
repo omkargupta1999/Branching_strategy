@@ -1,4 +1,73 @@
+[osuser@bastion Gradle_9.3]$ podman build -t gradle:9.3 .
+STEP 1/16: FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+STEP 2/16: ENV GRADLE_VERSION=9.3.0
+--> e402595a292c
+STEP 3/16: USER root
+--> 35a7b3f7fbd5
+STEP 4/16: RUN microdnf install -y unzip shadow-utils && microdnf clean all || echo "Skipping package install"
+WARN[0001] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
 
+(microdnf:7): librhsm-WARNING **: 12:52:08.012: Found 0 entitlement certificates
+
+(microdnf:7): librhsm-WARNING **: 12:52:08.023: Found 0 entitlement certificates
+Downloading metadata...
+error: cannot update repo 'ubi-9-baseos-rpms': Cannot download repomd.xml: Cannot download repodata/repomd.xml: All mirrors were tried; Last error: Curl error (6): Couldn't resolve host name for https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/repodata/repomd.xml [Could not resolve host: cdn-ubi.redhat.com]
+Skipping package install
+--> 262a937d4948
+STEP 5/16: COPY gradle-9.3.0-bin.zip /opt/
+--> c0091b146b43
+STEP 6/16: RUN unzip /opt/gradle-9.3.0-bin.zip -d /opt     && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle     && rm -f /opt/gradle-9.3.0-bin.zip
+WARN[0009] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+/bin/sh: line 1: unzip: command not found
+Error: building at STEP "RUN unzip /opt/gradle-9.3.0-bin.zip -d /opt     && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle     && rm -f /opt/gradle-9.3.0-bin.zip": while running runtime: exit status 127
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+
+ENV GRADLE_VERSION=9.3.0
+
+USER root
+
+# (Optional) Install only if internal repo works
+RUN microdnf install -y unzip shadow-utils && microdnf clean all || echo "Skipping package install"
+
+# Copy Gradle (offline)
+COPY gradle-9.3.0-bin.zip /opt/
+
+RUN unzip /opt/gradle-9.3.0-bin.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
+    && rm -f /opt/gradle-9.3.0-bin.zip
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Create non-root user
+RUN useradd -u 1001 -m gradle
+
+# Gradle cache
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle
+
+# Import certificate
+COPY jfrog-chain.crt /etc/pki/ca-trust/source/anchors/
+
+RUN keytool -import -trustcacerts \
+    -file /etc/pki/ca-trust/source/anchors/jfrog-chain.crt \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -alias sbi-internal \
+    -storepass changeit -noprompt \
+    && rm -f /etc/pki/ca-trust/source/anchors/jfrog-chain.crt
+
+USER gradle
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
+
+
+===========================================================================================
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
 
 ENV GRADLE_VERSION=9.3.0
