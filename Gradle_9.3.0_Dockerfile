@@ -1,3 +1,54 @@
+
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+
+ENV GRADLE_VERSION=9.3.0
+
+USER root
+
+# (Optional) Install only if internal repo works
+RUN microdnf install -y unzip shadow-utils && microdnf clean all || echo "Skipping package install"
+
+# Copy Gradle (offline)
+COPY gradle-9.3.0-bin.zip /opt/
+
+RUN unzip /opt/gradle-9.3.0-bin.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
+    && rm -f /opt/gradle-9.3.0-bin.zip
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Create non-root user
+RUN useradd -u 1001 -m gradle
+
+# Gradle cache
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle
+
+# Import certificate
+COPY jfrog-chain.crt /etc/pki/ca-trust/source/anchors/
+
+RUN keytool -import -trustcacerts \
+    -file /etc/pki/ca-trust/source/anchors/jfrog-chain.crt \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -alias sbi-internal \
+    -storepass changeit -noprompt \
+    && rm -f /etc/pki/ca-trust/source/anchors/jfrog-chain.crt
+
+USER gradle
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
+===========================================================================
+
+
+
+
+
+
+
 FROM registry.access.redhat.com/ubi9/openjdk-21
 
 ENV GRADLE_VERSION=9.3.0
