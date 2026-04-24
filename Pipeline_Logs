@@ -1,157 +1,61 @@
-You’re very close—the last failure is purely **Gradle toolchain resolution**, not your image build. We’ll lock Gradle to the JVM inside the container so it stops trying to “discover” or download anything.
+I am sharing the build,gradle as well...
 
-Below are the **exact, minimal changes** you should apply.
 
----
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version "${spring_boot}"
+    id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
 
-# ✅ Updated **Dockerfile** (final)
+group = 'com.epay.admin'
+version = "${version}"
 
-Only one meaningful addition: **force Gradle to use this JVM via `GRADLE_OPTS`**.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
-```dockerfile
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
 
-ENV GRADLE_VERSION=9.3.0
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
+    implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
 
-USER root
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
-# --- Set EXACT JAVA_HOME (your verified path) ---
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-ENV PATH=$JAVA_HOME/bin:$PATH
+    implementation "net.bytebuddy:byte-buddy:${bytebuddy}"
+    implementation "org.modelmapper:modelmapper:${modelmapper}"
+    implementation "javax.persistence:javax.persistence-api:${javax_persistence}"
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.liquibase:liquibase-core'
 
-# --- 🔥 FORCE Gradle to use this JVM (bypass toolchains) ---
-ENV GRADLE_OPTS="-Dorg.gradle.java.home=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64"
+    // SBI Utilities
+    implementation 'name:logging-service-1.0-SNAPSHOT'
+    implementation 'name:cache-management-service-0.0.1'
 
-# --- Copy Gradle (offline, extracted folder) ---
-COPY gradle-9.3.0 /opt/gradle-9.3.0
+    // Mapstruct
+    implementation "org.mapstruct:mapstruct:${mapstruct}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
 
-# --- Symlink ---
-RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-ENV GRADLE_HOME=/opt/gradle
-ENV PATH=$PATH:$GRADLE_HOME/bin
+    implementation "org.springframework.boot:spring-boot-starter-webflux"
+}
 
-# --- Create non-root user ---
-RUN useradd -u 1001 -m gradle
+tasks.named('test') {
+    useJUnitPlatform()
+}
 
-# --- Gradle cache dir ---
-ENV GRADLE_USER_HOME=/home/gradle/.gradle
-
-RUN mkdir -p $GRADLE_USER_HOME \
-    && chown -R gradle:gradle /home/gradle /opt/gradle*
-
-# --- (Optional but fine) keep toolchain props global ---
-RUN mkdir -p /home/gradle/.gradle && \
-    echo "org.gradle.java.installations.auto-download=false" >> /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.java.installations.auto-detect=false" >> /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.java.installations.paths=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64" >> /home/gradle/.gradle/gradle.properties && \
-    chown -R gradle:gradle /home/gradle/.gradle
-
-# --- Import certificate ---
-COPY jfrog-chain.crt /tmp/
-
-RUN keytool -import -trustcacerts \
-    -cacerts \
-    -file /tmp/jfrog-chain.crt \
-    -alias sbi-internal \
-    -storepass changeit -noprompt \
-    && rm -f /tmp/jfrog-chain.crt
-
-USER gradle
-WORKDIR /workspace
-
-CMD ["gradle", "--version"]
-```
-
----
-
-# ✅ Updated **gradle.properties** (project-level)
-
-This is the **critical fix**. Add/replace with:
-
-```properties
-# --- Disable any download ---
-org.gradle.java.installations.auto-download=false
-
-# --- Disable detection (prevents Gradle from ignoring your JDK) ---
-org.gradle.java.installations.auto-detect=false
-
-# --- Explicit JDK path ---
-org.gradle.java.installations.paths=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-
-# --- 🔥 MOST IMPORTANT: force Gradle to use this JVM ---
-org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-
-# --- CI stability ---
-org.gradle.daemon=false
-org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
-```
-
----
-
-# 🔥 Why this finally fixes your issue
-
-Your error (from logs ):
-
-```text
-Cannot find a Java installation matching: {languageVersion=21}
-```
-
-### What we changed:
-
-| Problem                           | Fix                                 |
-| --------------------------------- | ----------------------------------- |
-| Gradle tries toolchain detection  | ❌ Disabled                          |
-| Gradle tries to find/download JDK | ❌ Disabled                          |
-| Gradle ignores JAVA_HOME          | ✔ Forced via `org.gradle.java.home` |
-| Mixed EL8 runner vs EL9 image     | ✔ Bypassed                          |
-
-👉 Now Gradle will **directly use the JVM in your container**, no validation, no download, no mismatch.
-
----
-
-# ✅ Optional (extra safety in CI)
-
-If you want zero ambiguity, you can also update your `.gitlab-ci.yml`:
-
-```yaml
-script:
-  - gradle build -x test -Dorg.gradle.java.home=$JAVA_HOME
-```
-
----
-
-# 🧪 Expected result
-
-After rebuild + push:
-
-```bash
-podman build -t gradle:9.3.0 .
-```
-
-Pipeline should:
-
-* ✅ Checkout code
-* ✅ Start Gradle
-* ✅ No toolchain error
-* ✅ Build completes
-
----
-
-# 🧠 Final takeaway
-
-You weren’t failing because:
-
-* Dockerfile ❌
-* JAVA_HOME ❌
-
-You were failing because:
-
-> Gradle toolchain logic overrides everything unless explicitly forced.
-
----
-
-If anything still breaks after this, the next likely issue will be:
-👉 dependency resolution (JFrog / Maven repos)
-
-I can help you lock that down as well.
+bootJar {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
