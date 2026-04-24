@@ -1,13 +1,14 @@
 # =============================================================================
-# Gradle 9.3.0 - Air-Gapped / Offline Docker Build
+# Gradle 9.3.0 - Fully Air-Gapped / Offline Docker Build
 # Base  : openjdk-21-runtime (pre-loaded in internal registry)
 # Author: SBI E-Pay DevOps
 #
-# Build context must contain:
+# Build context must contain ONLY:
 #   gradle-9.3.0/     ← pre-extracted Gradle distribution folder
 #   jfrog-chain.crt   ← JFrog / Internal CA certificate
 #
-# No internet access is required. No zip/unzip needed.
+# NO internet access. NO microdnf/yum/dnf calls. NO package downloads.
+# Everything is sourced from the build context or the base image.
 # =============================================================================
 
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
@@ -21,27 +22,13 @@ ENV GRADLE_VERSION=9.3.0 \
     PATH=/opt/gradle/bin:$PATH
 
 # ---------------------------------------------------------------------------
-# Switch to root for system-level setup
+# Switch to root for all setup steps
 # ---------------------------------------------------------------------------
 USER root
 
 # ---------------------------------------------------------------------------
-# Fix permissions on cache dirs (required on some UBI9 variants)
-# ---------------------------------------------------------------------------
-RUN mkdir -p /var/cache/yum /var/cache/dnf \
-    && chmod -R 777 /var/cache
-
-# ---------------------------------------------------------------------------
-# Install shadow-utils (needed for useradd)
-# UBI9 minimal images sometimes exclude it.
-# No unzip needed — Gradle folder is already extracted.
-# ---------------------------------------------------------------------------
-RUN microdnf install -y shadow-utils \
-    && microdnf clean all
-
-# ---------------------------------------------------------------------------
 # Copy pre-extracted Gradle distribution directly into /opt
-# No unzip step needed — folder is already extracted in build context.
+# No unzip, no curl, no internet — folder copied straight from build context
 # ---------------------------------------------------------------------------
 COPY gradle-9.3.0/ /opt/gradle-9.3.0/
 
@@ -49,19 +36,21 @@ RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
     && chmod +x /opt/gradle-9.3.0/bin/gradle
 
 # ---------------------------------------------------------------------------
-# Create non-root gradle user
+# Create non-root gradle user (useradd is available in UBI9 base image)
+# shadow-utils is already included in openjdk-21-runtime — no install needed
 # ---------------------------------------------------------------------------
 RUN useradd -u 1001 -m -s /bin/bash gradle
 
 # ---------------------------------------------------------------------------
-# Create Gradle user home/cache directory and fix ownership
+# Create Gradle cache directory and set ownership
 # ---------------------------------------------------------------------------
 RUN mkdir -p ${GRADLE_USER_HOME} \
     && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
 
 # ---------------------------------------------------------------------------
-# Import JFrog / Internal CA certificate into the JVM truststore
-# $JAVA_HOME is provided by the openjdk-21-runtime base image.
+# Import JFrog / Internal CA certificate into JVM truststore
+# $JAVA_HOME is set by the openjdk-21-runtime base image
+# keytool is bundled with the JDK — no install needed
 # ---------------------------------------------------------------------------
 COPY jfrog-chain.crt /tmp/jfrog-chain.crt
 
