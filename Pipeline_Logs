@@ -1,11 +1,87 @@
-# Check Gradle version
-podman run --rm registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21 gradle --version
+Great question! This is a much better approach for certificate lifecycle management. Let me explain the options:
 
-# Confirm running as non-root
-podman run --rm registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21 whoami
-# Expected: gradle
+------
 
-# Confirm certificate is in truststore
-podman run --rm registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21 \
-  bash -c 'keytool -list -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit | grep -i sbi'
-# Expected: SBI-INTERNAL, ...
+## Recommendation: Option 2 — Runner Volume Mount
+
+This is the cleanest solution for your air-gapped setup. Here's exactly how to implement it:
+
+### Step 1 — Place the cert on the runner host
+
+```bash
+# On the GitLab runner host machine
+sudo mkdir -p /etc/gitlab-runner/certs
+sudo cp jfrog-chain.crt /etc/gitlab-runner/certs/jfrog-chain.crt
+sudo chmod 644 /etc/gitlab-runner/certs/jfrog-chain.crt
+```
+
+---
+
+### Step 2 — Mount it into build containers via `config.toml`
+
+Edit `/etc/gitlab-runner/config.toml` on the runner:
+
+```toml
+[[runners]]
+  name = "sbiepay-runner"
+  executor = "docker"
+  [runners.docker]
+    image = "registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21"
+    volumes = [
+      "/cache",
+      "/etc/gitlab-runner/certs/jfrog-chain.crt:/tmp/jfrog-chain.crt:ro"   # <-- add this
+    ]
+```
+
+> `:ro` = read-only mount. The cert is visible inside every build container at `/tmp/jfrog-chain.crt`.
+
+---
+
+### Step 3 — Remove cert from Dockerfile, import it in CI job instead
+
+**Updated Dockerfile** — cert completely removed:
+
+```dockerfile
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
+
+ENV GRADLE_VERSION=9.3.0 \
+    GRADLE_HOME=/opt/gradle \
+    GRADLE_USER_HOME=/home/gradle/.gradle \
+    PATH=/opt/gradle/bin:$PATH
+
+USER root
+COPY gradle-9.3.0/ /opt/gradle-9.3.0/
+RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
+    && chmod +x /opt/gradle-9.3.0/bin/gradle \
+    && useradd -u 1001 -m -s /bin/bash gradle \
+    && mkdir -p /home/gradle/.gradle \
+    && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
+
+USER gradle
+WORKDIR /workspace
+CMD ["gradle", "--version"]
+```
+
+**`.gitlab-ci.yml`** — import cert at job start:
+
+```yaml
+before_script:
+  - keytool -import
+      -trustcacerts
+      -file /tmp/jfrog-chain.crt
+      -keystore $JAVA_HOME/lib/security/cacerts
+      -alias SBI-INTERNAL
+      -storepass changeit
+      -noprompt
+```
+
+---
+
+### When the cert rotates (every 6–12 months)
+
+```bash
+# Only this — nothing else changes
+sudo cp new-jfrog-chain.crt /etc/gitlab-runner/certs/jfrog-chain.crt
+```
+
+No image rebuild. No pipeline changes. No GitLab UI changes. Just replace the file on the runner host and the next job picks it up automatically.
