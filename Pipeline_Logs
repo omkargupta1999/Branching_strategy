@@ -1,19 +1,47 @@
-[osuser@bastion Gradle_9.3]$  podman run -it gradle:9.3 bash
-WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
-bash: /home/default/.bashrc: Permission denied
-bash-5.1$
-bash-5.1$ java -version
-openjdk version "21.0.10" 2026-01-20 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS, mixed mode, sharing)
-bash-5.1$
-bash-5.1$
-bash-5.1$ gradle --version
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
 
-ERROR: JAVA_HOME is set to an invalid directory: /usr/lib/jvm/java-21
+ENV GRADLE_VERSION=9.3.0
 
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation.
+USER root
+
+# --- Set correct JAVA_HOME (verified path for UBI OpenJDK 21 runtime) ---
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# --- Copy pre-extracted Gradle (offline setup) ---
+COPY gradle-9.3.0 /opt/gradle-9.3.0
+
+# --- Create symlink for easier usage ---
+RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# --- Create non-root user ---
+RUN useradd -u 1001 -m gradle
+
+# --- Gradle cache directory ---
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle*
+
+# --- Import internal certificate ---
+COPY jfrog-chain.crt /tmp/
+
+RUN keytool -import -trustcacerts \
+    -cacerts \
+    -file /tmp/jfrog-chain.crt \
+    -alias sbi-internal \
+    -storepass changeit -noprompt \
+    && rm -f /tmp/jfrog-chain.crt
+
+# --- Switch to non-root user ---
+USER gradle
+
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
 
 
 
