@@ -1,3 +1,111 @@
+Working Dockerfile ------  
+
+
+[osuser@bastion Gradle_9.3]$ cat Dockerfile_online
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+
+ENV GRADLE_VERSION=9.3.0
+
+# IMPORTANT: switch to root
+USER root
+
+# Fix permissions (sometimes required in UBI)
+RUN mkdir -p /var/cache/yum && chmod -R 777 /var/cache
+
+# Install packages
+RUN microdnf install -y \
+        unzip \
+        tar \
+        gzip \
+        shadow-utils \
+    && microdnf clean all
+
+# Install Gradle
+RUN curl -fsSL https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o /tmp/gradle.zip \
+    && unzip /tmp/gradle.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
+    && rm -f /tmp/gradle.zip
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# Create non-root user
+RUN useradd -u 1001 -m gradle
+
+# Gradle cache
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle
+
+# Import certificate
+COPY jfrog-chain.cert /tmp/
+
+RUN keytool -import -trustcacerts \
+    -file /tmp/jfrog-chain.cert \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -alias SBI-INTERNAL \
+    -storepass changeit -noprompt
+
+# Switch back to non-root
+USER gradle
+
+WORKDIR /workspace
+
+CMD ["gradle"]
+
+
+
+
+Non-Working Dockerfile.........................
+
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
+
+ENV GRADLE_VERSION=9.3.0
+
+USER root
+
+# --- Set EXACT JAVA_HOME (from your verification) ---
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# --- Copy Gradle (offline setup) ---
+COPY gradle-9.3.0 /opt/gradle-9.3.0
+
+# --- Create symlink ---
+RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
+
+# --- Create non-root user ---
+RUN useradd -u 1001 -m gradle
+
+# --- Gradle cache ---
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
+RUN mkdir -p $GRADLE_USER_HOME \
+    && chown -R gradle:gradle /home/gradle /opt/gradle*
+
+# --- Import certificate ---
+COPY jfrog-chain.crt /tmp/
+
+RUN keytool -import -trustcacerts \
+    -cacerts \
+    -file /tmp/jfrog-chain.crt \
+    -alias sbi-internal \
+    -storepass changeit -noprompt \
+    && rm -f /tmp/jfrog-chain.crt
+
+# --- Switch user ---
+USER gradle
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
+
+Below Error We are getting....
+
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
 Resolving secrets
