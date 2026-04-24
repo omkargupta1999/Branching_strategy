@@ -1,63 +1,6 @@
 [osuser@bastion Gradle_9.3]$ ll
-total 133816
--rw-r----- 1 osuser osuser      1672 Apr 24 14:33 Dockerfile
--rw-r----- 1 osuser osuser      1205 Apr 23 18:19 Dockerfile_online
-drwxr-xr-x 5 osuser osuser        85 Feb  1  1980 gradle-9.3.0
--rw-r----- 1 osuser osuser 137006348 Apr 23 17:59 gradle-9.3.0-bin.zip
--rw-r----- 1 osuser osuser       550 Apr 24 14:33 gradle.properties
--rw-r----- 1 osuser osuser      4120 Apr 23 18:12 jfrog-chain.crt
-[osuser@bastion Gradle_9.3]$
-[osuser@bastion Gradle_9.3]$ cat Dockerfile_online
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
-
-ENV GRADLE_VERSION=9.3.0
-
-# IMPORTANT: switch to root
-USER root
-
-# Fix permissions (sometimes required in UBI)
-RUN mkdir -p /var/cache/yum && chmod -R 777 /var/cache
-
-# Install packages
-RUN microdnf install -y \
-        unzip \
-        tar \
-        gzip \
-        shadow-utils \
-    && microdnf clean all
-
-# Install Gradle
-RUN curl -fsSL https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o /tmp/gradle.zip \
-    && unzip /tmp/gradle.zip -d /opt \
-    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
-    && rm -f /tmp/gradle.zip
-
-ENV GRADLE_HOME=/opt/gradle
-ENV PATH=$PATH:$GRADLE_HOME/bin
-
-# Create non-root user
-RUN useradd -u 1001 -m gradle
-
-# Gradle cache
-ENV GRADLE_USER_HOME=/home/gradle/.gradle
-
-RUN mkdir -p $GRADLE_USER_HOME \
-    && chown -R gradle:gradle /home/gradle /opt/gradle
-
-# Import certificate
-COPY jfrog-chain.cert /tmp/
-
-RUN keytool -import -trustcacerts \
-    -file /tmp/jfrog-chain.cert \
-    -keystore $JAVA_HOME/lib/security/cacerts \
-    -alias SBI-INTERNAL \
-    -storepass changeit -noprompt
-
-# Switch back to non-root
-USER gradle
-
-WORKDIR /workspace
-
-CMD ["gradle"]
-
+total 12
+-rw-r----- 1 osuser osuser 1672 Apr 24 14:33 Dockerfile
+drwxr-xr-x 5 osuser osuser   85 Feb  1  1980 gradle-9.3.0
+-rw-r----- 1 osuser osuser 4120 Apr 23 18:12 jfrog-chain.crt
 [osuser@bastion Gradle_9.3]$
