@@ -1,119 +1,12 @@
-Good—now we finally have the **exact, correct JAVA_HOME**:
-
-```bash
-/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-```
-
-👉 This is what Gradle expects. No guessing anymore.
-
----
-
-# ✅ FINAL CORRECT DOCKERFILE (use this as-is)
-
-```dockerfile
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
-
-ENV GRADLE_VERSION=9.3.0
-
-USER root
-
-# --- Set EXACT JAVA_HOME (from your verification) ---
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-ENV PATH=$JAVA_HOME/bin:$PATH
-
-# --- Copy Gradle (offline setup) ---
-COPY gradle-9.3.0 /opt/gradle-9.3.0
-
-# --- Create symlink ---
-RUN ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
-
-ENV GRADLE_HOME=/opt/gradle
-ENV PATH=$PATH:$GRADLE_HOME/bin
-
-# --- Create non-root user ---
-RUN useradd -u 1001 -m gradle
-
-# --- Gradle cache ---
-ENV GRADLE_USER_HOME=/home/gradle/.gradle
-
-RUN mkdir -p $GRADLE_USER_HOME \
-    && chown -R gradle:gradle /home/gradle /opt/gradle*
-
-# --- Import certificate ---
-COPY jfrog-chain.crt /tmp/
-
-RUN keytool -import -trustcacerts \
-    -cacerts \
-    -file /tmp/jfrog-chain.crt \
-    -alias sbi-internal \
-    -storepass changeit -noprompt \
-    && rm -f /tmp/jfrog-chain.crt
-
-# --- Switch user ---
-USER gradle
-WORKDIR /workspace
-
-CMD ["gradle", "--version"]
-```
-
----
-
-# ✅ Build & Verify
-
-## Build
-
-```bash
-podman build -t gradle:9.3.0 .
-```
-
-## Verify
-
-```bash
-podman run --rm -it gradle:9.3.0 gradle --version
-```
-
-👉 This should now work without JAVA_HOME error.
-
----
-
-# ⚠️ Don’t forget (critical for your earlier issue)
-
-You still need this in your project:
-
-## `gradle.properties`
-
-```properties
+# --- Disable JDK auto-download (critical for restricted env) ---
 org.gradle.java.installations.auto-download=false
+
+# --- Allow Gradle to detect local JDK ---
 org.gradle.java.installations.auto-detect=true
+
+# --- Explicit JDK path (matches your container) ---
 org.gradle.java.installations.paths=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
-```
 
----
-
-# 🧠 Final status
-
-| Component      | Status            |
-| -------------- | ----------------- |
-| JAVA_HOME      | ✅ Correct         |
-| Gradle runtime | ✅ Fixed           |
-| Dockerfile     | ✅ Stable          |
-| Restricted env | ✅ Fully compliant |
-
----
-
-# 🚀 What’s next (you’ll hit this soon)
-
-Now your next likely blocker will be:
-
-👉 Gradle failing to download dependencies
-
-So next step should be:
-
-* Configure **JFrog/Nexus as Maven + plugin repo**
-
----
-
-If you want, I can help you:
-
-* Configure **Gradle → JFrog (complete offline dependency resolution)**
-* Or build a **fully air-gapped GitLab CI pipeline**
+# --- Recommended for CI stability ---
+org.gradle.daemon=false
+org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
