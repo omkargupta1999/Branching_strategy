@@ -1,3 +1,32 @@
+[osuser@bastion Gradle_9.3]$  podman run -it gradle:9.3 bash
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+bash: /home/default/.bashrc: Permission denied
+bash-5.1$
+bash-5.1$ java -version
+openjdk version "21.0.10" 2026-01-20 LTS
+OpenJDK Runtime Environment (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS)
+OpenJDK 64-Bit Server VM (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS, mixed mode, sharing)
+bash-5.1$
+bash-5.1$
+bash-5.1$ gradle --version
+
+ERROR: JAVA_HOME is set to an invalid directory: /usr/lib/jvm/java-21
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation.
+
+
+
+
+
+
+
+
+
+
+
+ =========================================
+
 You’re on the right track—this failure is purely **Gradle toolchain behavior in a restricted network**, not a container issue. The fix is to **force Gradle to use the JDK already present in your image** and **disable any download attempts**.
 
 Below are **clean, production-ready steps** and the **updated Dockerfile**.
