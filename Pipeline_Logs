@@ -1,3 +1,13 @@
+[osuser@bastion Gradle_9.3]$ podman build -t gradle:9.3.0 .
+Error: parsing main Dockerfile: /home/osuser/Gradle_9.3/Dockerfile: Syntax error - can't find = in "$(dirname". Must be of the form: name=value
+[osuser@bastion Gradle_9.3]$ sudo podman build -t gradle:9.3.0 .
+Error: parsing main Dockerfile: /home/osuser/Gradle_9.3/Dockerfile: Syntax error - can't find = in "$(dirname". Must be of the form: name=value
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028
 
 ENV GRADLE_VERSION=9.3.0
@@ -44,3 +54,4 @@ USER gradle
 WORKDIR /workspace
 
 CMD ["gradle", "--version"]
+[osuser@bastion Gradle_9.3]$
