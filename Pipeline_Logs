@@ -1,3 +1,20 @@
+[osuser@bastion Gradle_9.3]$ podman run --rm -it registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028 bash -c 'readlink -f /usr/bin/java'
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64/bin/java
+[osuser@bastion Gradle_9.3]$ podman run --rm -it registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028 bash -c 'dirname $(dirname $(readlink -f /usr/bin/java))'
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64
+
+
+
+
+
+
+
+
+==========================================================
+
+
 podman run --rm -it registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028 bash -c 'readlink -f /usr/bin/java'
 
 podman run --rm -it registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21-runtime:1.24-2.1776357028 bash -c 'dirname $(dirname $(readlink -f /usr/bin/java))'
