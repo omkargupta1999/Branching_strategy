@@ -1,16 +1,53 @@
-Events:
-  Type     Reason          Age                   From               Message
-  ----     ------          ----                  ----               -------
-  Normal   Scheduled       4m37s                 default-scheduler  Successfully assigned dev-admin/admin-adminservice-7c47879c76-blf5g to worker1.dev.sbiepay.sbi
-  Normal   AddedInterface  4m36s                 multus             Add eth0 [172.16.9.124/23] from ovn-kubernetes
-  Normal   Pulled          4m36s                 kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal   Created         4m35s                 kubelet            Created container: istio-validation
-  Normal   Started         4m35s                 kubelet            Started container istio-validation
-  Normal   Created         4m24s                 kubelet            Created container: istio-proxy
-  Normal   Pulled          4m24s                 kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal   Started         4m24s                 kubelet            Started container istio-proxy
-  Normal   BackOff         64s (x14 over 4m23s)  kubelet            Back-off pulling image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260424110608"
-  Normal   Pulling         52s (x5 over 4m34s)   kubelet            Pulling image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260424110608"
-  Warning  Failed          47s (x5 over 4m24s)   kubelet            Failed to pull image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260424110608": initializing source docker://artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260424110608: pinging container registry artifactory.jfrog.sbi:443: Get "https://artifactory.jfrog.sbi:443/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
-  Warning  Failed          47s (x5 over 4m24s)   kubelet            Error: ErrImagePull
-  Warning  Failed          31s (x15 over 4m23s)  kubelet            Error: ImagePullBackOff
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
+# =============================================================================
+
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
+
+# ---------------------------------------------------------------------------
+# Environment Variables
+# ---------------------------------------------------------------------------
+ENV GRADLE_VERSION=9.3.0 \
+    GRADLE_HOME=/opt/gradle \
+    GRADLE_USER_HOME=/home/gradle/.gradle \
+    PATH=/opt/gradle/bin:$PATH
+
+# ---------------------------------------------------------------------------
+# Switch to root for all setup steps
+# ---------------------------------------------------------------------------
+USER root
+
+# ---------------------------------------------------------------------------
+COPY gradle-9.3.0/ /opt/gradle-9.3.0/
+
+RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
+    && chmod +x /opt/gradle-9.3.0/bin/gradle
+
+# ---------------------------------------------------------------------------
+RUN useradd -u 1001 -m -s /bin/bash gradle
+
+# ---------------------------------------------------------------------------
+RUN mkdir -p ${GRADLE_USER_HOME} \
+    && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
+
+# ---------------------------------------------------------------------------
+# Import JFrog / Internal CA certificate into JVM truststore
+# ---------------------------------------------------------------------------
+COPY jfrog-chain.crt /tmp/jfrog-chain.crt
+
+RUN keytool -import \
+        -trustcacerts \
+        -file /tmp/jfrog-chain.crt \
+        -keystore ${JAVA_HOME}/lib/security/cacerts \
+        -alias SBI-INTERNAL \
+        -storepass changeit \
+        -noprompt \
+    && rm -f /tmp/jfrog-chain.crt
+
+# ---------------------------------------------------------------------------
+# Switch to non-root gradle user for runtime
+# ---------------------------------------------------------------------------
+USER gradle
+
+WORKDIR /workspace
+
+CMD ["gradle", "--version"]
