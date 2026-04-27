@@ -1,37 +1,49 @@
-[osuser@bastion Gradle_9.3]$ cat Dockerfile
 # =============================================================================
-
+# Base Image: UBI9 with OpenJDK 21 (pre-installed)
+# This avoids manual JDK setup and ensures enterprise compatibility
+# =============================================================================
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
 
-# ---------------------------------------------------------------------------
+# =============================================================================
 # Environment Variables
-# ---------------------------------------------------------------------------
+# - GRADLE_HOME: installation directory
+# - GRADLE_USER_HOME: cache location (important for CI/offline builds)
+# - PATH: ensures gradle binary is globally accessible
+# =============================================================================
 ENV GRADLE_VERSION=9.3.0 \
     GRADLE_HOME=/opt/gradle \
     GRADLE_USER_HOME=/home/gradle/.gradle \
     PATH=/opt/gradle/bin:$PATH
 
-# ---------------------------------------------------------------------------
-# Switch to root for all setup steps
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Switch to root user for installation and system-level changes
+# =============================================================================
 USER root
 
-# ---------------------------------------------------------------------------
-COPY gradle-9.3.0/ /opt/gradle-9.3.0/
+# =============================================================================
+# Copy Gradle distribution and setup
+# - Copy pre-downloaded Gradle (offline-safe)
+# - Rename directly to final path (avoids symlink layer)
+# - Ensure executable permissions
+# =============================================================================
+COPY gradle-9.3.0/ ${GRADLE_HOME}/
 
-RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
-    && chmod +x /opt/gradle-9.3.0/bin/gradle
+RUN chmod +x ${GRADLE_HOME}/bin/gradle
 
-# ---------------------------------------------------------------------------
-RUN useradd -u 1001 -m -s /bin/bash gradle
+# =============================================================================
+# Create non-root user for secure execution
+# - UID 1001 commonly used in OpenShift/Kubernetes environments
+# - Home directory required for Gradle cache
+# =============================================================================
+RUN useradd -u 1001 -m -s /bin/bash gradle \
+    && mkdir -p ${GRADLE_USER_HOME} \
+    && chown -R gradle:gradle /home/gradle ${GRADLE_HOME}
 
-# ---------------------------------------------------------------------------
-RUN mkdir -p ${GRADLE_USER_HOME} \
-    && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
-
-# ---------------------------------------------------------------------------
-# Import JFrog / Internal CA certificate into JVM truststore
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Import internal CA certificate into JVM truststore
+# - Required for TLS communication with JFrog or internal registries
+# - Uses default Java cacerts truststore
+# =============================================================================
 COPY jfrog-chain.crt /tmp/jfrog-chain.crt
 
 RUN keytool -import \
@@ -43,11 +55,17 @@ RUN keytool -import \
         -noprompt \
     && rm -f /tmp/jfrog-chain.crt
 
-# ---------------------------------------------------------------------------
-# Switch to non-root gradle user for runtime
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Switch to non-root user for runtime (best practice)
+# =============================================================================
 USER gradle
 
+# =============================================================================
+# Set working directory for CI/CD jobs
+# =============================================================================
 WORKDIR /workspace
 
+# =============================================================================
+# Default command (can be overridden in pipeline)
+# =============================================================================
 CMD ["gradle", "--version"]
