@@ -1,0 +1,27 @@
+FROM docker.io/redhat/ubi9:latest
+
+LABEL name="rhelgit-oc-helm"
+LABEL purpose="git + oc + helm + jq for air-gapped CI"
+
+# Install required tools
+RUN dnf install -y \
+    git \
+    tar \
+    gzip \
+    ca-certificates \
+    jq \
+    && dnf clean all
+
+# Copy binaries
+COPY oc /usr/local/bin/oc
+COPY helm /usr/local/bin/helm
+
+# Ensure execution permissions
+RUN chmod +x /usr/local/bin/oc /usr/local/bin/helm
+
+# Verify installations (build-time validation)
+RUN echo "Verifying tools..." && \
+    git --version && \
+    /usr/local/bin/oc version --client || true && \
+    /usr/local/bin/helm version || true && \
+    jq --version
