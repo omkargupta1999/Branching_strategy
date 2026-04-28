@@ -7,6 +7,7 @@ variables:
   FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
   FORTIFY_PROJECT_DIR: "."
   EXCLUDE_DIRS: "./src/test/**/*"
+  INCLUDE_DIRS: "./**/*.java"
 
 .HPFortify:
   image: "$FORTIFY_IMAGE"
@@ -23,6 +24,7 @@ variables:
       keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
         -keystore /home/default/custom-truststore.jks \
         -storepass changeit -noprompt
+
       export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
       -Djavax.net.ssl.trustStorePassword=changeit"
 
@@ -32,15 +34,16 @@ variables:
 
       echo "Preparing scan paths..."
       EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-      echo "Excluding: $EXCLUDE_FILES"
+      echo "Include: $INCLUDE_DIRS"
+      echo "Exclude: $EXCLUDE_FILES"
 
       echo "Cleaning Fortify..."
       sourceanalyzer -b "$FORTIFY_PROJECT" -clean
 
-      echo "Running Gradle build with Fortify translation..."
+      echo "Translating source files..."
       sourceanalyzer -b "$FORTIFY_PROJECT" \
         -exclude "$EXCLUDE_FILES" \
-        gradle clean build -x test
+        $INCLUDE_DIRS
 
       echo "Running Fortify scan..."
       sourceanalyzer -b "$FORTIFY_PROJECT" \
@@ -50,7 +53,7 @@ variables:
 
       ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
 
-      echo "Generating report..."
+      echo "Generating PDF report..."
       BIRTReportGenerator \
         -template "Developer Workbook" \
         -source "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" \
@@ -66,10 +69,15 @@ variables:
       ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
 
       if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
-        echo "QUALITY GATE FAILED - High/Critical: $ISSUES"
+        echo "========================================="
+        echo "QUALITY GATE FAILED"
+        echo "High/Critical Vulnerabilities: $ISSUES"
+        echo "========================================="
         exit 1
       else
+        echo "========================================="
         echo "QUALITY GATE PASSED"
+        echo "========================================="
       fi
 
   artifacts:
