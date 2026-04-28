@@ -1,52 +1,79 @@
-# .HPFortify:
-#   tags: 
-#     - common_runner
-#   variables:
-#     FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
-#     FORTIFY_PROJECT: $CI_PROJECT_NAME
-#     PROJECT_NAME: $CI_PROJECT_NAME
-#     FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
-#     SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
-#     BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
-#     FORTIFY_PROJECT_DIR: "."
-#     EXCLUDE_DIRS: "./src/test/**/*"
-#     INCLUDE_DIRS: "./**/*.java"
+variables:
+  FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
+  FORTIFY_MEM: "8G"
+  FORTIFY_PROJECT: "$CI_PROJECT_NAME"
+  PROJECT_NAME: "$CI_PROJECT_NAME"
+  FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+  FORTIFY_PROJECT_DIR: "."
+  EXCLUDE_DIRS: "./src/test/**/*"
+  INCLUDE_DIRS: "./**/*.java"        # ← restore glob pattern like old pipeline
 
-#   stage: hp-fortify
-#   image: $FORTIFY_IMAGE
-#   script:
-#     - ls
-#     - SCAN_FILES=""
-#     - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
-#     - for dir in "${INCLUDE_DIRS[@]}"; do
-#         SCAN_FILES="$SCAN_FILES$dir ";
-#       done
-#     - echo "Scanning paths ${SCAN_FILES}"
-#     - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-#     - echo "Excluding paths ${EXCLUDE_FILES}"
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
-#     # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
+.HPFortify:
+  image: "$FORTIFY_IMAGE"
+  stage: hp-fortify
+  tags:
+    - common_runner
+  interruptible: true
+  before_script:
+    - |
+      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
+        -keystore /home/default/custom-truststore.jks \
+        -storepass changeit -noprompt
+  script:
+    - |
+      set -e
 
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
-#     - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
-#     - $BIRTReportGenerator \
-#       -template "Developer Workbook" \
-#       -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
-#       -format PDF \
-#       -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
-#       -showSuppressed \
-#       -showHidden \
-#       -Xmx4G
-#     - echo "PDF generation complete."
-#     - pwd
-#     - echo ${FORTIFY_PROJECT_DIR}
-#     - echo ${PROJECT_NAME}
-#     - ls -lrth "${FORTIFY_PROJECT_DIR}" 
-#   allow_failure: true
-#   artifacts:
-#     paths:
-#       - "./*.fpr"
-#       - "./*.pdf"
-#     expire_in: 1 week
+      # FIX 1: Correct JAVA_TOOL_OPTIONS — plain text, no markdown corruption
+      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+
+      echo "========== Fortify Scan Started =========="
+
+      EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+      echo "Excluding paths: ${EXCLUDE_FILES}"
+      echo "Scanning paths: ${INCLUDE_DIRS}"
+
+      echo "Cleaning..."
+      sourceanalyzer -b "$FORTIFY_PROJECT" -clean
+
+      # FIX 2: Use glob pattern exactly like old pipeline — let Fortify expand it
+      echo "Translating source files..."
+      sourceanalyzer -b "$FORTIFY_PROJECT" \
+        "${INCLUDE_DIRS}" \
+        -exclude "${EXCLUDE_FILES}" \
+        -verbose
+
+      # Verify files were picked up
+      echo "Verifying translated files..."
+      sourceanalyzer -b "$FORTIFY_PROJECT" -show-files
+
+      echo "Running scan..."
+      # FIX 3: No -Xmx on scan (match old pipeline behavior)
+      sourceanalyzer -b "$FORTIFY_PROJECT" \
+        -scan \
+        -format fpr \
+        -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+
+      echo "FPR size: $(ls -lh $FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT)"
+
+      echo "Generating report..."
+      # FIX 4: Move -Xmx to BIRTReportGenerator exactly like old pipeline
+      BIRTReportGenerator \
+        -template "Developer Workbook" \
+        -source "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" \
+        -format PDF \
+        -output "$FORTIFY_PROJECT_DIR/${PROJECT_NAME}_report.pdf" \
+        -showSuppressed \
+        -showHidden \
+        -Xmx4G
+
+      echo "PDF generation complete."
+      ls -lrth "${FORTIFY_PROJECT_DIR}"
+      echo "========== Fortify Scan Completed =========="
+
+  artifacts:
+    paths:
+      - "./*.fpr"
+      - "./*.pdf"
+    expire_in: 1 week
+    when: always
+  allow_failure: true
