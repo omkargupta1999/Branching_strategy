@@ -1,0 +1,245 @@
+You’ve already done most of the pipeline work correctly. The failure now is **purely Kubernetes + registry auth configuration**, and your shared files make the root cause very clear.
+
+---
+
+# 🚨 🔍 Root Cause (Confirmed)
+
+From your pod events:
+
+```text
+invalid username/password: Authentication is required
+```
+
+And from your secret:
+
+```yaml
+type: Opaque   ❌
+```
+
+
+
+---
+
+## ❌ **Primary Issue**
+
+Your secret:
+
+```yaml
+type: Opaque
+```
+
+👉 This is **WRONG for image pull**
+
+Kubernetes expects:
+
+```yaml
+type: kubernetes.io/dockerconfigjson
+```
+
+Because of this:
+
+* Kubelet **ignores your secret**
+* No credentials are sent to JFrog
+* JFrog returns **401 Unauthorized**
+
+---
+
+# ✅ ✅ COMPLETE FIX (Step-by-Step)
+
+---
+
+## ✅ STEP 1 — Delete Wrong Secret
+
+```bash
+oc delete secret jfrog-pull-secret -n dev-admin
+```
+
+---
+
+## ✅ STEP 2 — Create Correct Secret (IMPORTANT)
+
+Use this exact command:
+
+```bash
+oc create secret docker-registry jfrog-pull-secret \
+  --docker-server=artifactory.jfrog.sbi:443 \
+  --docker-username=<JF_USER> \
+  --docker-password=<JF_TOKEN> \
+  --docker-email=devops@sbi \
+  -n dev-admin
+```
+
+👉 DO NOT manually paste base64 JSON
+👉 Let `oc` generate it correctly
+
+---
+
+## ✅ STEP 3 — Verify Secret
+
+```bash
+oc get secret jfrog-pull-secret -n dev-admin -o yaml
+```
+
+You MUST see:
+
+```yaml
+type: kubernetes.io/dockerconfigjson   ✅
+```
+
+---
+
+## ⚠️ STEP 4 — Registry URL Mismatch (CRITICAL)
+
+Your secret JSON earlier had:
+
+```json
+"artifactory.jfrog.sbi"
+```
+
+But your image is:
+
+```text
+artifactory.jfrog.sbi:443
+```
+
+👉 These MUST match exactly
+
+✔ Correct:
+
+```bash
+--docker-server=artifactory.jfrog.sbi:443
+```
+
+---
+
+## ✅ STEP 5 — Attach Secret (Already OK but ensure)
+
+Your deployment has:
+
+```yaml
+imagePullSecrets:
+  - name: jfrog-pull-secret
+```
+
+✔ Good
+
+---
+
+## 🔁 STEP 6 — Restart Pod
+
+```bash
+oc delete pod -n dev-admin -l app.kubernetes.io/name=adminservice
+```
+
+---
+
+# 🔍 OPTIONAL (Recommended Hardening)
+
+Instead of per-deployment config, attach to service account:
+
+```bash
+oc secrets link default jfrog-pull-secret --for=pull -n dev-admin
+```
+
+👉 This avoids future issues
+
+---
+
+# 🧠 Additional Observations (Important)
+
+---
+
+## ⚠️ 1. Your secret content is wrong format
+
+You pasted:
+
+```json
+{
+ "auths": {
+   "artifactory.jfrog.sbi:443": {
+     "auth": "base64..."
+   }
+ }
+}
+```
+
+But your stored secret shows:
+
+```yaml
+auth: eyJ...   (looks like token JSON inside JSON)
+```
+
+👉 This indicates:
+
+* Either double encoding
+* Or wrong token format
+
+✔ Using `oc create secret docker-registry` fixes this automatically
+
+---
+
+## ⚠️ 2. Token vs Password
+
+JFrog expects:
+
+* ✔ Access Token (recommended)
+* OR ✔ API Key
+
+❌ Sometimes password won’t work depending on config
+
+---
+
+## ⚠️ 3. Repo Permission
+
+Ensure your token has:
+
+* `read` permission on:
+
+```
+itepaypg-sbiepay2-docker-local
+```
+
+---
+
+# ✅ FINAL EXPECTED RESULT
+
+After fix:
+
+```bash
+oc get po -n dev-admin
+```
+
+👉 You should see:
+
+```text
+2/2 Running
+```
+
+---
+
+# 🚀 Summary
+
+| Issue             | Status       |
+| ----------------- | ------------ |
+| Secret type wrong | ❌ ROOT CAUSE |
+| Registry mismatch | ⚠️ Possible  |
+| Token formatting  | ⚠️ Risk      |
+| Deployment config | ✅ OK         |
+
+---
+
+# 🔥 If STILL fails
+
+Then next layer is:
+
+* TLS trust issue (JFrog cert not trusted on nodes)
+* Token scope issue
+* Repo path mismatch
+
+---
+
+If you want, I can next:
+👉 validate your JFrog repo + token + access scope
+👉 or give you a **cluster-wide JFrog integration (best practice for OCP)**
+
+Just say 👍
