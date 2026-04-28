@@ -1,63 +1,109 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-1960-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
-Created fresh repository.
-Checking out bd82e63b as detached HEAD (ref is feature_ci)...
-Skipping Git submodules setup
-Downloading artifacts
-00:06
-Downloading artifacts for dockerbuild (163922)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=163922 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:17
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ mkdir -p ~/.jfrog/security/certs
-$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-04-28T09:27:13Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-09:27:17 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-09:27:17 [Info] Using server ID 'epay-server' ([MASKED])
-$ jf rt ping
-OK
-$ set -e # collapsed multi-line command
-time="2026-04-28T09:27:21Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Getting image source signatures
-Copying blob sha256:805419725db17c107d32ed6a9082f622ee1bff113ee87927d364c679b04302b7
-Copying blob sha256:edfa5fd7a14b12ce4e8754f05c2162708bae024790a5c4d9d53d6372749a0860
-Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
-Copying config sha256:a0825020a951501922ee4bbb108c51af733017e92f583c0f696033c48cdb59d9
-Writing manifest to image destination
-Loaded image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260428092116
-time="2026-04-28T09:27:24Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-time="2026-04-28T09:27:28Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Error: normalizing name "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:": normalizing name "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:": invalid reference format
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+# .HPFortify:
+#   tags: 
+#     - common_runner
+#   variables:
+#     FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
+#     FORTIFY_PROJECT: $CI_PROJECT_NAME
+#     PROJECT_NAME: $CI_PROJECT_NAME
+#     FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+#     SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+#     BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+#     FORTIFY_PROJECT_DIR: "."
+#     EXCLUDE_DIRS: "./src/test/**/*"
+#     INCLUDE_DIRS: "./**/*.java"
+
+#   stage: hp-fortify
+#   image: $FORTIFY_IMAGE
+#   script:
+#     - ls
+#     - SCAN_FILES=""
+#     - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
+#     - for dir in "${INCLUDE_DIRS[@]}"; do
+#         SCAN_FILES="$SCAN_FILES$dir ";
+#       done
+#     - echo "Scanning paths ${SCAN_FILES}"
+#     - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+#     - echo "Excluding paths ${EXCLUDE_FILES}"
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
+#     # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
+
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
+#     - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
+#     - $BIRTReportGenerator \
+#       -template "Developer Workbook" \
+#       -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
+#       -format PDF \
+#       -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+#       -showSuppressed \
+#       -showHidden \
+#       -Xmx4G
+#     - echo "PDF generation complete."
+#     - pwd
+#     - echo ${FORTIFY_PROJECT_DIR}
+#     - echo ${PROJECT_NAME}
+#     - ls -lrth "${FORTIFY_PROJECT_DIR}" 
+#   allow_failure: true
+#   artifacts:
+#     paths:
+#       - "./*.fpr"
+#       - "./*.pdf"
+#     expire_in: 1 week
+
+variables:
+  # ── Fortify ─────────────────────────────────────────────────────────────────
+  FORTIFY_IMAGE:    "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
+  FORTIFY_MEM:      "8G"
+
+
+.HPFortify:
+  image: "$FORTIFY_IMAGE"
+  stage: hp-fortify
+  rules:
+    - if: $CI_COMMIT_TAG
+  tags:
+    - common_runner
+  needs:
+    - job: build
+      artifacts: true
+  interruptible: true
+  before_script:
+    - |
+      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
+        -keystore /home/default/custom-truststore.jks -storepass changeit -noprompt
+      export MAVEN_OPTS="${MAVEN_OPTS} \
+        -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
+        -Djavax.net.ssl.trustStorePassword=changeit"
+  script:
+    - sourceanalyzer -clean -b $CI_PROJECT_PATH_SLUG
+    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG
+        mvn $MAVEN_CLI_OPTS clean compile -U -DskipTests=true
+        -Dfortify.sca.exclude=target
+    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG -scan -Xmx${FORTIFY_MEM} -f ${CI_PROJECT_PATH_SLUG}.fpr
+    - BIRTReportGenerator -template "Developer Workbook"
+        -source ${CI_PROJECT_PATH_SLUG}.fpr
+        -format pdf -output ${CI_PROJECT_PATH_SLUG}_report.pdf
+    - FPRUtility -information -search
+        -query "[fortify priority order]:critical OR [fortify priority order]:high"
+        -project ${CI_PROJECT_PATH_SLUG}.fpr > sca_gate.txt
+    - ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
+    - |
+      if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
+        echo -e "\e[31m=========================================\e[0m"
+        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
+        echo -e "\e[31mHigh/Critical Vulnerabilities: $ISSUES\e[0m"
+        echo -e "\e[31m=========================================\e[0m"
+        exit 1
+      else
+        echo -e "\e[32m=========================================\e[0m"
+        echo -e "\e[32m QUALITY GATE PASSED\e[0m"
+        echo -e "\e[32mHigh/Critical Vulnerabilities: 0\e[0m"
+        echo -e "\e[32m=========================================\e[0m"
+      fi
+  artifacts:
+    paths:
+      - ${CI_PROJECT_PATH_SLUG}_report.pdf
+    expire_in: 1 day
+    when: always
+  allow_failure: true
