@@ -1,95 +1,52 @@
-variables:
-  FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
-  FORTIFY_MEM: "8G"
-  FORTIFY_PROJECT: "$CI_PROJECT_NAME"
-  PROJECT_NAME: "$CI_PROJECT_NAME"
-  FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
-  FORTIFY_PROJECT_DIR: "."
-  EXCLUDE_DIRS: "./src/test/**/*"
+# .HPFortify:
+#   tags: 
+#     - common_runner
+#   variables:
+#     FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
+#     FORTIFY_PROJECT: $CI_PROJECT_NAME
+#     PROJECT_NAME: $CI_PROJECT_NAME
+#     FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+#     SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+#     BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+#     FORTIFY_PROJECT_DIR: "."
+#     EXCLUDE_DIRS: "./src/test/**/*"
+#     INCLUDE_DIRS: "./**/*.java"
 
-.HPFortify:
-  image: "$FORTIFY_IMAGE"
-  stage: hp-fortify
-  tags:
-    - common_runner
-  interruptible: true
-  before_script:
-    - |
-      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
-        -keystore /home/default/custom-truststore.jks \
-        -storepass changeit -noprompt
-      # FIX 1: Correct JAVA_TOOL_OPTIONS — no markdown, plain text
-      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-  script:
-    - |
-      set -e
-      echo "========== Fortify Scan Started =========="
+#   stage: hp-fortify
+#   image: $FORTIFY_IMAGE
+#   script:
+#     - ls
+#     - SCAN_FILES=""
+#     - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
+#     - for dir in "${INCLUDE_DIRS[@]}"; do
+#         SCAN_FILES="$SCAN_FILES$dir ";
+#       done
+#     - echo "Scanning paths ${SCAN_FILES}"
+#     - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+#     - echo "Excluding paths ${EXCLUDE_FILES}"
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
+#     # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
 
-      # FIX 2: Re-export here so script block also has it (before_script env may not persist)
-      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-
-      EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-
-      echo "Cleaning..."
-      sourceanalyzer -b "$FORTIFY_PROJECT" -clean
-
-      echo "Collecting Java files..."
-      SCAN_FILES=$(find src/main/java -type f -name "*.java" | tr '\n' ' ')
-
-      if [ -z "$SCAN_FILES" ]; then
-        echo "ERROR: No Java files found under src/main/java"
-        exit 1
-      fi
-
-      echo "Found files: $(echo $SCAN_FILES | wc -w) Java files"
-
-      # FIX 3: Add -source 17 to match your Java 17 image
-      # FIX 4: Add -cp to include compiled classes/jars for proper dependency resolution
-      echo "Translating source files..."
-      sourceanalyzer -b "$FORTIFY_PROJECT" \
-        -source 17 \
-        -cp "$(find . -name '*.jar' | tr '\n' ':')target/classes" \
-        $SCAN_FILES \
-        -exclude "$EXCLUDE_FILES" \
-        -logfile "$FORTIFY_PROJECT_DIR/fortify-translate.log" \
-        -verbose
-
-      # FIX 5: Verify build ID has content before scanning
-      echo "Build ID contents:"
-      sourceanalyzer -b "$FORTIFY_PROJECT" -show-files
-
-      echo "Running scan..."
-      sourceanalyzer -b "$FORTIFY_PROJECT" \
-        -scan \
-        -Xmx${FORTIFY_MEM} \
-        -format fpr \
-        -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" \
-        -logfile "$FORTIFY_PROJECT_DIR/fortify-scan.log"
-
-      # FIX 6: Check FPR is not empty before generating report
-      FPR_SIZE=$(stat -c%s "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 2>/dev/null || echo 0)
-      echo "FPR file size: $FPR_SIZE bytes"
-      if [ "$FPR_SIZE" -lt 1000 ]; then
-        echo "WARNING: FPR file is suspiciously small — report may be blank"
-        cat "$FORTIFY_PROJECT_DIR/fortify-scan.log" || true
-      fi
-
-      echo "Generating report..."
-      BIRTReportGenerator \
-        -template "Developer Workbook" \
-        -source "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" \
-        -format PDF \
-        -output "$FORTIFY_PROJECT_DIR/${PROJECT_NAME}_report.pdf" \
-        -showSuppressed \
-        -showHidden
-
-      echo "========== Fortify Scan Completed =========="
-
-  artifacts:
-    paths:
-      - "*.fpr"
-      - "*.pdf"
-      - "*.log"       # include logs for debugging
-    expire_in: 1 week
-    when: always
-  allow_failure: true
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
+#     - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
+#     - $BIRTReportGenerator \
+#       -template "Developer Workbook" \
+#       -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
+#       -format PDF \
+#       -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+#       -showSuppressed \
+#       -showHidden \
+#       -Xmx4G
+#     - echo "PDF generation complete."
+#     - pwd
+#     - echo ${FORTIFY_PROJECT_DIR}
+#     - echo ${PROJECT_NAME}
+#     - ls -lrth "${FORTIFY_PROJECT_DIR}" 
+#   allow_failure: true
+#   artifacts:
+#     paths:
+#       - "./*.fpr"
+#       - "./*.pdf"
+#     expire_in: 1 week
