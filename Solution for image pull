@@ -1,109 +1,99 @@
-# .HPFortify:
-#   tags: 
-#     - common_runner
-#   variables:
-#     FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
-#     FORTIFY_PROJECT: $CI_PROJECT_NAME
-#     PROJECT_NAME: $CI_PROJECT_NAME
-#     FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
-#     SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
-#     BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
-#     FORTIFY_PROJECT_DIR: "."
-#     EXCLUDE_DIRS: "./src/test/**/*"
-#     INCLUDE_DIRS: "./**/*.java"
-
-#   stage: hp-fortify
-#   image: $FORTIFY_IMAGE
-#   script:
-#     - ls
-#     - SCAN_FILES=""
-#     - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
-#     - for dir in "${INCLUDE_DIRS[@]}"; do
-#         SCAN_FILES="$SCAN_FILES$dir ";
-#       done
-#     - echo "Scanning paths ${SCAN_FILES}"
-#     - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-#     - echo "Excluding paths ${EXCLUDE_FILES}"
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
-#     # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
-
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
-#     - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
-#     - $BIRTReportGenerator \
-#       -template "Developer Workbook" \
-#       -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
-#       -format PDF \
-#       -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
-#       -showSuppressed \
-#       -showHidden \
-#       -Xmx4G
-#     - echo "PDF generation complete."
-#     - pwd
-#     - echo ${FORTIFY_PROJECT_DIR}
-#     - echo ${PROJECT_NAME}
-#     - ls -lrth "${FORTIFY_PROJECT_DIR}" 
-#   allow_failure: true
-#   artifacts:
-#     paths:
-#       - "./*.fpr"
-#       - "./*.pdf"
-#     expire_in: 1 week
-
 variables:
-  # ── Fortify ─────────────────────────────────────────────────────────────────
-  FORTIFY_IMAGE:    "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
-  FORTIFY_MEM:      "8G"
+  # ── Fortify Image ─────────────────────────────────────────────
+  FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
+  FORTIFY_MEM: "8G"
 
+  # ── Your Existing Variables (Preserved) ───────────────────────
+  FORTIFY_PROJECT: $CI_PROJECT_NAME
+  PROJECT_NAME: $CI_PROJECT_NAME
+  FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+  FORTIFY_PROJECT_DIR: "."
+  EXCLUDE_DIRS: "./src/test/**/*"
+  INCLUDE_DIRS: "./**/*.java"
 
 .HPFortify:
   image: "$FORTIFY_IMAGE"
   stage: hp-fortify
-  rules:
-    - if: $CI_COMMIT_TAG
   tags:
     - common_runner
   needs:
     - job: build
       artifacts: true
   interruptible: true
+
   before_script:
     - |
       keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
         -keystore /home/default/custom-truststore.jks -storepass changeit -noprompt
-      export MAVEN_OPTS="${MAVEN_OPTS} \
-        -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
+
+      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
         -Djavax.net.ssl.trustStorePassword=changeit"
+
   script:
-    - sourceanalyzer -clean -b $CI_PROJECT_PATH_SLUG
-    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG
-        mvn $MAVEN_CLI_OPTS clean compile -U -DskipTests=true
-        -Dfortify.sca.exclude=target
-    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG -scan -Xmx${FORTIFY_MEM} -f ${CI_PROJECT_PATH_SLUG}.fpr
-    - BIRTReportGenerator -template "Developer Workbook"
-        -source ${CI_PROJECT_PATH_SLUG}.fpr
-        -format pdf -output ${CI_PROJECT_PATH_SLUG}_report.pdf
-    - FPRUtility -information -search
-        -query "[fortify priority order]:critical OR [fortify priority order]:high"
-        -project ${CI_PROJECT_PATH_SLUG}.fpr > sca_gate.txt
+    # ── Prepare include/exclude (from your working config) ───────
+    - echo "Preparing scan paths..."
+    - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+    - echo "Excluding: $EXCLUDE_FILES"
+
+    # ── Clean build ID ───────────────────────────────────────────
+    - sourceanalyzer -b $FORTIFY_PROJECT -clean
+
+    # ── Build + translate (GRADLE based) ─────────────────────────
+    - |
+      sourceanalyzer -b $FORTIFY_PROJECT \
+        -exclude "$EXCLUDE_FILES" \
+        ./gradlew clean build -x test
+
+    # ── Scan ────────────────────────────────────────────────────
+    - |
+      sourceanalyzer -b $FORTIFY_PROJECT \
+        -scan -Xmx${FORTIFY_MEM} \
+        -format fpr \
+        -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+
+    - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+
+    # ── Generate PDF (your old + new merged) ─────────────────────
+    - |
+      BIRTReportGenerator \
+        -template "Developer Workbook" \
+        -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
+        -format PDF \
+        -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+        -showSuppressed \
+        -showHidden \
+        -Xmx4G
+
+    - echo "PDF generation complete."
+
+    # ── QUALITY GATE (from new config) ───────────────────────────
+    - |
+      FPRUtility -information -search \
+        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
+        -project "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" > sca_gate.txt
+
     - ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
+
     - |
       if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
-        echo -e "\e[31m=========================================\e[0m"
-        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
-        echo -e "\e[31mHigh/Critical Vulnerabilities: $ISSUES\e[0m"
-        echo -e "\e[31m=========================================\e[0m"
+        echo "========================================="
+        echo "QUALITY GATE FAILED"
+        echo "High/Critical Vulnerabilities: $ISSUES"
+        echo "========================================="
         exit 1
       else
-        echo -e "\e[32m=========================================\e[0m"
-        echo -e "\e[32m QUALITY GATE PASSED\e[0m"
-        echo -e "\e[32mHigh/Critical Vulnerabilities: 0\e[0m"
-        echo -e "\e[32m=========================================\e[0m"
+        echo "========================================="
+        echo "QUALITY GATE PASSED"
+        echo "High/Critical Vulnerabilities: 0"
+        echo "========================================="
       fi
+
   artifacts:
     paths:
-      - ${CI_PROJECT_PATH_SLUG}_report.pdf
-    expire_in: 1 day
+      - "./*.fpr"
+      - "./*.pdf"
+      - "sca_gate.txt"
+    expire_in: 1 week
     when: always
+
   allow_failure: true
