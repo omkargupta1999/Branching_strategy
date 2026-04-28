@@ -1,101 +1,58 @@
-variables:
-  # ── Fortify Image ─────────────────────────────────────────────
-  FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
-  FORTIFY_MEM: "8G"
+Getting this error now after i used the suggested yaml for fortify ...
 
-  # ── Existing Variables ────────────────────────────────────────
-  FORTIFY_PROJECT: "$CI_PROJECT_NAME"
-  PROJECT_NAME: "$CI_PROJECT_NAME"
-  FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
-  FORTIFY_PROJECT_DIR: "."
-  EXCLUDE_DIRS: "./src/test/**/*"
-  INCLUDE_DIRS: "./**/*.java"
 
-.HPFortify:
-  image: "$FORTIFY_IMAGE"
-  stage: hp-fortify
-  tags:
-    - common_runner
-  needs:
-    - job: build
-      artifacts: true
-  interruptible: true
-
-  before_script:
-    - |
-      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
-        -keystore /home/default/custom-truststore.jks \
-        -storepass changeit -noprompt
-
-      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
-      -Djavax.net.ssl.trustStorePassword=changeit"
-
-  script:
-    - echo "Preparing scan paths..."
-
-    - |
-      EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-      echo "Excluding: $EXCLUDE_FILES"
-
-    - |
-      sourceanalyzer -b "$FORTIFY_PROJECT" -clean
-
-    - |
-      echo "Running Gradle build with Fortify translation..."
-      sourceanalyzer -b "$FORTIFY_PROJECT" \
-        -exclude "$EXCLUDE_FILES" \
-        ./gradlew clean build -x test
-
-    - |
-      echo "Running Fortify scan..."
-      sourceanalyzer -b "$FORTIFY_PROJECT" \
-        -scan -Xmx${FORTIFY_MEM} \
-        -format fpr \
-        -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-
-    - |
-      ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-
-    - |
-      echo "Generating PDF report..."
-      BIRTReportGenerator \
-        -template "Developer Workbook" \
-        -source "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" \
-        -format PDF \
-        -output "$FORTIFY_PROJECT_DIR/${PROJECT_NAME}_report.pdf" \
-        -showSuppressed \
-        -showHidden \
-        -Xmx4G
-
-    - echo "PDF generation complete."
-
-    - |
-      echo "Running Fortify quality gate..."
-      FPRUtility -information -search \
-        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
-        -project "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" > sca_gate.txt
-
-    - |
-      ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
-      if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
-        echo "========================================="
-        echo "QUALITY GATE FAILED"
-        echo "High/Critical Vulnerabilities: $ISSUES"
-        echo "========================================="
-        exit 1
-      else
-        echo "========================================="
-        echo "QUALITY GATE PASSED"
-        echo "High/Critical Vulnerabilities: 0"
-        echo "========================================="
-      fi
-
-  artifacts:
-    paths:
-      - "*.fpr"
-      - "*.pdf"
-      - "sca_gate.txt"
-    expire_in: 1 week
-    when: always
-
-  allow_failure: true
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4@sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1960-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:02
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out 41e5efac as detached HEAD (ref is feature_ci)...
+Skipping Git submodules setup
+Downloading artifacts
+00:03
+Downloading artifacts for build (164193)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=164193 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:07
+Using docker image sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4@sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 ...
+$ keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \ # collapsed multi-line command
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Certificate was added to keystore
+$ echo "Preparing scan paths..."
+Preparing scan paths...
+$ EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g') # collapsed multi-line command
+Excluding: ./src/test/**/*
+$ sourceanalyzer -b "$FORTIFY_PROJECT" -clean
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit
+$ echo "Running Gradle build with Fortify translation..." # collapsed multi-line command
+Running Gradle build with Fortify translation...
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit
+[error]: Error running build command ./gradlew: Cannot run program "./gradlew" (in directory "/builds/itepaypg-sbiepay2/application/backend/epay_admin_service"): error=2, No such file or directory
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: *.fpr: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_service) 
+WARNING: *.pdf: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_service) 
+WARNING: sca_gate.txt: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
