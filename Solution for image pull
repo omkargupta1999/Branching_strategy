@@ -1,165 +1,35 @@
-..........
-
-Stage yaml ....
-
-
-variables:
-  JF_SERVER_ID: "epay-server"
-  TAR_NAME: "$CI_PROJECT_NAME.tar"
-  RELEASES_REPO: "$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-
-# JFrog + cert setup for JDK runners
-.jfrog_jdk_setup: &jfrog_jdk_setup
-  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-  - update-ca-trust extract
-  - mkdir -p ~/.jfrog/security/certs
-  - cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-  - keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT"
-      -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      "$JF_SERVER_ID"
-  - jf config use "$JF_SERVER_ID"
-  - jf rt ping
-
-# JFrog + cert setup for Podman runners
-.jfrog_podman_setup: &jfrog_podman_setup
-  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-  - mkdir -p ~/.jfrog/security/certs
-  - cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-  - update-ca-trust extract
-  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      "$JF_SERVER_ID"
-  - jf config use "$JF_SERVER_ID"
-  - jf rt ping
-
-
-
-.docker_base:
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  tags:
-    - common_runner
-  before_script: *jfrog_podman_setup
-
-
-.dockerbuild:
-  extends: .docker_base
-  stage: dockerbuild
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  tags:
-    - common_runner
-  allow_failure: true
-  script:
-    | 
-    echo $VERSION
-    TAG="${VERSION}"
-    echo "Generated Tag.. ${TAG}"
-    COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-    echo "Image: ${COMPUTED_IMAGE_TAG}"
-    echo "COMPUTED_IMAGE_TAG=${COMPUTED_IMAGE_TAG}" >> docker.env
-    echo "Building Docker image for $COMPUTED_IMAGE_TAG"
-    podman build -t "${COMPUTED_IMAGE_TAG}" -f Dockerfile --build-arg ENV=$ENV --build-arg VERSION=$TAG
-    podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
-    echo "Image built and saved to ${TAR_NAME}"
-  artifacts:
-    paths:
-      - "$TAR_NAME"
-    reports:
-      dotenv: docker.env
-    expire_in: 1 day
-    when: on_success
-
-
-# STEP 2 — Scan tar before pushing
-.docker_scan_image:
-  extends: .docker_base
-  stage: docker_scan
-  needs:
-    - job: dockerbuild
-      artifacts: true
-  interruptible: true
-  script:
-    - |
-      set -e
-      echo "Scanning: ${COMPUTED_IMAGE_TAG}"
-      jf scan "${TAR_NAME}" --watches=EPAY-WATCHER --fail=true
-      echo "Image scan passed"
-
-# STEP 3 — Push only after scan passes
-.docker_push_image:
-  extends: .docker_base
-  stage: docker_push
-  needs:
-    - job: docker_scan_image
-      artifacts: true
-    - job: dockerbuild
-      artifacts: true
-  script:
-    - |
-      set -e
-      podman load -i "${TAR_NAME}"
-      #echo "Pushing ${COMPUTED_IMAGE_TAG} to ${RELEASES_REPO}"
-      #jf rt podman-push "${COMPUTED_IMAGE_TAG}" "${RELEASES_REPO}"
-      podman login -u='microservices+dev' -p='5224MEZ2FV0IOSBQ5RPQUACOOAE5QQTY9PW2RZLDPIIA3NJZ2R7HZA1AUSTLWD7V' dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi
-      podman tag "${COMPUTED_IMAGE_TAG}" "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/$IMAGE_NAME:$TAG"
-      podman push dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/$IMAGE_NAME:$TAG --tls-verify=false
-  artifacts:
-    expire_in: 1 day
-    when: on_success
-
-
-
-
-
-
-getting below error in our pipeline ........................
-
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
 00:01
 Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
 Preparing environment
 00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-1960-concurrent-0 via PE3DSOPGRUNNERS6...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1960-concurrent-0 via PE3DSOPGrunners3...
 Getting source from Git repository
-00:02
+00:03
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
 Created fresh repository.
-Checking out cdc04943 as detached HEAD (ref is feature_ci)...
+Checking out bd82e63b as detached HEAD (ref is feature_ci)...
 Skipping Git submodules setup
 Downloading artifacts
-00:07
-Downloading artifacts for dockerbuild (163889)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=163889 responseStatus=200 OK token=eyJraWQiO
+00:06
+Downloading artifacts for dockerbuild (163922)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=163922 responseStatus=200 OK token=eyJraWQiO
 Executing "step_script" stage of the job script
-00:08
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+00:17
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
 $ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
 $ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
 $ mkdir -p ~/.jfrog/security/certs
@@ -167,22 +37,27 @@ $ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
 $ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
 $ update-ca-trust extract
 $ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+time="2026-04-28T09:27:13Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
 Login Succeeded!
 $ jf config add \ # collapsed multi-line command
-09:16:38 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+09:27:17 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
 $ jf config use "$JF_SERVER_ID"
-09:16:38 [Info] Using server ID 'epay-server' ([MASKED])
+09:27:17 [Info] Using server ID 'epay-server' ([MASKED])
 $ jf rt ping
 OK
 $ set -e # collapsed multi-line command
+time="2026-04-28T09:27:21Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
 Getting image source signatures
-Copying blob sha256:92c30502d1413921d7f8e37eede93afdffea407ac8bc5b5397e1fa96ca2baf4a
-Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
+Copying blob sha256:805419725db17c107d32ed6a9082f622ee1bff113ee87927d364c679b04302b7
 Copying blob sha256:edfa5fd7a14b12ce4e8754f05c2162708bae024790a5c4d9d53d6372749a0860
-Copying config sha256:fc4a858580b32789c5ab81e42a80ff0ce4dff84e7614f1efc973cc9799a54b6e
+Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
+Copying config sha256:a0825020a951501922ee4bbb108c51af733017e92f583c0f696033c48cdb59d9
 Writing manifest to image destination
-Loaded image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260428091122
-Error: authenticating creds for "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi": pinging container registry dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi: Get "https://dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Loaded image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:v-feature_ci-20260428092116
+time="2026-04-28T09:27:24Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+Login Succeeded!
+time="2026-04-28T09:27:28Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+Error: normalizing name "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:": normalizing name "dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:": invalid reference format
 Cleaning up project directory and file based variables
-00:01
+00:00
 ERROR: Job failed: exit code 1
