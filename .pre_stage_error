@@ -1,140 +1,326 @@
-settings.gradle......................
+Good — now we move into **Section 3.1 (DevOps Repository Branching Strategy)**.
+This part is **much simpler than Application GitFlow**, but it is **very strict** because it controls CI/CD and deployment behavior.
 
+I’ll give you a **clear, implementation-grade plan** — what to do, where to do it, and why.
 
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = 'token'
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = 'token'
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-        flatDir {
-            dirs "libs"
-        }
-    }
-}
-rootProject.name = 'epay_admin_portal_service'
+---
 
-Build.gradle.......................
+# 🧠 WHAT SECTION 3.1 IS ABOUT
 
+From your document, DevOps repos (like:
 
+* `ci-templates`
+* `deployment`)
 
+do **NOT use complex GitFlow**
 
+👉 Instead they follow:
 
+```text
+feature/* → main
+```
 
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version "${spring_boot}"
-    id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+---
 
-group = 'com.epay.admin.portal'
-version = "${version}"
+# 🎯 OBJECTIVE
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
+```text
+Single stable branch (main)
++
+Controlled changes via MR
++
+Strict approval before merge
+```
 
-// repositories {
-//     mavenCentral()
-//     flatDir {
-//         dirs "libs"
-//     }
-//     maven {
-//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-//         credentials(PasswordCredentials) {
-//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
-//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
-//         }
-//         authentication {
-//             basic(BasicAuthentication)
-//         }
-//     }
-// }
+---
 
-dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
-    implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
+# 🧱 DEVOPS REPO DESIGN
 
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation "software.amazon.awssdk:s3:${aws_s3}"
-    implementation "commons-io:commons-io:${common_io}"
+## Applies to:
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    implementation "org.modelmapper:modelmapper:${modelmapper}"
-    implementation "javax.persistence:javax.persistence-api:${javax_persistence}"
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation "org.springframework.boot:spring-boot-starter-webflux"
+* ci-templates repo
+* deployment repo (Helm charts)
 
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwt}"
-    implementation "io.jsonwebtoken:jjwt-api:${jjwt}"
-    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwt}"
+---
 
-    //Mapstruct
-    implementation "org.mapstruct:mapstruct:${mapstruct}"
-    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
+## Final Flow:
 
-    //Spring security
-    implementation("org.springframework.security:spring-security-web:6.5.6")
-    implementation("org.springframework.security:spring-security-core:6.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-security:3.5.7")
+```text
+feature/* → main
+```
 
-    //SBI Utilities
-    implementation "com.sbi.epay:logging-service:${sbi_logging}"
-    implementation "com.sbi.epay:captcha-service:${sbi_captcha}"
-//	implementation 'name:captcha-service-0.1.0'
-    implementation "com.sbi.epay:notification-service:${sbi_notification}"
-    implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
-    //implementation "com.sbi.epay:authentication-service:${sbi_auth}"
-    implementation 'name:authentication-service-0.1.1'
-    implementation 'org.hibernate.orm:hibernate-envers'
+👉 That’s it. No:
 
-    implementation "org.thymeleaf:thymeleaf:${thymeleaf}"
-    implementation "org.thymeleaf:thymeleaf-spring5:${thymeleaf}"
-    implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+* develop ❌
+* release ❌
+* hotfix ❌
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+---
 
-    implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
-    implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
-}
+# 🚀 IMPLEMENTATION — STEP BY STEP
 
-tasks.named('test') {
-    useJUnitPlatform()
-}
+---
 
-bootJar {
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-}
+# ✅ STEP 1 — VERIFY MAIN BRANCH
+
+Go to:
+
+```text
+Project → Repository → Branches
+```
+
+Ensure:
+
+```text
+main exists ✅
+```
+
+---
+
+# ✅ STEP 2 — REMOVE UNUSED BRANCHES
+
+If present:
+
+```text
+develop ❌
+release/* ❌
+hotfix/* ❌
+```
+
+👉 Delete them (DevOps repos should stay simple)
+
+---
+
+# ✅ STEP 3 — PROTECT MAIN BRANCH (CRITICAL)
+
+Go to:
+
+```text
+Settings → Repository → Protected Branches
+```
+
+---
+
+## 🔒 Configure `main`
+
+| Setting          | Value       |
+| ---------------- | ----------- |
+| Allowed to push  | ❌ No one    |
+| Allowed to merge | Maintainers |
+| Allow force push | ❌ Disabled  |
+
+---
+
+### 🔥 RESULT:
+
+| Action                 | Allowed |
+| ---------------------- | ------- |
+| Direct push to main    | ❌       |
+| Merge via MR           | ✅       |
+| Only Maintainers merge | ✅       |
+
+---
+
+# ✅ STEP 4 — ENFORCE MR-ONLY FLOW
+
+Go to:
+
+```text
+Settings → General → Merge Requests
+```
+
+Enable:
+
+* ✅ Pipelines must succeed
+* ✅ Only allow merge if pipeline succeeds
+* ✅ Delete source branch after merge
+
+---
+
+# ✅ STEP 5 — DEFINE WORKFLOW FOR TEAM
+
+---
+
+## 🔹 Developer Workflow
+
+```bash
+git checkout -b feature/update-helm-values
+git push origin feature/update-helm-values
+```
+
+---
+
+## 🔹 Create MR
+
+```text
+feature/* → main
+```
+
+---
+
+## 🔹 Approval Flow (already configured)
+
+MR requires:
+
+* Architect approval
+* PM approval
+* Bank approval
+
+---
+
+# 🚀 STEP 6 — UPDATE CI PIPELINE (IMPORTANT)
+
+Your `.gitlab-ci.yml` must support feature branch + main.
+
+---
+
+## Example:
+
+```yaml
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+```
+
+---
+
+## Example jobs:
+
+```yaml
+build:
+  script:
+    - echo "Build"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+
+deploy:
+  script:
+    - echo "Deploy"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+```
+
+---
+
+# 🧠 IMPORTANT BEHAVIOR
+
+| Branch    | Action       |
+| --------- | ------------ |
+| feature/* | Build + test |
+| main      | Deploy       |
+
+---
+
+# 🧪 STEP 7 — VALIDATION TEST
+
+---
+
+## 🔧 Test 1 — Direct Push
+
+```bash
+git push origin main
+```
+
+👉 ❌ Should FAIL
+
+---
+
+## 🔧 Test 2 — Feature Flow
+
+```bash
+feature/test → main
+```
+
+👉 ✔ MR created
+👉 ✔ Pipeline runs
+👉 ✔ Cannot merge without approval
+
+---
+
+## 🔧 Test 3 — After Merge
+
+👉 Code merged into main
+👉 Deployment pipeline runs
+
+---
+
+# ⚠️ CRITICAL GOVERNANCE RULE
+
+```text
+main = PRODUCTION
+```
+
+So:
+
+* ❌ No direct commit
+* ❌ No bypass
+* ✅ Only approved MR
+
+---
+
+# 📊 FINAL STATE AFTER SECTION 3.1
+
+| Control             | Status |
+| ------------------- | ------ |
+| Single branch model | ✅      |
+| Protected main      | ✅      |
+| MR-only flow        | ✅      |
+| CI aligned          | ✅      |
+
+---
+
+# 🧠 WHY DEVOPS IS SIMPLE
+
+Because:
+
+| Repo Type   | Strategy              |
+| ----------- | --------------------- |
+| DevOps      | Stable + controlled   |
+| Application | Complex (multi-stage) |
+
+---
+
+# ⚠️ COMMON MISTAKES
+
+| Mistake                 | Impact              |
+| ----------------------- | ------------------- |
+| Creating develop branch | ❌ Not required      |
+| Allowing push to main   | 🔴 Critical risk    |
+| Skipping approvals      | 🔴 Governance break |
+
+---
+
+# 🚀 WHERE YOU ARE NOW
+
+| Section              | Status              |
+| -------------------- | ------------------- |
+| Section 2            | ✅ COMPLETE          |
+| Section 3.1 (DevOps) | ⏳ You implement now |
+
+---
+
+# 🚀 NEXT STEP
+
+After completing this:
+
+👉 We move to:
+
+## 🔥 Section 3 (Application GitFlow)
+
+AND
+
+## 🔥 Section 4 (Approval flow per branch)
+
+---
+
+# 💬 BEFORE MOVING AHEAD
+
+After you implement:
+
+👉 Send screenshot of:
+
+* Protected branch config
+* MR settings
+
+I’ll validate before we move to Application (important).
