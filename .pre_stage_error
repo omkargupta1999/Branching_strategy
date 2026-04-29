@@ -1,326 +1,204 @@
-Good — now we move into **Section 3.1 (DevOps Repository Branching Strategy)**.
-This part is **much simpler than Application GitFlow**, but it is **very strict** because it controls CI/CD and deployment behavior.
-
-I’ll give you a **clear, implementation-grade plan** — what to do, where to do it, and why.
+Here are the **three files exactly as you need them**, clean and ready to paste into your repo.
 
 ---
 
-# 🧠 WHAT SECTION 3.1 IS ABOUT
-
-From your document, DevOps repos (like:
-
-* `ci-templates`
-* `deployment`)
-
-do **NOT use complex GitFlow**
-
-👉 Instead they follow:
-
-```text
-feature/* → main
-```
-
----
-
-# 🎯 OBJECTIVE
-
-```text
-Single stable branch (main)
-+
-Controlled changes via MR
-+
-Strict approval before merge
-```
-
----
-
-# 🧱 DEVOPS REPO DESIGN
-
-## Applies to:
-
-* ci-templates repo
-* deployment repo (Helm charts)
-
----
-
-## Final Flow:
-
-```text
-feature/* → main
-```
-
-👉 That’s it. No:
-
-* develop ❌
-* release ❌
-* hotfix ❌
-
----
-
-# 🚀 IMPLEMENTATION — STEP BY STEP
-
----
-
-# ✅ STEP 1 — VERIFY MAIN BRANCH
-
-Go to:
-
-```text
-Project → Repository → Branches
-```
-
-Ensure:
-
-```text
-main exists ✅
-```
-
----
-
-# ✅ STEP 2 — REMOVE UNUSED BRANCHES
-
-If present:
-
-```text
-develop ❌
-release/* ❌
-hotfix/* ❌
-```
-
-👉 Delete them (DevOps repos should stay simple)
-
----
-
-# ✅ STEP 3 — PROTECT MAIN BRANCH (CRITICAL)
-
-Go to:
-
-```text
-Settings → Repository → Protected Branches
-```
-
----
-
-## 🔒 Configure `main`
-
-| Setting          | Value       |
-| ---------------- | ----------- |
-| Allowed to push  | ❌ No one    |
-| Allowed to merge | Maintainers |
-| Allow force push | ❌ Disabled  |
-
----
-
-### 🔥 RESULT:
-
-| Action                 | Allowed |
-| ---------------------- | ------- |
-| Direct push to main    | ❌       |
-| Merge via MR           | ✅       |
-| Only Maintainers merge | ✅       |
-
----
-
-# ✅ STEP 4 — ENFORCE MR-ONLY FLOW
-
-Go to:
-
-```text
-Settings → General → Merge Requests
-```
-
-Enable:
-
-* ✅ Pipelines must succeed
-* ✅ Only allow merge if pipeline succeeds
-* ✅ Delete source branch after merge
-
----
-
-# ✅ STEP 5 — DEFINE WORKFLOW FOR TEAM
-
----
-
-## 🔹 Developer Workflow
-
-```bash
-git checkout -b feature/update-helm-values
-git push origin feature/update-helm-values
-```
-
----
-
-## 🔹 Create MR
-
-```text
-feature/* → main
-```
-
----
-
-## 🔹 Approval Flow (already configured)
-
-MR requires:
-
-* Architect approval
-* PM approval
-* Bank approval
-
----
-
-# 🚀 STEP 6 — UPDATE CI PIPELINE (IMPORTANT)
-
-Your `.gitlab-ci.yml` must support feature branch + main.
-
----
-
-## Example:
+# 📄 1. `config.yaml`
 
 ```yaml
-workflow:
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+gitlab:
+  url: "https://gitlab.epay.sbi"
+
+repos:
+  - "epay/infra/devops/ci-templates"
+  - "epay/infra/devops/deployment"
+
+rbac:
+  groups:
+    - name: "epay-gitlab-bank-infra-owner"
+      access: 50
+    - name: "epay-gitlab-bank-infra-maintainer"
+      access: 40
+    - name: "epay-gitlab-vendor-infra-maintainer"
+      access: 40
+    - name: "epay-gitlab-vendor-infra-developer"
+      access: 30
+
+branch_protection:
+  name: "main"
+  push_access: 0
+  merge_access: 40
+
+approvals:
+  - name: "Bank Owner"
+    group: "epay-gitlab-bank-infra-owner"
+  - name: "Bank Maintainer"
+    group: "epay-gitlab-bank-infra-maintainer"
+  - name: "Vendor Architect"
+    group: "epay-gitlab-vendor-infra-maintainer"
+  - name: "Vendor PM"
+    group: "epay-gitlab-vendor-pm"
 ```
 
 ---
 
-## Example jobs:
+# 🐍 2. `rbac_devops.py`
+
+```python
+import gitlab
+import yaml
+import os
+
+# =========================
+# LOAD CONFIG
+# =========================
+with open("config.yaml") as f:
+    config = yaml.safe_load(f)
+
+GITLAB_URL = config["gitlab"]["url"]
+TOKEN = os.getenv("GITLAB_TOKEN")
+
+if not TOKEN:
+    raise Exception("❌ GITLAB_TOKEN not set")
+
+gl = gitlab.Gitlab(GITLAB_URL, private_token=TOKEN)
+
+# =========================
+# HELPERS
+# =========================
+def get_group_id(name):
+    groups = gl.groups.list(search=name, all=True)
+    for g in groups:
+        if name in g.full_path:
+            return g.id
+    return None
+
+# =========================
+# PROCESS EACH DEVOPS REPO
+# =========================
+for repo in config["repos"]:
+    print(f"\n🔧 Processing: {repo}")
+
+    project = gl.projects.get(repo)
+
+    # -----------------------------------
+    # 1. APPLY RBAC (GROUP SHARING)
+    # -----------------------------------
+    for g in config["rbac"]["groups"]:
+        gid = get_group_id(g["name"])
+        if not gid:
+            print(f"❌ Group not found: {g['name']}")
+            continue
+
+        try:
+            project.share(gid, g["access"])
+            print(f"✔ Added group: {g['name']}")
+        except:
+            print(f"ℹ Already exists: {g['name']}")
+
+    # -----------------------------------
+    # 2. PROTECT MAIN BRANCH
+    # -----------------------------------
+    try:
+        project.protectedbranches.create({
+            "name": config["branch_protection"]["name"],
+            "push_access_level": config["branch_protection"]["push_access"],
+            "merge_access_level": config["branch_protection"]["merge_access"]
+        })
+        print("✔ Main branch protected")
+    except:
+        print("ℹ Main already protected")
+
+    # -----------------------------------
+    # 3. CREATE APPROVAL RULES
+    # -----------------------------------
+    existing_rules = [r.name for r in project.approvalrules.list(all=True)]
+
+    for rule in config["approvals"]:
+        if rule["name"] in existing_rules:
+            print(f"ℹ Rule exists: {rule['name']}")
+            continue
+
+        gid = get_group_id(rule["group"])
+        if not gid:
+            print(f"❌ Approval group missing: {rule['group']}")
+            continue
+
+        project.approvalrules.create({
+            "name": rule["name"],
+            "approvals_required": 1,
+            "group_ids": [gid]
+        })
+
+        print(f"✔ Rule created: {rule['name']}")
+
+    # -----------------------------------
+    # 4. MR SETTINGS
+    # -----------------------------------
+    project.merge_requests_author_approval = False
+    project.reset_approvals_on_push = True
+    project.save()
+
+    print("✔ MR settings applied")
+
+print("\n✅ ALL DEVOPS REPOS CONFIGURED")
+```
+
+---
+
+# ⚙️ 3. `.gitlab-ci.yml`
 
 ```yaml
-build:
+stages:
+  - rbac
+
+rbac-devops:
+  stage: rbac
+  image: registry.sbi.local/epay/rbac:1.0
   script:
-    - echo "Build"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
-
-deploy:
-  script:
-    - echo "Deploy"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - python rbac_devops.py
+  only:
+    - main
 ```
 
 ---
 
-# 🧠 IMPORTANT BEHAVIOR
+# ⚠️ FINAL QUICK CHECK (DON’T SKIP)
 
-| Branch    | Action       |
-| --------- | ------------ |
-| feature/* | Build + test |
-| main      | Deploy       |
+Before running pipeline, confirm:
 
----
-
-# 🧪 STEP 7 — VALIDATION TEST
-
----
-
-## 🔧 Test 1 — Direct Push
-
-```bash
-git push origin main
-```
-
-👉 ❌ Should FAIL
-
----
-
-## 🔧 Test 2 — Feature Flow
-
-```bash
-feature/test → main
-```
-
-👉 ✔ MR created
-👉 ✔ Pipeline runs
-👉 ✔ Cannot merge without approval
-
----
-
-## 🔧 Test 3 — After Merge
-
-👉 Code merged into main
-👉 Deployment pipeline runs
-
----
-
-# ⚠️ CRITICAL GOVERNANCE RULE
+### ✅ 1. Token added
 
 ```text
-main = PRODUCTION
+Settings → CI/CD → Variables
+GITLAB_TOKEN
 ```
 
-So:
+---
 
-* ❌ No direct commit
-* ❌ No bypass
-* ✅ Only approved MR
+### ✅ 2. Image exists
+
+```text
+registry.sbi.local/epay/rbac:1.0
+```
 
 ---
 
-# 📊 FINAL STATE AFTER SECTION 3.1
+### ✅ 3. Repo paths correct
 
-| Control             | Status |
-| ------------------- | ------ |
-| Single branch model | ✅      |
-| Protected main      | ✅      |
-| MR-only flow        | ✅      |
-| CI aligned          | ✅      |
+```yaml
+epay/infra/devops/deployment
+epay/infra/devops/ci-templates
+```
 
 ---
 
-# 🧠 WHY DEVOPS IS SIMPLE
+# 🚀 NEXT
 
-Because:
+Push and run pipeline.
 
-| Repo Type   | Strategy              |
-| ----------- | --------------------- |
-| DevOps      | Stable + controlled   |
-| Application | Complex (multi-stage) |
+After execution, tell me:
 
----
+👉 **“Pipeline executed”**
 
-# ⚠️ COMMON MISTAKES
-
-| Mistake                 | Impact              |
-| ----------------------- | ------------------- |
-| Creating develop branch | ❌ Not required      |
-| Allowing push to main   | 🔴 Critical risk    |
-| Skipping approvals      | 🔴 Governance break |
-
----
-
-# 🚀 WHERE YOU ARE NOW
-
-| Section              | Status              |
-| -------------------- | ------------------- |
-| Section 2            | ✅ COMPLETE          |
-| Section 3.1 (DevOps) | ⏳ You implement now |
-
----
-
-# 🚀 NEXT STEP
-
-After completing this:
-
-👉 We move to:
-
-## 🔥 Section 3 (Application GitFlow)
-
-AND
-
-## 🔥 Section 4 (Approval flow per branch)
-
----
-
-# 💬 BEFORE MOVING AHEAD
-
-After you implement:
-
-👉 Send screenshot of:
-
-* Protected branch config
-* MR settings
-
-I’ll validate before we move to Application (important).
+I’ll verify your output and then take you to
+👉 **Application automation (final stage)**
