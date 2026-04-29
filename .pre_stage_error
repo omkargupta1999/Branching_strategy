@@ -1,0 +1,265 @@
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1960-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:05
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+fatal: unable to access 'https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_admin_service.git/': Could not resolve host: gitlab.sbi
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: version.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
+
+
+
+++++++++++++++++++++++++++++++++++++++++ .pre.yaml+++++++++++++++++++++++++
+
+
+version:
+  stage: .pre
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags: 
+    - common_runner
+  variables:
+    VERSION_TYPE: PATCH
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+  script:
+    - |
+      handle_error() {
+        local exit_code=$?
+        local script_line_number=$1
+        local error_message=$2
+        local function_name=$3
+        
+        echo "ERROR: $error_message"
+        echo "ERROR: $error_message" >> version_error.log
+        echo "ERROR_DETAILS: Function=$function_name, Script_Line=$script_line_number, Exit_Code=$exit_code" >> version_error.log
+        
+        echo "ERROR_OCCURRED=true" >> version.env
+        echo "ERROR_MESSAGE=$error_message" >> version.env
+        echo "ERROR_FUNCTION=$function_name" >> version.env
+        echo "ERROR_SCRIPT_LINE=$script_line_number" >> version.env
+        echo "ERROR_EXIT_CODE=$exit_code" >> version.env
+        
+        exit $exit_code
+      }
+      
+      set -e
+      
+      echo "Starting version generation for branch: $CI_COMMIT_BRANCH"
+      
+      # Fetch git tags
+      git fetch --tags || handle_error ${LINENO} "Failed to fetch git tags" "git_fetch"
+      
+      # Version logic for different branch types
+      if [[ "$CI_COMMIT_BRANCH" =~ ^(main)$ ]]; then
+        # Standard semantic versioning for main/develop
+        echo "Processing main/develop branch versioning..."
+        
+        LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "")
+        echo "Last Tag: $LAST_TAG"
+        
+        if [[ -z "$LAST_TAG" ]]; then
+          echo "WARNING: No tags found, using default version v0.0.0"
+          LAST_TAG="v0.0.0"
+        fi
+        
+        # Validate tag format
+        if ! [[ "$LAST_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "WARNING: Invalid tag format '$LAST_TAG', using default version v0.0.0"
+          LAST_TAG="v0.0.0"
+        fi
+        
+        VERSION=$LAST_TAG
+        LAST_TAG="${LAST_TAG//v/}"
+        
+        # Extract version components
+        MAJOR=$(echo $LAST_TAG | cut -d '.' -f 1)
+        MINOR=$(echo $LAST_TAG | cut -d '.' -f 2)
+        PATCH=$(echo $LAST_TAG | cut -d '.' -f 3)
+        
+        # Validate version components
+        if ! [[ "$MAJOR" =~ ^[0-9]+$ ]] || ! [[ "$MINOR" =~ ^[0-9]+$ ]] || ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
+          handle_error ${LINENO} "Invalid version components: MAJOR=$MAJOR, MINOR=$MINOR, PATCH=$PATCH" "version_validation"
+        fi
+        
+        echo "Version components - MAJOR: $MAJOR, MINOR: $MINOR, PATCH: $PATCH"
+        
+        # Increment version based on VERSION_TYPE
+        case "$VERSION_TYPE" in
+          "MAJOR")
+            VERSION="v$((MAJOR+1)).0.0"
+            echo "Incrementing MAJOR version"
+            ;;
+          "MINOR")
+            VERSION="v${MAJOR}.$((MINOR+1)).0"
+            echo "Incrementing MINOR version"
+            ;;
+          "PATCH")
+            VERSION="v${MAJOR}.${MINOR}.$((PATCH+1))"
+            echo "Incrementing PATCH version"
+            ;;
+          *)
+            echo "WARNING: Unknown VERSION_TYPE '$VERSION_TYPE', defaulting to PATCH increment"
+            VERSION="v${MAJOR}.${MINOR}.$((PATCH+1))"
+            ;;
+        esac
+        
+        echo "Calculated version: $VERSION"
+        
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^release/v([0-9]+\.[0-9]+)\.([0-9]+)$ ]]; then
+        # Release branch versioning - extract version from branch name
+        echo "Processing release branch versioning..."
+        
+        # Extract major.minor from branch name (e.g., 0.1 from release/v0.1.0)
+        BRANCH_MAJOR_MINOR="${BASH_REMATCH[1]}"  # 0.1
+        BRANCH_PATCH="${BASH_REMATCH[2]}"        # 0
+        
+        # Validate extracted version components
+        if [[ -z "$BRANCH_MAJOR_MINOR" ]] || [[ -z "$BRANCH_PATCH" ]]; then
+          handle_error ${LINENO} "Failed to extract version from branch name: $CI_COMMIT_BRANCH" "branch_version_extraction"
+        fi
+        
+        # Validate major.minor format
+        if ! [[ "$BRANCH_MAJOR_MINOR" =~ ^[0-9]+\.[0-9]+$ ]]; then
+          handle_error ${LINENO} "Invalid major.minor format: $BRANCH_MAJOR_MINOR" "branch_version_validation"
+        fi
+        
+        # Validate patch format
+        if ! [[ "$BRANCH_PATCH" =~ ^[0-9]+$ ]]; then
+          handle_error ${LINENO} "Invalid patch format: $BRANCH_PATCH" "branch_patch_validation"
+        fi
+        
+        echo "Branch Major.Minor: $BRANCH_MAJOR_MINOR"
+        echo "Branch Patch: $BRANCH_PATCH"
+        
+        # Find the latest patch version for this major.minor series
+        echo "Searching for existing tags in series v${BRANCH_MAJOR_MINOR}.*"
+        
+        GREP_PATTERN="^v${BRANCH_MAJOR_MINOR}\."
+        LATEST_PATCH_TAG=$(git tag --sort=-v:refname | grep "$GREP_PATTERN" | head -n 1 || true)
+        
+        if [[ -n "$LATEST_PATCH_TAG" ]]; then
+          # Extract patch number from latest tag
+          echo "Latest patch tag found: $LATEST_PATCH_TAG"
+          
+          # Validate tag format
+          if ! [[ "$LATEST_PATCH_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            handle_error ${LINENO} "Invalid tag format found: $LATEST_PATCH_TAG" "tag_format_validation"
+          fi
+          
+          LATEST_PATCH=$(echo $LATEST_PATCH_TAG | cut -d '.' -f 3)
+          
+          # Validate extracted patch number
+          if ! [[ "$LATEST_PATCH" =~ ^[0-9]+$ ]]; then
+            handle_error ${LINENO} "Invalid patch number extracted: $LATEST_PATCH from tag: $LATEST_PATCH_TAG" "patch_extraction_validation"
+          fi
+          
+          NEW_PATCH=$((LATEST_PATCH + 1))
+          VERSION="v${BRANCH_MAJOR_MINOR}.${NEW_PATCH}"
+          
+          echo "Latest patch: $LATEST_PATCH"
+          echo "Incrementing patch to: $NEW_PATCH"
+        else
+          # No existing tags for this series, start with patch 1
+          echo "No existing tags for series v${BRANCH_MAJOR_MINOR}, starting with patch 1"
+          VERSION="v${BRANCH_MAJOR_MINOR}.1"
+        fi
+        
+        # Validate final version format
+        if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          handle_error ${LINENO} "Invalid final version generated: $VERSION" "final_version_validation"
+        fi
+        
+        echo "Release branch version: $VERSION"
+        
+      else
+        # Feature branch versioning with timestamp
+        echo "Processing feature branch versioning..."
+        
+        if [[ -z "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && -z "$CI_COMMIT_REF_NAME" ]]; then
+          handle_error ${LINENO} "Both CI_MERGE_REQUEST_TARGET_BRANCH_NAME and CI_COMMIT_REF_NAME are empty" "branch_validation"
+        fi
+        
+        BRANCH_NAME="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_REF_NAME}"
+        
+        # Validate branch name
+        if [[ -z "$BRANCH_NAME" ]]; then
+          handle_error ${LINENO} "Branch name is empty after extraction" "branch_name_validation"
+        fi
+        
+        TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+        
+        if [[ -z "$TIMESTAMP" ]]; then
+          handle_error ${LINENO} "Failed to generate timestamp" "timestamp_generation"
+        fi
+        
+        # Validate timestamp format
+        if ! [[ "$TIMESTAMP" =~ ^[0-9]{14}$ ]]; then
+          handle_error ${LINENO} "Invalid timestamp format: $TIMESTAMP" "timestamp_format_validation"
+        fi
+        
+        VERSION="v-${BRANCH_NAME}-${TIMESTAMP}"
+        VERSION="${VERSION//\//-}"
+        
+        # Validate final feature branch version
+        if [[ -z "$VERSION" ]]; then
+          handle_error ${LINENO} "Generated feature branch version is empty" "feature_version_validation"
+        fi
+        
+        echo "Feature branch version: $VERSION"
+      fi
+      
+      # Validate final version
+      if [[ -z "$VERSION" ]]; then
+        handle_error ${LINENO} "VERSION is empty after processing" "final_validation"
+      fi
+      
+      # Output version information
+      echo "VERSION=$VERSION" >> version.env
+      echo "VERSION_GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> version.env
+      echo "VERSION_TYPE_USED=$VERSION_TYPE" >> version.env
+      echo "BRANCH_USED=$CI_COMMIT_BRANCH" >> version.env
+      echo "ERROR_OCCURRED=false" >> version.env
+      
+      echo "SUCCESS: New version generated: $VERSION"
+      echo "Version information saved to version.env"
+      
+      echo "=== Version Generation Summary ==="
+      echo "Generated Version: $VERSION"
+      echo "Version Type: $VERSION_TYPE"
+      echo "Branch: $CI_COMMIT_BRANCH"
+      echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+      echo "=================================="
+  artifacts:
+    reports:
+      dotenv: version.env
+    paths:
+      - version_error.log
+    expire_in: 1 week
+  rules:
+   - when: on_success
+  allow_failure: false
