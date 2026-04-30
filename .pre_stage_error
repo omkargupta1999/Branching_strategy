@@ -1,12 +1,3 @@
-Getting below error now :
-
-error : This GitLab CI configuration is invalid: jobs:hp-fortify:script config should be a string or a nested array of strings up to 10 levels deep.
-
-
-
-Configuration ++++++++++++++++++++++++++
-
-
 .HPFortify:
   tags:
     - common_runner
@@ -31,38 +22,74 @@ Configuration ++++++++++++++++++++++++++
         -keystore /home/default/custom-truststore.jks \
         -storepass changeit -noprompt
   script:
-    - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-    - ls
-    - SCAN_FILES=""
-    - IFS=',' read -ra INCLUDE_DIRS_ARRAY <<< "$INCLUDE_DIRS"
-    - SCAN_FILES=""
-    - for dir in "${INCLUDE_DIRS_ARRAY[@]}"; do
-        SCAN_FILES="$SCAN_FILES$dir "
-      done
-    - echo "Scanning paths ${SCAN_FILES}"
-    - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | tr ',' ' ')
-    - echo "Scanning paths: ${SCAN_FILES}"
-    - echo "Excluding paths: ${EXCLUDE_FILES}"
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -verbose -exclude "$EXCLUDE_FILES" -include "$SCAN_FILES"
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -report -format text -output "${FORTIFY_PROJECT_DIR}/scan_summary.txt"
-    - echo "===== SCAN SUMMARY ====="
-    - cat "${FORTIFY_PROJECT_DIR}/scan_summary.txt"
-    - echo "======================"
-    - $BIRTReportGenerator
-      -template "Developer Workbook"
-      -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}"
-      -format PDF
-      -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf"
-      -showSuppressed
-      -showHidden
-      -Xmx4G
-    - echo "PDF generation complete."
-    - pwd
-    - echo ${FORTIFY_PROJECT_DIR}
-    - echo ${PROJECT_NAME}
-    - ls -lrth "${FORTIFY_PROJECT_DIR}"
+    - |
+      export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+
+      echo "========== Fortify Scan Started =========="
+      ls
+
+      EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+      echo "Scanning paths: ${INCLUDE_DIRS}"
+      echo "Excluding paths: ${EXCLUDE_FILES}"
+
+      # Step 1: Clean previous build
+      echo "--- Step 1: Cleaning previous build ---"
+      $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+
+      # Step 2: Translate source files
+      echo "--- Step 2: Translating source files ---"
+      $SOURCE_ANALYZER -b $FORTIFY_PROJECT \
+        "${INCLUDE_DIRS}" \
+        -verbose \
+        -exclude "${EXCLUDE_FILES}"
+
+      # Step 3: Verify translated files
+      echo "--- Step 3: Verifying translated files ---"
+      $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
+
+      # Step 4: Run scan
+      echo "--- Step 4: Running scan ---"
+      $SOURCE_ANALYZER -b $FORTIFY_PROJECT \
+        -scan \
+        -format fpr \
+        -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+
+      # Step 5: Verify FPR output
+      echo "--- Step 5: FPR file info ---"
+      ls -lh "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+
+      # Step 6: Print scan summary using sourceanalyzer -scan-statistics
+      echo "--- Step 6: Scan Summary ---"
+      echo "===== SCAN SUMMARY ====="
+      $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-build-warnings 2>/dev/null || true
+      echo "FPR Location : $FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+      echo "FPR Size     : $(du -sh $FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT | cut -f1)"
+      echo "Files Scanned: $(unzip -l $FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT 2>/dev/null | grep -c '\.java' || echo 'N/A')"
+      echo "======================="
+
+      # Step 7: Generate PDF report
+      echo "--- Step 7: Generating PDF report ---"
+      $BIRTReportGenerator \
+        -template "Developer Workbook" \
+        -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
+        -format PDF \
+        -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+        -showSuppressed \
+        -showHidden \
+        -Xmx4G
+
+      # Step 8: Verify PDF output
+      echo "--- Step 8: PDF file info ---"
+      ls -lh "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf"
+
+      echo "PDF generation complete."
+      echo "========== Fortify Scan Completed =========="
+
+      echo "--- Final workspace contents ---"
+      pwd
+      echo "Project Dir  : ${FORTIFY_PROJECT_DIR}"
+      echo "Project Name : ${PROJECT_NAME}"
+      ls -lrth "${FORTIFY_PROJECT_DIR}"
   allow_failure: true
   artifacts:
     paths:
