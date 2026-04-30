@@ -1,76 +1,12 @@
-.build:
-  variables: 
-    NPM_CONFIG_REGISTRY: "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
-    # 👉 DO NOT hardcode token here in real setup
-    # Use GitLab CI/CD Variables instead
-    # NPM_TOKEN: ${NPM_TOKEN}
+echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
+echo "NPM_TOKEN length: ${#NPM_TOKEN}"
 
-  stage: build
 
-  image:
-    name: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
-  before_script:
-    # Clean proxy
-    - unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
+echo "always-auth=true" >> .npmrc
+echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
 
-    # Create correct .npmrc
-    - echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
-    - echo "always-auth=true" >> .npmrc
-    - echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
-
-    # Debug (important)
-    - echo "===== .npmrc ====="
-    - cat .npmrc
-    - echo "NPM_TOKEN length: ${#NPM_TOKEN}"
-
-  script:
-    - echo "===== BUILD STARTED ====="
-
-    # Verify registry
-    - npm config get registry
-
-    # Debug env
-    - env | grep -i proxy || true
-    - echo "Pipeline JF_USER ${JF_USER}"
-
-    # Workspace info
-    - pwd
-    - ls -la
-
-    # Clean install
-    - npm cache clean --force
-
-    # Recommended: deterministic install
-    - npm ci --legacy-peer-deps || npm ci --legacy-peer-deps
-
-    # Build
-    - npm run build
-
-    - echo "Skipping export step (handled by build)"
-
-    # Normalize output
-    - |
-      if [ -d "out" ]; then
-        echo "Next.js detected - copying out to dist"
-        rm -rf dist
-        mkdir -p dist
-        cp -r out/* dist/
-      elif [ -d "dist" ]; then
-        echo "Using existing dist"
-      else
-        echo "ERROR: No dist or out folder found"
-        exit 1
-      fi
-
-    # Verify output
-    - echo "===== FINAL DIST CONTENT ====="
-    - ls -la dist
-
-    - echo "===== BUILD COMPLETED ====="
-
-  artifacts:
-    paths:
-      - dist/
-    when: on_success
-    expire_in: 1 week
+cat .npmrc
+echo "NPM_TOKEN length: ${#NPM_TOKEN}"
