@@ -1,52 +1,12 @@
-.HPFortify:
-  tags: 
-    - common_runner
-  variables:
-    FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
-    FORTIFY_PROJECT: $CI_PROJECT_NAME
-    PROJECT_NAME: $CI_PROJECT_NAME
-    FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
-    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
-    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
-    FORTIFY_PROJECT_DIR: "."
-    EXCLUDE_DIRS: "./src/test/**/*"
-    INCLUDE_DIRS: "./**/*.java"
+# Pull the image
+docker pull artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0
 
-  stage: hp-fortify
-  image: $FORTIFY_IMAGE
-  script:
-    - ls
-    - SCAN_FILES=""
-    - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
-    - for dir in "${INCLUDE_DIRS[@]}"; do
-        SCAN_FILES="$SCAN_FILES$dir ";
-      done
-    - echo "Scanning paths ${SCAN_FILES}"
-    - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
-    - echo "Excluding paths ${EXCLUDE_FILES}"
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
-    # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
+# Run a quick inspection container
+docker run --rm \
+  artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 \
+  find /opt -name "sourceanalyzer" -o -name "BIRTReportGenerator" 2>/dev/null
 
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
-    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
-    - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
-    - $BIRTReportGenerator \
-      -template "Developer Workbook" \
-      -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
-      -format PDF \
-      -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
-      -showSuppressed \
-      -showHidden \
-      -Xmx4G
-    - echo "PDF generation complete."
-    - pwd
-    - echo ${FORTIFY_PROJECT_DIR}
-    - echo ${PROJECT_NAME}
-    - ls -lrth "${FORTIFY_PROJECT_DIR}" 
-  allow_failure: true
-  artifacts:
-    paths:
-      - "./*.fpr"
-      - "./*.pdf"
-    expire_in: 1 week
+# Or get an interactive shell to explore
+docker run --rm -it \
+  artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 \
+  /bin/bash
