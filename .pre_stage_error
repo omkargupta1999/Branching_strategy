@@ -1,204 +1,52 @@
-Here are the **three files exactly as you need them**, clean and ready to paste into your repo.
+.HPFortify:
+  tags: 
+    - common_runner
+  variables:
+    FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
+    FORTIFY_PROJECT: $CI_PROJECT_NAME
+    PROJECT_NAME: $CI_PROJECT_NAME
+    FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
 
----
-
-# 📄 1. `config.yaml`
-
-```yaml
-gitlab:
-  url: "https://gitlab.epay.sbi"
-
-repos:
-  - "epay/infra/devops/ci-templates"
-  - "epay/infra/devops/deployment"
-
-rbac:
-  groups:
-    - name: "epay-gitlab-bank-infra-owner"
-      access: 50
-    - name: "epay-gitlab-bank-infra-maintainer"
-      access: 40
-    - name: "epay-gitlab-vendor-infra-maintainer"
-      access: 40
-    - name: "epay-gitlab-vendor-infra-developer"
-      access: 30
-
-branch_protection:
-  name: "main"
-  push_access: 0
-  merge_access: 40
-
-approvals:
-  - name: "Bank Owner"
-    group: "epay-gitlab-bank-infra-owner"
-  - name: "Bank Maintainer"
-    group: "epay-gitlab-bank-infra-maintainer"
-  - name: "Vendor Architect"
-    group: "epay-gitlab-vendor-infra-maintainer"
-  - name: "Vendor PM"
-    group: "epay-gitlab-vendor-pm"
-```
-
----
-
-# 🐍 2. `rbac_devops.py`
-
-```python
-import gitlab
-import yaml
-import os
-
-# =========================
-# LOAD CONFIG
-# =========================
-with open("config.yaml") as f:
-    config = yaml.safe_load(f)
-
-GITLAB_URL = config["gitlab"]["url"]
-TOKEN = os.getenv("GITLAB_TOKEN")
-
-if not TOKEN:
-    raise Exception("❌ GITLAB_TOKEN not set")
-
-gl = gitlab.Gitlab(GITLAB_URL, private_token=TOKEN)
-
-# =========================
-# HELPERS
-# =========================
-def get_group_id(name):
-    groups = gl.groups.list(search=name, all=True)
-    for g in groups:
-        if name in g.full_path:
-            return g.id
-    return None
-
-# =========================
-# PROCESS EACH DEVOPS REPO
-# =========================
-for repo in config["repos"]:
-    print(f"\n🔧 Processing: {repo}")
-
-    project = gl.projects.get(repo)
-
-    # -----------------------------------
-    # 1. APPLY RBAC (GROUP SHARING)
-    # -----------------------------------
-    for g in config["rbac"]["groups"]:
-        gid = get_group_id(g["name"])
-        if not gid:
-            print(f"❌ Group not found: {g['name']}")
-            continue
-
-        try:
-            project.share(gid, g["access"])
-            print(f"✔ Added group: {g['name']}")
-        except:
-            print(f"ℹ Already exists: {g['name']}")
-
-    # -----------------------------------
-    # 2. PROTECT MAIN BRANCH
-    # -----------------------------------
-    try:
-        project.protectedbranches.create({
-            "name": config["branch_protection"]["name"],
-            "push_access_level": config["branch_protection"]["push_access"],
-            "merge_access_level": config["branch_protection"]["merge_access"]
-        })
-        print("✔ Main branch protected")
-    except:
-        print("ℹ Main already protected")
-
-    # -----------------------------------
-    # 3. CREATE APPROVAL RULES
-    # -----------------------------------
-    existing_rules = [r.name for r in project.approvalrules.list(all=True)]
-
-    for rule in config["approvals"]:
-        if rule["name"] in existing_rules:
-            print(f"ℹ Rule exists: {rule['name']}")
-            continue
-
-        gid = get_group_id(rule["group"])
-        if not gid:
-            print(f"❌ Approval group missing: {rule['group']}")
-            continue
-
-        project.approvalrules.create({
-            "name": rule["name"],
-            "approvals_required": 1,
-            "group_ids": [gid]
-        })
-
-        print(f"✔ Rule created: {rule['name']}")
-
-    # -----------------------------------
-    # 4. MR SETTINGS
-    # -----------------------------------
-    project.merge_requests_author_approval = False
-    project.reset_approvals_on_push = True
-    project.save()
-
-    print("✔ MR settings applied")
-
-print("\n✅ ALL DEVOPS REPOS CONFIGURED")
-```
-
----
-
-# ⚙️ 3. `.gitlab-ci.yml`
-
-```yaml
-stages:
-  - rbac
-
-rbac-devops:
-  stage: rbac
-  image: registry.sbi.local/epay/rbac:1.0
+  stage: hp-fortify
+  image: $FORTIFY_IMAGE
   script:
-    - python rbac_devops.py
-  only:
-    - main
-```
+    - ls
+    - SCAN_FILES=""
+    - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
+    - for dir in "${INCLUDE_DIRS[@]}"; do
+        SCAN_FILES="$SCAN_FILES$dir ";
+      done
+    - echo "Scanning paths ${SCAN_FILES}"
+    - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+    - echo "Excluding paths ${EXCLUDE_FILES}"
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
+    # - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -exclude "${EXC  LUDE_FILES}" -verbose
 
----
-
-# ⚠️ FINAL QUICK CHECK (DON’T SKIP)
-
-Before running pipeline, confirm:
-
-### ✅ 1. Token added
-
-```text
-Settings → CI/CD → Variables
-GITLAB_TOKEN
-```
-
----
-
-### ✅ 2. Image exists
-
-```text
-registry.sbi.local/epay/rbac:1.0
-```
-
----
-
-### ✅ 3. Repo paths correct
-
-```yaml
-epay/infra/devops/deployment
-epay/infra/devops/ci-templates
-```
-
----
-
-# 🚀 NEXT
-
-Push and run pipeline.
-
-After execution, tell me:
-
-👉 **“Pipeline executed”**
-
-I’ll verify your output and then take you to
-👉 **Application automation (final stage)**
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files
+    - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT" 
+    - $BIRTReportGenerator \
+      -template "Developer Workbook" \
+      -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}" \
+      -format PDF \
+      -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+      -showSuppressed \
+      -showHidden \
+      -Xmx4G
+    - echo "PDF generation complete."
+    - pwd
+    - echo ${FORTIFY_PROJECT_DIR}
+    - echo ${PROJECT_NAME}
+    - ls -lrth "${FORTIFY_PROJECT_DIR}" 
+  allow_failure: true
+  artifacts:
+    paths:
+      - "./*.fpr"
+      - "./*.pdf"
+    expire_in: 1 week
