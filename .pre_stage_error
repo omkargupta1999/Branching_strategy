@@ -1,25 +1,24 @@
-# Pull the image
-docker pull artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0
+I have run below code to find the binary path .....sharing the output as well ...
 
-# Run a quick inspection container
-docker run --rm \
-  artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 \
-  find /opt -name "sourceanalyzer" -o -name "BIRTReportGenerator" 2>/dev/null
-
-# Or get an interactive shell to explore
-docker run --rm -it \
-  artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 \
-  /bin/bash
-
-
-
-+++++++++++++++
-
-fortify-discover-paths:
-  image: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
-  stage: hp-fortify
-  tags:
+.HPFortify:
+  tags: 
     - common_runner
+  needs:
+    - job: build
+      artifacts: true
+  variables:
+    FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
+    FORTIFY_PROJECT: $CI_PROJECT_NAME
+    PROJECT_NAME: $CI_PROJECT_NAME
+    FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+
+  stage: hp-fortify
+  image: $FORTIFY_IMAGE
   script:
     - echo "=== Finding sourceanalyzer ==="
     - find /opt -name "sourceanalyzer" 2>/dev/null
@@ -32,3 +31,91 @@ fortify-discover-paths:
     - which sourceanalyzer 2>/dev/null || echo "not in PATH"
     - which BIRTReportGenerator 2>/dev/null || echo "not in PATH"
   allow_failure: true
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:dae399a4310ce21f316afa9d0f9cfc094f17f3147825cce38e4fe7c2028a2281 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4@sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1960-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:04
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out 88fec7a5 as detached HEAD (ref is feature_ci)...
+Skipping Git submodules setup
+Downloading artifacts
+00:02
+Downloading artifacts for build (169751)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=169751 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:dae399a4310ce21f316afa9d0f9cfc094f17f3147825cce38e4fe7c2028a2281 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4@sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 ...
+$ echo "=== Finding sourceanalyzer ==="
+=== Finding sourceanalyzer ===
+$ find /opt -name "sourceanalyzer" 2>/dev/null
+/opt/Fortify/bin/sourceanalyzer
+/opt/Fortify_SCA_and_Apps_21.1.4/bin/sourceanalyzer
+$ echo "=== Finding BIRTReportGenerator ==="
+=== Finding BIRTReportGenerator ===
+$ find /opt -name "BIRTReportGenerator" 2>/dev/null
+/opt/Fortify_SCA_and_Apps_21.1.4/bin/BIRTReportGenerator
+$ echo "=== Full Fortify directory structure ==="
+=== Full Fortify directory structure ===
+$ ls -la /opt/Fortify/ 2>/dev/null || echo "/opt/Fortify not found"
+total 6808
+drwxr-xr-x 1 root root      18 Apr 22 13:11 .
+drwxr-xr-x 1 root root      25 Apr 30 05:57 ..
+drwxr-xr-x 1 root root      20 Apr 22 13:10 Core
+drwxr-xr-x 3 root root    4096 Apr 22 13:10 LICENSE
+-rw-r--r-- 1 root root  431084 Oct  2  2024 License.rtf
+-rw-r--r-- 1 root root   34280 Oct  2  2024 License.txt
+-rw-r--r-- 1 root root    4555 Sep 24  2024 README.txt
+drwxr-xr-x 2 root root      57 Apr 22 13:11 SOURCE
+drwxr-xr-x 3 root root      81 Apr 22 13:10 Tools
+-rwx------ 1 root root 6405890 Apr 22 13:11 Uninstall_FortifySCA
+-rw------- 1 root root   66530 Apr 22 13:11 Uninstall_FortifySCA.dat
+drwxr-xr-x 2 root root    4096 Apr 22 13:11 bin
+-rwxr-xr-x 1 root root     826 Apr 17 11:31 fortify.license
+drwxr-xr-x 7 root root     135 Apr 22 13:10 jre
+drwxr-xr-x 5 root root      50 Apr 22 13:10 plugins
+-rw-r--r-- 1 root root     263 Oct  2  2024 releasenotes.txt
+$ find /opt -name "*.sh" | grep -i fortify 2>/dev/null
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/javaAnnotations/annotatedPrimaryComponent_NoFalseNegativesScan.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/javaAnnotations/annotatedPrimaryComponent_NoFalsePositivesScan.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/javaAnnotations/originalPrimaryComponentScan.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/riches.java/riches/scan.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/swift/iGoat-Swift/iGoat-Swift/iGoat-Swift/ThirdParty/Realm/Realm.framework/strip-frameworks.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/swift/iGoat-Swift/server/docker_packaging/docker-igoat/startup.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/swift/iGoat-Swift/server/docker_packaging/iGoat.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/Samples/advanced/swift/iGoat-Swift/server/test_client.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/plugins/eclipse/uninstall_fortify_plugins.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/plugins/maven/samples/EightBall/association.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/plugins/maven/samples/EightBall/direct-invocation.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/plugins/maven/samples/simplistic.rabbitMQ/association.sh
+/opt/Fortify_SCA_and_Apps_21.1.4/plugins/maven/samples/simplistic.rabbitMQ/direct-invocation.sh
+$ echo "=== Check PATH binaries ==="
+=== Check PATH binaries ===
+$ which sourceanalyzer 2>/dev/null || echo "not in PATH"
+not in PATH
+$ which BIRTReportGenerator 2>/dev/null || echo "not in PATH"
+not in PATH
+Cleaning up project directory and file based variables
+00:00
+Job succeeded
