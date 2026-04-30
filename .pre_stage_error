@@ -1,3 +1,12 @@
+Getting below error now :
+
+error : This GitLab CI configuration is invalid: jobs:hp-fortify:script config should be a string or a nested array of strings up to 10 levels deep.
+
+
+
+Configuration ++++++++++++++++++++++++++
+
+
 .HPFortify:
   tags:
     - common_runner
@@ -17,7 +26,8 @@
   stage: hp-fortify
   image: $FORTIFY_IMAGE
   before_script:
-    - keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
+    - |
+      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
         -keystore /home/default/custom-truststore.jks \
         -storepass changeit -noprompt
   script:
