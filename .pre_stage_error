@@ -30,6 +30,8 @@ I have run below code to find the binary path .....sharing the output as well ..
     - echo "=== Check PATH binaries ==="
     - which sourceanalyzer 2>/dev/null || echo "not in PATH"
     - which BIRTReportGenerator 2>/dev/null || echo "not in PATH"
+    - find /opt/Fortify/Tools -name "BIRTReportGenerator" 2>/dev/null
+    - ls -la /opt/Fortify/Tools/ 2>/dev/null
   allow_failure: true
 
 
