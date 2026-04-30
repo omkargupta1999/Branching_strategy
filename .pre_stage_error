@@ -10,3 +10,25 @@ docker run --rm \
 docker run --rm -it \
   artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 \
   /bin/bash
+
+
+
++++++++++++++++
+
+fortify-discover-paths:
+  image: "artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0"
+  stage: hp-fortify
+  tags:
+    - common_runner
+  script:
+    - echo "=== Finding sourceanalyzer ==="
+    - find /opt -name "sourceanalyzer" 2>/dev/null
+    - echo "=== Finding BIRTReportGenerator ==="
+    - find /opt -name "BIRTReportGenerator" 2>/dev/null
+    - echo "=== Full Fortify directory structure ==="
+    - ls -la /opt/Fortify/ 2>/dev/null || echo "/opt/Fortify not found"
+    - find /opt -name "*.sh" | grep -i fortify 2>/dev/null
+    - echo "=== Check PATH binaries ==="
+    - which sourceanalyzer 2>/dev/null || echo "not in PATH"
+    - which BIRTReportGenerator 2>/dev/null || echo "not in PATH"
+  allow_failure: true
