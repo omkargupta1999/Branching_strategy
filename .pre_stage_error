@@ -13,6 +13,7 @@ Build Configuration -----------------
 .build:
   variables: 
     NPM_CONFIG_REGISTRY: "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
+    NPM_TOKEN: token
   stage: build
   image:
     name: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
@@ -21,7 +22,7 @@ Build Configuration -----------------
     - unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
     - echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
     - echo "always-auth=true" >> .npmrc
-    - echo "//artifactory.jfrog.sbi/artifactory/api/npm/cbops-bsa-npm/:_authToken=${NPM_TOKEN}" >> .npmrc
+    - echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN\" >> .npmrc
     - cat .npmrc   # for debugging 
   script:
     - echo "BUILD STARTED"
@@ -70,3 +71,47 @@ Build Configuration -----------------
       - dist/
     when: on_success
     expire_in: 1 week
+
+
+
+++++++++++++++++++++++
+
+
+Still getting below error : 
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1955-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:06
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/frontends/epay_merchant_simulator/.git/
+Created fresh repository.
+Checking out ccd80e7e as detached HEAD (ref is develop)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
+$ unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+$ echo "registry=[MASKED]artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
+$ echo "always-auth=true" >> .npmrc
+$ echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN\" >> .npmrc
+/usr/bin/bash: eval: line 212: unexpected EOF while looking for matching `}'
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 2
