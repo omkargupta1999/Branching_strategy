@@ -36,7 +36,7 @@ I have run below code to find the binary path .....sharing the output as well ..
 
 
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Here is the updated Output with updated code
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
@@ -60,12 +60,12 @@ Getting source from Git repository
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
 Created fresh repository.
-Checking out 88fec7a5 as detached HEAD (ref is feature_ci)...
+Checking out e697a6d6 as detached HEAD (ref is feature_ci)...
 Skipping Git submodules setup
 Downloading artifacts
 00:02
-Downloading artifacts for build (169751)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=169751 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for build (169781)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=169781 responseStatus=200 OK token=eyJraWQiO
 Executing "step_script" stage of the job script
 00:01
 Using docker image sha256:dae399a4310ce21f316afa9d0f9cfc094f17f3147825cce38e4fe7c2028a2281 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java17-fortify-24.4@sha256:4048c49750766a9df2f3da165cdadd301b41e34890c4e034d6392a2a118ca602 ...
@@ -83,7 +83,7 @@ $ echo "=== Full Fortify directory structure ==="
 $ ls -la /opt/Fortify/ 2>/dev/null || echo "/opt/Fortify not found"
 total 6808
 drwxr-xr-x 1 root root      18 Apr 22 13:11 .
-drwxr-xr-x 1 root root      25 Apr 30 05:57 ..
+drwxr-xr-x 1 root root      25 Apr 30 06:02 ..
 drwxr-xr-x 1 root root      20 Apr 22 13:10 Core
 drwxr-xr-x 3 root root    4096 Apr 22 13:10 LICENSE
 -rw-r--r-- 1 root root  431084 Oct  2  2024 License.rtf
@@ -118,6 +118,14 @@ $ which sourceanalyzer 2>/dev/null || echo "not in PATH"
 not in PATH
 $ which BIRTReportGenerator 2>/dev/null || echo "not in PATH"
 not in PATH
+$ find /opt/Fortify/Tools -name "BIRTReportGenerator" 2>/dev/null
+$ ls -la /opt/Fortify/Tools/ 2>/dev/null
+total 120
+drwxr-xr-x 3 root root     81 Apr 22 13:10 .
+drwxr-xr-x 1 root root     18 Apr 22 13:11 ..
+-rw-r--r-- 1 root root 110298 Oct  2  2024 SAP_Extractor.zip
+-rw-r--r-- 1 root root  12010 Oct  2  2024 init-script-tplt.gradle
+drwxr-xr-x 2 root root     43 Apr 22 13:10 tool_finder
 Cleaning up project directory and file based variables
 00:00
 Job succeeded
