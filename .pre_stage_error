@@ -1,12 +1,71 @@
-echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
-echo "NPM_TOKEN length: ${#NPM_TOKEN}"
+.build configuration ------------------------------  We are using this one 
 
 
-unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+.build:
+  variables: 
+    NPM_CONFIG_REGISTRY: "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
+    NPM_TOKEN: token
 
-echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
-echo "always-auth=true" >> .npmrc
-echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
+  stage: build
+  image:
+    name: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+    #pull_policy: always
+  before_script:
+    - unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+    - echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
+    - echo "always-auth=true" >> .npmrc
+    - echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
+    - cat .npmrc   # for debugging 
+  script:
+    - echo "BUILD STARTED"
+    - npm config set registry "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
+    - npm config get registry
+    - env | grep -i proxy
+    - echo "Pipeline JF_USER ${JF_USER}"
+    - pwd
+    - ls -la
 
-cat .npmrc
-echo "NPM_TOKEN length: ${#NPM_TOKEN}"
+    # Proxy (optional)
+    # - npm config set proxy http://serverswg.sbi.co.in:80 || true
+    # - npm config set https-proxy http://serverswg.sbi.co.in:9090 || true
+
+    # Install dependencies
+    - npm cache clean --force
+    #- npm ci --legacy-peer-deps || 
+    - npm install --legacy-peer-deps
+
+    # Build (Next.js / React / Angular)
+    - npm run build
+    # IMPORTANT: Skip export (Next.js latest uses output: export)
+    - echo "Skipping export step (handled by Next.js build)"
+    # Normalize output (SAFE FOR ALL APPS)
+    - |
+      if [ -d "out" ]; then
+        echo "Next.js detected - copying out to dist"
+        rm -rf dist
+        mkdir -p dist
+        cp -r out/* dist/
+      elif [ -d "dist" ]; then
+        echo "Using existing dist"
+      else
+        echo "ERROR: No dist or out folder found"
+        exit 1
+      fi
+
+    # Verify
+    - echo "FINAL DIST CONTENT"
+    - ls -la dist
+
+    - echo "BUILD COMPLETED"
+
+  artifacts:
+    paths:
+      - dist/
+    when: on_success
+    expire_in: 1 week
+
+
+And getting the below error while running the pipeline ---------------
+
+
+jobs:build:before_script config should be a string or a nested array of strings up to 10 levels deep
