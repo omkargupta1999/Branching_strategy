@@ -21,13 +21,13 @@ Getting source from Git repository
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out 8966e9dc as detached HEAD (ref is main)...
+Checking out b477b850 as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:08
+00:11
 Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ echo ">>> Service $SERVICE"
->>> Service encryption-decryption-service
+>>> Service captcha-service
 $ cd "$MONO_REPO_ROOT/$SERVICE"
 $ if [ -n "$VERSION" ]; then # collapsed multi-line command
 Welcome to Gradle 9.3.0!
@@ -38,34 +38,34 @@ Here are the highlights of this release:
 For more details see https://docs.gradle.org/9.3.0/release-notes.html
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-FAILURE: Build failed with an exception.
 > Task :compileJava FAILED
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build/reports/problems/problems-report.html
+[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Could not resolve all files for configuration ':compileClasspath'.
-   > Could not find com.sbi.epay:logging-service:1.0.0.
+   > Could not find com.sbi.epay:encryption-decryption-service:0.1.0.
      Searched in the following locations:
-       - https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/libs/logging-service-1.0.0.jar
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/libs/logging-service.jar
+       - https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/0.1.0/encryption-decryption-service-0.1.0.pom
+       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/encryption-decryption-service-0.1.0.jar
+       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/encryption-decryption-service.jar
      Required by:
-         root project 'encryption-decryption-service'
+         root project 'captcha-service'
 * Try:
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 > Get more help at https://help.gradle.org.
+BUILD FAILED in 10s
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
 You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD FAILED in 7s
 1 actionable task: 1 executed
 Uploading artifacts for failed job
-00:01
+00:00
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
-00:00
+00:01
 ERROR: Job failed: exit code 1
