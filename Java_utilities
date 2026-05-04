@@ -1,5 +1,16 @@
-Here is your **fully corrected and build-safe Dockerfile** (fixing the `ENV` issue and keeping all earlier improvements intact).
+still same issue ............
 
+
+[osuser@bastion Gradle_9.3]$ podman build --no-cache --network=none \
+>   -t registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21-jf .
+STEP 1/28: FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
+STEP 2/28: ENV GRADLE_VERSION=9.3.0
+--> 35dcaf6ca6bf
+STEP 3/28: GRADLE_HOME=/opt/gradle
+ERRO[0000] +(UNHANDLED LOGLEVEL) &imagebuilder.Step{Env:[]string{"container=oci", "GECOS=Default user", "HOME=/home/default", "UID=185", "USER=default", "JAVA_HOME=/usr/lib/jvm/java-21", "JAVA_VENDOR=openjdk", "JAVA_VERSION=21", "JBOSS_CONTAINER_OPENJDK_JDK_MODULE=/opt/jboss/container/openjdk/jdk", "JBOSS_CONTAINER_MAVEN_39_MODULE=/opt/jboss/container/maven/39/", "MAVEN_VERSION=3.9", "JBOSS_CONTAINER_S2I_CORE_MODULE=/opt/jboss/container/s2i/core/", "S2I_SOURCE_DEPLOYMENTS_FILTER=*.jar quarkus-app", "JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy", "JBOSS_CONTAINER_JAVA_JVM_MODULE=/opt/jboss/container/java/jvm", "JBOSS_CONTAINER_UTIL_LOGGING_MODULE=/opt/jboss/container/util/logging/", "JBOSS_CONTAINER_MAVEN_DEFAULT_MODULE=/opt/jboss/container/maven/default/", "JBOSS_CONTAINER_MAVEN_S2I_MODULE=/opt/jboss/container/maven/s2i", "JAVA_DATA_DIR=/deployments/data", "JBOSS_CONTAINER_JAVA_RUN_MODULE=/opt/jboss/container/java/run", "JBOSS_CONTAINER_JAVA_S2I_MODULE=/opt/jboss/container/java/s2i", "JBOSS_IMAGE_NAME=ubi9/openjdk-21", "JBOSS_IMAGE_VERSION=1.24", "LANG=C.utf8", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/s2i", "GRADLE_VERSION=9.3.0"}, Command:"gradle_home=/opt/gradle", Args:[]string{""}, Flags:[]string(nil), Attrs:map[string]bool(nil), Message:"GRADLE_HOME=/OPT/GRADLE ", Heredocs:[]parser.Heredoc(nil), Original:"GRADLE_HOME=/opt/gradle "}
+Error: building at STEP "GRADLE_HOME=/OPT/GRADLE ": Build error: Unknown instruction: "GRADLE_HOME=/OPT/GRADLE" &imagebuilder.Step{Env:[]string{"container=oci", "GECOS=Default user", "HOME=/home/default", "UID=185", "USER=default", "JAVA_HOME=/usr/lib/jvm/java-21", "JAVA_VENDOR=openjdk", "JAVA_VERSION=21", "JBOSS_CONTAINER_OPENJDK_JDK_MODULE=/opt/jboss/container/openjdk/jdk", "JBOSS_CONTAINER_MAVEN_39_MODULE=/opt/jboss/container/maven/39/", "MAVEN_VERSION=3.9", "JBOSS_CONTAINER_S2I_CORE_MODULE=/opt/jboss/container/s2i/core/", "S2I_SOURCE_DEPLOYMENTS_FILTER=*.jar quarkus-app", "JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy", "JBOSS_CONTAINER_JAVA_JVM_MODULE=/opt/jboss/container/java/jvm", "JBOSS_CONTAINER_UTIL_LOGGING_MODULE=/opt/jboss/container/util/logging/", "JBOSS_CONTAINER_MAVEN_DEFAULT_MODULE=/opt/jboss/container/maven/default/", "JBOSS_CONTAINER_MAVEN_S2I_MODULE=/opt/jboss/container/maven/s2i", "JAVA_DATA_DIR=/deployments/data", "JBOSS_CONTAINER_JAVA_RUN_MODULE=/opt/jboss/container/java/run", "JBOSS_CONTAINER_JAVA_S2I_MODULE=/opt/jboss/container/java/s2i", "JBOSS_IMAGE_NAME=ubi9/openjdk-21", "JBOSS_IMAGE_VERSION=1.24", "LANG=C.utf8", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/s2i", "GRADLE_VERSION=9.3.0"}, Command:"gradle_home=/opt/gradle", Args:[]string{""}, Flags:[]string(nil), Attrs:map[string]bool(nil), Message:"GRADLE_HOME=/OPT/GRADLE ", Heredocs:[]parser.Heredoc(nil), Original:"GRADLE_HOME=/opt/gradle "}
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
 # =============================================================================
 
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
@@ -10,9 +21,9 @@ FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
 
 # ---------------------------------------------------------------------------
 
-ENV GRADLE_VERSION=9.3.0 
-GRADLE_HOME=/opt/gradle 
-GRADLE_USER_HOME=/home/gradle/.gradle 
+ENV GRADLE_VERSION=9.3.0
+GRADLE_HOME=/opt/gradle
+GRADLE_USER_HOME=/home/gradle/.gradle
 PATH=/opt/gradle/bin:/usr/local/bin:$PATH
 
 # ---------------------------------------------------------------------------
@@ -31,7 +42,7 @@ USER root
 
 COPY gradle-9.3.0/ /opt/gradle-9.3.0/
 
-RUN ln -s /opt/gradle-9.3.0 /opt/gradle 
+RUN ln -s /opt/gradle-9.3.0 /opt/gradle
 && chmod 0755 /opt/gradle-9.3.0/bin/gradle
 
 # ---------------------------------------------------------------------------
@@ -48,7 +59,7 @@ RUN useradd -u 1001 -m -s /bin/bash gradle
 
 # ---------------------------------------------------------------------------
 
-RUN mkdir -p ${GRADLE_USER_HOME} 
+RUN mkdir -p ${GRADLE_USER_HOME}
 && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
 
 # ---------------------------------------------------------------------------
@@ -59,7 +70,7 @@ RUN mkdir -p ${GRADLE_USER_HOME}
 
 COPY jf /usr/local/bin/jf
 
-RUN chmod 0755 /usr/local/bin/jf 
+RUN chmod 0755 /usr/local/bin/jf
 && chown gradle:gradle /usr/local/bin/jf
 
 # Validate jf binary (fail fast)
@@ -74,13 +85,13 @@ RUN /usr/local/bin/jf --version
 
 COPY jfrog-chain.crt /tmp/jfrog-chain.crt
 
-RUN keytool -import 
--trustcacerts 
--file /tmp/jfrog-chain.crt 
--keystore "${JAVA_HOME}/lib/security/cacerts" 
--alias sbi-internal 
--storepass changeit 
--noprompt 
+RUN keytool -import
+-trustcacerts
+-file /tmp/jfrog-chain.crt
+-keystore "${JAVA_HOME}/lib/security/cacerts"
+-alias sbi-internal
+-storepass changeit
+-noprompt
 && rm -f /tmp/jfrog-chain.crt
 
 # ---------------------------------------------------------------------------
@@ -95,49 +106,3 @@ WORKDIR /workspace
 
 CMD ["gradle", "--version"]
 
----
-
-## ✅ Build Steps (exact commands)
-
-### 1. Navigate to directory
-
-```bash
-cd Gradle_9.3
-```
-
-### 2. Build image (Podman - your case)
-
-```bash
-podman build --no-cache --network=none \
-  -t registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21-jf .
-```
-
----
-
-### 3. Validate image
-
-```bash
-podman run --rm registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21-jf jf --version
-podman run --rm registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21-jf gradle --version
-```
-
----
-
-### 4. Push to registry
-
-```bash
-podman push registry.dev.sbiepay.sbi:8443/gradle:9.3.0-jdk21-jf
-```
-
----
-
-## 🔍 Final sanity checklist
-
-* `jf` binary is present in same folder as Dockerfile ✔
-* No broken `ENV` lines ✔
-* No extra spaces after `\` ✔
-* Certificate file exists ✔
-
----
-
-If anything fails now, it will most likely be **jf binary compatibility or certificate import**, not Dockerfile syntax anymore. Share that error and I’ll resolve it quickly.
