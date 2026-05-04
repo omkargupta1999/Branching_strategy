@@ -1,3 +1,58 @@
+pluginManagement {
+    repositories {
+        maven {
+            // ✅ FIXED: must be gradle-virtual (proxies plugins.gradle.org)
+            // was incorrectly set to maven-local (local only, no plugin portal proxy)
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = System.getenv("JF_USER")
+                password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+    }
+}
+
+dependencyResolutionManagement {
+    // ✅ FIXED: changed from FAIL_ON_PROJECT_REPOS to PREFER_SETTINGS
+    // FAIL_ON_PROJECT_REPOS causes hard failure when any build.gradle has repositories {}
+    // PREFER_SETTINGS uses settings repos first but doesn't crash on project-level repos
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = System.getenv("JF_USER")
+                password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+    }
+}
+
+rootProject.name = 'epay-java-utilities'
+
+include(
+    'authentication-service',
+    'cache-management-service',
+    'captcha-service',
+    'encryption-decryption-service',
+    'hazelcast-service',
+    'logging-service',
+    'notification-service'
+)
+
+
+
+
+
+
+
+
+
+
+
+==============================================
+
+
 Sharing the Complete details below fYI...................
 
 1. hazelcast-service don't have its own settings.gradle ---- 
