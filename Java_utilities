@@ -1,2 +1,33 @@
-Unable to create pipeline
-jobs:build:before_script config should be a string or a nested array of strings up to 10 levels deep
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+variables:
+  MONO_REPO_ROOT: "."
+
+.set-workdir:
+  before_script:
+    - echo ">>> Service $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
+
+.service-matrix:
+  parallel:
+    matrix:
+      - SERVICE:
+          - logging-service
+          - authentication-service
+          - cache-management-service
+          - captcha-service
+          - encryption-decryption-service
+          - hazelcast-service
+          - notification-service
+
+build:
+  extends: [.build, .set-workdir, .service-matrix, .rules]
+
+test:
+  extends: [.test, .set-workdir, .service-matrix, .rules]
+
+publish:
+  extends: [.publish, .set-workdir, .service-matrix]
