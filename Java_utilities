@@ -1,12 +1,100 @@
-Why we are still gettinh the below error  ....sharing pipeline output and build.gradle yaml for hazelcast-service
+Sharing the Complete details below fYI...................
 
-Pipeline Output -------------------
+1. hazelcast-service don't have its own settings.gradle ---- 
+2. Sharing settings.gradle from root please vewrify and help to resolve the  issue ...
+
+
+
+
+settings.gradle:
+
+
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+            credentials {
+                // username = 'V1019620'
+                // password = ''
+                username = System.getenv("JF_USER")
+                password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                // username = 'V1019620'
+                // password = ''
+                username = System.getenv("JF_USER")
+                password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+
+    }
+}
+
+rootProject.name = 'epay-java-utilities'
+
+include(
+    'authentication-service',
+    'cache-management-service',
+    'captcha-service',
+    'encryption-decryption-service',
+    'hazelcast-service',
+    'logging-service',
+    'notification-service'
+)
+
+
+
+
+
+-==========================
+
+
+build.gradle for hazelcast-service ---------------------
+
+
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.3'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.sbi.epay.hazelcast'
+version = '0.0.1-SNAPSHOT'
+
+// repositories {
+//     mavenCentral()
+//     flatDir {
+//         dirs "lib"
+//     }
+// }
+
+
+test {
+    useJUnitPlatform()
+}
+
+
+
+++++++++++++++++++++++++++++++++++++++++++
+
+
+Pipeline output fyi .............
+
 
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
 Preparing the "docker" executor
-00:02
+00:01
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
@@ -21,14 +109,14 @@ Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-help
 Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
 Getting source from Git repository
-00:01
+00:02
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out c888c146 as detached HEAD (ref is main)...
+Checking out 9d28f44c as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:12
+00:11
 Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ if [ -n "$VERSION" ]; then # collapsed multi-line command
 Welcome to Gradle 9.3.0!
@@ -39,8 +127,8 @@ Here are the highlights of this release:
 For more details see https://docs.gradle.org/9.3.0/release-notes.html
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build/reports/problems/problems-report.html
 FAILURE: Build failed with an exception.
+[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build/reports/problems/problems-report.html
 * Where:
 Build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle' line: 3
 * What went wrong:
@@ -60,30 +148,10 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 BUILD FAILED in 10s
 Uploading artifacts for failed job
-00:00
+00:01
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
-
-
-
-build.gradle ----------
-
-
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.3.3'
-    id 'io.spring.dependency-management' version '1.1.6'
-}
-
-group = 'com.sbi.epay.hazelcast'
-version = '0.0.1-SNAPSHOT'
-
-
-
-test {
-    useJUnitPlatform()
-}
