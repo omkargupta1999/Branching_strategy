@@ -1,203 +1,1058 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:01
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
-Created fresh repository.
-Checking out 30fd0017 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:15
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-$ echo ">>> Service $SERVICE"
->>> Service authentication-service
-$ cd "$MONO_REPO_ROOT/$SERVICE"
-$ if [ -n "$VERSION" ]; then # collapsed multi-line command
-Welcome to Gradle 9.3.0!
-Here are the highlights of this release:
- - Test reporting improvements
- - Error and warning improvements
- - Build authoring improvements
-For more details see https://docs.gradle.org/9.3.0/release-notes.html
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-> Task :compileJava FAILED
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/build/reports/problems/problems-report.html
-FAILURE: Build failed with an exception.
-* What went wrong:
-Execution failed for task ':compileJava'.
-> Could not resolve all files for configuration ':compileClasspath'.
-   > Could not find com.sbi.epay:logging-service:1.0.0.
-     Searched in the following locations:
-       - https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/libs/logging-service-1.0.0.jar
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/libs/logging-service.jar
-     Required by:
-         root project 'authentication-service'
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights from a Build Scan (powered by Develocity).
-> Get more help at https://help.gradle.org.
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD FAILED in 14s
-1 actionable task: 1 executed
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+---
+".build":
+  stage: build
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - pwd
+  - ls -la
+  - "if [ -n \"$VERSION\" ]; then\n  echo \"version ${VERSION}\"\n  gradle build -x
+    test -Pversion=${VERSION}\nelse\n  gradle build -x test \nfi\n"
+  - ls -lrth
+  - ls -lrth build/libs
+  artifacts:
+    paths:
+    - build/libs
+    when: on_success
+    expire_in: 1 week
+".test":
+  stage: test
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - pwd
+  - ls -lrth
+  - gradle test
+variables:
+  SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/security-products"
+  SAST_IMAGE_SUFFIX: ''
+  SAST_EXCLUDED_ANALYZERS: ''
+  DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+  SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+  SCAN_KUBERNETES_MANIFESTS: 'false'
+  GITLAB_ADVANCED_SAST_SCA_FILENAME: GLAS_SCA.json
+  MONO_REPO_ROOT: "."
+  CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+  GIT_STRATEGY: clone
+  CI_USERNAME: gitlab-ci-token
+sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "$CI_JOB_NAME is used for configuration only, and its script should not be
+    executed"
+  - exit 1
+  extends:
+  - ".sast"
+  - ".rules"
+".sast-analyzer":
+  stage: sast
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: sast
+  allow_failure: true
+".deprecated-16.8":
+  stage: sast
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".sast-analyzer"
+  allow_failure: true
+gitlab-advanced-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /gitlab-advanced-sast/"
+    when: never
+  - if: "$GITLAB_ADVANCED_SAST_ENABLED != 'true' && $GITLAB_ADVANCED_SAST_ENABLED
+      != '1'"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+    exists:
+    - "**/*.py"
+    - "**/*.go"
+    - "**/*.java"
+    - "**/*.jsp"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.cjs"
+    - "**/*.mjs"
+    - "**/*.cs"
+    - "**/*.rb"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/"
+    exists:
+    - "**/*.py"
+    - "**/*.go"
+    - "**/*.java"
+    - "**/*.jsp"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.cjs"
+    - "**/*.mjs"
+    - "**/*.cs"
+    - "**/*.rb"
+  variables:
+    SEARCH_MAX_DEPTH: 20
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/gitlab-advanced-sast:$SAST_ANALYZER_IMAGE_TAG$SAST_IMAGE_SUFFIX"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+".static-reachability-rules":
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /gitlab-advanced-sast/"
+    when: never
+  - if: "$GITLAB_STATIC_REACHABILITY_ENABLED != 'true'"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/"
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+gitlab-static-reachability:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+    paths:
+    - "$GITLAB_ADVANCED_SAST_SCA_FILENAME"
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /gitlab-advanced-sast/"
+    when: never
+  - if: "$GITLAB_STATIC_REACHABILITY_ENABLED != 'true'"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/"
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+  variables:
+    SEARCH_MAX_DEPTH: 20
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/gitlab-advanced-sast:$SAST_ANALYZER_IMAGE_TAG$SAST_IMAGE_SUFFIX"
+    SAST_SCANNER_ALLOWED_CLI_OPTS: "--sca-output-path ${GITLAB_ADVANCED_SAST_SCA_FILENAME}"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends:
+  - gitlab-advanced-sast
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+  before_script:
+  - 'echo keep-builtin-rules: false >> /lightz-aio_default_config.yaml
 
-
-
-
-
-
-getting above error for authendication >>>>
-
-Settings.gradle of  authendication-services ---------
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-        flatDir {
-            dirs "libs"
-        }
-    }
-}
-
-rootProject.name = 'authentication-service'
-
-
-
-build.yaml of authentication-service --------------
-
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
-plugins {
-    id 'java'
-    id 'maven-publish'
-}
-
-group = 'com.sbi.epay'
-version = "${version}"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-}
-
-// repositories {
-//     mavenCentral()
-//     maven {
-//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-//         credentials(PasswordCredentials) {
-//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
-//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
-//         }
-//         authentication {
-//             basic(BasicAuthentication)
-//         }
-//     }
-// }
-
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
-            credentials(PasswordCredentials) {
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-}
-
-}
-
-dependencies {
-    implementation "org.springframework.security:spring-security-core:${spring_security}"
-    implementation "org.springframework.security:spring-security-web:${spring_security}"
-    implementation "org.springframework.security:spring-security-config:${spring_security}"
-
-    implementation "io.jsonwebtoken:jjwt-api:${jwt}"
-    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jwt}"
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jwt}"
-
-    implementation "org.apache.commons:commons-lang3:${common_lang}"
-    implementation "jakarta.servlet:jakarta.servlet-api:${jakarta_servlet}"
-
-    implementation "com.sbi.epay:logging-service:${logging_service}"
-    implementation "net.logstash.logback:logstash-logback-encoder:${logback}"
-
-    compileOnly "org.projectlombok:lombok:${lombok}"
-    annotationProcessor "org.projectlombok:lombok:${lombok}"
-
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation "org.junit.jupiter:junit-jupiter:${junit_jupiter}"
-    testImplementation "org.junit.vintage:junit-vintage-engine:${junit_jupiter}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_jupiter}"
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
-}
+    '
+gitlab-enrich-cdx-results:
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /gitlab-advanced-sast/"
+    when: never
+  - if: "$GITLAB_STATIC_REACHABILITY_ENABLED != 'true'"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/"
+    exists:
+    - "**/*.py"
+    - "**/*.java"
+    - "**/*.jsp"
+  stage: ".post"
+  extends: ".static-reachability-rules"
+  variables:
+    GLAS_STATIC_REACHABILITY_MATCHER_VERSION: v1.0.1
+    GLAS_REPORT: "$GITLAB_ADVANCED_SAST_SCA_FILENAME"
+    SCA_TO_SARIF_PROJECT_ID: 60962090
+    DEPENDENCY_SCANNING_PATTERN: "**/gl-sbom-*.cdx.json"
+  image:
+    name: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    entrypoint:
+    - ''
+  before_script:
+  - |
+    wget "gitlab.com/api/v4/projects/${SCA_TO_SARIF_PROJECT_ID}/packages/generic/sca-to-sarif-matcher/${GLAS_STATIC_REACHABILITY_MATCHER_VERSION}/matcher" \
+      --no-verbose -O /matcher
+  - chmod +x /matcher
+  script:
+  - "/matcher process"
+  artifacts:
+    paths:
+    - "**/gl-sbom-*.cdx.json"
+    reports:
+      cyclonedx:
+      - "**/gl-sbom-*.cdx.json"
+bandit-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 14.8 and removed in GitLab 15.3"
+  - echo "For more information see https://gitlab.com/gitlab-org/gitlab/-/issues/352554"
+  - exit 1
+  extends: ".sast-analyzer"
+  allow_failure: true
+brakeman-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+eslint-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 14.8 and removed in GitLab 15.3"
+  - echo "For more information see https://gitlab.com/gitlab-org/gitlab/-/issues/352554"
+  - exit 1
+  extends: ".sast-analyzer"
+  allow_failure: true
+flawfinder-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+gosec-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 15.0 and removed in GitLab 15.2"
+  - echo "For more information see https://gitlab.com/gitlab-org/gitlab/-/issues/352554"
+  - exit 1
+  extends: ".sast-analyzer"
+  allow_failure: true
+kubesec-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /kubesec/"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $SCAN_KUBERNETES_MANIFESTS
+      == 'true'
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $SCAN_KUBERNETES_MANIFESTS == 'true'"
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: 5
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/kubesec:$SAST_ANALYZER_IMAGE_TAG"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+mobsf-android-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+mobsf-ios-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+nodejs-scan-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+phpcs-security-audit-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 16.8 and removed in GitLab 17.0"
+  - echo "For more information see https://docs.gitlab.com/ee/update/deprecations.html#sast-analyzer-coverage-changing-in-gitlab-170"
+  - exit 1
+  extends: ".deprecated-16.8"
+  allow_failure: true
+pmd-apex-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /pmd-apex/"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    exists:
+    - "**/*.cls"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH"
+    exists:
+    - "**/*.cls"
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: 5
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/pmd-apex:$SAST_ANALYZER_IMAGE_TAG"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+security-code-scan-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - when: never
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: '1'
+  cache: []
+  script:
+  - echo "This job was deprecated in GitLab 15.9 and removed in GitLab 16.0"
+  - echo "For more information see https://gitlab.com/gitlab-org/gitlab/-/issues/390416"
+  - exit 1
+  extends: ".sast-analyzer"
+  allow_failure: true
+semgrep-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /semgrep/"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+      && $SAST_EXCLUDED_ANALYZERS !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED
+      == 'true' || $GITLAB_ADVANCED_SAST_ENABLED == '1')
+    variables:
+      SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS, **/*.py, **/*.go, **/*.java,
+        **/*.js, **/*.jsx, **/*.ts, **/*.tsx, **/*.cjs, **/*.mjs, **/*.cs, **/*.rb"
+    exists:
+    - "**/*.c"
+    - "**/*.cc"
+    - "**/*.cpp"
+    - "**/*.c++"
+    - "**/*.cp"
+    - "**/*.cxx"
+    - "**/*.h"
+    - "**/*.hpp"
+    - "**/*.scala"
+    - "**/*.sc"
+    - "**/*.php"
+    - "**/*.swift"
+    - "**/*.m"
+    - "**/*.kt"
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
+      && $SAST_EXCLUDED_ANALYZERS !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED
+      == 'true' || $GITLAB_ADVANCED_SAST_ENABLED == '1')
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    exists:
+    - "**/*.py"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.cjs"
+    - "**/*.mjs"
+    - "**/*.c"
+    - "**/*.cc"
+    - "**/*.cpp"
+    - "**/*.c++"
+    - "**/*.cp"
+    - "**/*.cxx"
+    - "**/*.h"
+    - "**/*.hpp"
+    - "**/*.go"
+    - "**/*.java"
+    - "**/*.cs"
+    - "**/*.scala"
+    - "**/*.sc"
+    - "**/*.php"
+    - "**/*.swift"
+    - "**/*.m"
+    - "**/*.rb"
+    - "**/*.kt"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/ && $SAST_EXCLUDED_ANALYZERS
+      !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED == 'true' || $GITLAB_ADVANCED_SAST_ENABLED
+      == '1')"
+    variables:
+      SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS, **/*.py, **/*.go, **/*.java,
+        **/*.js, **/*.jsx, **/*.ts, **/*.tsx, **/*.cjs, **/*.mjs, **/*.cs, **/*.rb"
+    exists:
+    - "**/*.c"
+    - "**/*.cc"
+    - "**/*.cpp"
+    - "**/*.c++"
+    - "**/*.cp"
+    - "**/*.cxx"
+    - "**/*.h"
+    - "**/*.hpp"
+    - "**/*.scala"
+    - "**/*.sc"
+    - "**/*.php"
+    - "**/*.swift"
+    - "**/*.m"
+    - "**/*.kt"
+  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/ && $SAST_EXCLUDED_ANALYZERS
+      !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED == 'true' || $GITLAB_ADVANCED_SAST_ENABLED
+      == '1')"
+    when: never
+  - if: "$CI_COMMIT_BRANCH"
+    exists:
+    - "**/*.py"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.cjs"
+    - "**/*.mjs"
+    - "**/*.c"
+    - "**/*.cc"
+    - "**/*.cpp"
+    - "**/*.c++"
+    - "**/*.cp"
+    - "**/*.cxx"
+    - "**/*.h"
+    - "**/*.hpp"
+    - "**/*.go"
+    - "**/*.java"
+    - "**/*.cs"
+    - "**/*.scala"
+    - "**/*.sc"
+    - "**/*.php"
+    - "**/*.swift"
+    - "**/*.m"
+    - "**/*.rb"
+    - "**/*.kt"
+  variables:
+    SEARCH_MAX_DEPTH: 20
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: 5
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/semgrep:$SAST_ANALYZER_IMAGE_TAG$SAST_IMAGE_SUFFIX"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+sobelow-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /sobelow/"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    exists:
+    - "**/mix.exs"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH"
+    exists:
+    - "**/mix.exs"
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: 5
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/sobelow:$SAST_ANALYZER_IMAGE_TAG"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+spotbugs-sast:
+  stage: sast
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+    access: developer
+  rules:
+  - if: "$SAST_EXCLUDED_ANALYZERS =~ /spotbugs/"
+    when: never
+  - if: "$SAST_EXPERIMENTAL_FEATURES == 'true'"
+    exists:
+    - "**/AndroidManifest.xml"
+    when: never
+  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    exists:
+    - "**/*.groovy"
+  - if: "$CI_OPEN_MERGE_REQUESTS"
+    when: never
+  - if: "$CI_COMMIT_BRANCH"
+    exists:
+    - "**/*.groovy"
+  variables:
+    SEARCH_MAX_DEPTH: 4
+    GITLAB_ADVANCED_SAST_ENABLED: 'true'
+    SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
+    DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SAST_ANALYZER_IMAGE_TAG: 5
+    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/spotbugs:$SAST_ANALYZER_IMAGE_TAG"
+  cache: []
+  script:
+  - "/analyzer run"
+  extends: ".sast-analyzer"
+  allow_failure: true
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+".sast":
+  stage: sast
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+".send-reports":
+  stage: sast
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+    pull_policy: always
+  dependencies:
+  - sast
+  before_script:
+  - echo "This is the send-reports before_script"
+  script:
+  - echo "in send-reports job"
+  - ls
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+".HPFortify":
+  variables:
+    FORTIFY_IMAGE: registry.dev.sbiepay.sbi:8443/hpfortify/fortify_sca_23.1.0:v2-04072025
+    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
+    PROJECT_NAME: "$CI_PROJECT_NAME"
+    FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+  stage: hp-fortify
+  image: "$FORTIFY_IMAGE"
+  script:
+  - ls
+  - SCAN_FILES=""
+  - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
+  - for dir in "${INCLUDE_DIRS[@]}"; do SCAN_FILES="$SCAN_FILES$dir "; done
+  - echo "Scanning paths ${SCAN_FILES}"
+  - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+  - echo "Excluding paths ${EXCLUDE_FILES}"
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files"
+  - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+  - $BIRTReportGenerator \ -template "Developer Workbook" \ -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}"
+    \ -format PDF \ -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+    -showSuppressed \ -showHidden \ -Xmx4G
+  - echo "PDF generation complete."
+  - pwd
+  - echo ${FORTIFY_PROJECT_DIR}
+  - echo ${PROJECT_NAME}
+  - ls -lrth "${FORTIFY_PROJECT_DIR}"
+  allow_failure: true
+  artifacts:
+    paths:
+    - "./*.fpr"
+    - "./*.pdf"
+    expire_in: 1 week
+".publish":
+  stage: publish
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - echo "Publishing"
+  - gradle publish
+stages:
+- ".pre"
+- build
+- test
+- sast
+- hp-fortify
+- publish
+- ".post"
+".set-workdir":
+  before_script:
+  - echo "Setting Workdir for $SERVICE"
+  - cd $MONO_REPO_ROOT/$SERVICE
+  parallel:
+    matrix:
+    - SERVICE:
+      - authentication-service
+      - encryption-decryption-service
+      - logging-service
+      - notification-service
+      - captcha-service
+  rules:
+  - changes:
+    - "$SERVICE/**/*"
+".rules":
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(develop|release|main)$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/"
+build:
+  stage: build
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - pwd
+  - ls -la
+  - "if [ -n \"$VERSION\" ]; then\n  echo \"version ${VERSION}\"\n  gradle build -x
+    test -Pversion=${VERSION}\nelse\n  gradle build -x test \nfi\n"
+  - ls -lrth
+  - ls -lrth build/libs
+  artifacts:
+    paths:
+    - no-path
+    when: on_success
+    expire_in: 1 week
+  before_script:
+  - echo "Setting Workdir for $SERVICE"
+  - cd $MONO_REPO_ROOT/$SERVICE
+  parallel:
+    matrix:
+    - SERVICE:
+      - authentication-service
+      - encryption-decryption-service
+      - logging-service
+      - notification-service
+      - captcha-service
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(develop|release|main)$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/"
+  extends:
+  - ".build"
+  - ".set-workdir"
+  - ".rules"
+test:
+  stage: test
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - pwd
+  - ls -lrth
+  - gradle test
+  before_script:
+  - echo "Setting Workdir for $SERVICE"
+  - cd $MONO_REPO_ROOT/$SERVICE
+  parallel:
+    matrix:
+    - SERVICE:
+      - authentication-service
+      - encryption-decryption-service
+      - logging-service
+      - notification-service
+      - captcha-service
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(develop|release|main)$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/"
+  extends:
+  - ".test"
+  - ".set-workdir"
+  - ".rules"
+send-reports:
+  stage: sast
+  image:
+    name: "$SAST_ANALYZER_IMAGE"
+    pull_policy: always
+  dependencies:
+  - sast
+  before_script:
+  - echo "This is the send-reports before_script"
+  script:
+  - echo "in send-reports job"
+  - ls
+  artifacts:
+    reports:
+      sast:
+      - gl-sast-report.json
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(develop|release|main)$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/"
+  extends:
+  - ".send-reports"
+  - ".rules"
+hp-fortify:
+  variables:
+    FORTIFY_IMAGE: registry.dev.sbiepay.sbi:8443/hpfortify/fortify_sca_23.1.0:v2-04072025
+    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
+    PROJECT_NAME: "$CI_PROJECT_NAME"
+    FORTIFY_SCAN_OUTPUT: "$CI_PROJECT_NAME.fpr"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+  stage: hp-fortify
+  image: "$FORTIFY_IMAGE"
+  script:
+  - ls
+  - SCAN_FILES=""
+  - IFS=',' read -ra INCLUDE_DIRS <<< "$INCLUDE_DIRS"
+  - for dir in "${INCLUDE_DIRS[@]}"; do SCAN_FILES="$SCAN_FILES$dir "; done
+  - echo "Scanning paths ${SCAN_FILES}"
+  - EXCLUDE_FILES=$(echo "$EXCLUDE_DIRS" | sed 's/,/:/g')
+  - echo "Excluding paths ${EXCLUDE_FILES}"
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "${INCLUDE_DIRS}" -verbose -exclude "${EXCLUDE_FILES}"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -show-files"
+  - ls -l "$FORTIFY_PROJECT_DIR/$FORTIFY_SCAN_OUTPUT"
+  - $BIRTReportGenerator \ -template "Developer Workbook" \ -source "${FORTIFY_PROJECT_DIR}/${FORTIFY_SCAN_OUTPUT}"
+    \ -format PDF \ -output "${FORTIFY_PROJECT_DIR}/${PROJECT_NAME}_report.pdf" \
+    -showSuppressed \ -showHidden \ -Xmx4G
+  - echo "PDF generation complete."
+  - pwd
+  - echo ${FORTIFY_PROJECT_DIR}
+  - echo ${PROJECT_NAME}
+  - ls -lrth "${FORTIFY_PROJECT_DIR}"
+  allow_failure: true
+  artifacts:
+    paths:
+    - "./*.fpr"
+    - "./*.pdf"
+    expire_in: 1 week
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(develop|release|main)$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/"
+  extends:
+  - ".HPFortify"
+  - ".rules"
+publish:
+  stage: publish
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always
+  script:
+  - echo "Publishing"
+  - gradle publish
+  before_script:
+  - echo "Setting Workdir for $SERVICE"
+  - cd $MONO_REPO_ROOT/$SERVICE
+  parallel:
+    matrix:
+    - SERVICE:
+      - authentication-service
+      - encryption-decryption-service
+      - logging-service
+      - notification-service
+      - captcha-service
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^(main)$/"
+  extends:
+  - ".publish"
+  - ".set-workdir"
+  dependencies:
+  - build
