@@ -1,48 +1,71 @@
-# ci/publish/gradle.artifactory.yml  |  Stage: publish
-# Publishes JAR artifacts to JFrog Artifactory Gradle repository
-# Used by: java.library.yml orchestrator ONLY (utility/library repos)
-# NOT used by microservice repos (they produce container images, not JARs)
-#
-# JFrog repo: itepaypg-sbiepay2-gradle-local
-# Consumers resolve from: itepaypg-sbiepay2-gradle-virtual (virtual = local + remote)
-.publish:
-  stage: publish
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-    - common_runner
-  before_script:
-    - |
-      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-      update-ca-trust extract
-      keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
-        -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
-    - |
-      jf config add \
-        --url="$JF_URL" \
-        --user="$JF_USER" \
-        --access-token="$JF_TOKEN" \
-        --interactive=false \
-        epay-server
-      jf config use epay-server
-      jf rt ping
-  script:
-    - |
-      echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory"
-      jf gradle publish \
-        --build-name="$CI_PROJECT_NAME" \
-        --build-number="$VERSION" \
-        --repo="itepaypg-sbiepay2-gradle-local"
-      jf rt build-publish "$CI_PROJECT_NAME" "$VERSION"
-      jf xr build-scan "$CI_PROJECT_NAME" "$VERSION" \
-        --watches=EPAY-WATCHER \
-        --fail=true
-      echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - when: never
+We are now getting below error while building the build stage of pipeline ....
 
-publish:
-  extends: .publish
+-------------------
+epay_java_utilities >> below are the directory inside the java_utilities and inside each directory build.gradle is there for each services ...basically build should run for each services .....But getting below error please help us to identify the
+issue and provide the solution for the same.
+ 
+
+authentication-service
+cache-management-service
+captcha-service
+encryption-decryption-service
+hazelcast-service
+logging-service
+notification-service
+.gitignore
+.gitlab-ci.yml
+README.md
+
+
+
+####################################################################################
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:01
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
+Created fresh repository.
+Checking out fac864c4 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:04
+Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+$ if [ -n "$VERSION" ]; then # collapsed multi-line command
+Welcome to Gradle 9.3.0!
+Here are the highlights of this release:
+ - Test reporting improvements
+ - Error and warning improvements
+ - Build authoring improvements
+For more details see https://docs.gradle.org/9.3.0/release-notes.html
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+FAILURE: Build failed with an exception.
+* What went wrong:
+Directory '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities' does not contain a Gradle build.
+A Gradle build's root directory should contain one of the possible settings files: settings.gradle, settings.gradle.kts, settings.gradle.dcl.It may also contain one of the possible build files: build.gradle, build.gradle.kts, build.gradle.dcl.
+To create a new Gradle build in this directory run 'gradle init'
+For more information about the 'init' task, please refer to https://docs.gradle.org/9.3.0/userguide/build_init_plugin.html in the Gradle documentation.
+For more details on creating a Gradle build, please refer to https://docs.gradle.org/9.3.0/userguide/tutorial_using_tasks.html in the Gradle documentation.
+* Try:
+> Run gradle init to create a new Gradle build in this directory.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Get more help at https://help.gradle.org.
+BUILD FAILED in 3s
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
