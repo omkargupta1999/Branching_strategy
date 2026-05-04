@@ -1,136 +1,61 @@
-Pipeline output :
+[osuser@bastion Gradle_9.3]$ ll
+total 80392
+-rw-r----- 1 osuser osuser     1956 Apr 24 15:56 Dockerfile
+drwxr-xr-x 5 osuser osuser       85 Feb  1  1980 gradle-9.3.0
+-rw-r----- 1 osuser osuser 82305777 May  4 17:10 jf
+-rw-r----- 1 osuser osuser     4120 Apr 23 18:12 jfrog-chain.crt
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$
+[osuser@bastion Gradle_9.3]$ cat Dockerfile
+# =============================================================================
 
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
 
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:90bf6452ec8e3df1d126bdf62c5480546ca12d7ffffac8b2bf9b9f378a97c24b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:a0ca66b34ec30a7707bc65722130e1f85dc51666b05255c63546bb48230d8999 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-2008-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:02
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
-Created fresh repository.
-Checking out 349f6124 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:16
-Using docker image sha256:90bf6452ec8e3df1d126bdf62c5480546ca12d7ffffac8b2bf9b9f378a97c24b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:a0ca66b34ec30a7707bc65722130e1f85dc51666b05255c63546bb48230d8999 ...
-$ echo ">>> Service $SERVICE"
->>> Service logging-service
-$ cd "$MONO_REPO_ROOT/$SERVICE"
-$ gradle test
-Welcome to Gradle 9.3.0!
-Here are the highlights of this release:
- - Test reporting improvements
- - Error and warning improvements
- - Build authoring improvements
-For more details see https://docs.gradle.org/9.3.0/release-notes.html
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-> Task :compileJava
-> Task :processResources
-> Task :classes
-> Task :compileTestJava NO-SOURCE
-> Task :processTestResources NO-SOURCE
-> Task :testClasses UP-TO-DATE
-> Task :test NO-SOURCE
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/logging-service/build/reports/problems/problems-report.html
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD SUCCESSFUL in 14s
-2 actionable tasks: 2 executed
-Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.0/userguide/configuration_cache_enabling.html
-Uploading artifacts for successful job
-00:01
-Uploading artifacts...
-WARNING: build/test-results/test/TEST-*.xml: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:01
-Job succeeded
+# ---------------------------------------------------------------------------
+# Environment Variables
+# ---------------------------------------------------------------------------
+ENV GRADLE_VERSION=9.3.0 \
+    GRADLE_HOME=/opt/gradle \
+    GRADLE_USER_HOME=/home/gradle/.gradle \
+    PATH=/opt/gradle/bin:$PATH
 
+# ---------------------------------------------------------------------------
+# Switch to root for all setup steps
+# ---------------------------------------------------------------------------
+USER root
 
+# ---------------------------------------------------------------------------
+COPY gradle-9.3.0/ /opt/gradle-9.3.0/
 
-.gitlab-ci.yaml 
+RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
+    && chmod +x /opt/gradle-9.3.0/bin/gradle
 
+# ---------------------------------------------------------------------------
+RUN useradd -u 1001 -m -s /bin/bash gradle
 
+# ---------------------------------------------------------------------------
+RUN mkdir -p ${GRADLE_USER_HOME} \
+    && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
 
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
+# ---------------------------------------------------------------------------
+# Import JFrog / Internal CA certificate into JVM truststore
+# ---------------------------------------------------------------------------
+COPY jfrog-chain.crt /tmp/jfrog-chain.crt
 
-variables:
-  MONO_REPO_ROOT: "."
+RUN keytool -import \
+        -trustcacerts \
+        -file /tmp/jfrog-chain.crt \
+        -keystore ${JAVA_HOME}/lib/security/cacerts \
+        -alias SBI-INTERNAL \
+        -storepass changeit \
+        -noprompt \
+    && rm -f /tmp/jfrog-chain.crt
 
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
+# ---------------------------------------------------------------------------
+# Switch to non-root gradle user for runtime
+# ---------------------------------------------------------------------------
+USER gradle
 
-.service-matrix:
-  parallel:
-    matrix:
-      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      - SERVICE: ["logging-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix, .rules]
+WORKDIR /workspace
 
-test:
-  extends: [.test, .set-workdir, .service-matrix, .rules]
-
-
----------------------------- settings.gradle 
-
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-
-rootProject.name = 'epay-java-utilities'
-
-include(
-    'authentication-service',
-    'cache-management-service',
-    'captcha-service',
-    'encryption-decryption-service',
-    'hazelcast-service',
-    'logging-service',
-    'notification-service'
-)
+CMD ["gradle", "--version"]
