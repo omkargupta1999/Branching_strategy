@@ -1,6 +1,39 @@
 Now i can see multiple parallel build inside build stages but every build is getting failed here and getting below error ... 
 
 
+.gitlab-ci.yaml ....................
+
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+variables:
+  MONO_REPO_ROOT: "."
+
+.set-workdir:
+  before_script:
+    - echo ">>> Service $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
+
+.service-matrix:
+  parallel:
+    matrix:
+      - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+
+build:
+  extends: [.build, .set-workdir, .service-matrix, .rules]
+
+test:
+  extends: [.test, .set-workdir, .service-matrix, .rules]
+
+# publish:
+#   extends: [.publish, .set-workdir, .service-matrix]
+
+
+==================
+
 1.Output from build ......
 
 Running with gitlab-runner 17.9.2 (14c5775c)
