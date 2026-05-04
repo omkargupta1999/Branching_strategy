@@ -1,43 +1,37 @@
-.publish:
-  stage: publish
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:v1-jfcli
-  tags:
-    - common_runner
-  before_script:
-    - |
-      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-      update-ca-trust extract
-      keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
-        -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
-    - |
-      jf config add \
-        --url="$JF_URL" \
-        --user="$JF_USER" \
-        --access-token="$JF_TOKEN" \
-        --interactive=false \
-        epay-server
-      jf config use epay-server
-      jf rt ping
-  script:
-    - |
-      echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory"
-      jf gradle-config \
-        --repo-resolve="itepaypg-sbiepay2-gradle-virtual" \
-        --repo-deploy="itepaypg-sbiepay2-maven-local" \
-        --server-id-resolve="epay-server" \
-        --server-id-deploy="epay-server" \
-        --use-wrapper=false
-      jf gradle publish \
-        --build-name="$CI_PROJECT_NAME-$SERVICE" \
-        --build-number="$VERSION"
-      jf rt build-publish "$CI_PROJECT_NAME-$SERVICE" "$VERSION"
-      jf xr build-scan "$CI_PROJECT_NAME-$SERVICE" "$VERSION" \
-        --watches=EPAY-WATCHER \
-        --fail=true
-      echo "✅ Published: $SERVICE:$VERSION → itepaypg-sbiepay2-maven-local"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - when: never
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:v1-jfcli ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:0200e31c3c981ea14fc28e54e76f612733abce505a06575ef37bd8cfa63bc05d for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:v1-jfcli with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli@sha256:e583825a40308bb09e2f1da388806168bb338c65f74d3f158f63216596617778 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2008-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
+Created fresh repository.
+Checking out c0dcc4a2 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:0200e31c3c981ea14fc28e54e76f612733abce505a06575ef37bd8cfa63bc05d for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:v1-jfcli with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli@sha256:e583825a40308bb09e2f1da388806168bb338c65f74d3f158f63216596617778 ...
+$ echo ">>> Service $SERVICE"
+>>> Service logging-service
+$ cd "$MONO_REPO_ROOT/$SERVICE"
+$ echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory" # collapsed multi-line command
+Publishing epay_java_utilities version 0.0.0 to JFrog Artifactory
+12:28:48 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+12:28:48 [Info] gradle build config successfully created.
+12:28:48 [Info] Trace ID for JFrog Platform logs: fa2021683793c734
+12:28:48 [Error] Server ID epay-server URL is required.
