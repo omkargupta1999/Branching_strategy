@@ -1,3 +1,26 @@
+rootProject.name = 'epay-java-utilities'
+
+include(
+    'authentication-service',
+    'cache-management-service',
+    'captcha-service',
+    'encryption-decryption-service',
+    'hazelcast-service',
+    'logging-service',
+    'notification-service'
+)
+
+
+
+
+
+
+
+
+
+
+++++++++++++++++++++++++++
+
 We are now getting below error while building the build stage of pipeline ....
 
 -------------------
