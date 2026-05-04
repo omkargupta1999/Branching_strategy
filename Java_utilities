@@ -1,135 +1,33 @@
-But In our centralized gitlab we have template and we can't give each and everyhing in .gitlab-ci.yml we have templete ...
-
-Current .gitlab-ci.yaml ---
-
 include:
   - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
     ref: main
     file: 'templates/ci/backend/java.library.yml'
 
--------
-
-
-Shaing the templates/ci/backend/java.library.yml file here for your reference .....
-
-# templates/ci/backend/java.library.yml
-# CI orchestrator for Java LIBRARY/UTILITY repos (JARs → JFrog Artifactory)
-# Examples: epay-java-utility (authentication, logging, notification, encryption JARs)
-# No image stages. Adds publish stage for JFrog Artifactory.
-#
-# Consumer services resolve from:
-#   url: artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual
-
-default:
-  tags:
-    - common_runner
-
-include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  - local: 'ci/security/sast/sast.gitlab.yml'
-  - local: 'ci/security/sast/sast.fortify.yml'
-  - local: 'ci/security/sca/sca.xray.yml'
-  - local: 'ci/security/secrets/secrets.detect.yml'
-  - local: 'ci/release/tag.yml'
-  - local: 'ci/publish/gradle.artifactory.yml'
-
-stages:
-  - version       # version generation
-  - build         # gradle compile (produces JARs)
-  - test          # unit tests
-  - sast          # gitlab sast + fortify
-  - security      # sca xray (scans JAR artifact)
-  - release       # git tag — rc on release/*, prod on main
-  - publish       # gradle publish → JFrog Artifactory + Xray scan
-
 variables:
-  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
-  GIT_STRATEGY: clone
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  MONO_REPO_ROOT: "."
 
-.rules:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
+.set-workdir:
+  before_script:
+    - echo ">>> Service: $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
 
-# ── Stage: build ───────────────────────────────────────────────────────────────
+.service-matrix:
+  parallel:
+    matrix:
+      - SERVICE:
+          - logging-service
+          - authentication-service
+          - cache-management-service
+          - captcha-service
+          - encryption-decryption-service
+          - hazelcast-service
+          - notification-service
+
 build:
-  extends: [.build, .rules]
+  extends: [.build, .set-workdir, .service-matrix, .rules]
 
-# ── Stage: test ────────────────────────────────────────────────────────────────
 test:
-  extends: [.test, .rules]
+  extends: [.test, .set-workdir, .service-matrix, .rules]
 
-# ── Stage: sast ────────────────────────────────────────────────────────────────
-# sast:gitlab:
-#   extends: [.sast, .rules]
-
-# sast:fortify:
-#   extends: [.sast_fortify, .rules]
-
-# ── Stage: security ────────────────────────────────────────────────────────────
-sca:xray:
-  extends: [.sca, .rules]
-
-secret_detection:
-  stage: security
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
-
-# ── Stage: publish ─────────────────────────────────────────────────────────────
-# publish: auto on release/* and main post-merge
-# Defined in ci/publish/gradle.artifactory.yml with its own rules
-
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
-
-
-
-
-
-______________
-
-
-And here is the ci/build/java.gradle.yml file below from where build is happening .....
-
-
-
-# ci/build/java.gradle.yml  |  Stage: build
-# Gradle compile — produces build/libs/ artifact consumed by test + dockerbuild stages
-
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-    - common_runner
-  variables:
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  script:
-    - |
-      if [ -n "$VERSION" ]; then
-        gradle build -x test -Pversion=${VERSION}
-      else
-        gradle build -x test
-      fi
-    - ls -lrth build/libs
-    - echo "VERSION=$VERSION" >> build.env
-  artifacts:
-    paths:
-      - build/libs
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 week
-
-
-
-====================
-
-
-Now i wan you to please go through this configuration and template formating and suggest the best possible soltion for this ...
+publish:
+  extends: [.publish, .set-workdir, .service-matrix]
