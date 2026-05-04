@@ -1,12 +1,3 @@
-getting Below Erorr for below stage of pipeline>>>>> please fix the complete script
-
-
-Error : This GitLab CI configuration is invalid: jobs:publish:script config should be a string or a nested array of strings up to 10 levels deep.
-
-
-
-
-
 # ci/publish/gradle.artifactory.yml  |  Stage: publish
 # Publishes JAR artifacts to JFrog Artifactory Gradle repository
 # Used by: java.library.yml orchestrator ONLY (utility/library repos)
@@ -14,7 +5,6 @@ Error : This GitLab CI configuration is invalid: jobs:publish:script config shou
 #
 # JFrog repo: itepaypg-sbiepay2-gradle-local
 # Consumers resolve from: itepaypg-sbiepay2-gradle-virtual (virtual = local + remote)
-
 .publish:
   stage: publish
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
@@ -22,13 +12,11 @@ Error : This GitLab CI configuration is invalid: jobs:publish:script config shou
     - common_runner
   before_script:
     - |
-      # Trust JFrog certificate
       cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
       update-ca-trust extract
       keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
         -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
     - |
-      # Configure JFrog CLI
       jf config add \
         --url="$JF_URL" \
         --user="$JF_USER" \
@@ -44,13 +32,11 @@ Error : This GitLab CI configuration is invalid: jobs:publish:script config shou
         --build-name="$CI_PROJECT_NAME" \
         --build-number="$VERSION" \
         --repo="itepaypg-sbiepay2-gradle-local"
-    - |
-      # Publish build info and trigger Xray scan
       jf rt build-publish "$CI_PROJECT_NAME" "$VERSION"
       jf xr build-scan "$CI_PROJECT_NAME" "$VERSION" \
         --watches=EPAY-WATCHER \
         --fail=true
-    - echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
+      echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       when: on_success
