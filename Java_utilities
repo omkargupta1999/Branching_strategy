@@ -1,1 +1,62 @@
+getting Below Erorr for below stage of pipeline>>>>> please fix the complete script
 
+
+Error : This GitLab CI configuration is invalid: jobs:publish:script config should be a string or a nested array of strings up to 10 levels deep.
+
+
+
+
+
+# ci/publish/gradle.artifactory.yml  |  Stage: publish
+# Publishes JAR artifacts to JFrog Artifactory Gradle repository
+# Used by: java.library.yml orchestrator ONLY (utility/library repos)
+# NOT used by microservice repos (they produce container images, not JARs)
+#
+# JFrog repo: itepaypg-sbiepay2-gradle-local
+# Consumers resolve from: itepaypg-sbiepay2-gradle-virtual (virtual = local + remote)
+
+.publish:
+  stage: publish
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+    - common_runner
+  before_script:
+    - |
+      # Trust JFrog certificate
+      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+      update-ca-trust extract
+      keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
+        -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
+    - |
+      # Configure JFrog CLI
+      jf config add \
+        --url="$JF_URL" \
+        --user="$JF_USER" \
+        --access-token="$JF_TOKEN" \
+        --interactive=false \
+        epay-server
+      jf config use epay-server
+      jf rt ping
+  script:
+    - |
+      echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory"
+      jf gradle publish \
+        --build-name="$CI_PROJECT_NAME" \
+        --build-number="$VERSION" \
+        --repo="itepaypg-sbiepay2-gradle-local"
+    - |
+      # Publish build info and trigger Xray scan
+      jf rt build-publish "$CI_PROJECT_NAME" "$VERSION"
+      jf xr build-scan "$CI_PROJECT_NAME" "$VERSION" \
+        --watches=EPAY-WATCHER \
+        --fail=true
+    - echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    - when: never
+
+publish:
+  extends: .publish
