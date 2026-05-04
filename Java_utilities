@@ -1,80 +1,40 @@
-# =============================================================================
-# Gradle 9.3.0 + JDK21 + JFrog CLI Builder Image
-# Base: UBI9 OpenJDK 21
-# =============================================================================
-
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
-
-# ---------------------------------------------------------------------------
-# Environment Variables
-# ---------------------------------------------------------------------------
-
-ENV GRADLE_VERSION=9.3.0 \
-    GRADLE_HOME=/opt/gradle \
-    GRADLE_USER_HOME=/home/gradle/.gradle \
-    PATH=/opt/gradle/bin:/usr/local/bin:$PATH
-
-# ---------------------------------------------------------------------------
-# Switch to root for all setup steps
-# ---------------------------------------------------------------------------
-
-USER root
-
-# ---------------------------------------------------------------------------
-# Install Gradle
-# ---------------------------------------------------------------------------
-
-COPY gradle-9.3.0/ /opt/gradle-9.3.0/
-
-RUN ln -s /opt/gradle-9.3.0 /opt/gradle \
-    && chmod 0755 /opt/gradle-9.3.0/bin/gradle
-
-# ---------------------------------------------------------------------------
-# Add gradle user
-# ---------------------------------------------------------------------------
-
-RUN useradd -u 1001 -m -s /bin/bash gradle
-
-# ---------------------------------------------------------------------------
-# Create Gradle home and set permissions
-# ---------------------------------------------------------------------------
-
-RUN mkdir -p ${GRADLE_USER_HOME} \
-    && chown -R gradle:gradle /home/gradle /opt/gradle-9.3.0 /opt/gradle
-
-# ---------------------------------------------------------------------------
-# Add JFrog CLI (jf)
-# ---------------------------------------------------------------------------
-
-COPY jf /usr/local/bin/jf
-
-RUN chmod 0755 /usr/local/bin/jf \
-    && chown gradle:gradle /usr/local/bin/jf
-
-# Validate jf binary (fail fast)
-RUN /usr/local/bin/jf --version
-
-# ---------------------------------------------------------------------------
-# Import JFrog / Internal CA certificate into JVM truststore
-# ---------------------------------------------------------------------------
-
-COPY jfrog-chain.crt /tmp/jfrog-chain.crt
-
-RUN keytool -import \
-    -trustcacerts \
-    -file /tmp/jfrog-chain.crt \
-    -keystore "${JAVA_HOME}/lib/security/cacerts" \
-    -alias sbi-internal \
-    -storepass changeit \
-    -noprompt \
-    && rm -f /tmp/jfrog-chain.crt
-
-# ---------------------------------------------------------------------------
-# Switch to non-root gradle user for runtime
-# ---------------------------------------------------------------------------
-
-USER gradle
-
-WORKDIR /workspace
-
-CMD ["gradle", "--version"]
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:07
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:1.24-2.1776357031-jfcli ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:1.24-2.1776357031-jfcli ...
+Using docker image sha256:84b31ac6a515eb9d1c2c1e33848087fa5e7c9864bd0da645c1ca8bd05286814f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:1.24-2.1776357031-jfcli with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli@sha256:45da86d874381379a0aa61b5cac660c937588fa256b697e2c74c93bb57ec8c94 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-2008-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
+Created fresh repository.
+Checking out c5518525 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:84b31ac6a515eb9d1c2c1e33848087fa5e7c9864bd0da645c1ca8bd05286814f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli:1.24-2.1776357031-jfcli with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21-jfcli@sha256:45da86d874381379a0aa61b5cac660c937588fa256b697e2c74c93bb57ec8c94 ...
+$ echo ">>> Service $SERVICE"
+>>> Service logging-service
+$ cd "$MONO_REPO_ROOT/$SERVICE"
+$ echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory" # collapsed multi-line command
+Publishing epay_java_utilities version 0.0.0 to JFrog Artifactory
+12:04:25 [Error] failed adding certain plugins as commands. Last error: stat /home/default/.jfrog/plugins: permission denied
+12:04:25 [Info] Trace ID for JFrog Platform logs: 49200004412fd643
+12:04:25 [Error] stat /home/default/.jfrog/projects/gradle.yaml: permission denied
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
