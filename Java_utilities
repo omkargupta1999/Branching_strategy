@@ -1,979 +1,135 @@
----
-version:
-  stage: version
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+But In our centralized gitlab we have template and we can't give each and everyhing in .gitlab-ci.yml we have templete ...
+
+Current .gitlab-ci.yaml ---
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+-------
+
+
+Shaing the templates/ci/backend/java.library.yml file here for your reference .....
+
+# templates/ci/backend/java.library.yml
+# CI orchestrator for Java LIBRARY/UTILITY repos (JARs → JFrog Artifactory)
+# Examples: epay-java-utility (authentication, logging, notification, encryption JARs)
+# No image stages. Adds publish stage for JFrog Artifactory.
+#
+# Consumer services resolve from:
+#   url: artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual
+
+default:
   tags:
-  - common_runner
-  before_script:
-  - git config --global http.sslVerify false
-  - git config --global --add safe.directory '*'
-  script:
-  - |
-    set -e
-    git fetch --tags
+    - common_runner
 
-    if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
-      VERSION="mr-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  - local: 'ci/security/sast/sast.gitlab.yml'
+  - local: 'ci/security/sast/sast.fortify.yml'
+  - local: 'ci/security/sca/sca.xray.yml'
+  - local: 'ci/security/secrets/secrets.detect.yml'
+  - local: 'ci/release/tag.yml'
+  - local: 'ci/publish/gradle.artifactory.yml'
 
-    elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-      VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+stages:
+  - version       # version generation
+  - build         # gradle compile (produces JARs)
+  - test          # unit tests
+  - sast          # gitlab sast + fortify
+  - security      # sca xray (scans JAR artifact)
+  - release       # git tag — rc on release/*, prod on main
+  - publish       # gradle publish → JFrog Artifactory + Xray scan
 
-    elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-      RELEASE_VERSION="${BASH_REMATCH[1]}"
-      RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
-      NEW_RC=$((RC_COUNT + 1))
-      VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
+variables:
+  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
+  GIT_STRATEGY: clone
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
-    elif [[ "$CI_COMMIT_BRANCH" =~ ^hotfix\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-      VERSION="${BASH_REMATCH[1]}"
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
 
-    elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
-      LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
-      VERSION="${LAST_TAG#v}"
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
 
-    else
-      VERSION="${CI_COMMIT_SHORT_SHA}"
-    fi
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
 
-    echo "VERSION=$VERSION" >> version.env
-    echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA" >> version.env
-    echo "Generated VERSION=$VERSION"
-  artifacts:
-    reports:
-      dotenv:
-      - version.env
-    expire_in: 1 week
-".build":
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# ── Stage: security ────────────────────────────────────────────────────────────
+sca:xray:
+  extends: [.sca, .rules]
+
+secret_detection:
+  stage: security
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
+
+# ── Stage: publish ─────────────────────────────────────────────────────────────
+# publish: auto on release/* and main post-merge
+# Defined in ci/publish/gradle.artifactory.yml with its own rules
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+
+
+
+
+______________
+
+
+And here is the ci/build/java.gradle.yml file below from where build is happening .....
+
+
+
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/ artifact consumed by test + dockerbuild stages
+
+.build:
   stage: build
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
   tags:
-  - common_runner
+    - common_runner
   variables:
     GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   script:
-  - |
-    if [ -n "$VERSION" ]; then
-      gradle build -x test -Pversion=${VERSION}
-    else
-      gradle build -x test
-    fi
-  - ls -lrth build/libs
-  - echo "VERSION=$VERSION" >> build.env
+    - |
+      if [ -n "$VERSION" ]; then
+        gradle build -x test -Pversion=${VERSION}
+      else
+        gradle build -x test
+      fi
+    - ls -lrth build/libs
+    - echo "VERSION=$VERSION" >> build.env
   artifacts:
     paths:
-    - build/libs
+      - build/libs
     reports:
       dotenv: build.env
     when: on_success
     expire_in: 1 week
-".test":
-  stage: test
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10
-  tags:
-  - common_runner
-  script:
-  - gradle test
-  artifacts:
-    reports:
-      junit: build/test-results/test/TEST-*.xml
-    when: always
-    expire_in: 1 week
-variables:
-  SECURE_ANALYZERS_PREFIX: "$CI_TEMPLATE_REGISTRY_HOST/security-products"
-  AST_ENABLE_MR_PIPELINES: 'true'
-  SAST_IMAGE_SUFFIX: ''
-  SAST_EXCLUDED_ANALYZERS: ''
-  DEFAULT_SAST_EXCLUDED_PATHS: spec, test, tests, tmp
-  SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-  SCAN_KUBERNETES_MANIFESTS: 'false'
-  SECRET_DETECTION_IMAGE_SUFFIX: ''
-  SECRETS_ANALYZER_VERSION: '7'
-  SECRET_DETECTION_EXCLUDED_PATHS: ''
-  CI_TEMPLATE_REGISTRY_HOST: artifactory.jfrog.sbi:443
-  GIT_STRATEGY: clone
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - when: never
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: '5'
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-  cache: []
-  script:
-  - echo "$CI_JOB_NAME is used for configuration only, and its script should not be
-    executed"
-  - exit 1
-".sast-analyzer":
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast: gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - when: never
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: '5'
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: sast
-  allow_failure: true
-".gitlab-advanced-sast-exist-rules":
-  exists:
-  - "**/*.py"
-  - "**/*.go"
-  - "**/*.java"
-  - "**/*.jsp"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.cjs"
-  - "**/*.mjs"
-  - "**/*.cs"
-  - "**/*.rb"
-  - "**/*.php"
-gitlab-advanced-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /gitlab-advanced-sast/"
-    when: never
-  - if: "$GITLAB_ADVANCED_SAST_ENABLED != 'true' && $GITLAB_ADVANCED_SAST_ENABLED
-      != '1'"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-      && $GITLAB_FEATURES =~ /\bsast_advanced\b/
-    exists:
-    - "**/*.py"
-    - "**/*.go"
-    - "**/*.java"
-    - "**/*.jsp"
-    - "**/*.js"
-    - "**/*.jsx"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.cjs"
-    - "**/*.mjs"
-    - "**/*.cs"
-    - "**/*.rb"
-    - "**/*.php"
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/"
-    exists:
-    - "**/*.py"
-    - "**/*.go"
-    - "**/*.java"
-    - "**/*.jsp"
-    - "**/*.js"
-    - "**/*.jsx"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.cjs"
-    - "**/*.mjs"
-    - "**/*.cs"
-    - "**/*.rb"
-    - "**/*.php"
-  variables:
-    SEARCH_MAX_DEPTH: 20
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: '5'
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    FF_GLAS_ENABLE_PHP_SUPPORT: 'true'
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/gitlab-advanced-sast:$SAST_ANALYZER_IMAGE_TAG$SAST_IMAGE_SUFFIX"
-    GITLAB_ADVANCED_SAST_ENABLED: 'true'
-  cache:
-    key: scan-metrics-$CI_COMMIT_REF_SLUG
-    fallback_keys:
-    - scan-metrics-$CI_DEFAULT_BRANCH
-    paths:
-    - scan_metrics.csv
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-  tags:
-  - common_runner
-kubesec-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /kubesec/"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-      && $SCAN_KUBERNETES_MANIFESTS == 'true'
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH && $SCAN_KUBERNETES_MANIFESTS == 'true'"
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: 6
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/kubesec:$SAST_ANALYZER_IMAGE_TAG"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-".pmd-apex-exist-rules":
-  exists:
-  - "**/*.cls"
-pmd-apex-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /pmd-apex/"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-    exists:
-    - "**/*.cls"
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH"
-    exists:
-    - "**/*.cls"
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: 6
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/pmd-apex:$SAST_ANALYZER_IMAGE_TAG"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-".semgrep-exist-rules":
-  exists:
-  - "**/*.py"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.cjs"
-  - "**/*.mjs"
-  - "**/*.c"
-  - "**/*.cc"
-  - "**/*.cpp"
-  - "**/*.c++"
-  - "**/*.cp"
-  - "**/*.cxx"
-  - "**/*.h"
-  - "**/*.hpp"
-  - "**/*.go"
-  - "**/*.java"
-  - "**/*.cs"
-  - "**/*.scala"
-  - "**/*.sc"
-  - "**/*.php"
-  - "**/*.swift"
-  - "**/*.m"
-  - "**/*.rb"
-  - "**/*.kt"
-  - "**/*.properties"
-  - "**/application*.yml"
-  - "**/bootstrap*.yml"
-  - "**/application*.yaml"
-  - "**/bootstrap*.yaml"
-".semgrep-with-advanced-sast-exist-rules":
-  exists:
-  - "**/*.c"
-  - "**/*.cc"
-  - "**/*.cpp"
-  - "**/*.c++"
-  - "**/*.cp"
-  - "**/*.cxx"
-  - "**/*.h"
-  - "**/*.hpp"
-  - "**/*.scala"
-  - "**/*.sc"
-  - "**/*.php"
-  - "**/*.swift"
-  - "**/*.m"
-  - "**/*.kt"
-  - "**/*.properties"
-  - "**/application*.yml"
-  - "**/bootstrap*.yml"
-  - "**/application*.yaml"
-  - "**/bootstrap*.yaml"
-semgrep-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /semgrep/"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-      && $GITLAB_FEATURES =~ /\bsast_advanced\b/ && $SAST_EXCLUDED_ANALYZERS !~ /gitlab-advanced-sast/
-      && ($GITLAB_ADVANCED_SAST_ENABLED == 'true' || $GITLAB_ADVANCED_SAST_ENABLED
-      == '1')
-    variables:
-      SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS, **/*.py, **/*.go, **/*.java,
-        **/*.js, **/*.jsx, **/*.ts, **/*.tsx, **/*.cjs, **/*.mjs, **/*.cs, **/*.rb,
-        **/*.php"
-    exists:
-    - "**/*.c"
-    - "**/*.cc"
-    - "**/*.cpp"
-    - "**/*.c++"
-    - "**/*.cp"
-    - "**/*.cxx"
-    - "**/*.h"
-    - "**/*.hpp"
-    - "**/*.scala"
-    - "**/*.sc"
-    - "**/*.php"
-    - "**/*.swift"
-    - "**/*.m"
-    - "**/*.kt"
-    - "**/*.properties"
-    - "**/application*.yml"
-    - "**/bootstrap*.yml"
-    - "**/application*.yaml"
-    - "**/bootstrap*.yaml"
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GITLAB_FEATURES =~ /\bsast_advanced\b/
-      && $SAST_EXCLUDED_ANALYZERS !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED
-      == 'true' || $GITLAB_ADVANCED_SAST_ENABLED == '1')
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-    exists:
-    - "**/*.py"
-    - "**/*.js"
-    - "**/*.jsx"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.cjs"
-    - "**/*.mjs"
-    - "**/*.c"
-    - "**/*.cc"
-    - "**/*.cpp"
-    - "**/*.c++"
-    - "**/*.cp"
-    - "**/*.cxx"
-    - "**/*.h"
-    - "**/*.hpp"
-    - "**/*.go"
-    - "**/*.java"
-    - "**/*.cs"
-    - "**/*.scala"
-    - "**/*.sc"
-    - "**/*.php"
-    - "**/*.swift"
-    - "**/*.m"
-    - "**/*.rb"
-    - "**/*.kt"
-    - "**/*.properties"
-    - "**/application*.yml"
-    - "**/bootstrap*.yml"
-    - "**/application*.yaml"
-    - "**/bootstrap*.yaml"
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/ && $SAST_EXCLUDED_ANALYZERS
-      !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED == 'true' || $GITLAB_ADVANCED_SAST_ENABLED
-      == '1')"
-    variables:
-      SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS, **/*.py, **/*.go, **/*.java,
-        **/*.js, **/*.jsx, **/*.ts, **/*.tsx, **/*.cjs, **/*.mjs, **/*.cs, **/*.rb,
-        **/*.php"
-    exists:
-    - "**/*.c"
-    - "**/*.cc"
-    - "**/*.cpp"
-    - "**/*.c++"
-    - "**/*.cp"
-    - "**/*.cxx"
-    - "**/*.h"
-    - "**/*.hpp"
-    - "**/*.scala"
-    - "**/*.sc"
-    - "**/*.php"
-    - "**/*.swift"
-    - "**/*.m"
-    - "**/*.kt"
-    - "**/*.properties"
-    - "**/application*.yml"
-    - "**/bootstrap*.yml"
-    - "**/application*.yaml"
-    - "**/bootstrap*.yaml"
-  - if: "$CI_COMMIT_BRANCH && $GITLAB_FEATURES =~ /\\bsast_advanced\\b/ && $SAST_EXCLUDED_ANALYZERS
-      !~ /gitlab-advanced-sast/ && ($GITLAB_ADVANCED_SAST_ENABLED == 'true' || $GITLAB_ADVANCED_SAST_ENABLED
-      == '1')"
-    when: never
-  - if: "$CI_COMMIT_BRANCH"
-    exists:
-    - "**/*.py"
-    - "**/*.js"
-    - "**/*.jsx"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.cjs"
-    - "**/*.mjs"
-    - "**/*.c"
-    - "**/*.cc"
-    - "**/*.cpp"
-    - "**/*.c++"
-    - "**/*.cp"
-    - "**/*.cxx"
-    - "**/*.h"
-    - "**/*.hpp"
-    - "**/*.go"
-    - "**/*.java"
-    - "**/*.cs"
-    - "**/*.scala"
-    - "**/*.sc"
-    - "**/*.php"
-    - "**/*.swift"
-    - "**/*.m"
-    - "**/*.rb"
-    - "**/*.kt"
-    - "**/*.properties"
-    - "**/application*.yml"
-    - "**/bootstrap*.yml"
-    - "**/application*.yaml"
-    - "**/bootstrap*.yaml"
-  variables:
-    SEARCH_MAX_DEPTH: 20
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: 6
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/semgrep:$SAST_ANALYZER_IMAGE_TAG$SAST_IMAGE_SUFFIX"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-".sobelow-exist-rules":
-  exists:
-  - "**/mix.exs"
-sobelow-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /sobelow/"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-    exists:
-    - "**/mix.exs"
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH"
-    exists:
-    - "**/mix.exs"
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: 6
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/sobelow:$SAST_ANALYZER_IMAGE_TAG"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-".spotbugs-exist-rules":
-  exists:
-  - "**/*.groovy"
-spotbugs-sast:
-  stage: sast
-  artifacts:
-    access: developer
-    reports:
-      sast:
-      - gl-sast-report.json
-    paths:
-    - gl-sast-report.json
-  rules:
-  - if: "$SAST_EXCLUDED_ANALYZERS =~ /spotbugs/"
-    when: never
-  - if: "$SAST_DISABLED == 'true' || $SAST_DISABLED == '1'"
-    when: never
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
-    exists:
-    - "**/*.groovy"
-  - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
-    when: never
-  - if: "$CI_COMMIT_BRANCH"
-    exists:
-    - "**/*.groovy"
-  variables:
-    SEARCH_MAX_DEPTH: 4
-    SECURE_ANALYZERS_PREFIX: registry.dev.sbiepay.sbi:8443/ubi9/security-products
-    CI_TEMPLATE_REGISTRY_HOST: registry.dev.sbiepay.sbi:8443
-    SAST_ANALYZER_IMAGE_TAG: 6
-    DEFAULT_SAST_EXCLUDED_PATHS: spec,test,tests,tmp
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SAST_ANALYZER_IMAGE: "$SECURE_ANALYZERS_PREFIX/spotbugs:$SAST_ANALYZER_IMAGE_TAG"
-  cache: []
-  script:
-  - "/analyzer run"
-  extends: ".sast-analyzer"
-  allow_failure: true
-  image:
-    name: "$SAST_ANALYZER_IMAGE"
-".sast":
-  stage: sast
-  tags:
-  - common_runner
-  allow_failure: true
-".sast_fortify":
-  stage: sast
-  tags:
-  - common_runner
-  variables:
-    FORTIFY_IMAGE: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025
-    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
-    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
-    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
-    FORTIFY_PROJECT_DIR: "."
-    EXCLUDE_DIRS: "./src/test/**/*"
-    INCLUDE_DIRS: "./**/*.java"
-    FORTIFY_MEM: 8G
-  image: "$FORTIFY_IMAGE"
-  allow_failure: true
-  script:
-  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
-  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS"
-    -verbose
-  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
-  - $BIRTReportGenerator -template "Developer Workbook" -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
-    -format PDF -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf" -Xmx${FORTIFY_MEM}
-  artifacts:
-    paths:
-    - "./*.fpr"
-    - "./*.pdf"
-    expire_in: 1 week
-sast:fortify:
-  stage: sast
-  tags:
-  - common_runner
-  variables:
-    FORTIFY_IMAGE: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025
-    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
-    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
-    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
-    FORTIFY_PROJECT_DIR: "."
-    EXCLUDE_DIRS: "./src/test/**/*"
-    INCLUDE_DIRS: "./**/*.java"
-    FORTIFY_MEM: 8G
-  image: "$FORTIFY_IMAGE"
-  allow_failure: true
-  script:
-  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
-  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS"
-    -verbose
-  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
-  - $BIRTReportGenerator -template "Developer Workbook" -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
-    -format PDF -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf" -Xmx${FORTIFY_MEM}
-  artifacts:
-    paths:
-    - "./*.fpr"
-    - "./*.pdf"
-    expire_in: 1 week
-  extends: ".sast_fortify"
-".sca_setup":
-  before_script:
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      epay-server
-    jf config use epay-server
-    jf rt ping
-".sca":
-  before_script:
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      epay-server
-    jf config use epay-server
-    jf rt ping
-  stage: security
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-  - common_runner
-  extends: ".sca_setup"
-  dependencies:
-  - build
-  allow_failure: true
-  script:
-  - ls build/libs/
-  - jf scan build/libs/${CI_PROJECT_NAME}-${VERSION}.jar --watches=EPAY-WATCHER --fail=true
-sca:xray:
-  before_script:
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      epay-server
-    jf config use epay-server
-    jf rt ping
-  stage: security
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-  - common_runner
-  extends:
-  - ".sca"
-  - ".rules"
-  dependencies:
-  - build
-  allow_failure: true
-  script:
-  - ls build/libs/
-  - jf scan build/libs/${CI_PROJECT_NAME}-${VERSION}.jar --watches=EPAY-WATCHER --fail=true
-  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      =~ /^(main|develop|release)(\/.*)*$/
-  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
-  - when: never
-".secret-analyzer":
-  stage: test
-  image: "$SECURE_ANALYZERS_PREFIX/secrets:$SECRETS_ANALYZER_VERSION$SECRET_DETECTION_IMAGE_SUFFIX"
-  services: []
-  allow_failure: true
-  variables:
-    GIT_DEPTH: '50'
-  artifacts:
-    access: developer
-    reports:
-      secret_detection: gl-secret-detection-report.json
-    paths:
-    - gl-secret-detection-report.json
-  cache: []
-secret_detection:
-  stage: security
-  image: "$SECURE_ANALYZERS_PREFIX/secrets:$SECRETS_ANALYZER_VERSION$SECRET_DETECTION_IMAGE_SUFFIX"
-  services: []
-  allow_failure: true
-  variables:
-    GIT_DEPTH: '50'
-  artifacts:
-    access: developer
-    reports:
-      secret_detection:
-      - gl-secret-detection-report.json
-    paths:
-    - gl-secret-detection-report.json
-  cache: []
-  extends: ".secret-analyzer"
-  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      =~ /^(main|develop|release)(\/.*)*$/
-  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
-  - when: never
-  script:
-  - "/analyzer run"
-  tags:
-  - common_runner
-".git_tag_base":
-  stage: release
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-  - common_runner
-  before_script:
-  - git config --global http.sslVerify false
-  - git config --global --add safe.directory '*'
-  - git config --global user.name "ci"
-  - git config --global user.email "ci.cedge@sbi.co.in"
-  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
-  - git fetch --tags
-create-rc-tag:
-  stage: release
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-  - common_runner
-  before_script:
-  - git config --global http.sslVerify false
-  - git config --global --add safe.directory '*'
-  - git config --global user.name "ci"
-  - git config --global user.email "ci.cedge@sbi.co.in"
-  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
-  - git fetch --tags
-  extends: ".git_tag_base"
-  script:
-  - |
-    RELEASE_VERSION=$(echo "$CI_COMMIT_BRANCH" | sed 's|release/||')
-    RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
-    NEW_RC=$((RC_COUNT + 1))
-    RC_TAG="v${RELEASE_VERSION}-rc.${NEW_RC}"
-    echo "Creating RC tag: $RC_TAG"
-    git tag -a "$RC_TAG" -m "RC ${NEW_RC} — auto on merge to $CI_COMMIT_BRANCH"
-    git push origin "$RC_TAG"
-    echo "RC_TAG=$RC_TAG" >> rc.env
-    echo "✅ RC tag created: $RC_TAG"
-  artifacts:
-    reports:
-      dotenv:
-      - rc.env
-    expire_in: 1 week
-  rules:
-  - if: $CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - when: never
-create-prod-tag:
-  stage: release
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-  - common_runner
-  before_script:
-  - git config --global http.sslVerify false
-  - git config --global --add safe.directory '*'
-  - git config --global user.name "ci"
-  - git config --global user.email "ci.cedge@sbi.co.in"
-  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
-  - git fetch --tags
-  extends: ".git_tag_base"
-  script:
-  - |
-    PROD_TAG="v${VERSION}"
-    echo "Creating production tag: $PROD_TAG"
-    if git tag -l "$PROD_TAG" | grep -q "$PROD_TAG"; then
-      echo "Tag $PROD_TAG already exists — skipping"
-    else
-      git tag -a "$PROD_TAG" -m "Production ${VERSION} — merged to main [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-      git push origin "$PROD_TAG"
-      echo "✅ Production tag created: $PROD_TAG"
-    fi
-  rules:
-  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - when: never
-".publish":
-  stage: publish
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-  - common_runner
-  before_script:
-  - |
-    cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-    update-ca-trust extract
-    keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
-      -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      epay-server
-    jf config use epay-server
-    jf rt ping
-  script:
-  - |
-    echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory"
-    jf gradle publish \
-      --build-name="$CI_PROJECT_NAME" \
-      --build-number="$VERSION" \
-      --repo="itepaypg-sbiepay2-gradle-local"
-    jf rt build-publish "$CI_PROJECT_NAME" "$VERSION"
-    jf xr build-scan "$CI_PROJECT_NAME" "$VERSION" \
-      --watches=EPAY-WATCHER \
-      --fail=true
-    echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
-  rules:
-  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - if: $CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - when: never
-publish:
-  stage: publish
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-  - common_runner
-  before_script:
-  - |
-    cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-    update-ca-trust extract
-    keytool -importcert -alias artifactory -file "$ARTIFACTORY_CERT" \
-      -keystore /etc/pki/java/cacerts -storepass changeit -noprompt
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false \
-      epay-server
-    jf config use epay-server
-    jf rt ping
-  script:
-  - |
-    echo "Publishing $CI_PROJECT_NAME version $VERSION to JFrog Artifactory"
-    jf gradle publish \
-      --build-name="$CI_PROJECT_NAME" \
-      --build-number="$VERSION" \
-      --repo="itepaypg-sbiepay2-gradle-local"
-    jf rt build-publish "$CI_PROJECT_NAME" "$VERSION"
-    jf xr build-scan "$CI_PROJECT_NAME" "$VERSION" \
-      --watches=EPAY-WATCHER \
-      --fail=true
-    echo "✅ Published: $CI_PROJECT_NAME:$VERSION → JFrog Artifactory"
-  rules:
-  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - if: $CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"
-    when: on_success
-  - when: never
-  extends: ".publish"
-default:
-  tags:
-  - common_runner
-stages:
-- ".pre"
-- version
-- build
-- test
-- sast
-- security
-- release
-- publish
-- ".post"
-".rules":
-  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      =~ /^(main|develop|release)(\/.*)*$/
-  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
-  - when: never
-build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-  - common_runner
-  variables:
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  script:
-  - |
-    if [ -n "$VERSION" ]; then
-      gradle build -x test -Pversion=${VERSION}
-    else
-      gradle build -x test
-    fi
-  - ls -lrth build/libs
-  - echo "VERSION=$VERSION" >> build.env
-  artifacts:
-    paths:
-    - build/libs
-    reports:
-      dotenv:
-      - build.env
-    when: on_success
-    expire_in: 1 week
-  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      =~ /^(main|develop|release)(\/.*)*$/
-  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
-  - when: never
-  extends:
-  - ".build"
-  - ".rules"
-test:
-  stage: test
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10
-  tags:
-  - common_runner
-  script:
-  - gradle test
-  artifacts:
-    reports:
-      junit:
-      - build/test-results/test/TEST-*.xml
-    when: always
-    expire_in: 1 week
-  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      =~ /^(main|develop|release)(\/.*)*$/
-  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
-  - when: never
-  extends:
-  - ".test"
-  - ".rules"
+
+
+
+====================
+
+
+Now i wan you to please go through this configuration and template formating and suggest the best possible soltion for this ...
