@@ -1,150 +1,3 @@
-pluginManagement {
-    repositories {
-        maven {
-            // ✅ FIXED: must be gradle-virtual (proxies plugins.gradle.org)
-            // was incorrectly set to maven-local (local only, no plugin portal proxy)
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-
-dependencyResolutionManagement {
-    // ✅ FIXED: changed from FAIL_ON_PROJECT_REPOS to PREFER_SETTINGS
-    // FAIL_ON_PROJECT_REPOS causes hard failure when any build.gradle has repositories {}
-    // PREFER_SETTINGS uses settings repos first but doesn't crash on project-level repos
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-
-rootProject.name = 'epay-java-utilities'
-
-include(
-    'authentication-service',
-    'cache-management-service',
-    'captcha-service',
-    'encryption-decryption-service',
-    'hazelcast-service',
-    'logging-service',
-    'notification-service'
-)
-
-
-
-
-
-
-
-
-
-
-
-==============================================
-
-
-Sharing the Complete details below fYI...................
-
-1. hazelcast-service don't have its own settings.gradle ---- 
-2. Sharing settings.gradle from root please vewrify and help to resolve the  issue ...
-
-
-
-
-settings.gradle:
-
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-
-    }
-}
-
-rootProject.name = 'epay-java-utilities'
-
-include(
-    'authentication-service',
-    'cache-management-service',
-    'captcha-service',
-    'encryption-decryption-service',
-    'hazelcast-service',
-    'logging-service',
-    'notification-service'
-)
-
-
-
-
-
--==========================
-
-
-build.gradle for hazelcast-service ---------------------
-
-
-
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.3.3'
-    id 'io.spring.dependency-management' version '1.1.6'
-}
-
-group = 'com.sbi.epay.hazelcast'
-version = '0.0.1-SNAPSHOT'
-
-// repositories {
-//     mavenCentral()
-//     flatDir {
-//         dirs "lib"
-//     }
-// }
-
-
-test {
-    useJUnitPlatform()
-}
-
-
-
-++++++++++++++++++++++++++++++++++++++++++
-
-
-Pipeline output fyi .............
-
-
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
@@ -159,19 +12,19 @@ Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26
 Using locally found image version due to "if-not-present" pull policy
 Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 Preparing environment
-00:00
+00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
 Getting source from Git repository
-00:02
+00:01
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out 9d28f44c as detached HEAD (ref is main)...
+Checking out 37388f1c as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:11
+00:31
 Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ if [ -n "$VERSION" ]; then # collapsed multi-line command
 Welcome to Gradle 9.3.0!
@@ -182,18 +35,21 @@ Here are the highlights of this release:
 For more details see https://docs.gradle.org/9.3.0/release-notes.html
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-FAILURE: Build failed with an exception.
+> Configure project :logging-service
+Build was configured to prefer settings repositories over project repositories but repository 'MavenRepo' was added by build file 'logging-service/build.gradle'
+> Task :authentication-service:compileJava FAILED
 [Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build/reports/problems/problems-report.html
-* Where:
-Build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle' line: 3
+FAILURE: Build failed with an exception.
 * What went wrong:
-Plugin [id: 'org.springframework.boot', version: '3.3.3'] was not found in any of the following sources:
-- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
-- Included Builds (No included builds contain this plugin)
-- Plugin Repositories (could not resolve plugin artifact 'org.springframework.boot:org.springframework.boot.gradle.plugin:3.3.3')
-  Searched in the following repositories:
-    maven(https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/)
+Execution failed for task ':authentication-service:compileJava'.
+> Could not resolve all files for configuration ':authentication-service:compileClasspath'.
+   > Could not find com.sbi.epay:logging-service:1.0.0.
+     Searched in the following locations:
+       - https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom
+     Required by:
+         project ':authentication-service'
 * Try:
+> If the artifact you are trying to retrieve can be found in the repository but without metadata in 'Maven POM' format, you need to adjust the 'metadataSources { ... }' of the repository declaration.
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
@@ -201,9 +57,10 @@ Plugin [id: 'org.springframework.boot', version: '3.3.3'] was not found in any o
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
 You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD FAILED in 10s
+1 actionable task: 1 executed
+BUILD FAILED in 29s
 Uploading artifacts for failed job
-00:01
+00:00
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
 ERROR: No files to upload                          
