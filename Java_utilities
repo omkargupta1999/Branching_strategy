@@ -1,34 +1,35 @@
-Getting below error nopw ....after adding the settings.gradle
+I have done the Step 1 Changes and added settings.gradle ...Now getting below errro , please fix it .
 
+Pipeline Output -------------------
 
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
 00:01
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 Preparing environment
-00:01
+00:00
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2008-concurrent-0 via PE3DSOPGrunners4...
 Getting source from Git repository
-00:01
+00:04
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out 30ca8781 as detached HEAD (ref is main)...
+Checking out 3ef964e9 as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:11
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+00:09
+Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ if [ -n "$VERSION" ]; then # collapsed multi-line command
 Welcome to Gradle 9.3.0!
 Here are the highlights of this release:
@@ -41,14 +42,10 @@ Daemon will be stopped at the end of the build
 [Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build/reports/problems/problems-report.html
 FAILURE: Build failed with an exception.
 * Where:
-Build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle' line: 3
+Build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/build.gradle' line: 38
 * What went wrong:
-Plugin [id: 'org.springframework.boot', version: '3.3.3'] was not found in any of the following sources:
-- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
-- Included Builds (No included builds contain this plugin)
-- Plugin Repositories (could not resolve plugin artifact 'org.springframework.boot:org.springframework.boot.gradle.plugin:3.3.3')
-  Searched in the following repositories:
-    Gradle Central Plugin Repository
+A problem occurred evaluating project ':authentication-service'.
+> Build was configured to prefer settings repositories over project repositories but repository 'MavenRepo' was added by build file 'authentication-service/build.gradle'
 * Try:
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
@@ -57,119 +54,118 @@ Plugin [id: 'org.springframework.boot', version: '3.3.3'] was not found in any o
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
 You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD FAILED in 9s
+BUILD FAILED in 8s
 Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
 00:00
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-
-
-
-
-
-===================================================================================
-
-rootProject.name = 'epay-java-utilities'
-
-include(
-    'authentication-service',
-    'cache-management-service',
-    'captcha-service',
-    'encryption-decryption-service',
-    'hazelcast-service',
-    'logging-service',
-    'notification-service'
-)
-
-
-
-
-
-
-
-
-
-
-++++++++++++++++++++++++++
-
-We are now getting below error while building the build stage of pipeline ....
-
--------------------
-epay_java_utilities >> below are the directory inside the java_utilities and inside each directory build.gradle is there for each services ...basically build should run for each services .....But getting below error please help us to identify the
-issue and provide the solution for the same.
- 
-
-authentication-service
-cache-management-service
-captcha-service
-encryption-decryption-service
-hazelcast-service
-logging-service
-notification-service
-.gitignore
-.gitlab-ci.yml
-README.md
-
-
-
-####################################################################################
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:01
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
-Created fresh repository.
-Checking out fac864c4 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:04
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-$ if [ -n "$VERSION" ]; then # collapsed multi-line command
-Welcome to Gradle 9.3.0!
-Here are the highlights of this release:
- - Test reporting improvements
- - Error and warning improvements
- - Build authoring improvements
-For more details see https://docs.gradle.org/9.3.0/release-notes.html
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-FAILURE: Build failed with an exception.
-* What went wrong:
-Directory '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities' does not contain a Gradle build.
-A Gradle build's root directory should contain one of the possible settings files: settings.gradle, settings.gradle.kts, settings.gradle.dcl.It may also contain one of the possible build files: build.gradle, build.gradle.kts, build.gradle.dcl.
-To create a new Gradle build in this directory run 'gradle init'
-For more information about the 'init' task, please refer to https://docs.gradle.org/9.3.0/userguide/build_init_plugin.html in the Gradle documentation.
-For more details on creating a Gradle build, please refer to https://docs.gradle.org/9.3.0/userguide/tutorial_using_tasks.html in the Gradle documentation.
-* Try:
-> Run gradle init to create a new Gradle build in this directory.
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Get more help at https://help.gradle.org.
-BUILD FAILED in 3s
-Uploading artifacts for failed job
-00:01
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
+
+
+
+
+
+Below is the build.gradle from authentication-service subdirectory ...............
+
+
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group = 'com.sbi.epay'
+version = "${version}"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+// repositories {
+//     mavenCentral()
+//     maven {
+//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
+//         credentials(PasswordCredentials) {
+//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
+//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
+//         }
+//         authentication {
+//             basic(BasicAuthentication)
+//         }
+//     }
+// }
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+        credentials(PasswordCredentials) {
+            username = System.getenv("JF_USER")
+            password = System.getenv("JFROG_PASSWORD")
+        }
+        authentication {
+            basic(BasicAuthentication)
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+            credentials(PasswordCredentials) {
+                username = System.getenv("JF_USER")
+                password = System.getenv("JFROG_PASSWORD")
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+}
+
+}
+
+dependencies {
+    implementation "org.springframework.security:spring-security-core:${spring_security}"
+    implementation "org.springframework.security:spring-security-web:${spring_security}"
+    implementation "org.springframework.security:spring-security-config:${spring_security}"
+
+    implementation "io.jsonwebtoken:jjwt-api:${jwt}"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jwt}"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jwt}"
+
+    implementation "org.apache.commons:commons-lang3:${common_lang}"
+    implementation "jakarta.servlet:jakarta.servlet-api:${jakarta_servlet}"
+
+    implementation "com.sbi.epay:logging-service:${logging_service}"
+    implementation "net.logstash.logback:logstash-logback-encoder:${logback}"
+
+    compileOnly "org.projectlombok:lombok:${lombok}"
+    annotationProcessor "org.projectlombok:lombok:${lombok}"
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit_jupiter}"
+    testImplementation "org.junit.vintage:junit-vintage-engine:${junit_jupiter}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_jupiter}"
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
