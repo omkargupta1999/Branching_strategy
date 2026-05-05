@@ -1,436 +1,169 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-2014-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:04
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
-Created fresh repository.
-Checking out 98a5466a as detached HEAD (ref is feature_ci)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:44
-Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-$ env | grep -i proxy
-CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX=gitlab.sbi:443/itepaypg-sbiepay2/dependency_proxy/containers
-CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX=gitlab.sbi:443/itepaypg-sbiepay2/application/backend/dependency_proxy/containers
-JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy
-CI_DEPENDENCY_PROXY_PASSWORD=[MASKED]
-GITLAB_FEATURES=audit_events,blocked_issues,blocked_work_items,board_iteration_lists,code_owners,code_review_analytics,full_codequality_report,group_activity_analytics,group_bulk_edit,issuable_default_templates,issue_weights,iterations,ldap_group_sync,merge_request_approvers,milestone_charts,multiple_issue_assignees,multiple_ldap_servers,multiple_merge_request_assignees,multiple_merge_request_reviewers,project_merge_request_analytics,protected_refs_for_users,push_rules,resource_access_token,seat_link,seat_usage_quotas,pipelines_usage_quotas,transfer_usage_quotas,product_analytics_usage_quotas,wip_limits,zoekt_code_search,seat_control,description_diffs,send_emails_from_admin_area,repository_size_limit,maintenance_mode,scoped_issue_board,contribution_analytics,group_webhooks,member_lock,elastic_search,repository_mirrors,ai_chat,admin_audit_log,agent_managed_resources,agentic_chat,auditor_user,blocking_merge_requests,board_assignee_lists,board_milestone_lists,ci_secrets_management,ci_pipeline_cancellation_restrictions,cluster_agents_ci_impersonation,cluster_agents_user_impersonation,cluster_deployments,code_owner_approval_required,code_suggestions,commit_committer_check,commit_committer_name_check,compliance_framework,custom_compliance_frameworks,custom_fields,custom_file_templates,custom_project_templates,cycle_analytics_for_groups,cycle_analytics_for_projects,db_load_balancing,default_branch_protection_restriction_in_groups,default_project_deletion_protection,delete_unconfirmed_users,dependency_proxy_for_packages,disable_extensions_marketplace_for_enterprise_users,disable_name_update_for_users,disable_personal_access_tokens,domain_verification,epic_colors,epics,extended_audit_events,external_authorization_service_api_management,feature_flags_code_references,file_locks,geo,generic_alert_fingerprinting,git_two_factor_enforcement,group_allowed_email_domains,group_coverage_reports,group_forking_protection,group_level_compliance_dashboard,group_milestone_project_releases,group_project_templates,group_repository_analytics,group_saml,group_scoped_ci_variables,ide_schema_config,incident_metric_upload,instance_level_scim,jira_issues_integration,ldap_group_sync_filter,linked_items_epics,merge_request_performance_metrics,admin_merge_request_approvers_rules,merge_trains,metrics_reports,multiple_alert_http_integrations,multiple_approval_rules,multiple_group_issue_boards,object_storage,microsoft_group_sync,operations_dashboard,package_forwarding,packages_virtual_registry,pages_size_limit,pages_multiple_versions,productivity_analytics,project_aliases,protected_environments,reject_non_dco_commits,reject_unsigned_commits,related_epics,remote_development,saml_group_sync,service_accounts,scoped_labels,smartcard_auth,ssh_certificates,swimlanes,target_branch_rules,troubleshoot_job,type_of_work_analytics,minimal_access_role,unprotection_restrictions,ci_project_subscriptions,incident_timeline_view,oncall_schedules,escalation_policies,zentao_issues_integration,coverage_check_approval_rule,issuable_resource_links,group_protected_branches,group_level_merge_checks_setting,oidc_client_groups_claim,disable_deleting_account_for_users,disable_private_profiles,group_saved_replies,requested_changes_block_merge_request,project_saved_replies,default_roles_assignees,ci_component_usages_in_projects,branch_rule_squash_options,work_item_status,glab_ask_git_command,generate_commit_message,summarize_new_merge_request,summarize_review,generate_description,summarize_comments,review_merge_request,board_status_lists,disable_invite_members,self_hosted_models,group_ip_restriction,issues_analytics,password_complexity,group_wikis,email_additional_text,custom_file_templates_for_namespace,incident_sla,export_user_permissions,cross_project_pipelines,feature_flags_related_issues,merge_pipelines,ci_cd_projects,github_integration,ai_agents,ai_config_chat,ai_features,ai_workflows,amazon_q,api_discovery,api_fuzzing,auto_rollback,cluster_receptive_agents,cluster_image_scanning,external_status_checks,combined_project_analytics_dashboards,compliance_pipeline_configuration,container_registry_immutable_tag_rules,container_scanning,credentials_inventory,custom_roles,dast,dependency_scanning,dora4_analytics,description_composer,enterprise_templates,environment_alerts,evaluate_group_level_compliance_pipeline,explain_code,external_audit_events,experimental_features,generate_test_file,ai_generate_cube_query,git_abuse_rate_limit,group_ci_cd_analytics,group_level_compliance_adherence_report,group_level_compliance_violations_report,project_level_compliance_dashboard,project_level_compliance_adherence_report,project_level_compliance_violations_report,group_level_analytics_dashboard,incident_management,inline_codequality,insights,integrations_allow_list,issuable_health_status,issues_completed_analytics,jira_vulnerabilities_integration,jira_issue_association_enforcement,kubernetes_cluster_vulnerabilities,license_scanning,native_secrets_management,okrs,personal_access_token_expiration_policy,secret_push_protection,product_analytics,project_quality_summary,project_level_analytics_dashboard,quality_management,release_evidence_test_artifacts,report_approver_rules,required_ci_templates,requirements,runner_maintenance_note,runner_performance_insights,runner_performance_insights_for_namespace,runner_upgrade_management,runner_upgrade_management_for_namespace,sast,sast_advanced,sast_iac,sast_custom_rulesets,sast_fp_reduction,secret_detection,security_configuration_in_ui,security_dashboard,security_inventory,security_on_demand_scans,security_orchestration_policies,security_training,ssh_key_expiration_policy,summarize_mr_changes,stale_runner_cleanup_for_namespace,status_page,suggested_reviewers,subepics,observability,unique_project_download_limit,vulnerability_finding_signatures,container_scanning_for_registry,security_exclusions,security_scans_api,observability_alerts,measure_comment_temperature,coverage_fuzzing,devops_adoption,group_level_devops_adoption,instance_level_devops_adoption
-CI_DEPENDENCY_PROXY_USER=gitlab-ci-token
-CI_DEPENDENCY_PROXY_SERVER=gitlab.sbi:443
-$ echo "Pipeline JF_USER ${JF_USER}"
-Pipeline JF_USER devsecopsuser
-$ pwd
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
-$ ls -la
-total 36
-drwxrwxrwx 6 root root 4096 May  5 06:14 .
-drwxrwxrwx 4 root root   76 May  5 06:14 ..
-drwxrwxrwx 6 root root  128 May  5 06:14 .git
--rw-rw-rw- 1 root root  643 May  5 06:14 .gitignore
--rw-rw-rw- 1 root root  225 May  5 06:14 .gitlab-ci.yml
--rw-rw-rw- 1 root root  413 May  5 06:14 Dockerfile
--rw-rw-rw- 1 root root 6244 May  5 06:14 README.md
--rw-rw-rw- 1 root root 3969 May  5 06:14 build.gradle
-drwxrwxrwx 3 root root   21 May  5 06:14 gradle
--rw-rw-rw- 1 root root  397 May  5 06:14 gradle.properties
-drwxrwxrwx 2 root root   79 May  5 06:14 libs
--rw-rw-rw- 1 root root 1580 May  5 06:14 settings.gradle
-drwxrwxrwx 4 root root   30 May  5 06:14 src
-$ if [ -n "$VERSION" ]; then  # collapsed multi-line command
-version v-feature_ci-20260505061449
-Welcome to Gradle 9.3.0!
-Here are the highlights of this release:
- - Test reporting improvements
- - Error and warning improvements
- - Build authoring improvements
-For more details see https://docs.gradle.org/9.3.0/release-notes.html
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-> Task :compileJava
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/eis/ecom/InterBankResponse.java:11: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-@Data
-^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/AlertManagement.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-@Data
-^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/mif/BankAccountInfo.java:32: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-@Data
-^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/pan/PanResponse.java:12: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-@Data
-^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/MerchantVvl.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-@Data
-^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/BusinessRolesMasterMapper.java:28: warning: Unmapped target properties: "createdAt, updatedAt, aggregatorId".
-    BusinessRolesMaster toEntityFromDto(BusinessRolesMasterDto businessRolesMasterDto);
-                        ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/EisApiHistoryMapper.java:10: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-    EisApiHistory dtoToEntity(EisApiHistoryDto eisApiHistoryDto);
-                  ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
-    MIFCircleMapping mapRequestToEntity(MIFCircleMappingRequest mifCircleMappingRequest);
-                     ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:27: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
-    void updateEntityFromRequest(MIFCircleMappingRequest mifCircleMappingRequest, @MappingTarget MIFCircleMapping mifCircleMapping);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    BankAccountInfo mapRequestToEntity(BankAccountInfoDto bankAccountInfoDto);
-                    ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:31: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(BankAccountInfoDto bankAccountInfoDto, @MappingTarget BankAccountInfo bankAccountInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    PaymentInfo mapRequestToEntity(PaymentDto paymentDto);
-                ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-    void mapDtoToEntityForUpdate(PaymentDto paymentDto, @MappingTarget PaymentInfo paymentInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/OtpManagementMapper.java:22: warning: Unmapped target properties: "createdAt, updatedAt, id, verified".
-    OtpManagement mapOtpGenerationDtoToOtpManagement(OtpGenerationDto otpGenerationDto);
-                  ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    ContactInfo mapRequestToEntity(ContactDto contactDto);
-                ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:20: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(ContactDto contactDto, @MappingTarget ContactInfo contactInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/JourneyMViewMapper.java:24: warning: Unmapped target property: "merchantMIFId".
-    JourneyMViewDto mapEntityToDto(MvJourney mvJourney);
-                    ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMViewMapper.java:28: warning: Unmapped target properties: "lastSuccessLogin, lastFailLogin".
-    UserMViewDto mapEntityToDto(UserMView userMView);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    BankTxnInfo mapRequestToEntity(BankTxnDto bankTxnDto);
-                ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:36: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(BankTxnDto bankTxnDto, @MappingTarget BankTxnInfo bankTxnInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    VsccInfo mapRequestToEntity(VsccDto vsccDto);
-             ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(VsccDto vsccDto, @MappingTarget VsccInfo vsccInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    IntegrationInfo mapRequestToEntity(IntegrationDto integrationDto);
-                    ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-    void mapDtoToEntityForUpdate(IntegrationDto integrationDto, @MappingTarget IntegrationInfo integrationInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantVvlMapper.java:25: warning: Unmapped target properties: "MId, annualTxnAmountLimit, dailyTxnAmountLimit, weeklyTxnAmountLimit, monthlyTxnAmountLimit, quarterlyTxnAmountLimit, volumeCheckAllowed, maxTxnLimit, halfYearlyTxnAmountLimit, payModeCode, minTxnLimit". Mapping from Collection element "MerchantVvl merchantVvl" to "MerchantVvlDto merchantVvlDto".
-    List<MerchantVvlDto> toDtoListFromEntity(List<MerchantVvl> entities);
-                         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:26: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    BusinessInfo mapRequestToEntity(BusinessDto businessDto);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:35: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(BusinessDto businessDto, @MappingTarget BusinessInfo businessInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:26: warning: Unmapped target property: "stage".
-    MerchantJourneyDto entityToDto(MIFJourney MIFJourney);
-                       ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:28: warning: Unmapped target property: "MId".
-    JourneyViewDto mapEntityToDto(MvJourney myJourney);
-                   ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMapper.java:33: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, aggregatorId, status, lastSuccessLogin, lastFailLogin, lastLogout, version, authSource".
-    Users mapRequestToEntity(UserRequest userRequest);
-          ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/DeviationMapper.java:33: warning: Unmapped target property: "deviationEndDate".
-    DeviationDto entityToDto(DocumentInfo documentInfo);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:11: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id".
-    MifChargeLegalInfo mapDtoToEntity(MifChargesLegalDto mifChargesLegalDto);
-                       ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:13: warning: Unmapped target properties: "mouS3Key, onboardingApprovalS3Key, pricingApprovalFileName, pricingApprovalS3Key".
-    MifChargesLegalDto mapRequestToDto(MifChargesLegalRequest mifChargesLegalRequest);
-                       ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:19: warning: Unmapped target properties: "createdBy, updatedBy".
-    void mapDtoToEntityForUpdate(MifChargesLegalDto mifChargesLegalDto, @MappingTarget MifChargeLegalInfo mifChargeLegalInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/DocumentInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, merchantMIFId, status, deviationStatus, s3Path, isDeviation, remark, expiredDate, devEndDate".
-    DocumentInfo mapItemToEntity(DocumentItemDto documentItemDto);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/MerchantMIFMapper.java:21: warning: Unmapped target properties: "legalName, brandName".
-    MerchantJourneyStatusDto ToDto(MerchantMIF merchantMIF);
-                             ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-    MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-    MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
-                 ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    ServerCommunicationInfo mapRequestToEntity(ServerCommunicationDto dto);
-                            ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-    void mapDtoToEntityForUpdate(ServerCommunicationDto dto, @MappingTarget ServerCommunicationInfo entity);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:15: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, logoS3Path, version".
-    TifInfo mapRequestToEntity(TifDto tifDto);
-            ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:28: warning: Unmapped target properties: "updatedAt, updatedBy, id, logoS3Path".
-    void mapDtoToEntityForUpdate(TifDto tifDto, @MappingTarget TifInfo tifInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-    WebsiteInfo mapRequestToEntity(WebsiteDto websiteDto);
-                ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-    void mapDtoToEntityForUpdate(WebsiteDto websiteDto, @MappingTarget WebsiteInfo websiteInfo);
-         ^
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreDetailsMapper.java:16: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy". Mapping from Collection element "MifRiskScoreDetailsDto mifRiskScoreDetailsDto" to "MifRiskScoreDetails mifRiskScoreDetails".
-    List<MifRiskScoreDetails> mapDtoListToEntityList(List<MifRiskScoreDetailsDto> mifRiskScoreDetailsDtoList);
-                              ^
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:3: error: cannot find symbol
-import com.sbi.epay.captcha.impl.DefaultCaptcha;
-                                ^
-  symbol:   class DefaultCaptcha
-  location: package com.sbi.epay.captcha.impl
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:4: error: cannot find symbol
-import com.sbi.epay.captcha.util.Config;
-                                ^
-  symbol:   class Config
-  location: package com.sbi.epay.captcha.util
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:23: error: cannot find symbol
-    public DefaultCaptcha captchaProducer() {
-           ^
-  symbol:   class DefaultCaptcha
-  location: class CaptchaConfig
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:12: error: cannot find symbol
-import com.sbi.epay.captcha.impl.DefaultCaptcha;
-                                ^
-  symbol:   class DefaultCaptcha
-  location: package com.sbi.epay.captcha.impl
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:40: error: cannot find symbol
-    private final DefaultCaptcha captchaProducer;
-                  ^
-  symbol:   class DefaultCaptcha
-  location: class CaptchaService
-/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:37: error: cannot find symbol
-@RequiredArgsConstructor
-^
-  symbol:   class DefaultCaptcha
-  location: class CaptchaService
-warning: unknown enum constant When.MAYBE
-  reason: class file for javax.annotation.meta.When not found
-6 errors
-51 warnings
-> Task :compileJava FAILED
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/build/reports/problems/problems-report.html
-FAILURE: Build failed with an exception.
-* What went wrong:
-Execution failed for task ':compileJava'.
-> Compilation failed; see the compiler output below.
-  warning: unknown enum constant When.MAYBE
-    reason: class file for javax.annotation.meta.When not found
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/eis/ecom/InterBankResponse.java:11: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-  @Data
-  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/AlertManagement.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-  @Data
-  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/mif/BankAccountInfo.java:32: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-  @Data
-  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/pan/PanResponse.java:12: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-  @Data
-  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/MerchantVvl.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-  @Data
-  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/BusinessRolesMasterMapper.java:28: warning: Unmapped target properties: "createdAt, updatedAt, aggregatorId".
-      BusinessRolesMaster toEntityFromDto(BusinessRolesMasterDto businessRolesMasterDto);
-                          ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/EisApiHistoryMapper.java:10: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-      EisApiHistory dtoToEntity(EisApiHistoryDto eisApiHistoryDto);
-                    ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
-      MIFCircleMapping mapRequestToEntity(MIFCircleMappingRequest mifCircleMappingRequest);
-                       ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:27: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
-      void updateEntityFromRequest(MIFCircleMappingRequest mifCircleMappingRequest, @MappingTarget MIFCircleMapping mifCircleMapping);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      BankAccountInfo mapRequestToEntity(BankAccountInfoDto bankAccountInfoDto);
-                      ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:31: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(BankAccountInfoDto bankAccountInfoDto, @MappingTarget BankAccountInfo bankAccountInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      PaymentInfo mapRequestToEntity(PaymentDto paymentDto);
-                  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-      void mapDtoToEntityForUpdate(PaymentDto paymentDto, @MappingTarget PaymentInfo paymentInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/OtpManagementMapper.java:22: warning: Unmapped target properties: "createdAt, updatedAt, id, verified".
-      OtpManagement mapOtpGenerationDtoToOtpManagement(OtpGenerationDto otpGenerationDto);
-                    ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      ContactInfo mapRequestToEntity(ContactDto contactDto);
-                  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:20: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(ContactDto contactDto, @MappingTarget ContactInfo contactInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/JourneyMViewMapper.java:24: warning: Unmapped target property: "merchantMIFId".
-      JourneyMViewDto mapEntityToDto(MvJourney mvJourney);
-                      ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMViewMapper.java:28: warning: Unmapped target properties: "lastSuccessLogin, lastFailLogin".
-      UserMViewDto mapEntityToDto(UserMView userMView);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      BankTxnInfo mapRequestToEntity(BankTxnDto bankTxnDto);
-                  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:36: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(BankTxnDto bankTxnDto, @MappingTarget BankTxnInfo bankTxnInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      VsccInfo mapRequestToEntity(VsccDto vsccDto);
-               ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(VsccDto vsccDto, @MappingTarget VsccInfo vsccInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      IntegrationInfo mapRequestToEntity(IntegrationDto integrationDto);
-                      ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-      void mapDtoToEntityForUpdate(IntegrationDto integrationDto, @MappingTarget IntegrationInfo integrationInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantVvlMapper.java:25: warning: Unmapped target properties: "MId, annualTxnAmountLimit, dailyTxnAmountLimit, weeklyTxnAmountLimit, monthlyTxnAmountLimit, quarterlyTxnAmountLimit, volumeCheckAllowed, maxTxnLimit, halfYearlyTxnAmountLimit, payModeCode, minTxnLimit". Mapping from Collection element "MerchantVvl merchantVvl" to "MerchantVvlDto merchantVvlDto".
-      List<MerchantVvlDto> toDtoListFromEntity(List<MerchantVvl> entities);
-                           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:26: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      BusinessInfo mapRequestToEntity(BusinessDto businessDto);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:35: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(BusinessDto businessDto, @MappingTarget BusinessInfo businessInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:26: warning: Unmapped target property: "stage".
-      MerchantJourneyDto entityToDto(MIFJourney MIFJourney);
-                         ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:28: warning: Unmapped target property: "MId".
-      JourneyViewDto mapEntityToDto(MvJourney myJourney);
-                     ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMapper.java:33: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, aggregatorId, status, lastSuccessLogin, lastFailLogin, lastLogout, version, authSource".
-      Users mapRequestToEntity(UserRequest userRequest);
-            ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/DeviationMapper.java:33: warning: Unmapped target property: "deviationEndDate".
-      DeviationDto entityToDto(DocumentInfo documentInfo);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:11: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id".
-      MifChargeLegalInfo mapDtoToEntity(MifChargesLegalDto mifChargesLegalDto);
-                         ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:13: warning: Unmapped target properties: "mouS3Key, onboardingApprovalS3Key, pricingApprovalFileName, pricingApprovalS3Key".
-      MifChargesLegalDto mapRequestToDto(MifChargesLegalRequest mifChargesLegalRequest);
-                         ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:19: warning: Unmapped target properties: "createdBy, updatedBy".
-      void mapDtoToEntityForUpdate(MifChargesLegalDto mifChargesLegalDto, @MappingTarget MifChargeLegalInfo mifChargeLegalInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/DocumentInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, merchantMIFId, status, deviationStatus, s3Path, isDeviation, remark, expiredDate, devEndDate".
-      DocumentInfo mapItemToEntity(DocumentItemDto documentItemDto);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/MerchantMIFMapper.java:21: warning: Unmapped target properties: "legalName, brandName".
-      MerchantJourneyStatusDto ToDto(MerchantMIF merchantMIF);
-                               ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-      MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
-      MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
-                   ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      ServerCommunicationInfo mapRequestToEntity(ServerCommunicationDto dto);
-                              ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
-      void mapDtoToEntityForUpdate(ServerCommunicationDto dto, @MappingTarget ServerCommunicationInfo entity);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:15: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, logoS3Path, version".
-      TifInfo mapRequestToEntity(TifDto tifDto);
-              ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:28: warning: Unmapped target properties: "updatedAt, updatedBy, id, logoS3Path".
-      void mapDtoToEntityForUpdate(TifDto tifDto, @MappingTarget TifInfo tifInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
-      WebsiteInfo mapRequestToEntity(WebsiteDto websiteDto);
-                  ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
-      void mapDtoToEntityForUpdate(WebsiteDto websiteDto, @MappingTarget WebsiteInfo websiteInfo);
-           ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreDetailsMapper.java:16: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy". Mapping from Collection element "MifRiskScoreDetailsDto mifRiskScoreDetailsDto" to "MifRiskScoreDetails mifRiskScoreDetails".
-      List<MifRiskScoreDetails> mapDtoListToEntityList(List<MifRiskScoreDetailsDto> mifRiskScoreDetailsDtoList);
-                                ^
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:3: error: cannot find symbol
-  import com.sbi.epay.captcha.impl.DefaultCaptcha;
-                                  ^
-    symbol:   class DefaultCaptcha
-    location: package com.sbi.epay.captcha.impl
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:4: error: cannot find symbol
-  import com.sbi.epay.captcha.util.Config;
-                                  ^
-    symbol:   class Config
-    location: package com.sbi.epay.captcha.util
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:23: error: cannot find symbol
-      public DefaultCaptcha captchaProducer() {
-             ^
-    symbol:   class DefaultCaptcha
-    location: class CaptchaConfig
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:12: error: cannot find symbol
-  import com.sbi.epay.captcha.impl.DefaultCaptcha;
-                                  ^
-    symbol:   class DefaultCaptcha
-    location: package com.sbi.epay.captcha.impl
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:40: error: cannot find symbol
-      private final DefaultCaptcha captchaProducer;
-                    ^
-    symbol:   class DefaultCaptcha
-    location: class CaptchaService
-  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:37: error: cannot find symbol
-  @RequiredArgsConstructor
-  ^
-    symbol:   class DefaultCaptcha
-    location: class CaptchaService
-  6 errors
-  51 warnings
-* Try:
-> Check your code and dependencies to fix the compilation error(s)
-> Run with --scan to get full insights from a Build Scan (powered by Develocity).
-BUILD FAILED in 42s
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-1 actionable task: 1 executed
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+Getting this error while triggering the pipeline ....
+
+
+Error: jobs sast:gitlab config should implement the script:, run:, or trigger: keyword
+
+java.yaml -----------------
+
+
+# templates/ci/backend/java.yml
+# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
+# For library/utility repos (produce JARs → JFrog), use java.library.yml
+#
+# App repo .gitlab-ci.yml:
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: txn
+#     CHART_NAME:   transactionservice
+
+default:
+  tags:
+    - common_runner
+
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  - local: 'ci/security/sast/sast.gitlab.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/iac/iac.scan.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  # - local: 'ci/image/image.scan.xray.yml'
+  # - local: 'ci/image/image.scan.rhacs.yml'
+  # - local: 'ci/image/image.sign.yml'
+  # - local: 'ci/image/image.sbom.attest.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
+
+stages:
+  - version       # version generation
+  - build         # gradle compile
+  - test          # unit + integration
+  - sast          # gitlab sast + fortify
+  - security      # sca + secrets + iac + license + sbom
+  - image-build   # podman build (local only — no push)
+  - image-scan    # trivy + xray + rhacs (gate before sign)
+  # - image-attest  # cosign sign + sbom attestation
+  - image-push    # push to JFrog (only after scan + sign)
+  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
+  - deploy        # trigger buttons → deployment repo CD pipeline
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+
+# Branch + MR filter — applied to all jobs via extends
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\/.*)*$/'
+    - when: never
+
+# ── Stage: version ─────────────────────────────────────────────────────────────
+# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+sast:gitlab:
+  extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# # ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# # GitLab template jobs — override stage and apply rules
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# kics-iac-sast:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# # ── Stage: image-build ─────────────────────────────────────────────────────────
+image:build:
+  extends: [.image_build, .rules]
+
+# # ── Stage: image-scan ──────────────────────────────────────────────────────────
+# Trivy (GitLab template job) — override stage and rules
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# image:scan:rhacs:
+#   extends: [.image_scan_rhacs, .rules]
+
+# # ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# image:sbom:attest:
+#   extends: [.sbom_attest, .rules]
+
+# # ── Stage: image-push ──────────────────────────────────────────────────────────
+image:push:
+  extends: [.image_push, .rules]
+  # - release
+  # - deploy
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
+# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
+# deploy-prod-dc/dr: manual — Bank Only
