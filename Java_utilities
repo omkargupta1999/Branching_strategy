@@ -1,6 +1,3 @@
-Getting below error while runing build stage :
-
-
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
@@ -24,10 +21,10 @@ Getting source from Git repository
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
 Created fresh repository.
-Checking out f6dae0fc as detached HEAD (ref is feature_ci)...
+Checking out 98a5466a as detached HEAD (ref is feature_ci)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:31
+00:44
 Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ env | grep -i proxy
 CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX=gitlab.sbi:443/itepaypg-sbiepay2/dependency_proxy/containers
@@ -43,21 +40,21 @@ $ pwd
 /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
 $ ls -la
 total 36
-drwxrwxrwx 6 root root 4096 May  5 05:21 .
-drwxrwxrwx 4 root root   76 May  5 05:21 ..
-drwxrwxrwx 6 root root  128 May  5 05:21 .git
--rw-rw-rw- 1 root root  643 May  5 05:21 .gitignore
--rw-rw-rw- 1 root root  225 May  5 05:21 .gitlab-ci.yml
--rw-rw-rw- 1 root root  413 May  5 05:21 Dockerfile
--rw-rw-rw- 1 root root 6244 May  5 05:21 README.md
--rw-rw-rw- 1 root root 3969 May  5 05:21 build.gradle
-drwxrwxrwx 3 root root   21 May  5 05:21 gradle
--rw-rw-rw- 1 root root  397 May  5 05:21 gradle.properties
-drwxrwxrwx 2 root root   79 May  5 05:21 libs
--rw-rw-rw- 1 root root 1580 May  5 05:21 settings.gradle
-drwxrwxrwx 4 root root   30 May  5 05:21 src
+drwxrwxrwx 6 root root 4096 May  5 06:14 .
+drwxrwxrwx 4 root root   76 May  5 06:14 ..
+drwxrwxrwx 6 root root  128 May  5 06:14 .git
+-rw-rw-rw- 1 root root  643 May  5 06:14 .gitignore
+-rw-rw-rw- 1 root root  225 May  5 06:14 .gitlab-ci.yml
+-rw-rw-rw- 1 root root  413 May  5 06:14 Dockerfile
+-rw-rw-rw- 1 root root 6244 May  5 06:14 README.md
+-rw-rw-rw- 1 root root 3969 May  5 06:14 build.gradle
+drwxrwxrwx 3 root root   21 May  5 06:14 gradle
+-rw-rw-rw- 1 root root  397 May  5 06:14 gradle.properties
+drwxrwxrwx 2 root root   79 May  5 06:14 libs
+-rw-rw-rw- 1 root root 1580 May  5 06:14 settings.gradle
+drwxrwxrwx 4 root root   30 May  5 06:14 src
 $ if [ -n "$VERSION" ]; then  # collapsed multi-line command
-version v-feature_ci-20260505052102
+version v-feature_ci-20260505061449
 Welcome to Gradle 9.3.0!
 Here are the highlights of this release:
  - Test reporting improvements
@@ -66,191 +63,374 @@ Here are the highlights of this release:
 For more details see https://docs.gradle.org/9.3.0/release-notes.html
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
+> Task :compileJava
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/eis/ecom/InterBankResponse.java:11: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/AlertManagement.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/mif/BankAccountInfo.java:32: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/pan/PanResponse.java:12: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/MerchantVvl.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/BusinessRolesMasterMapper.java:28: warning: Unmapped target properties: "createdAt, updatedAt, aggregatorId".
+    BusinessRolesMaster toEntityFromDto(BusinessRolesMasterDto businessRolesMasterDto);
+                        ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/EisApiHistoryMapper.java:10: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+    EisApiHistory dtoToEntity(EisApiHistoryDto eisApiHistoryDto);
+                  ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
+    MIFCircleMapping mapRequestToEntity(MIFCircleMappingRequest mifCircleMappingRequest);
+                     ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:27: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
+    void updateEntityFromRequest(MIFCircleMappingRequest mifCircleMappingRequest, @MappingTarget MIFCircleMapping mifCircleMapping);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    BankAccountInfo mapRequestToEntity(BankAccountInfoDto bankAccountInfoDto);
+                    ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:31: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(BankAccountInfoDto bankAccountInfoDto, @MappingTarget BankAccountInfo bankAccountInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    PaymentInfo mapRequestToEntity(PaymentDto paymentDto);
+                ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+    void mapDtoToEntityForUpdate(PaymentDto paymentDto, @MappingTarget PaymentInfo paymentInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/OtpManagementMapper.java:22: warning: Unmapped target properties: "createdAt, updatedAt, id, verified".
+    OtpManagement mapOtpGenerationDtoToOtpManagement(OtpGenerationDto otpGenerationDto);
+                  ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    ContactInfo mapRequestToEntity(ContactDto contactDto);
+                ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:20: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(ContactDto contactDto, @MappingTarget ContactInfo contactInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/JourneyMViewMapper.java:24: warning: Unmapped target property: "merchantMIFId".
+    JourneyMViewDto mapEntityToDto(MvJourney mvJourney);
+                    ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMViewMapper.java:28: warning: Unmapped target properties: "lastSuccessLogin, lastFailLogin".
+    UserMViewDto mapEntityToDto(UserMView userMView);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    BankTxnInfo mapRequestToEntity(BankTxnDto bankTxnDto);
+                ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:36: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(BankTxnDto bankTxnDto, @MappingTarget BankTxnInfo bankTxnInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    VsccInfo mapRequestToEntity(VsccDto vsccDto);
+             ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(VsccDto vsccDto, @MappingTarget VsccInfo vsccInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    IntegrationInfo mapRequestToEntity(IntegrationDto integrationDto);
+                    ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+    void mapDtoToEntityForUpdate(IntegrationDto integrationDto, @MappingTarget IntegrationInfo integrationInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantVvlMapper.java:25: warning: Unmapped target properties: "MId, annualTxnAmountLimit, dailyTxnAmountLimit, weeklyTxnAmountLimit, monthlyTxnAmountLimit, quarterlyTxnAmountLimit, volumeCheckAllowed, maxTxnLimit, halfYearlyTxnAmountLimit, payModeCode, minTxnLimit". Mapping from Collection element "MerchantVvl merchantVvl" to "MerchantVvlDto merchantVvlDto".
+    List<MerchantVvlDto> toDtoListFromEntity(List<MerchantVvl> entities);
+                         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:26: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    BusinessInfo mapRequestToEntity(BusinessDto businessDto);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:35: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(BusinessDto businessDto, @MappingTarget BusinessInfo businessInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:26: warning: Unmapped target property: "stage".
+    MerchantJourneyDto entityToDto(MIFJourney MIFJourney);
+                       ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:28: warning: Unmapped target property: "MId".
+    JourneyViewDto mapEntityToDto(MvJourney myJourney);
+                   ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMapper.java:33: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, aggregatorId, status, lastSuccessLogin, lastFailLogin, lastLogout, version, authSource".
+    Users mapRequestToEntity(UserRequest userRequest);
+          ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/DeviationMapper.java:33: warning: Unmapped target property: "deviationEndDate".
+    DeviationDto entityToDto(DocumentInfo documentInfo);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:11: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id".
+    MifChargeLegalInfo mapDtoToEntity(MifChargesLegalDto mifChargesLegalDto);
+                       ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:13: warning: Unmapped target properties: "mouS3Key, onboardingApprovalS3Key, pricingApprovalFileName, pricingApprovalS3Key".
+    MifChargesLegalDto mapRequestToDto(MifChargesLegalRequest mifChargesLegalRequest);
+                       ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:19: warning: Unmapped target properties: "createdBy, updatedBy".
+    void mapDtoToEntityForUpdate(MifChargesLegalDto mifChargesLegalDto, @MappingTarget MifChargeLegalInfo mifChargeLegalInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/DocumentInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, merchantMIFId, status, deviationStatus, s3Path, isDeviation, remark, expiredDate, devEndDate".
+    DocumentInfo mapItemToEntity(DocumentItemDto documentItemDto);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/MerchantMIFMapper.java:21: warning: Unmapped target properties: "legalName, brandName".
+    MerchantJourneyStatusDto ToDto(MerchantMIF merchantMIF);
+                             ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+    MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+    MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
+                 ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    ServerCommunicationInfo mapRequestToEntity(ServerCommunicationDto dto);
+                            ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+    void mapDtoToEntityForUpdate(ServerCommunicationDto dto, @MappingTarget ServerCommunicationInfo entity);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:15: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, logoS3Path, version".
+    TifInfo mapRequestToEntity(TifDto tifDto);
+            ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:28: warning: Unmapped target properties: "updatedAt, updatedBy, id, logoS3Path".
+    void mapDtoToEntityForUpdate(TifDto tifDto, @MappingTarget TifInfo tifInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+    WebsiteInfo mapRequestToEntity(WebsiteDto websiteDto);
+                ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+    void mapDtoToEntityForUpdate(WebsiteDto websiteDto, @MappingTarget WebsiteInfo websiteInfo);
+         ^
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreDetailsMapper.java:16: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy". Mapping from Collection element "MifRiskScoreDetailsDto mifRiskScoreDetailsDto" to "MifRiskScoreDetails mifRiskScoreDetails".
+    List<MifRiskScoreDetails> mapDtoListToEntityList(List<MifRiskScoreDetailsDto> mifRiskScoreDetailsDtoList);
+                              ^
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:3: error: cannot find symbol
+import com.sbi.epay.captcha.impl.DefaultCaptcha;
+                                ^
+  symbol:   class DefaultCaptcha
+  location: package com.sbi.epay.captcha.impl
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:4: error: cannot find symbol
+import com.sbi.epay.captcha.util.Config;
+                                ^
+  symbol:   class Config
+  location: package com.sbi.epay.captcha.util
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:23: error: cannot find symbol
+    public DefaultCaptcha captchaProducer() {
+           ^
+  symbol:   class DefaultCaptcha
+  location: class CaptchaConfig
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:12: error: cannot find symbol
+import com.sbi.epay.captcha.impl.DefaultCaptcha;
+                                ^
+  symbol:   class DefaultCaptcha
+  location: package com.sbi.epay.captcha.impl
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:40: error: cannot find symbol
+    private final DefaultCaptcha captchaProducer;
+                  ^
+  symbol:   class DefaultCaptcha
+  location: class CaptchaService
+/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:37: error: cannot find symbol
+@RequiredArgsConstructor
+^
+  symbol:   class DefaultCaptcha
+  location: class CaptchaService
+warning: unknown enum constant When.MAYBE
+  reason: class file for javax.annotation.meta.When not found
+6 errors
+51 warnings
 > Task :compileJava FAILED
 [Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/build/reports/problems/problems-report.html
 FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
-> Could not resolve all files for configuration ':compileClasspath'.
-   > Could not find com.sbi.epay:logging-service:0.1.0.
-     Required by:
-         root project 'epay_admin_portal_service'
-   > Could not find com.sbi.epay:notification-service:0.1.0.
-     Required by:
-         root project 'epay_admin_portal_service'
-   > Could not find com.sbi.epay:encryption-decryption-service:0.1.0.
-     Required by:
-         root project 'epay_admin_portal_service'
+> Compilation failed; see the compiler output below.
+  warning: unknown enum constant When.MAYBE
+    reason: class file for javax.annotation.meta.When not found
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/eis/ecom/InterBankResponse.java:11: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+  @Data
+  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/AlertManagement.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+  @Data
+  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/mif/BankAccountInfo.java:32: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+  @Data
+  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/externalservice/response/pan/PanResponse.java:12: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+  @Data
+  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/entity/admin/MerchantVvl.java:24: warning: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+  @Data
+  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/BusinessRolesMasterMapper.java:28: warning: Unmapped target properties: "createdAt, updatedAt, aggregatorId".
+      BusinessRolesMaster toEntityFromDto(BusinessRolesMasterDto businessRolesMasterDto);
+                          ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/EisApiHistoryMapper.java:10: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+      EisApiHistory dtoToEntity(EisApiHistoryDto eisApiHistoryDto);
+                    ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
+      MIFCircleMapping mapRequestToEntity(MIFCircleMappingRequest mifCircleMappingRequest);
+                       ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MIFCircleMappingMapper.java:27: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, rmId".
+      void updateEntityFromRequest(MIFCircleMappingRequest mifCircleMappingRequest, @MappingTarget MIFCircleMapping mifCircleMapping);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      BankAccountInfo mapRequestToEntity(BankAccountInfoDto bankAccountInfoDto);
+                      ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankAccountInfoMapper.java:31: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(BankAccountInfoDto bankAccountInfoDto, @MappingTarget BankAccountInfo bankAccountInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      PaymentInfo mapRequestToEntity(PaymentDto paymentDto);
+                  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/PaymentMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+      void mapDtoToEntityForUpdate(PaymentDto paymentDto, @MappingTarget PaymentInfo paymentInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/OtpManagementMapper.java:22: warning: Unmapped target properties: "createdAt, updatedAt, id, verified".
+      OtpManagement mapOtpGenerationDtoToOtpManagement(OtpGenerationDto otpGenerationDto);
+                    ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      ContactInfo mapRequestToEntity(ContactDto contactDto);
+                  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/ContactInfoMapper.java:20: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(ContactDto contactDto, @MappingTarget ContactInfo contactInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/JourneyMViewMapper.java:24: warning: Unmapped target property: "merchantMIFId".
+      JourneyMViewDto mapEntityToDto(MvJourney mvJourney);
+                      ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMViewMapper.java:28: warning: Unmapped target properties: "lastSuccessLogin, lastFailLogin".
+      UserMViewDto mapEntityToDto(UserMView userMView);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      BankTxnInfo mapRequestToEntity(BankTxnDto bankTxnDto);
+                  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BankTxnInfoMapper.java:36: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(BankTxnDto bankTxnDto, @MappingTarget BankTxnInfo bankTxnInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      VsccInfo mapRequestToEntity(VsccDto vsccDto);
+               ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/VsccMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(VsccDto vsccDto, @MappingTarget VsccInfo vsccInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      IntegrationInfo mapRequestToEntity(IntegrationDto integrationDto);
+                      ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/IntegrationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+      void mapDtoToEntityForUpdate(IntegrationDto integrationDto, @MappingTarget IntegrationInfo integrationInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantVvlMapper.java:25: warning: Unmapped target properties: "MId, annualTxnAmountLimit, dailyTxnAmountLimit, weeklyTxnAmountLimit, monthlyTxnAmountLimit, quarterlyTxnAmountLimit, volumeCheckAllowed, maxTxnLimit, halfYearlyTxnAmountLimit, payModeCode, minTxnLimit". Mapping from Collection element "MerchantVvl merchantVvl" to "MerchantVvlDto merchantVvlDto".
+      List<MerchantVvlDto> toDtoListFromEntity(List<MerchantVvl> entities);
+                           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:26: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      BusinessInfo mapRequestToEntity(BusinessDto businessDto);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/BusinessInfoMapper.java:35: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(BusinessDto businessDto, @MappingTarget BusinessInfo businessInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:26: warning: Unmapped target property: "stage".
+      MerchantJourneyDto entityToDto(MIFJourney MIFJourney);
+                         ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/AdminMerchantOnboardingMapper.java:28: warning: Unmapped target property: "MId".
+      JourneyViewDto mapEntityToDto(MvJourney myJourney);
+                     ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/UserMapper.java:33: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, aggregatorId, status, lastSuccessLogin, lastFailLogin, lastLogout, version, authSource".
+      Users mapRequestToEntity(UserRequest userRequest);
+            ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/DeviationMapper.java:33: warning: Unmapped target property: "deviationEndDate".
+      DeviationDto entityToDto(DocumentInfo documentInfo);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:11: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id".
+      MifChargeLegalInfo mapDtoToEntity(MifChargesLegalDto mifChargesLegalDto);
+                         ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:13: warning: Unmapped target properties: "mouS3Key, onboardingApprovalS3Key, pricingApprovalFileName, pricingApprovalS3Key".
+      MifChargesLegalDto mapRequestToDto(MifChargesLegalRequest mifChargesLegalRequest);
+                         ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifChargeLegalInfoMapper.java:19: warning: Unmapped target properties: "createdBy, updatedBy".
+      void mapDtoToEntityForUpdate(MifChargesLegalDto mifChargesLegalDto, @MappingTarget MifChargeLegalInfo mifChargeLegalInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/DocumentInfoMapper.java:29: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, merchantMIFId, status, deviationStatus, s3Path, isDeviation, remark, expiredDate, devEndDate".
+      DocumentInfo mapItemToEntity(DocumentItemDto documentItemDto);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/MerchantMIFMapper.java:21: warning: Unmapped target properties: "legalName, brandName".
+      MerchantJourneyStatusDto ToDto(MerchantMIF merchantMIF);
+                               ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MerchantRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+      MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreMapper.java:13: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy".
+      MifRiskScore mapDtoToEntity(MifRiskScoreDto mifRiskScoreDto);
+                   ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      ServerCommunicationInfo mapRequestToEntity(ServerCommunicationDto dto);
+                              ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/ServerCommunicationMapper.java:32: warning: Unmapped target properties: "createdBy, updatedBy, version".
+      void mapDtoToEntityForUpdate(ServerCommunicationDto dto, @MappingTarget ServerCommunicationInfo entity);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:15: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, logoS3Path, version".
+      TifInfo mapRequestToEntity(TifDto tifDto);
+              ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/TifInfoMapper.java:28: warning: Unmapped target properties: "updatedAt, updatedBy, id, logoS3Path".
+      void mapDtoToEntityForUpdate(TifDto tifDto, @MappingTarget TifInfo tifInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:25: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy, id, version".
+      WebsiteInfo mapRequestToEntity(WebsiteDto websiteDto);
+                  ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/mif/WebsiteInfoMapper.java:32: warning: Unmapped target properties: "updatedAt, updatedBy, id".
+      void mapDtoToEntityForUpdate(WebsiteDto websiteDto, @MappingTarget WebsiteInfo websiteInfo);
+           ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/mapper/admin/MifRiskScoreDetailsMapper.java:16: warning: Unmapped target properties: "createdAt, updatedAt, createdBy, updatedBy". Mapping from Collection element "MifRiskScoreDetailsDto mifRiskScoreDetailsDto" to "MifRiskScoreDetails mifRiskScoreDetails".
+      List<MifRiskScoreDetails> mapDtoListToEntityList(List<MifRiskScoreDetailsDto> mifRiskScoreDetailsDtoList);
+                                ^
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:3: error: cannot find symbol
+  import com.sbi.epay.captcha.impl.DefaultCaptcha;
+                                  ^
+    symbol:   class DefaultCaptcha
+    location: package com.sbi.epay.captcha.impl
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:4: error: cannot find symbol
+  import com.sbi.epay.captcha.util.Config;
+                                  ^
+    symbol:   class Config
+    location: package com.sbi.epay.captcha.util
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java:23: error: cannot find symbol
+      public DefaultCaptcha captchaProducer() {
+             ^
+    symbol:   class DefaultCaptcha
+    location: class CaptchaConfig
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:12: error: cannot find symbol
+  import com.sbi.epay.captcha.impl.DefaultCaptcha;
+                                  ^
+    symbol:   class DefaultCaptcha
+    location: package com.sbi.epay.captcha.impl
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:40: error: cannot find symbol
+      private final DefaultCaptcha captchaProducer;
+                    ^
+    symbol:   class DefaultCaptcha
+    location: class CaptchaService
+  /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/src/main/java/com/epay/admin/portal/service/mif/CaptchaService.java:37: error: cannot find symbol
+  @RequiredArgsConstructor
+  ^
+    symbol:   class DefaultCaptcha
+    location: class CaptchaService
+  6 errors
+  51 warnings
 * Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
+> Check your code and dependencies to fix the compilation error(s)
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
-> Get more help at https://help.gradle.org.
+BUILD FAILED in 42s
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
 You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD FAILED in 29s
 1 actionable task: 1 executed
 Uploading artifacts for failed job
-00:00
+00:01
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
-00:01
+00:00
 ERROR: Job failed: exit code 1
-
-
-
-build.gradle .............
-
-
-
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version "${spring_boot}"
-    id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
-
-group = 'com.epay.admin.portal'
-version = "${version}"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-// repositories {
-//     mavenCentral()
-//     flatDir {
-//         dirs "libs"
-//     }
-//     maven {
-//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-//         credentials(PasswordCredentials) {
-//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
-//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
-//         }
-//         authentication {
-//             basic(BasicAuthentication)
-//         }
-//     }
-// }
-
-dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
-    implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
-
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation "software.amazon.awssdk:s3:${aws_s3}"
-    implementation "commons-io:commons-io:${common_io}"
-
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    implementation "org.modelmapper:modelmapper:${modelmapper}"
-    implementation "javax.persistence:javax.persistence-api:${javax_persistence}"
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation "org.springframework.boot:spring-boot-starter-webflux"
-
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwt}"
-    implementation "io.jsonwebtoken:jjwt-api:${jjwt}"
-    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwt}"
-
-    //Mapstruct
-    implementation "org.mapstruct:mapstruct:${mapstruct}"
-    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
-
-    //Spring security
-    implementation("org.springframework.security:spring-security-web:6.5.6")
-    implementation("org.springframework.security:spring-security-core:6.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-security:3.5.7")
-
-    //SBI Utilities
-    implementation "com.sbi.epay:logging-service:${sbi_logging}"
-    implementation "com.sbi.epay:captcha-service:${sbi_captcha}"
-//	implementation 'name:captcha-service-0.1.0'
-    implementation "com.sbi.epay:notification-service:${sbi_notification}"
-    implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
-    //implementation "com.sbi.epay:authentication-service:${sbi_auth}"
-    implementation 'name:authentication-service-0.1.1'
-    implementation 'org.hibernate.orm:hibernate-envers'
-
-    implementation "org.thymeleaf:thymeleaf:${thymeleaf}"
-    implementation "org.thymeleaf:thymeleaf-spring5:${thymeleaf}"
-    implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
-    implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
-}
-
-bootJar {
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-}
-
-
-
-settings.gradle.....................
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                // username = 'V1019620'
-                // password = ''
-                username = System.getenv("JF_USER")
-                password = System.getenv("JFROG_PASSWORD")
-            }
-            authentication {
-                basic(BasicAuthentication)
-    }
-}
-        flatDir {
-            dirs "libs"
-        }
-    }
-}
-rootProject.name = 'epay_admin_portal_service'
-
-
