@@ -1,169 +1,33 @@
-Getting this error while triggering the pipeline ....
-
-
-Error: jobs sast:gitlab config should implement the script:, run:, or trigger: keyword
-
-java.yaml -----------------
-
-
-# templates/ci/backend/java.yml
-# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
-# For library/utility repos (produce JARs → JFrog), use java.library.yml
-#
-# App repo .gitlab-ci.yml:
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: txn
-#     CHART_NAME:   transactionservice
-
-default:
-  tags:
-    - common_runner
+sast.gitlab.yaml -------------------
 
 include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/security/iac/iac.scan.yml'
-  # - local: 'ci/security/license/license.scan.yml'
-  # - local: 'ci/security/sbom/sbom.generate.yml'
-  - local: 'ci/image/image.build.yml'
-  # - local: 'ci/image/image.scan.trivy.yml'
-  # - local: 'ci/image/image.scan.xray.yml'
-  # - local: 'ci/image/image.scan.rhacs.yml'
-  # - local: 'ci/image/image.sign.yml'
-  # - local: 'ci/image/image.sbom.attest.yml'
-  - local: 'ci/image/image.push.yml'
-  - local: 'ci/release/tag.yml'
-  # - local: 'ci/release/back-merge.yml'
-  - local: 'ci/deploy/trigger.cd.yml'
-  - local: 'ci/deploy/deploy.jobs.yml'
+  - template: Jobs/SAST.latest.gitlab-ci.yml
 
-stages:
-  - version       # version generation
-  - build         # gradle compile
-  - test          # unit + integration
-  - sast          # gitlab sast + fortify
-  - security      # sca + secrets + iac + license + sbom
-  - image-build   # podman build (local only — no push)
-  - image-scan    # trivy + xray + rhacs (gate before sign)
-  # - image-attest  # cosign sign + sbom attestation
-  - image-push    # push to JFrog (only after scan + sign)
-  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
-  - deploy        # trigger buttons → deployment repo CD pipeline
+sast:
+  stage: sast
+  variables:
+    SECURE_ANALYZERS_PREFIX: "registry.dev.sbiepay.sbi:8443/ubi9/security-products"
+    CI_TEMPLATE_REGISTRY_HOST: "registry.dev.sbiepay.sbi:8443"
+    SAST_ANALYZER_IMAGE_TAG: "5"
+    DEFAULT_SAST_EXCLUDED_PATHS: "spec,test,tests,tmp"
+    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
+    SEARCH_MAX_DEPTH: 4
 
-variables:
-  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
-  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
-  GIT_STRATEGY: clone
-  RELEASE_NAME: ""
-  CHART_NAME:   ""
-  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+gitlab-advanced-sast:
+  stage: sast
+  variables:
+    SECURE_ANALYZERS_PREFIX: "registry.dev.sbiepay.sbi:8443/ubi9/security-products"
+    GITLAB_ADVANCED_SAST_ENABLED: "true"
+    SAST_ANALYZER_IMAGE_TAG: "5"
+  tags:
+    - common_runner
+  allow_failure: true
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
 
-# Branch + MR filter — applied to all jobs via extends
-.rules:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\/.*)*$/'
-    - when: never
-
-# ── Stage: version ─────────────────────────────────────────────────────────────
-# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
-
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
-
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
-
-# ── Stage: sast ────────────────────────────────────────────────────────────────
-sast:gitlab:
-  extends: [.sast, .rules]
-
-# sast:fortify:
-#   extends: [.sast_fortify, .rules]
-
-# # ── Stage: security ────────────────────────────────────────────────────────────
-# sca:xray:
-#   extends: [.sca, .rules]
-
-# # GitLab template jobs — override stage and apply rules
-# secret_detection:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# kics-iac-sast:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# license_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# dependency_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# # ── Stage: image-build ─────────────────────────────────────────────────────────
-image:build:
-  extends: [.image_build, .rules]
-
-# # ── Stage: image-scan ──────────────────────────────────────────────────────────
-# Trivy (GitLab template job) — override stage and rules
-# container_scanning:
-#   stage: image-scan
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-# image:scan:xray:
-#   extends: [.image_scan_xray, .rules]
-
-# image:scan:rhacs:
-#   extends: [.image_scan_rhacs, .rules]
-
-# # ── Stage: image-attest ────────────────────────────────────────────────────────
-# image:sign:
-#   extends: [.image_sign, .rules]
-
-# image:sbom:attest:
-#   extends: [.sbom_attest, .rules]
-
-# # ── Stage: image-push ──────────────────────────────────────────────────────────
-image:push:
-  extends: [.image_push, .rules]
-  # - release
-  # - deploy
-
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
-
-# ── Stage: deploy ─────────────────────────────────────────────────────────────
-# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
-# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
-# deploy-prod-dc/dr: manual — Bank Only
+.sast:
+  stage: sast
+  tags:
+    - common_runner
+  allow_failure: true
