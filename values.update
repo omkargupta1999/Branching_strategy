@@ -1,332 +1,45 @@
-## Updated `trigger.cd.yml`
-
-```yaml
-# ci/deploy/trigger.cd.yml
-
-.trigger_cd:
-  stage: deploy
-
-  inherit:
-    variables: false
-
-  variables:
-    DEPLOYMENT_BRANCH: "deploy_cicd"
-
-    # Materialized variables for downstream pipeline
-    APP_SERVICE_NAME: "${CI_PROJECT_NAME}"
-    APP_ENV: "${ENV}"
-    APP_VERSION: "${VERSION}"
-    APP_CHART_NAME: "${CHART_NAME}"
-    APP_RELEASE_NAME: "${RELEASE_NAME}"
-
-  trigger:
-    project: "itepaypg-sbiepay2/infra/devops/deployment"
-    branch: $DEPLOYMENT_BRANCH
-    strategy: depend
-
-    forward:
-      pipeline_variables: true
-      yaml_variables: true
-
-
-# ── DEV / SIT / UAT / INT / Perf ─────────────────────────────
-
-.trigger_cd_nonprod:
-  extends: .trigger_cd
-  variables:
-    DEPLOYMENT_BRANCH: "deploy_cicd"
-
-# ── PREPROD ──────────────────────────────────────────────────
-
-.trigger_cd_preprod:
-  extends: .trigger_cd
-  variables:
-    DEPLOYMENT_BRANCH: "main"
-
-# ── HOTFIX ───────────────────────────────────────────────────
-
-.trigger_cd_hotfix:
-  extends: .trigger_cd
-  variables:
-    DEPLOYMENT_BRANCH: "main"
-    HOTFIX: "true"
-
-# ── PROD ─────────────────────────────────────────────────────
-
-.trigger_cd_prod:
-  extends: .trigger_cd
-  variables:
-    DEPLOYMENT_BRANCH: "main"
-```
-
----
-
-# Updated `deploy.jobs.yml`
-
-Only environment-specific variables should remain here.
-
-```yaml
-# ci/deploy/deploy.jobs.yml
-
-deploy-dev:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: "dev"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-
-    - if: '$CI_COMMIT_BRANCH =~ /^feature_ci\/.*/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-sit:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: "sit"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-uat:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: "uat"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-int:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: "int"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-perf:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: "perf"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-preprod-dc:
-  extends: .trigger_cd_preprod
-  variables:
-    ENV: "pre-prod-dc"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-preprod-dr:
-  extends: .trigger_cd_preprod
-  variables:
-    ENV: "pre-prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-hotfix-preprod-smoke:
-  extends: .trigger_cd_hotfix
-  variables:
-    ENV: "pre-prod-dc"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
-            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" &&
-            $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-prod-dc:
-  extends: .trigger_cd_prod
-  variables:
-    ENV: "prod-dc"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-
-    - when: never
-
-
-deploy-prod-dr:
-  extends: .trigger_cd_prod
-  variables:
-    ENV: "prod-dr"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-
-    - when: never
-```
-
----
-
-# Updated `values.update.yml`
-
-Replace your script block with this:
-
-```yaml
-# cd/publish/values.update.yml
-
-.update_tag:
-  stage: publish
-
-  tags:
-    - deploy_runner
-
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-
-  script:
-    - |
-      set -eo pipefail
-
-      echo "========== DEBUG =========="
-      echo "APP_SERVICE_NAME=$APP_SERVICE_NAME"
-      echo "APP_ENV=$APP_ENV"
-      echo "APP_VERSION=$APP_VERSION"
-      echo "APP_CHART_NAME=$APP_CHART_NAME"
-      echo "APP_RELEASE_NAME=$APP_RELEASE_NAME"
-      echo "==========================="
-
-      if [ -z "$APP_SERVICE_NAME" ] || \
-         [ -z "$APP_ENV" ] || \
-         [ -z "$APP_VERSION" ]; then
-        echo "ERROR: Required variables missing"
-        exit 1
-      fi
-
-      TAG=$APP_VERSION
-
-      SERVICE_PATH="${APP_ENV}/charts/${APP_SERVICE_NAME}"
-
-      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
-
-      if [ ! -f "$SERVICE_PATH/values.yaml" ]; then
-        echo "ERROR: values.yaml not found"
-
-        echo "===== AVAILABLE CHARTS ====="
-        find ${APP_ENV}/charts -maxdepth 2 -type f
-        echo "============================"
-
-        exit 1
-      fi
-
-      git fetch origin
-
-      git checkout -B $CI_COMMIT_BRANCH origin/$CI_COMMIT_BRANCH
-
-      for i in 1 2 3; do
-        git pull --rebase origin $CI_COMMIT_BRANCH && break
-
-        echo "Rebase failed...retrying ($i)"
-        sleep 2
-
-        if [ $i -eq 3 ]; then
-          echo "Rebase failed after retries"
-          exit 1
-        fi
-      done
-
-      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-
-      git add $SERVICE_PATH/values.yaml
-
-      if [[ $(git status --porcelain) ]]; then
-
-        git commit -m "chore: update image tag to $TAG [skip ci]"
-
-        for i in 1 2 3; do
-
-          git push origin $CI_COMMIT_BRANCH && break
-
-          echo "Push failed...retrying ($i)"
-          sleep 2
-
-          git pull --rebase origin $CI_COMMIT_BRANCH
-
-          if [ $i -eq 3 ]; then
-            echo "Push failed after retries"
-            exit 1
-          fi
-        done
-
-        echo "✅ values.yaml updated successfully"
-
-      else
-        echo "No changes required"
-      fi
-
-      cat $SERVICE_PATH/values.yaml
-```
-
----
-
-# VERY IMPORTANT
-
-You must ALSO update:
-
-* `validate_service`
-* `helm:deploy`
-
-to use:
-
-```bash
-APP_SERVICE_NAME
-APP_ENV
-APP_VERSION
-APP_RELEASE_NAME
-```
-
-instead of:
-
-* SERVICE_NAME
-* ENV
-* VERSION
-* RELEASE_NAME
-
-Otherwise later stages will still break.
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1946-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:12
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 76a22a41 as detached HEAD (ref is deploy_cicd)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+$ set -eo pipefail # collapsed multi-line command
+========== DEBUG ==========
+APP_SERVICE_NAME=
+APP_ENV=
+APP_VERSION=
+APP_CHART_NAME=
+APP_RELEASE_NAME=
+===========================
+ERROR: Required variables missing
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
