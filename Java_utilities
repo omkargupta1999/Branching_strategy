@@ -1,21 +1,33 @@
-Minimal Patch (copy-paste ready)
-trigger.cd.yml
-.trigger_cd:
-  stage: deploy
-  trigger:
-    project: "itepaypg-sbiepay2/infra/devops/deployment"
-    branch: $DEPLOYMENT_BRANCH
-    strategy: depend
-  variables:
-    ENV: $ENV
-    SERVICE_NAME: $SERVICE_NAME
-    VERSION: $VERSION
-values.update.yml (script addition)
-echo "ENV=$ENV"
-echo "SERVICE_NAME=$SERVICE_NAME"
-echo "VERSION=$VERSION"
+.update-tag:
+  stage: commit
+  image: $CI_TEMPLATE_REGISTRY_HOST/library/rhelgit:latest
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"    
+    - git remote set-url origin https://gitlab-ci-token:$GIT_PAT@gitlab.epay.sbi/$CI_PROJECT_PATH.git
+  script:
+    - TAG=$VERSION
+    - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+    - ls -ltrh $SERVICE_PATH
+    - cat $SERVICE_PATH/values.yaml
+    - echo "Tag is $TAG"
+    - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+    - git fetch 
+    - git status
+    - git branch -a  
+    - git checkout $CI_COMMIT_BRANCH
+    - git add $SERVICE_PATH/values.yaml
+    - git status --porcelain
+    - |
+      if [[ `git status --porcelain` ]]; then
+        # Changes
+        git commit -m "Update image tag to $TAG"
+        git push origin $CI_COMMIT_BRANCH
+      else
+        # No changes
+        echo "No changes in git"
+      fi
+    - cat $SERVICE_PATH/values.yaml
 
-if [[ -z "$ENV" || -z "$SERVICE_NAME" ]]; then
-  echo "ERROR: ENV or SERVICE_NAME is empty"
-  exit 1
-fi
