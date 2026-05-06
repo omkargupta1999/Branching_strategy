@@ -1,7 +1,7 @@
 Getting below error :
 
 
-This GitLab CI configuration is invalid: build: unknown keys in `extends` (.service-matrix. .rules).
+This GitLab CI configuration is invalid: jobs:build:rules:rule if invalid expression syntax.
 
 
 java.library.yml ---------------
@@ -55,7 +55,7 @@ variables:
     - when: never
 
 build:
-  extends: [.build, .set-workdir, .service-matrix. .rules]
+  extends: [.build, .set-workdir, .service-matrix, .rules]
 
 test:
   extends: [.test, .set-workdir, .service-matrix, .rules]
