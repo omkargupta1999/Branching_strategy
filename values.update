@@ -135,3 +135,59 @@ deploy-prod-dr:
       when: manual
       allow_failure: true
     - when: never
+
+
+
+
+
+
+
+
+Current trigger.cd.yml ----------------
+
+# ci/deploy/trigger.cd.yml
+# Hidden base templates for CI → CD pipeline trigger
+# strategy: depend ensures CI pipeline waits for CD result
+# Runs inside APP REPO CI pipeline — triggers DEPLOYMENT REPO CD pipeline
+
+# ── Base template ──────────────────────────────────────────────────────────────
+.trigger_cd:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+  trigger:
+    project: "itepaypg-sbiepay2/infra/devops/deployment"
+    branch: $DEPLOYMENT_BRANCH
+    strategy: depend          # CI waits for CD — result shown in parent pipeline
+    forward:
+      pipeline_variables: true   # passes VERSION, ENV, SERVICE_NAME, CHART_NAME
+      yaml_variables: true
+
+# ── DEV / SIT / UAT / INT / Perf — Release Manager ────────────────────────────
+.trigger_cd_nonprod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+
+# ── Preprod DC / DR — RM with explicit confirmation ────────────────────────────
+.trigger_cd_preprod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  # manual_confirmation: "Deploy ${VERSION} to ${ENV} (Preprod)? Confirm RC validated in lower envs."
+
+# ── Hotfix preprod smoke — RM, on MR pipeline pre-merge ───────────────────────
+.trigger_cd_hotfix:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+    HOTFIX: "true"
+  # manual_confirmation: "Deploy HOTFIX ${VERSION} to preprod smoke. Confirm MR pipeline CI passed."
+
+# ── Prod DC / DR — Bank team only — Protected Environment enforces gate ────────
+.trigger_cd_prod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  # manual_confirmation: "Deploy ${VERSION} to ${ENV}? This action targets PRODUCTION."
+
