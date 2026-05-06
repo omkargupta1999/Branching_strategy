@@ -1,64 +1,775 @@
-Getting below error :
+---
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  script:
+  - |
+    set -e
+    git fetch --tags
 
+    if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+      VERSION="mr-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
 
-This GitLab CI configuration is invalid: jobs:build:rules:rule if invalid expression syntax.
+    elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+      VERSION="dev-${CI_COMMIT_SHORT_SHA}"
 
+    elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+      RELEASE_VERSION="${BASH_REMATCH[1]}"
+      RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+      NEW_RC=$((RC_COUNT + 1))
+      VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
 
-java.library.yml ---------------
+    elif [[ "$CI_COMMIT_BRANCH" =~ ^hotfix\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+      VERSION="${BASH_REMATCH[1]}"
 
+    elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+      LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+      VERSION="${LAST_TAG#v}"
 
+    else
+      VERSION="${CI_COMMIT_SHORT_SHA}"
+    fi
+
+    echo "VERSION=$VERSION" >> version.env
+    echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA" >> version.env
+    echo "Generated VERSION=$VERSION"
+  artifacts:
+    reports:
+      dotenv:
+      - version.env
+    expire_in: 1 week
+".build":
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+  - common_runner
+  variables:
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  script:
+  - |
+    if [ -n "$VERSION" ]; then
+      gradle build -x test -Pversion=${VERSION}
+    else
+      gradle build -x test
+    fi
+  - ls -lrth build/libs
+  - echo "VERSION=$VERSION" >> build.env
+  artifacts:
+    paths:
+    - build/libs
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 week
+".test":
+  stage: test
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10
+  tags:
+  - common_runner
+  script:
+  - gradle test
+  artifacts:
+    reports:
+      junit: build/test-results/test/TEST-*.xml
+    when: always
+    expire_in: 1 week
+".sast_fortify":
+  stage: sast
+  tags:
+  - common_runner
+  variables:
+    FORTIFY_IMAGE: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025
+    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+    FORTIFY_MEM: 8G
+  image: "$FORTIFY_IMAGE"
+  allow_failure: true
+  script:
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS"
+    -verbose
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+  - $BIRTReportGenerator -template "Developer Workbook" -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+    -format PDF -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf" -Xmx${FORTIFY_MEM}
+  artifacts:
+    paths:
+    - "./*.fpr"
+    - "./*.pdf"
+    expire_in: 1 week
+sast:fortify:
+  stage: sast
+  tags:
+  - common_runner
+  variables:
+    FORTIFY_IMAGE: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025
+    FORTIFY_PROJECT: "$CI_PROJECT_NAME"
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+    FORTIFY_MEM: 8G
+  image: "$FORTIFY_IMAGE"
+  allow_failure: true
+  script:
+  - "$SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean"
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS"
+    -verbose
+  - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+  - $BIRTReportGenerator -template "Developer Workbook" -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+    -format PDF -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf" -Xmx${FORTIFY_MEM}
+  artifacts:
+    paths:
+    - "./*.fpr"
+    - "./*.pdf"
+    expire_in: 1 week
+  extends: ".sast_fortify"
+variables:
+  JF_SERVER_ID: epay-server
+  CI_TEMPLATE_REGISTRY_HOST: artifactory.jfrog.sbi:443
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD: epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR: epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC: proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi
+  GIT_STRATEGY: clone
+  RELEASE_NAME: admin
+  CHART_NAME: adminservice
+  IMAGE_NAME: itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}
+".image_podman_setup":
+- mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+- cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+- cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+- update-ca-trust extract
+- podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+- "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n  --user=\"$JF_USER\"
+  \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false \"$JF_SERVER_ID\"     \n"
+- jf config use "$JF_SERVER_ID"
+".image_base":
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+".image_build":
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  extends: ".image_base"
+  stage: image-build
+  allow_failure: false
+  script:
+  - |
+    echo "VERSION=$VERSION"
+
+    # CHANGE: support both backend + frontend
+    if [ -d "build/libs" ]; then
+      echo "Backend build detected"
+      ls -l build/libs
+    elif [ -d "dist" ]; then
+      echo "Frontend build detected"
+      ls -l dist
+    else
+      echo "No build output found"
+      exit 1
+    fi
+
+    TAG="$VERSION"
+    echo "Generated Tag.. ${TAG}"
+    COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+    echo "Image: $COMPUTED_IMAGE_TAG"
+    echo "TAG=${TAG}" >> image.env
+    echo "VERSION=$VERSION" >> image.env
+    echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+    echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+
+    podman build \
+      -t "$COMPUTED_IMAGE_TAG" \
+      -f Dockerfile \
+      --build-arg ENV=$ENV \
+      --build-arg VERSION=$TAG \
+      --tls-verify=false
+    TAR_NAME="$CI_PROJECT_NAME.tar"
+    podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+    echo "Image built and saved to $TAR_NAME"
+    echo "TAR_NAME=$TAR_NAME" >> image.env
+  artifacts:
+    paths:
+    - "*.tar"
+    reports:
+      dotenv: image.env
+    expire_in: 1 day
+image:build:
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  extends:
+  - ".image_build"
+  - ".rules"
+  stage: image-build
+  allow_failure: false
+  script:
+  - |
+    echo "VERSION=$VERSION"
+
+    # CHANGE: support both backend + frontend
+    if [ -d "build/libs" ]; then
+      echo "Backend build detected"
+      ls -l build/libs
+    elif [ -d "dist" ]; then
+      echo "Frontend build detected"
+      ls -l dist
+    else
+      echo "No build output found"
+      exit 1
+    fi
+
+    TAG="$VERSION"
+    echo "Generated Tag.. ${TAG}"
+    COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+    echo "Image: $COMPUTED_IMAGE_TAG"
+    echo "TAG=${TAG}" >> image.env
+    echo "VERSION=$VERSION" >> image.env
+    echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+    echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+
+    podman build \
+      -t "$COMPUTED_IMAGE_TAG" \
+      -f Dockerfile \
+      --build-arg ENV=$ENV \
+      --build-arg VERSION=$TAG \
+      --tls-verify=false
+    TAR_NAME="$CI_PROJECT_NAME.tar"
+    podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+    echo "Image built and saved to $TAR_NAME"
+    echo "TAR_NAME=$TAR_NAME" >> image.env
+  artifacts:
+    paths:
+    - "*.tar"
+    reports:
+      dotenv:
+      - image.env
+    expire_in: 1 day
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
+".image_push":
+  stage: image-push
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  script:
+  - |
+    IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+    echo "Loading TAR..."
+    podman load -i "$TAR_NAME"
+    echo "Pushing: $IMAGE_REF"
+    podman push "$IMAGE_REF" --tls-verify=false
+    echo "PUSHED_IMAGE=$IMAGE_REF" >> push.env
+    echo "✅ Pushed: $IMAGE_REF"
+  artifacts:
+    reports:
+      dotenv: push.env
+    expire_in: 1 week
+image:push:
+  stage: image-push
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  script:
+  - |
+    IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+    echo "Loading TAR..."
+    podman load -i "$TAR_NAME"
+    echo "Pushing: $IMAGE_REF"
+    podman push "$IMAGE_REF" --tls-verify=false
+    echo "PUSHED_IMAGE=$IMAGE_REF" >> push.env
+    echo "✅ Pushed: $IMAGE_REF"
+  artifacts:
+    reports:
+      dotenv:
+      - push.env
+    expire_in: 1 week
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
+  extends:
+  - ".image_push"
+  - ".rules"
+".git_tag_base":
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+create-rc-tag:
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+  extends: ".git_tag_base"
+  script:
+  - |
+    RELEASE_VERSION=$(echo "$CI_COMMIT_BRANCH" | sed 's|release/||')
+    RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+    NEW_RC=$((RC_COUNT + 1))
+    RC_TAG="v${RELEASE_VERSION}-rc.${NEW_RC}"
+    echo "Creating RC tag: $RC_TAG"
+    git tag -a "$RC_TAG" -m "RC ${NEW_RC} — auto on merge to $CI_COMMIT_BRANCH"
+    git push origin "$RC_TAG"
+    echo "RC_TAG=$RC_TAG" >> rc.env
+    echo "✅ RC tag created: $RC_TAG"
+  artifacts:
+    reports:
+      dotenv:
+      - rc.env
+    expire_in: 1 week
+  rules:
+  - if: $CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - when: never
+create-prod-tag:
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GIT_PAT@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+  extends: ".git_tag_base"
+  script:
+  - |
+    PROD_TAG="v${VERSION}"
+    echo "Creating production tag: $PROD_TAG"
+    if git tag -l "$PROD_TAG" | grep -q "$PROD_TAG"; then
+      echo "Tag $PROD_TAG already exists — skipping"
+    else
+      git tag -a "$PROD_TAG" -m "Production ${VERSION} — merged to main [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+      git push origin "$PROD_TAG"
+      echo "✅ Production tag created: $PROD_TAG"
+    fi
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - when: never
+".trigger_cd":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+".trigger_cd_nonprod":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd"
+".trigger_cd_preprod":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd"
+".trigger_cd_hotfix":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    HOTFIX: 'true'
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd"
+".trigger_cd_prod":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd"
+deploy-dev:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+    ENV: dev
+    APP_SERVICE_NAME: "${CI_PROJECT_NAME}"
+    APP_ENV: "${ENV}"
+    APP_VERSION: "${VERSION}"
+    APP_CHART_NAME: "${CHART_NAME}"
+    APP_RELEASE_NAME: "${RELEASE_NAME}"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_nonprod"
+  rules:
+  - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - if: "$CI_COMMIT_BRANCH =~ /^feature_ci\\/.*/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-sit:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+    ENV: sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_nonprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^release\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-uat:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+    ENV: uat
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_nonprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^release\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-int:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+    ENV: int
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_nonprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-perf:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+    ENV: perf
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_nonprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-preprod-dc:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_preprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-preprod-dr:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    ENV: pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_preprod"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-hotfix-preprod-smoke:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    HOTFIX: 'true'
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_hotfix"
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-prod-dc:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    ENV: prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_prod"
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-prod-dr:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: main
+    ENV: prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  extends: ".trigger_cd_prod"
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+    allow_failure: true
+  - when: never
 default:
   tags:
-    - common_runner
-
-include:
-  # - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  # - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/release/tag.yml'
-  - local: 'ci/publish/gradle.artifactory.yml'
-
+  - common_runner
 stages:
-  # - version       # version generation
-  - build         # gradle compile (produces JARs)
-  - test          # unit tests
-  # - sast          # gitlab sast + fortify
-  # - security      # sca xray (scans JAR artifact)
-  # - release       # git tag — rc on release/*, prod on main
-  - publish       # gradle publish → JFrog Artifactory + Xray scan
-
-variables:
-  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
-  GIT_STRATEGY: clone
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  MONO_REPO_ROOT: "."
-
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
-
-.service-matrix:
-  parallel:
-    matrix:
-      - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-
-
-.rules:
+- ".pre"
+- version
+- build
+- test
+- sast
+- security
+- image-build
+- image-scan
+- image-push
+- release
+- deploy
+- ".post"
+".rules":
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release|feature)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature|feature/java_registry)(\/.*)*$/'
-    - when: never
-
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
 build:
-  extends: [.build, .set-workdir, .service-matrix, .rules]
-
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+  - common_runner
+  variables:
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  script:
+  - |
+    if [ -n "$VERSION" ]; then
+      gradle build -x test -Pversion=${VERSION}
+    else
+      gradle build -x test
+    fi
+  - ls -lrth build/libs
+  - echo "VERSION=$VERSION" >> build.env
+  artifacts:
+    paths:
+    - build/libs
+    reports:
+      dotenv:
+      - build.env
+    when: on_success
+    expire_in: 1 week
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
+  extends:
+  - ".build"
+  - ".rules"
 test:
-  extends: [.test, .set-workdir, .service-matrix, .rules]
-
-publish:
-  extends: [.publish, .set-workdir, .service-matrix, .rules]
+  stage: test
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:v10
+  tags:
+  - common_runner
+  script:
+  - gradle test
+  artifacts:
+    reports:
+      junit:
+      - build/test-results/test/TEST-*.xml
+    when: always
+    expire_in: 1 week
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
+  extends:
+  - ".test"
+  - ".rules"
+deploy:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: deploy_cicd
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\\/.*)*$/"
+  - when: never
+  extends:
+  - ".trigger_cd"
+  - ".rules"
