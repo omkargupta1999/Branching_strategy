@@ -1,33 +1,117 @@
-sast.gitlab.yaml -------------------
+update-tag pipeline output :
 
-include:
-  - template: Jobs/SAST.latest.gitlab-ci.yml
 
-sast:
-  stage: sast
-  variables:
-    SECURE_ANALYZERS_PREFIX: "registry.dev.sbiepay.sbi:8443/ubi9/security-products"
-    CI_TEMPLATE_REGISTRY_HOST: "registry.dev.sbiepay.sbi:8443"
-    SAST_ANALYZER_IMAGE_TAG: "5"
-    DEFAULT_SAST_EXCLUDED_PATHS: "spec,test,tests,tmp"
-    SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS"
-    SEARCH_MAX_DEPTH: 4
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1946-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:14
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 1db34b35 as detached HEAD (ref is deploy_cicd)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://ouath2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+$ echo "SERVICE_NAME=$SERVICE_NAME"
+SERVICE_NAME=
+$ echo "SERVICE_PATH=$SERVICE_PATH"
+SERVICE_PATH=
+$ echo "ENV=$ENV"
+ENV=
+$ TAG=$VERSION
+$ SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+$ ls -ltrh $SERVICE_PATH
+ls: cannot access '/charts/': No such file or directory
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
 
-gitlab-advanced-sast:
-  stage: sast
-  variables:
-    SECURE_ANALYZERS_PREFIX: "registry.dev.sbiepay.sbi:8443/ubi9/security-products"
-    GITLAB_ADVANCED_SAST_ENABLED: "true"
-    SAST_ANALYZER_IMAGE_TAG: "5"
+
+
+---------------------
+
+update tag configuration yaml .....................
+
+.update_tag:
   tags:
-    - common_runner
-  allow_failure: true
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-
-.sast:
-  stage: sast
-  tags:
-    - common_runner
-  allow_failure: true
+    - deploy_runner  #enable runner
+  stage: publish
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"    
+  #  - git remote set-url origin https://gitlab-ci-token:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git
+    - git remote set-url origin "https://ouath2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+    # - |
+    #   echo "$SERVICE_PATH"
+    #   TAG=$VERSION
+    #   SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+    #   ls -ltrh $SERVICE_PATH
+    #   cat $SERVICE_PATH/values.yaml
+    #   echo "Tag is $TAG"
+    #   sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+    #   git fetch 
+    #   git status
+    #   git branch -a  
+    #   git checkout $CI_COMMIT_BRANCH
+    #   git add $SERVICE_PATH/values.yaml
+    #   git status --porcelain
+    #   if [[ `git status --porcelain` ]]; then
+    #     # Changes
+    #     git commit -m "Update image tag to $TAG"
+    #     git push origin $CI_COMMIT_BRANCH
+    #   else
+    #     # No changes
+    #     echo "No changes in git"
+    #   fi
+    #   cat $SERVICE_PATH/values.yaml
+    - echo "SERVICE_NAME=$SERVICE_NAME"
+    - echo "SERVICE_PATH=$SERVICE_PATH"
+    - echo "ENV=$ENV"
+    - TAG=$VERSION
+    - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+    - ls -ltrh $SERVICE_PATH
+    - cat $SERVICE_PATH/values.yaml
+    - echo "Tag is $TAG"
+    - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+    - git fetch 
+    - git status
+    - git branch -a  
+    - git checkout $CI_COMMIT_BRANCH
+    - git add $SERVICE_PATH/values.yaml
+    - git status --porcelain
+    - |
+      if [[ `git status --porcelain` ]]; then
+        # Changes
+        git commit -m "Update image tag to $TAG"
+        git push origin $CI_COMMIT_BRANCH
+      else
+        # No changes
+        echo "No changes in git"
+      fi
+    - cat $SERVICE_PATH/values.yaml
