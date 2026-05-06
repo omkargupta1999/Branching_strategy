@@ -1,3 +1,52 @@
+I have imported one of the project services, admin-services, from the old GitLab instance to the centralized GitLab.
+Is there any recommended way to validate or compare whether everything has been imported properly and completely? For example:
+
+
+Issues
+
+
+Merge Requests
+
+
+Commits
+
+
+Branches & Tags
+
+
+Wikis
+
+
+Pipelines
+
+
+Epics
+
+
+Attachments
+
+
+Members & Permissions
+
+
+CI/CD Variables and Configurations
+
+
+Also, I observed one issue after the import:
+In the old GitLab instance, the Issues/Merge Requests were showing the actual assignee or creator names correctly. However, after the import is completed, all the assignee/creator names are appearing as the user who performed the import instead of the original users.
+Is this expected behavior during GitLab migration/import, or is there any way to preserve the original user mapping and assignee details during migration?
+
+
+
+
+
+
+
+
+
+
+
+
 I have imported the complete admin-services from old GitLab to centralized Gitlab, Is there anything we can validate or compare if everything imported properly ?
 
 ---
