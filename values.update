@@ -1,14 +1,40 @@
+Getting below error :
 
 
+This GitLab CI configuration is invalid: build: unknown keys in `extends` (.service-matrix. .rules).
 
-.gitlab-ci.yaml -------------
+
+java.library.yml ---------------
+
+
+default:
+  tags:
+    - common_runner
 
 include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
+  # - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/release/tag.yml'
+  - local: 'ci/publish/gradle.artifactory.yml'
+
+stages:
+  # - version       # version generation
+  - build         # gradle compile (produces JARs)
+  - test          # unit tests
+  # - sast          # gitlab sast + fortify
+  # - security      # sca xray (scans JAR artifact)
+  # - release       # git tag — rc on release/*, prod on main
+  - publish       # gradle publish → JFrog Artifactory + Xray scan
 
 variables:
+  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
+  GIT_STRATEGY: clone
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   MONO_REPO_ROOT: "."
 
 .set-workdir:
@@ -20,37 +46,6 @@ variables:
   parallel:
     matrix:
       - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      #- SERVICE: ["captcha-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix]
-
-test:
-  extends: [.test, .set-workdir, .service-matrix]
-
-publish:
-  extends: [.publish, .set-workdir, .service-matrix]
-
-
-java.library.yml ------------------
-
-default:
-  tags:
-    - common_runner
-
-include:
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  - local: 'ci/publish/gradle.artifactory.yml'
-
-stages:
-  - build         # gradle compile (produces JARs)
-  - test          # unit tests
-  - publish       # gradle publish → JFrog Artifactory + Xray scan
-
-variables:
-  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
-  GIT_STRATEGY: clone
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 
 .rules:
@@ -59,41 +54,11 @@ variables:
     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature|feature/java_registry)(\/.*)*$/'
     - when: never
 
-# ── Stage: build ───────────────────────────────────────────────────────────────
 build:
-  extends: [.build, .rules]
-
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
-
-# ── Stage: publish ─────────────────────────────────────────────────────────────
-publish:
-  extends: [.publish, .rules]
-
-
-
-
-And I have to remove below lines from .gitlab-ci.yml and want to kept it in java.gradle.yml ......Please suggest will it work and what changes are required.
-
-variables:
-  MONO_REPO_ROOT: "."
-
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
-
-.service-matrix:
-  parallel:
-    matrix:
-      - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      #- SERVICE: ["captcha-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix]
+  extends: [.build, .set-workdir, .service-matrix. .rules]
 
 test:
-  extends: [.test, .set-workdir, .service-matrix]
+  extends: [.test, .set-workdir, .service-matrix, .rules]
 
 publish:
-  extends: [.publish, .set-workdir, .service-matrix]
+  extends: [.publish, .set-workdir, .service-matrix, .rules]
