@@ -1,33 +1,749 @@
-.update-tag:
-  stage: commit
-  image: $CI_TEMPLATE_REGISTRY_HOST/library/rhelgit:latest
+
+We are getting this error in our pipeline ,...please check the  complete configuration files and helps us identify the root cause and provide proper solutions without any issue ...........
+
+Pipeline Error Output : 
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1946-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:14
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 76a22a41 as detached HEAD (ref is deploy_cicd)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:05
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+$ set -eo pipefail # collapsed multi-line command
+Updating /charts//values.yaml → image tag: 98f48591
+Switched to a new branch 'deploy_cicd'
+branch 'deploy_cicd' set up to track 'origin/deploy_cicd'.
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                deploy_cicd -> FETCH_HEAD
+Already up to date.
+sed: can't read /charts//values.yaml: No such file or directory
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+
+
+================= values.update.yml
+
+
+# cd/publish/values.update.yml
+# Stage: publish
+# Updates image tag in deployment repo values.yaml — git commit + push
+# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
+# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
+.update_tag:
+  stage: publish
+  tags:
+    - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
   before_script:
     - git config --global http.sslVerify false
     - git config --global --add safe.directory '*'
     - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"    
-    - git remote set-url origin https://gitlab-ci-token:$GIT_PAT@gitlab.epay.sbi/$CI_PROJECT_PATH.git
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
   script:
-    - TAG=$VERSION
-    - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-    - ls -ltrh $SERVICE_PATH
-    - cat $SERVICE_PATH/values.yaml
-    - echo "Tag is $TAG"
-    - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-    - git fetch 
-    - git status
-    - git branch -a  
-    - git checkout $CI_COMMIT_BRANCH
-    - git add $SERVICE_PATH/values.yaml
-    - git status --porcelain
     - |
-      if [[ `git status --porcelain` ]]; then
-        # Changes
-        git commit -m "Update image tag to $TAG"
-        git push origin $CI_COMMIT_BRANCH
+      set -eo pipefail
+      TAG=$VERSION
+      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
+      # ls -ltrh $SERVICE_PATH
+      git fetch origin ##
+      git checkout $CI_COMMIT_BRANCH ##
+      # retry rebase
+      for i in 1 2 3; do
+        git pull --rebase origin $CI_COMMIT_BRANCH && break 
+        echo "Rebase failed...retrying ($i)"
+        sleep 2
+        if [ $i -eq 3 ]; then
+        echo "Rebase failed after retries"
+        exit 1
+        fi
+      done
+      #git fetch
+      #git checkout $CI_COMMIT_BRANCH
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+      git add $SERVICE_PATH/values.yaml
+      if [[ $(git status --porcelain) ]]; then
+        git commit -m "chore: update image tag to $TAG [skip ci]"
+        for i in 1 2 3; do
+          git push origin $CI_COMMIT_BRANCH && break
+          echo "Push failed...retrying ($i)"
+          sleep 2
+          git pull --rebase origin $CI_COMMIT_BRANCH
+          if [ $i -eq 3 ]; then
+            echo "Push failed after retries"
+            exit 1
+          fi
+        done
+        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
       else
-        # No changes
-        echo "No changes in git"
+        echo "No changes — image tag already $TAG"
       fi
-    - cat $SERVICE_PATH/values.yaml
+      cat $SERVICE_PATH/values.yaml
+	  
+	  
+=================  java.yml =========
+
+# templates/ci/backend/java.yml
+# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
+# For library/utility repos (produce JARs → JFrog), use java.library.yml
+#
+# App repo .gitlab-ci.yml:
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: txn
+#     CHART_NAME:   transactionservice
+
+default:
+  tags:
+    - common_runner
+
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/iac/iac.scan.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  # - local: 'ci/image/image.scan.xray.yml'
+  # - local: 'ci/image/image.scan.rhacs.yml'
+  # - local: 'ci/image/image.sign.yml'
+  # - local: 'ci/image/image.sbom.attest.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
+
+stages:
+  - version       # version generation
+  - build         # gradle compile
+  - test          # unit + integration
+  - sast          # gitlab sast + fortify
+  - security      # sca + secrets + iac + license + sbom
+  - image-build   # podman build (local only — no push)
+  - image-scan    # trivy + xray + rhacs (gate before sign)
+  # - image-attest  # cosign sign + sbom attestation
+  - image-push    # push to JFrog (only after scan + sign)
+  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
+  - deploy        # trigger buttons → deployment repo CD pipeline
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+
+# Branch + MR filter — applied to all jobs via extends
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature_ci)(\/.*)*$/'
+    - when: never
+
+# ── Stage: version ─────────────────────────────────────────────────────────────
+# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# # ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# # GitLab template jobs — override stage and apply rules
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# kics-iac-sast:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# # ── Stage: image-build ─────────────────────────────────────────────────────────
+image:build:
+  extends: [.image_build, .rules]
+
+# # ── Stage: image-scan ──────────────────────────────────────────────────────────
+# Trivy (GitLab template job) — override stage and rules
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# image:scan:rhacs:
+#   extends: [.image_scan_rhacs, .rules]
+
+# # ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# image:sbom:attest:
+#   extends: [.sbom_attest, .rules]
+
+# # ── Stage: image-push ──────────────────────────────────────────────────────────
+image:push:
+  extends: [.image_push, .rules]
+  # - release
+  # - deploy
+# # ── Stage: image-deploy ──────────────────────────────────────────────────────────
+deploy:
+  extends: [.trigger_cd, .rules]
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
+# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
+# deploy-prod-dc/dr: manual — Bank Only
+
+
+
+++++++++++++++++++++++++++  deploy.jobs.yml
+
+
+# ci/deploy/deploy.jobs.yml
+# All deploy trigger jobs — tech-stack agnostic
+# Included by EVERY CI orchestrator template (same file for java, nodejs, python etc.)
+# Extends hidden templates from trigger.cd.yml
+# These jobs run in the APP REPO CI pipeline and trigger the DEPLOYMENT REPO pipeline
+
+# ── DEV — auto on develop merge ───────────────────────────────────────────────
+deploy-dev:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME: "$CHART_NAME"
+    VERSION: $VERSION
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH =~ /^feature_ci\/.*/'  ##added
+      when: manual                               ##added
+      allow_failure: true                        ##added
+    - when: never
+
+# ── SIT — manual, Release Manager ─────────────────────────────────────────────
+deploy-sit:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── UAT — manual, Release Manager ─────────────────────────────────────────────
+deploy-uat:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: uat
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── INT — manual, Release Manager ─────────────────────────────────────────────
+deploy-int:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: int
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Performance Testing — manual, Release Manager ─────────────────────────────
+deploy-perf:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: perf
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DC — manual, RM with confirmation ─────────────────────────────────
+deploy-preprod-dc:
+  extends: .trigger_cd_preprod
+  variables:
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DR — manual, RM with confirmation ─────────────────────────────────
+deploy-preprod-dr:
+  extends: .trigger_cd_preprod
+  variables:
+    ENV: pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Hotfix preprod smoke — manual, RM on MR pipeline only ────────────────────
+deploy-hotfix-preprod-smoke:
+  extends: .trigger_cd_hotfix
+  variables:
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DC — manual, Bank Only (Protected Environment enforces gate) ─────────
+deploy-prod-dc:
+  extends: .trigger_cd_prod
+  variables:
+    ENV: prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DR — manual, Bank Only ───────────────────────────────────────────────
+deploy-prod-dr:
+  extends: .trigger_cd_prod
+  variables:
+    ENV: prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+	
+
+========================================   trigger.cd.yml
+
+
+# ci/deploy/trigger.cd.yml
+# Hidden base templates for CI → CD pipeline trigger
+# strategy: depend ensures CI pipeline waits for CD result
+# Runs inside APP REPO CI pipeline — triggers DEPLOYMENT REPO CD pipeline
+
+.trigger_cd:
+  stage: deploy
+  inherit: 
+    variables: true
+  variables:
+    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+  trigger:
+    project: "itepaypg-sbiepay2/infra/devops/deployment"
+    branch: $DEPLOYMENT_BRANCH
+    strategy: depend          # CI waits for CD — result shown in parent pipeline
+    forward:
+      pipeline_variables: true   # passes VERSION, ENV, SERVICE_NAME, CHART_NAME
+      yaml_variables: true
+
+
+
+
+# ── DEV / SIT / UAT / INT / Perf — Release Manager ────────────────────────────
+.trigger_cd_nonprod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+
+# ── Preprod DC / DR — RM with explicit confirmation ────────────────────────────
+.trigger_cd_preprod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  # manual_confirmation: "Deploy ${VERSION} to ${ENV} (Preprod)? Confirm RC validated in lower envs."
+
+# ── Hotfix preprod smoke — RM, on MR pipeline pre-merge ───────────────────────
+.trigger_cd_hotfix:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+    HOTFIX: "true"
+  # manual_confirmation: "Deploy HOTFIX ${VERSION} to preprod smoke. Confirm MR pipeline CI passed."
+
+# ── Prod DC / DR — Bank team only — Protected Environment enforces gate ────────
+.trigger_cd_prod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  # manual_confirmation: "Deploy ${VERSION} to ${ENV}? This action targets PRODUCTION."
+
+
+
+
+Here is the full configuration of complete cicd pipeline..........
+
+
+
+
+
+
+---
+".update_tag":
+  stage: publish
+  tags:
+  - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+  - "set -eo pipefail\nTAG=$VERSION\nSERVICE_PATH=\"${ENV}/charts/${SERVICE_NAME}\"\necho
+    \"Updating $SERVICE_PATH/values.yaml → image tag: $TAG\"\n# ls -ltrh $SERVICE_PATH\ngit
+    fetch origin ##\ngit checkout $CI_COMMIT_BRANCH ##\n# retry rebase\nfor i in 1
+    2 3; do\n  git pull --rebase origin $CI_COMMIT_BRANCH && break \n  echo \"Rebase
+    failed...retrying ($i)\"\n  sleep 2\n  if [ $i -eq 3 ]; then\n  echo \"Rebase
+    failed after retries\"\n  exit 1\n  fi\ndone\n#git fetch\n#git checkout $CI_COMMIT_BRANCH\nsed
+    -i \"s/\\(tag:\\).*/\\1 \\\"${TAG}\\\"/\" $SERVICE_PATH/values.yaml\ngit add $SERVICE_PATH/values.yaml\nif
+    [[ $(git status --porcelain) ]]; then\n  git commit -m \"chore: update image tag
+    to $TAG [skip ci]\"\n  for i in 1 2 3; do\n    git push origin $CI_COMMIT_BRANCH
+    && break\n    echo \"Push failed...retrying ($i)\"\n    sleep 2\n    git pull
+    --rebase origin $CI_COMMIT_BRANCH\n    if [ $i -eq 3 ]; then\n      echo \"Push
+    failed after retries\"\n      exit 1\n    fi\n  done\n  echo \"✅ values.yaml updated:
+    $SERVICE_PATH → $TAG\"\nelse\n  echo \"No changes — image tag already $TAG\"\nfi\ncat
+    $SERVICE_PATH/values.yaml\n"
+variables:
+  SERVICES_CONFIG: |
+    - namespace: transaction
+      services:
+        - name: epay_transaction_service
+          release: txn
+          chart: epay_transaction_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_payment_service
+          release: payment
+          chart: epay_payment_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: admin
+      services:
+        - name: epay_admin_service
+          release: admin
+          chart: epay_admin_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_admin_portal_service
+          release: admin-portal
+          chart: epay_admin_portal_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: kms
+      services:
+        - name: epay_key_managment
+          release: kms
+          chart: epay_key_managment
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: merchant
+      services:
+        - name: epay_merchant_service
+          release: merchant
+          chart: epay_merchant_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: rns
+      services:
+        - name: epay_refund_service
+          release: refund
+          chart: epay_refund_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_sftp_service
+          release: sftp
+          chart: epay_sftp_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_recon_settlement_service
+          release: rns
+          chart: epay_recon_settlement_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: frontend
+      services:
+        - name: epay_merchant_fe
+          release: merchantfe
+          chart: merchant-frontend
+          health_check: /health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_transaction_fe
+          release: transactionfe
+          chart: transaction-frontend
+          health_check: /health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: utility
+      services:
+        - name: epay_java_utility
+          release: utility
+          chart: epay_java_utility
+          type: library
+          publish_target: itepaypg-sbiepay2-gradle-local
+          environments: []
+  DEV_CLUSTER: https://api.dev.sbiepay.sbi:6443
+  PREPROD_CLUSTER: https://api.preprod.epay.sbi:6443
+  PREPROD_DC_CLUSTER: https://api.dcpreprod.epay.sbi:6443
+  PROD_DR_CLUSTER: https://api.dr.prod.epay.sbi:6443
+  PROD_DC_CLUSTER: https://api.dc.prod.epay.sbi:6443
+  SERVICE_NAME: ''
+  ENV: ''
+  HELM_HISTORY_MAX: '10'
+  DEPLOYMENT_TIMEOUT: 15m
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+stages:
+- ".pre"
+- publish
+- validate
+- deploy
+- verify
+- ".post"
+".validate_inputs":
+  before_script:
+  - |
+    set -eo pipefail
+    if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+      echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+    fi
+    if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+      echo "ERROR: Invalid ENV '$ENV'"; exit 1
+    fi
+    echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+validate_service:
+  stage: validate
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - deploy_runner
+  script:
+  - "set -eo pipefail\necho \"$SERVICES_CONFIG\" > /tmp/services.yml\n\nif [ -z \"$SERVICE_NAME\"
+    ]; then\n  CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep
+    charts | head -1 || true)\n  \n  if [ -z \"$CHANGED_FILE\" ]; then\n    CHANGED_FILE=$(git
+    ls-files | grep charts | head -1 || true)\n  fi\n\n  if [ -z \"$CHANGED_FILE\"
+    ]; then\n    echo \"No chart changes found\"\n    exit 1\n  fi\n\n  ENV=$(echo
+    \"$CHANGED_FILE\" | cut -d'/' -f1)\n  SERVICE_NAME=$(echo \"$CHANGED_FILE\" |
+    cut -d'/' -f3)\n\n  echo \"Detected SERVICE_NAME=$SERVICE_NAME\"\n  echo \"Detected
+    ENV=$ENV\"\nfi\n\n# RELEASE_NAME extract from services.yaml\nRELEASE_NAME=$(awk
+    -v svc=\"$SERVICE_NAME\" '\n  $0 ~ \"name: \"svc {found=1}\n  found && /release:/
+    {print $2; exit}\n' /tmp/services.yml)\n\nRELEASE_NAME=${RELEASE_NAME:-$(echo
+    \"$SERVICE_NAME\" | tr '_' '-')}\n\nNAMESPACE=$(awk -v svc=\"$SERVICE_NAME\" '\n
+    \ /namespace:/ {ns=$3}\n  $0 ~ \"name: \"svc {print ns; exit}\n' /tmp/services.yml)\n\nNAMESPACE=\"${ENV}-${NAMESPACE}\"\n\necho
+    \"RAW NAMESPACE=$NAMESPACE\"\necho \"FINAL VALUES:\"\necho \"SERVICE_NAME=$SERVICE_NAME\"\necho
+    \"ENV=$ENV\"\necho \"RELEASE_NAME=$RELEASE_NAME\"\necho \"NAMESPACE=$NAMESPACE\"\n
+    \n[ -d \"${ENV}/charts/${SERVICE_NAME}\" ] || { echo \"Chart not found\"; exit
+    1; }\n\n# Helm validation\nhelm lint ${ENV}/charts/${SERVICE_NAME}/\n\nhelm template
+    ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \\\n  --set image.tag=${VERSION}
+    \\\n  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml\n\necho \"✅ Validation passed\"\n\n#
+    Export for next stages\necho \"SERVICE_NAME=$SERVICE_NAME\" >> build.env\necho
+    \"ENV=$ENV\" >> build.env\necho \"RELEASE_NAME=$RELEASE_NAME\" >> build.env\necho
+    \"NAMESPACE=$NAMESPACE\" >> build.env\n# - helm lint ${ENV}/charts/${SERVICE_NAME}/\n#
+    helm upgrade --install ${SERVICE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \\\n#   --dry-run=client
+    \\\n#   --set image.tag=${VERSION} \\\n#   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml\n#
+    - echo \"✅ Helm dry-run passed\"\n"
+  artifacts:
+    reports:
+      dotenv:
+      - build.env
+helm:deploy:
+  before_script:
+  - |
+    set -eo pipefail
+    if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+      echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+    fi
+    if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+      echo "ERROR: Invalid ENV '$ENV'"; exit 1
+    fi
+    echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+  stage: deploy
+  dependencies:
+  - validate_service
+  needs:
+  - job: validate_service
+    artifacts: true
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - deploy_runner
+  extends: ".validate_inputs"
+  script:
+  - "echo \"RELEASE_NAME=$RELEASE_NAME\"\necho \"SERVICE_NAME=$SERVICE_NAME\"\necho
+    \"ENV=$ENV\"\n\ncase \"$ENV\" in\n  dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;
+    \       TOKEN=$DEV_TOKEN ;;\n  pre-prod)              CLUSTER=$PREPROD_CLUSTER;
+    \   TOKEN=$PREPROD_TOKEN ;;\n  pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER;
+    TOKEN=$PREPRODDC_TOKEN ;;\n  prod-dr)               CLUSTER=$PROD_DR_CLUSTER;
+    \   TOKEN=$PRODDR_TOKEN ;;\n  prod-dc)               CLUSTER=$PROD_DC_CLUSTER;
+    \   TOKEN=$PRODDC_TOKEN ;;\nesac\noc login \"$CLUSTER\" --token=\"$TOKEN\" --insecure-skip-tls-verify\n#
+    helm upgrade --install ${SERVICE_NAME} \\\n#   ${ENV}/charts/${SERVICE_NAME}/
+    \\\n#   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \\\n#   --set image.tag=${VERSION}
+    \\\n#   --history-max=${HELM_HISTORY_MAX} \\\n#   --timeout ${DEPLOYMENT_TIMEOUT}
+    \\\n#   --wait\n# helm upgrade --install ${RELEASE_NAME} \\\n#   ${ENV}/charts/${SERVICE_NAME}
+    \\\n#   -n ${ENV}-${SERVICE_NAME} \\               \n#   --create-namespace \\\n#
+    \  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \\\n#   --set image.tag=${VERSION}
+    \\\n#   --history-max=${HELM_HISTORY_MAX}\n#   --timeout ${DEPLOYMENT_TIMEOUT}\n#
+    \  --wait\nhelm upgrade --install ${RELEASE_NAME} \\\n  ${ENV}/charts/${SERVICE_NAME}
+    \\\n  -n ${NAMESPACE} \\\n  --create-namespace \\\n  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+    \\\n  --set image.tag=${VERSION} \\\n  --history-max=${HELM_HISTORY_MAX}\necho
+    \"✅ Deployed $SERVICE_NAME:$VERSION to $ENV\"\n"
+workflow:
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "pipeline"
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      == "deploy_cicd"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+  - if: $CI_COMMIT_BRANCH == "deploy_cicd" && $CI_PIPELINE_SOURCE == "push"
+    when: always
+  - if: $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000" && $CI_PIPELINE_SOURCE
+      == "push"
+    when: never
+  - if: $CI_COMMIT_AUTHOR == "ci" && $CI_COMMIT_AUTHOR_EMAIL == "ci.cedge@sbi.co.in"
+    when: never
+  - if: "$CI_COMMIT_TAG"
+    when: always
+  - when: never
+update-tag:
+  stage: publish
+  tags:
+  - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+  - "set -eo pipefail\nTAG=$VERSION\nSERVICE_PATH=\"${ENV}/charts/${SERVICE_NAME}\"\necho
+    \"Updating $SERVICE_PATH/values.yaml → image tag: $TAG\"\n# ls -ltrh $SERVICE_PATH\ngit
+    fetch origin ##\ngit checkout $CI_COMMIT_BRANCH ##\n# retry rebase\nfor i in 1
+    2 3; do\n  git pull --rebase origin $CI_COMMIT_BRANCH && break \n  echo \"Rebase
+    failed...retrying ($i)\"\n  sleep 2\n  if [ $i -eq 3 ]; then\n  echo \"Rebase
+    failed after retries\"\n  exit 1\n  fi\ndone\n#git fetch\n#git checkout $CI_COMMIT_BRANCH\nsed
+    -i \"s/\\(tag:\\).*/\\1 \\\"${TAG}\\\"/\" $SERVICE_PATH/values.yaml\ngit add $SERVICE_PATH/values.yaml\nif
+    [[ $(git status --porcelain) ]]; then\n  git commit -m \"chore: update image tag
+    to $TAG [skip ci]\"\n  for i in 1 2 3; do\n    git push origin $CI_COMMIT_BRANCH
+    && break\n    echo \"Push failed...retrying ($i)\"\n    sleep 2\n    git pull
+    --rebase origin $CI_COMMIT_BRANCH\n    if [ $i -eq 3 ]; then\n      echo \"Push
+    failed after retries\"\n      exit 1\n    fi\n  done\n  echo \"✅ values.yaml updated:
+    $SERVICE_PATH → $TAG\"\nelse\n  echo \"No changes — image tag already $TAG\"\nfi\ncat
+    $SERVICE_PATH/values.yaml\n"
+  extends:
+  - ".update_tag"
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "pipeline"
 
