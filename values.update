@@ -1,193 +1,332 @@
-Current deploy.job.yml ----------------
+## Updated `trigger.cd.yml`
 
-
-# ci/deploy/deploy.jobs.yml
-# All deploy trigger jobs — tech-stack agnostic
-# Included by EVERY CI orchestrator template (same file for java, nodejs, python etc.)
-# Extends hidden templates from trigger.cd.yml
-# These jobs run in the APP REPO CI pipeline and trigger the DEPLOYMENT REPO pipeline
-
-# ── DEV — auto on develop merge ───────────────────────────────────────────────
-deploy-dev:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: dev
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME: "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - if: '$CI_COMMIT_BRANCH =~ /^feature_ci\/.*/'  ##added
-      when: manual                               ##added
-      allow_failure: true                        ##added
-    - when: never
-
-# ── SIT — manual, Release Manager ─────────────────────────────────────────────
-deploy-sit:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: sit
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── UAT — manual, Release Manager ─────────────────────────────────────────────
-deploy-uat:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: uat
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── INT — manual, Release Manager ─────────────────────────────────────────────
-deploy-int:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: int
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Performance Testing — manual, Release Manager ─────────────────────────────
-deploy-perf:
-  extends: .trigger_cd_nonprod
-  variables:
-    ENV: perf
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DC — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dc:
-  extends: .trigger_cd_preprod
-  variables:
-    ENV: pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DR — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dr:
-  extends: .trigger_cd_preprod
-  variables:
-    ENV: pre-prod
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Hotfix preprod smoke — manual, RM on MR pipeline only ────────────────────
-deploy-hotfix-preprod-smoke:
-  extends: .trigger_cd_hotfix
-  variables:
-    ENV: pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DC — manual, Bank Only (Protected Environment enforces gate) ─────────
-deploy-prod-dc:
-  extends: .trigger_cd_prod
-  variables:
-    ENV: prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DR — manual, Bank Only ───────────────────────────────────────────────
-deploy-prod-dr:
-  extends: .trigger_cd_prod
-  variables:
-    ENV: prod-dr
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-
-
-
-
-
-
-
-Current trigger.cd.yml ----------------
-
+```yaml
 # ci/deploy/trigger.cd.yml
-# Hidden base templates for CI → CD pipeline trigger
-# strategy: depend ensures CI pipeline waits for CD result
-# Runs inside APP REPO CI pipeline — triggers DEPLOYMENT REPO CD pipeline
 
-# ── Base template ──────────────────────────────────────────────────────────────
 .trigger_cd:
   stage: deploy
+
+  inherit:
+    variables: false
+
   variables:
-    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+    DEPLOYMENT_BRANCH: "deploy_cicd"
+
+    # Materialized variables for downstream pipeline
+    APP_SERVICE_NAME: "${CI_PROJECT_NAME}"
+    APP_ENV: "${ENV}"
+    APP_VERSION: "${VERSION}"
+    APP_CHART_NAME: "${CHART_NAME}"
+    APP_RELEASE_NAME: "${RELEASE_NAME}"
+
   trigger:
     project: "itepaypg-sbiepay2/infra/devops/deployment"
     branch: $DEPLOYMENT_BRANCH
-    strategy: depend          # CI waits for CD — result shown in parent pipeline
+    strategy: depend
+
     forward:
-      pipeline_variables: true   # passes VERSION, ENV, SERVICE_NAME, CHART_NAME
+      pipeline_variables: true
       yaml_variables: true
 
-# ── DEV / SIT / UAT / INT / Perf — Release Manager ────────────────────────────
+
+# ── DEV / SIT / UAT / INT / Perf ─────────────────────────────
+
 .trigger_cd_nonprod:
   extends: .trigger_cd
   variables:
-    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
+    DEPLOYMENT_BRANCH: "deploy_cicd"
 
-# ── Preprod DC / DR — RM with explicit confirmation ────────────────────────────
+# ── PREPROD ──────────────────────────────────────────────────
+
 .trigger_cd_preprod:
   extends: .trigger_cd
   variables:
     DEPLOYMENT_BRANCH: "main"
-  # manual_confirmation: "Deploy ${VERSION} to ${ENV} (Preprod)? Confirm RC validated in lower envs."
 
-# ── Hotfix preprod smoke — RM, on MR pipeline pre-merge ───────────────────────
+# ── HOTFIX ───────────────────────────────────────────────────
+
 .trigger_cd_hotfix:
   extends: .trigger_cd
   variables:
     DEPLOYMENT_BRANCH: "main"
     HOTFIX: "true"
-  # manual_confirmation: "Deploy HOTFIX ${VERSION} to preprod smoke. Confirm MR pipeline CI passed."
 
-# ── Prod DC / DR — Bank team only — Protected Environment enforces gate ────────
+# ── PROD ─────────────────────────────────────────────────────
+
 .trigger_cd_prod:
   extends: .trigger_cd
   variables:
     DEPLOYMENT_BRANCH: "main"
-  # manual_confirmation: "Deploy ${VERSION} to ${ENV}? This action targets PRODUCTION."
+```
 
+---
+
+# Updated `deploy.jobs.yml`
+
+Only environment-specific variables should remain here.
+
+```yaml
+# ci/deploy/deploy.jobs.yml
+
+deploy-dev:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: "dev"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+
+    - if: '$CI_COMMIT_BRANCH =~ /^feature_ci\/.*/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-sit:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: "sit"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-uat:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: "uat"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-int:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: "int"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-perf:
+  extends: .trigger_cd_nonprod
+  variables:
+    ENV: "perf"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-preprod-dc:
+  extends: .trigger_cd_preprod
+  variables:
+    ENV: "pre-prod-dc"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-preprod-dr:
+  extends: .trigger_cd_preprod
+  variables:
+    ENV: "pre-prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-hotfix-preprod-smoke:
+  extends: .trigger_cd_hotfix
+  variables:
+    ENV: "pre-prod-dc"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" &&
+            $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-prod-dc:
+  extends: .trigger_cd_prod
+  variables:
+    ENV: "prod-dc"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+
+    - when: never
+
+
+deploy-prod-dr:
+  extends: .trigger_cd_prod
+  variables:
+    ENV: "prod-dr"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+
+    - when: never
+```
+
+---
+
+# Updated `values.update.yml`
+
+Replace your script block with this:
+
+```yaml
+# cd/publish/values.update.yml
+
+.update_tag:
+  stage: publish
+
+  tags:
+    - deploy_runner
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+
+  script:
+    - |
+      set -eo pipefail
+
+      echo "========== DEBUG =========="
+      echo "APP_SERVICE_NAME=$APP_SERVICE_NAME"
+      echo "APP_ENV=$APP_ENV"
+      echo "APP_VERSION=$APP_VERSION"
+      echo "APP_CHART_NAME=$APP_CHART_NAME"
+      echo "APP_RELEASE_NAME=$APP_RELEASE_NAME"
+      echo "==========================="
+
+      if [ -z "$APP_SERVICE_NAME" ] || \
+         [ -z "$APP_ENV" ] || \
+         [ -z "$APP_VERSION" ]; then
+        echo "ERROR: Required variables missing"
+        exit 1
+      fi
+
+      TAG=$APP_VERSION
+
+      SERVICE_PATH="${APP_ENV}/charts/${APP_SERVICE_NAME}"
+
+      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
+
+      if [ ! -f "$SERVICE_PATH/values.yaml" ]; then
+        echo "ERROR: values.yaml not found"
+
+        echo "===== AVAILABLE CHARTS ====="
+        find ${APP_ENV}/charts -maxdepth 2 -type f
+        echo "============================"
+
+        exit 1
+      fi
+
+      git fetch origin
+
+      git checkout -B $CI_COMMIT_BRANCH origin/$CI_COMMIT_BRANCH
+
+      for i in 1 2 3; do
+        git pull --rebase origin $CI_COMMIT_BRANCH && break
+
+        echo "Rebase failed...retrying ($i)"
+        sleep 2
+
+        if [ $i -eq 3 ]; then
+          echo "Rebase failed after retries"
+          exit 1
+        fi
+      done
+
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+
+      git add $SERVICE_PATH/values.yaml
+
+      if [[ $(git status --porcelain) ]]; then
+
+        git commit -m "chore: update image tag to $TAG [skip ci]"
+
+        for i in 1 2 3; do
+
+          git push origin $CI_COMMIT_BRANCH && break
+
+          echo "Push failed...retrying ($i)"
+          sleep 2
+
+          git pull --rebase origin $CI_COMMIT_BRANCH
+
+          if [ $i -eq 3 ]; then
+            echo "Push failed after retries"
+            exit 1
+          fi
+        done
+
+        echo "✅ values.yaml updated successfully"
+
+      else
+        echo "No changes required"
+      fi
+
+      cat $SERVICE_PATH/values.yaml
+```
+
+---
+
+# VERY IMPORTANT
+
+You must ALSO update:
+
+* `validate_service`
+* `helm:deploy`
+
+to use:
+
+```bash
+APP_SERVICE_NAME
+APP_ENV
+APP_VERSION
+APP_RELEASE_NAME
+```
+
+instead of:
+
+* SERVICE_NAME
+* ENV
+* VERSION
+* RELEASE_NAME
+
+Otherwise later stages will still break.
