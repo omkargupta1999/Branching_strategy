@@ -1,4 +1,80 @@
 
+---------- trigger.cd.yml 
+
+deploy-dev:
+  # extends: .trigger_cd
+  extends: .deploy
+  variables:
+    ENV: "dev"
+    SERVICE_NAME: "${CI_PROJECT_NAME}"
+    VERSION: "${VERSION}"
+    CHART_NAME: "${CHART_NAME}"
+    RELEASE_NAME: "${RELEASE_NAME}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    # - if: '$CI_COMMIT_BRANCH == "develop"'
+    #   when: on_success
+    - if: '$CI_COMMIT_BRANCH =~ /^(develop|feature|release\/.*)$/'
+      when: manual
+      allow_failure: true
+    - when: never
+    # - when: always
+
+
+----------deploy.jobs.yml ---------
+
+
+deploy-dev:
+  # extends: .trigger_cd
+  extends: .deploy
+  variables:
+    ENV: "dev"
+    SERVICE_NAME: "${CI_PROJECT_NAME}"
+    VERSION: "${VERSION}"
+    CHART_NAME: "${CHART_NAME}"
+    RELEASE_NAME: "${RELEASE_NAME}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    # - if: '$CI_COMMIT_BRANCH == "develop"'
+    #   when: on_success
+    - if: '$CI_COMMIT_BRANCH =~ /^(develop|feature|release\/.*)$/'
+      when: manual
+      allow_failure: true
+    - when: never
+    # - when: always
+
+# ── SIT — manual, Release Manager ─────────────────────────────────────────────
+deploy-sit:
+  extends: .trigger_cd_nonprod
+  extends: .deploy
+  variables:
+    ENV: sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    CHART_NAME: "${CHART_NAME}"
+    RELEASE_NAME: "${RELEASE_NAME}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ========================  helm.deploy.yml ----------------------
