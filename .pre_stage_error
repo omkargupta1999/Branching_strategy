@@ -1,95 +1,121 @@
-####################################
-
-.ui_build:
-  stage: build
-  tags:
-    - common_runner
-  #image: artifactory.jfrog.sbi:443/dso-base-image/node/nodejs-20:1-38
-  variables: 
-    NG_PERSISTENT_BUILD_CACHE: "1"
-    NODE_OPTIONS: "--openssl-legacy-provider"
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - .angular/cache
-  before_script:
-    - node -v
-    - npm -v
-    - npm config set strict-ssl false
-    - npm config set registry https://artifactory.jfrog.sbi:443/artifactory/cbops-bsa-npm/
-  script:
-    - npm ci --prefer-offline --no-audit
-    - npm run build
-    - cd dist && tar -cvf dist.tar .
-    - sha256sum *.tar > checksums.txt
-    - cat checksums.txt
-  artifacts:
-    paths:
-      - dist/dist.tar
-    expire_in: 1 day
-
-######################################
-
-
-.build:
-  variables: 
-    NPM_CONFIG_REGISTRY: "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
-    NPM_TOKEN: token   # Replace with real token via CI/CD variables
-
-  stage: build
-
-  image:
-    name: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
-
-  before_script:
-    - unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
-    - echo "registry=https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/" > .npmrc
-    - echo "always-auth=true" >> .npmrc
-    - echo "//artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken=${NPM_TOKEN}" >> .npmrc
-    - cat .npmrc
-  script:
-    - echo "BUILD STARTED"
-
-    - npm config set registry "https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/"
-    - npm config get registry
-
-    - env | grep -i proxy || true
-    - echo "Pipeline JF_USER ${JF_USER}"
-
-    - pwd
-    - ls -la
-
-    # Install dependencies
-    - npm cache clean --force
-    - npm install --legacy-peer-deps
-
-    # Build
-    - npm run build
-
-    - echo "Skipping export step (handled by build)"
-
-    # Normalize output
-    - |
-      if [ -d "out" ]; then
-        echo "Next.js detected - copying out to dist"
-        rm -rf dist
-        mkdir -p dist
-        cp -r out/* dist/
-      elif [ -d "dist" ]; then
-        echo "Using existing dist"
-      else
-        echo "ERROR: No dist or out folder found"
-        exit 1
-      fi
-
-    # Verify
-    - echo "FINAL DIST CONTENT"
-    - ls -la dist
-
-    - echo "BUILD COMPLETED"
-
-  artifacts:
-    paths:
-      - dist/
-    when: on_success
-    expire_in: 1 week
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:01
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
+Created fresh repository.
+Checking out ea19d367 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:13
+Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+$ echo ">>> Service $SERVICE"
+>>> Service captcha-service
+$ cd "$MONO_REPO_ROOT/$SERVICE"
+$ if [ -n "$VERSION" ]; then # collapsed multi-line command
+Welcome to Gradle 9.3.0!
+Here are the highlights of this release:
+ - Test reporting improvements
+ - Error and warning improvements
+ - Build authoring improvements
+For more details see https://docs.gradle.org/9.3.0/release-notes.html
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileJava FAILED
+[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Could not resolve all files for configuration ':compileClasspath'.
+   > Could not resolve org.projectlombok:lombok:1.18.42.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve org.projectlombok:lombok:1.18.42.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.pom'. Received status code 401 from server: 
+   > Could not resolve org.springframework.boot:spring-boot-dependencies:3.5.9.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve org.springframework.boot:spring-boot-dependencies:3.5.9.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom'. Received status code 401 from server: 
+   > Could not find org.springframework.boot:spring-boot-autoconfigure:.
+     Searched in the following locations:
+       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-autoconfigure.jar
+     Required by:
+         root project 'captcha-service'
+   > Could not find org.springframework.boot:spring-boot-starter-data-jpa:.
+     Searched in the following locations:
+       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-starter-data-jpa.jar
+     Required by:
+         root project 'captcha-service'
+   > Could not find org.springframework.boot:spring-boot-starter-validation:.
+     Searched in the following locations:
+       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-starter-validation.jar
+     Required by:
+         root project 'captcha-service'
+   > Could not resolve org.springframework:spring-webflux:6.2.15.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve org.springframework:spring-webflux:6.2.15.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.pom'. Received status code 401 from server: 
+   > Could not resolve com.sbi.epay:logging-service:1.0.0.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve com.sbi.epay:logging-service:1.0.0.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom'. Received status code 401 from server: 
+   > Could not resolve com.sbi.epay:encryption-decryption-service:1.0.0.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve com.sbi.epay:encryption-decryption-service:1.0.0.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.pom'. Received status code 401 from server: 
+   > Could not resolve com.jhlabs:filters:2.0.235-1.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve com.jhlabs:filters:2.0.235-1.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.pom'. Received status code 401 from server: 
+   > Could not resolve net.sf.sociaal:freetts:1.2.2.
+     Required by:
+         root project 'captcha-service'
+      > Could not resolve net.sf.sociaal:freetts:1.2.2.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.pom'. Received status code 401 from server: 
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+BUILD FAILED in 12s
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+1 actionable task: 1 executed
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
