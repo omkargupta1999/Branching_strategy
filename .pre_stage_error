@@ -1,3 +1,5 @@
+Getting below Error:
+
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
@@ -119,3 +121,359 @@ ERROR: No files to upload
 Cleaning up project directory and file based variables
 00:00
 ERROR: Job failed: exit code 1
+
+
+
+============================================================== root project settings.gradle ============
+
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = "V1021577"
+                password = "token"             
+                // username = System.getenv("JF_USER")
+                // password = System.getenv("JF_TOKEN")
+            }
+        }
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = "V1021577"
+                password = "token"
+                // username = System.getenv("JF_USER")
+                // password = System.getenv("JF_TOKEN")
+            }
+        }
+    }
+}
+
+rootProject.name = 'epay-java-utilities'
+
+include(
+    'authentication-service',
+    'cache-management-service',
+    'captcha-service',
+    'encryption-decryption-service',
+    'hazelcast-service',
+    'logging-service',
+    'notification-service'
+)
+
+
+===================================  Captcha-services settings.gradle ===========
+
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = "V1021577"
+                password = "token"
+                // username = System.getenv("JF_USER")
+                // password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+            credentials {
+                username = "V1021577"
+                password = "token"
+                // username = System.getenv("JF_USER")
+                // password = System.getenv("JFROG_PASSWORD")
+            }
+        }
+        flatDir {
+            dirs "libs"
+        }
+    }
+}
+
+rootProject.name = 'captcha-service'
+
+
+====================================  Captcha-services  build.gradle =============
+
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+group = 'com.sbi.epay'
+version = "${version}"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+// repositories {
+//     mavenCentral()
+//     flatDir {
+//         dirs 'lib'
+//     }
+//     maven {
+//         url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+//         credentials(PasswordCredentials) {
+//             username = System.getenv("JF_USER")
+//             password = System.getenv("JFROG_PASSWORD")
+//         }
+//         authentication {
+//             basic(BasicAuthentication)
+//         }
+//     }
+// }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+            credentials(PasswordCredentials) {
+                username = "V1021577"
+                password = "token"               
+                // username = System.getenv("JF_USER")
+                // password = System.getenv("JF_TOKEN")
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }
+}
+
+dependencies {
+    api platform ("org.springframework.boot:spring-boot-dependencies:${spring_boot}")
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation "org.springframework:spring-webflux:${spring}"
+
+    implementation "com.sbi.epay:logging-service:${sbi_logging}"
+    implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
+
+    implementation "com.jhlabs:filters:${jhlabs}"
+    implementation "net.sf.sociaal:freetts:${freeTTS}"
+
+    compileOnly "org.projectlombok:lombok:${lombok}"
+    annotationProcessor "org.projectlombok:lombok:${lombok}"
+}
+
+configurations {
+    configureEach {
+        exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+
+======================  .gitlab.ci.yaml ===================
+
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+variables:
+  MONO_REPO_ROOT: "."
+
+.set-workdir:
+  before_script:
+    - echo ">>> Service $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
+
+.service-matrix:
+  parallel:
+    matrix:
+      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+      - SERVICE: ["captcha-service"]
+build:
+  extends: [.build, .set-workdir, .service-matrix]
+
+test:
+  extends: [.test, .set-workdir, .service-matrix]
+
+publish:
+  extends: [.publish, .set-workdir, .service-matrix]
+
+
+================================================  java.library.yml =============
+
+# templates/ci/backend/java.library.yml
+# CI orchestrator for Java LIBRARY/UTILITY repos (JARs → JFrog Artifactory)
+# Examples: epay-java-utility (authentication, logging, notification, encryption JARs)
+# No image stages. Adds publish stage for JFrog Artifactory.
+#
+# Consumer services resolve from:
+#   url: artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual
+
+default:
+  tags:
+    - common_runner
+
+include:
+  # - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/release/tag.yml'
+  - local: 'ci/publish/gradle.artifactory.yml'
+
+stages:
+  # - version       # version generation
+  - build         # gradle compile (produces JARs)
+  - test          # unit tests
+  # - sast          # gitlab sast + fortify
+  # - security      # sca xray (scans JAR artifact)
+  # - release       # git tag — rc on release/*, prod on main
+  - publish       # gradle publish → JFrog Artifactory + Xray scan
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
+  GIT_STRATEGY: clone
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+#   MONO_REPO_ROOT: "."
+
+# .set-workdir:
+#   before_script:
+#     - echo ">>> Service $SERVICE"
+#     - cd "$MONO_REPO_ROOT/$SERVICE"
+
+# .service-matrix:
+#   parallel:
+#     matrix:
+#       - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+
+# build:
+#   extends: [.build, .set-workdir, .service-matrix, .rules]
+
+# test:
+#   extends: [.test, .set-workdir, .service-matrix, .rules]
+
+# publish:
+#   extends: [.publish, .set-workdir, .service-matrix, .rules]
+
+
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release|feature)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
+
+
+
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+#── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# #── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# ── Stage: publish ─────────────────────────────────────────────────────────────
+publish:
+  extends: [.publish, .rules]
+# publish: auto on release/* and main post-merge
+# Defined in ci/publish/gradle.artifactory.yml with its own rules
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+
+==================================================================   java.gradle.yml =============
+
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/ artifact consumed by test + dockerbuild stages
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+    - common_runner
+  variables:
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  script:
+    - |
+      if [ -n "$VERSION" ]; then
+        gradle build -x test -Pversion=${VERSION}
+      else
+        gradle build -x test
+      fi
+    - ls -lrth build/libs
+    - echo "VERSION=$VERSION" >> build.env
+  artifacts:
+    paths:
+      - build/libs
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 week
+
+
+I have shared all of the configuration which we are using for java_package_registry to build , test and publish to jfrog ............
+
+
+But getting 401 error while accessing the jfrog repo which i attached the logs above in the .....I want you to please check and verify why i am getting this error even i have re-generated the jfrog username and password for that jfrog repo ...
+
+
+Request you please check and let me know why we are facing this issue and what exactly we are missing and need to add or remove and any other congiguration need imporvment...
+
+
+
