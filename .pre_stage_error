@@ -1,3 +1,216 @@
+
+
+
+========================  helm.deploy.yml ----------------------
+
+# cd/helm/helm.deploy.yml
+# Stage: validate + deploy + verify
+# Single-service Helm upgrade to OCP cluster
+# Runs in DEPLOYMENT REPO pipeline
+
+include:
+  - local: 'config/services.yaml'
+
+stages:
+  - publish
+  - validate
+  - deploy
+  - verify
+  # - notify
+
+variables:
+  DEV_CLUSTER:        "https://api.dev.sbiepay.sbi:6443"
+  PREPROD_CLUSTER:    "https://api.preprod.epay.sbi:6443"
+  PREPROD_DC_CLUSTER: "https://api.dcpreprod.epay.sbi:6443"
+  PROD_DR_CLUSTER:    "https://api.dr.prod.epay.sbi:6443"
+  PROD_DC_CLUSTER:    "https://api.dc.prod.epay.sbi:6443"
+  # SERVICE_NAME:       ""
+  # ENV:                ""
+  HELM_HISTORY_MAX:   "10"
+  DEPLOYMENT_TIMEOUT: "15m"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+
+.validate_inputs:
+  before_script:
+    - |
+      set -eo pipefail
+      if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+        echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+      fi
+      if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+        echo "ERROR: Invalid ENV '$ENV'"; exit 1
+      fi
+      echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+
+validate_service:
+  stage: validate
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  # extends: .validate_inputs
+  script:
+    - |
+      set -eo pipefail
+      echo "$SERVICES_CONFIG" > /tmp/services.yml
+
+      if [ -z "$SERVICE_NAME" ]; then
+        CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep charts | head -1 || true)
+        
+        if [ -z "$CHANGED_FILE" ]; then
+          CHANGED_FILE=$(git ls-files | grep charts | head -1 || true)
+        fi
+
+        if [ -z "$CHANGED_FILE" ]; then
+          echo "No chart changes found"
+          exit 1
+        fi
+
+        ENV=$(echo "$CHANGED_FILE" | cut -d'/' -f1)
+        SERVICE_NAME=$(echo "$CHANGED_FILE" | cut -d'/' -f3)
+
+        echo "Detected SERVICE_NAME=$SERVICE_NAME"
+        echo "Detected ENV=$ENV"
+      fi
+
+      # RELEASE_NAME extract from services.yaml
+      RELEASE_NAME=$(awk -v svc="$SERVICE_NAME" '
+        $0 ~ "name: "svc {found=1}
+        found && /release:/ {print $2; exit}
+      ' /tmp/services.yml)
+
+      RELEASE_NAME=${RELEASE_NAME:-$(echo "$SERVICE_NAME" | tr '_' '-')}
+
+      NAMESPACE=$(awk -v svc="$SERVICE_NAME" '
+        /namespace:/ {ns=$3}
+        $0 ~ "name: "svc {print ns; exit}
+      ' /tmp/services.yml)
+
+      NAMESPACE="${ENV}-${NAMESPACE}"
+
+      echo "RAW NAMESPACE=$NAMESPACE"
+      echo "FINAL VALUES:"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "NAMESPACE=$NAMESPACE"
+       
+      [ -d "${ENV}/charts/${SERVICE_NAME}" ] || { echo "Chart not found"; exit 1; }
+
+      # Helm validation
+      helm lint ${ENV}/charts/${SERVICE_NAME}/
+
+      helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
+        --set image.tag=${VERSION} \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+
+      echo "✅ Validation passed"
+
+      # Export for next stages
+      echo "SERVICE_NAME=$SERVICE_NAME" >> build.env
+      echo "ENV=$ENV" >> build.env
+      echo "RELEASE_NAME=$RELEASE_NAME" >> build.env
+      echo "NAMESPACE=$NAMESPACE" >> build.env
+      # - helm lint ${ENV}/charts/${SERVICE_NAME}/
+      # helm upgrade --install ${SERVICE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
+      #   --dry-run=client \
+      #   --set image.tag=${VERSION} \
+      #   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+      # - echo "✅ Helm dry-run passed"
+  artifacts:
+    reports:
+      dotenv: build.env
+
+helm:deploy:
+  stage: deploy
+  dependencies:
+    - validate_service
+  needs:
+    - job: validate_service
+      artifacts: true
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  extends: .validate_inputs
+  script:
+    - |
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      
+      case "$ENV" in
+        dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;        TOKEN=$DEV_TOKEN ;;
+        pre-prod)              CLUSTER=$PREPROD_CLUSTER;    TOKEN=$PREPROD_TOKEN ;;
+        pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER; TOKEN=$PREPRODDC_TOKEN ;;
+        prod-dr)               CLUSTER=$PROD_DR_CLUSTER;    TOKEN=$PRODDR_TOKEN ;;
+        prod-dc)               CLUSTER=$PROD_DC_CLUSTER;    TOKEN=$PRODDC_TOKEN ;;
+      esac
+      oc login "$CLUSTER" --token="$TOKEN" --insecure-skip-tls-verify
+      # helm upgrade --install ${SERVICE_NAME} \
+      #   ${ENV}/charts/${SERVICE_NAME}/ \
+      #   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+      #   --set image.tag=${VERSION} \
+      #   --history-max=${HELM_HISTORY_MAX} \
+      #   --timeout ${DEPLOYMENT_TIMEOUT} \
+      #   --wait
+      # helm upgrade --install ${RELEASE_NAME} \
+      #   ${ENV}/charts/${SERVICE_NAME} \
+      #   -n ${ENV}-${SERVICE_NAME} \               
+      #   --create-namespace \
+      #   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+      #   --set image.tag=${VERSION} \
+      #   --history-max=${HELM_HISTORY_MAX}
+      #   --timeout ${DEPLOYMENT_TIMEOUT}
+      #   --wait
+      helm upgrade --install ${RELEASE_NAME} \
+        ${ENV}/charts/${SERVICE_NAME} \
+        -n ${NAMESPACE} \
+        --create-namespace \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+        --set image.tag=${VERSION} \
+        --history-max=${HELM_HISTORY_MAX}
+      echo "✅ Deployed $SERVICE_NAME:$VERSION to $ENV"
+
+
+
+
+
+
+
+----------  deploy.single.yml --------------------
+
+
+
+
+# templates/cd/deploy.single.yml
+# CD orchestrator — single service deploy
+# Used by deployment repo when SERVICE_NAME + ENV known at trigger time
+
+include:
+  - local: 'cd/publish/values.update.yml'
+  - local: 'cd/helm/helm.deploy.yml'
+  # - local: 'cd/verify/verify.rollout.yml'
+  # - local: 'cd/verify/verify.health.yml'
+  # - local: 'cd/notify/notify.slack.yml'
+  # - local: 'cd/notify/notify.jira.yml'
+
+stages:
+  - publish     # update image tag in values.yaml
+  - validate    # helm dry-run + service config check
+  - deploy      # helm upgrade to OCP cluster
+  # - verify      # rollout status + health check
+  # - notify      # slack + jira
+
+
+
+
+
+
+
+
+
 Below is our .gitlab-ci.yml --------------------------------
 
 
