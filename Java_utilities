@@ -116,3 +116,102 @@ ERROR: No files to upload
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
+
+
+
+
+
+
+==========================================================
+
+
+---------------------------------.gitlab-ci.yml --------------
+
+
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+variables:
+  MONO_REPO_ROOT: "."
+
+.set-workdir:
+  before_script:
+    - echo ">>> Service $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
+
+.service-matrix:
+  parallel:
+    matrix:
+      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+      - SERVICE: ["captcha-service"]
+build:
+  extends: [.build, .set-workdir, .service-matrix]
+
+test:
+  extends: [.test, .set-workdir, .service-matrix]
+
+publish:
+  extends: [.publish, .set-workdir, .service-matrix]
+  
+  
+-----------------------------------------------------------java.library.yml ------------
+
+
+
+# templates/ci/backend/java.library.yml
+# CI orchestrator for Java LIBRARY/UTILITY repos (JARs → JFrog Artifactory)
+# Examples: epay-java-utility (authentication, logging, notification, encryption JARs)
+# No image stages. Adds publish stage for JFrog Artifactory.
+#
+# Consumer services resolve from:
+#   url: artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual
+
+default:
+  tags:
+    - common_runner
+
+include:
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  - local: 'ci/publish/gradle.artifactory.yml'
+
+stages:
+
+  - build         # gradle compile (produces JARs)
+  - test          # unit tests
+  - publish       # gradle publish → JFrog Artifactory + Xray scan
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
+  GIT_STRATEGY: clone
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+
+
+
+
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release|feature)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
+
+
+
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+publish:
+  extends: [.publish, .rules]
+
+
+
