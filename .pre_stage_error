@@ -1,37 +1,39 @@
-Getting below Error:
-
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
-00:01
+00:00
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 Preparing environment
 00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2008-concurrent-0 via PE3DSOPGRUNNERS6...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2008-concurrent-0 via PE3DSOPGrunners3...
 Getting source from Git repository
-00:01
+00:03
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out ea19d367 as detached HEAD (ref is main)...
+Checking out 991507da as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:13
-Using docker image sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
+00:40
+Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
 $ echo ">>> Service $SERVICE"
 >>> Service captcha-service
 $ cd "$MONO_REPO_ROOT/$SERVICE"
-$ if [ -n "$VERSION" ]; then # collapsed multi-line command
+$ echo "Publishing"
+Publishing
+$ gradle publish --info
+Initialized native services in: /home/gradle/.gradle/native
+Initialized jansi services in: /home/gradle/.gradle/native
 Welcome to Gradle 9.3.0!
 Here are the highlights of this release:
  - Test reporting improvements
@@ -39,441 +41,872 @@ Here are the highlights of this release:
  - Build authoring improvements
 For more details see https://docs.gradle.org/9.3.0/release-notes.html
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: /home/gradle/.gradle/daemon/9.3.0 Command: /usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -cp /opt/gradle-9.3.0/lib/gradle-daemon-main-9.3.0.jar -javaagent:/opt/gradle-9.3.0/lib/agents/gradle-instrumentation-agent-9.3.0.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.3.0
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 2.466 secs.
+The client will now receive all logging from the daemon (pid: 57). The daemon log file: /home/gradle/.gradle/daemon/9.3.0/daemon-57.out.log
 Daemon will be stopped at the end of the build 
-> Task :compileJava FAILED
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build/reports/problems/problems-report.html
+Using 16 worker leases.
+Operational build model parameters: {requiresToolingModels=false, parallelProjectExecution=false, configureOnDemand=false, configurationCache=false, configurationCacheParallelStore=false, configurationCacheParallelLoad=true, isolatedProjects=false, parallelProjectConfiguration=false, intermediateModelCache=false, parallelToolingApiActions=false, invalidateCoupledProjects=false, modelAsProjectDependency=false, resilientModelBuilding=false}
+Received JVM installation metadata from '/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64': {JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64, JAVA_VERSION=21.0.10, JAVA_VENDOR=Red Hat, Inc., RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=21.0.10+7-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=21.0.10+7-LTS, VM_VENDOR=Red Hat, Inc., OS_ARCH=amd64}
+Watching the file system is configured to be enabled if available
+Not watching /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities since the file system is not supported
+File system watching is active
+Starting Build
+Caching disabled for Groovy DSL script compilation (cp_settings) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling settings file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/settings.gradle' using SubsetScriptTransformer.
+Caching disabled for Groovy DSL script compilation (settings) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling settings file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/settings.gradle' using BuildScriptTransformer.
+Settings evaluated using settings file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/settings.gradle'.
+Projects loaded. Root project using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build.gradle'.
+Included projects: [root project 'epay-java-utilities', project ':authentication-service', project ':cache-management-service', project ':captcha-service', project ':encryption-decryption-service', project ':hazelcast-service', project ':logging-service', project ':notification-service']
+> Configure project :
+Evaluating root project 'epay-java-utilities' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build.gradle'.
+> Configure project :authentication-service
+Evaluating project ':authentication-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/authentication-service/build.gradle' using BuildScriptTransformer.
+> Configure project :cache-management-service
+Evaluating project ':cache-management-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/cache-management-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/cache-management-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/cache-management-service/build.gradle' using BuildScriptTransformer.
+> Configure project :captcha-service
+Evaluating project ':captcha-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java-library']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build.gradle' using BuildScriptTransformer.
+> Configure project :encryption-decryption-service
+Evaluating project ':encryption-decryption-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle' using BuildScriptTransformer.
+> Configure project :hazelcast-service
+Evaluating project ':hazelcast-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.3.3/org.springframework.boot.gradle.plugin-3.3.3.pom to /home/gradle/.gradle/.tmp/gradle_download1614914554013748760bin
+Resource missing. [HTTP HEAD: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.3.3/org.springframework.boot.gradle.plugin-3.3.3.jar]
+Resolved plugin [id: 'org.springframework.boot', version: '3.3.3']
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/spring/dependency-management/io.spring.dependency-management.gradle.plugin/1.1.6/io.spring.dependency-management.gradle.plugin-1.1.6.pom to /home/gradle/.gradle/.tmp/gradle_download17029548883900256896bin
+Resource missing. [HTTP HEAD: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/spring/dependency-management/io.spring.dependency-management.gradle.plugin/1.1.6/io.spring.dependency-management.gradle.plugin-1.1.6.jar]
+Resolved plugin [id: 'io.spring.dependency-management', version: '1.1.6']
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-gradle-plugin/3.3.3/spring-boot-gradle-plugin-3.3.3.pom to /home/gradle/.gradle/.tmp/gradle_download10832904119857796426bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-gradle-plugin/3.3.3/spring-boot-gradle-plugin-3.3.3.module to /home/gradle/.gradle/.tmp/gradle_download13141423882144541514bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/spring/gradle/dependency-management-plugin/1.1.6/dependency-management-plugin-1.1.6.pom to /home/gradle/.gradle/.tmp/gradle_download6213344027895256532bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/spring/gradle/dependency-management-plugin/1.1.6/dependency-management-plugin-1.1.6.module to /home/gradle/.gradle/.tmp/gradle_download15215107452973892977bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.1.12/spring-core-6.1.12.pom to /home/gradle/.gradle/.tmp/gradle_download4727633544963338545bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-loader-tools/3.3.3/spring-boot-loader-tools-3.3.3.pom to /home/gradle/.gradle/.tmp/gradle_download17581555903870121378bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/commons/commons-compress/1.25.0/commons-compress-1.25.0.pom to /home/gradle/.gradle/.tmp/gradle_download17180348953073176701bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-buildpack-platform/3.3.3/spring-boot-buildpack-platform-3.3.3.pom to /home/gradle/.gradle/.tmp/gradle_download10890063477453605701bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-loader-tools/3.3.3/spring-boot-loader-tools-3.3.3.module to /home/gradle/.gradle/.tmp/gradle_download13209812920197635927bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.1.12/spring-core-6.1.12.module to /home/gradle/.gradle/.tmp/gradle_download10034662583851828937bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/commons/commons-parent/64/commons-parent-64.pom to /home/gradle/.gradle/.tmp/gradle_download17065423614341198521bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-buildpack-platform/3.3.3/spring-boot-buildpack-platform-3.3.3.module to /home/gradle/.gradle/.tmp/gradle_download17417101256764983185bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/apache/30/apache-30.pom to /home/gradle/.gradle/.tmp/gradle_download3894457330468291153bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.10.0/junit-bom-5.10.0.pom to /home/gradle/.gradle/.tmp/gradle_download10844640892764035245bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.10.0/junit-bom-5.10.0.module to /home/gradle/.gradle/.tmp/gradle_download2682712481125393762bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/tomlj/tomlj/1.0.0/tomlj-1.0.0.pom to /home/gradle/.gradle/.tmp/gradle_download9058061308933738514bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/java/dev/jna/jna-platform/5.13.0/jna-platform-5.13.0.pom to /home/gradle/.gradle/.tmp/gradle_download18164603858964876150bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/module/jackson-module-parameter-names/2.14.2/jackson-module-parameter-names-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download10695608293670793455bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-databind/2.14.2/jackson-databind-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download13352745042846519816bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/client5/httpclient5/5.3.1/httpclient5-5.3.1.pom to /home/gradle/.gradle/.tmp/gradle_download5883556298690664104bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/jackson-base/2.14.2/jackson-base-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download3892305984470658570bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/module/jackson-modules-java8/2.14.2/jackson-modules-java8-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download12261231904762404009bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/client5/httpclient5-parent/5.3.1/httpclient5-parent-5.3.1.pom to /home/gradle/.gradle/.tmp/gradle_download13021315229845526143bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/jackson-bom/2.14.2/jackson-bom-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download10222045301254006200bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/httpcomponents-parent/13/httpcomponents-parent-13.pom to /home/gradle/.gradle/.tmp/gradle_download7660817844422444242bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/jackson-parent/2.14/jackson-parent-2.14.pom to /home/gradle/.gradle/.tmp/gradle_download17312571057988245293bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/apache/27/apache-27.pom to /home/gradle/.gradle/.tmp/gradle_download4526813022474827799bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/oss-parent/48/oss-parent-48.pom to /home/gradle/.gradle/.tmp/gradle_download9474372135620306730bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.pom to /home/gradle/.gradle/.tmp/gradle_download10934042071204857917bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module to /home/gradle/.gradle/.tmp/gradle_download4041401765635266710bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-databind/2.14.2/jackson-databind-2.14.2.module to /home/gradle/.gradle/.tmp/gradle_download4376511918772280737bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/module/jackson-module-parameter-names/2.14.2/jackson-module-parameter-names-2.14.2.module to /home/gradle/.gradle/.tmp/gradle_download12286709629286767726bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.pom to /home/gradle/.gradle/.tmp/gradle_download383930615018055897bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.module to /home/gradle/.gradle/.tmp/gradle_download6880057545126486020bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-annotations/2.14.2/jackson-annotations-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download1447462143664800640bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-core/2.14.2/jackson-core-2.14.2.pom to /home/gradle/.gradle/.tmp/gradle_download17858106414127541187bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-annotations/2.14.2/jackson-annotations-2.14.2.module to /home/gradle/.gradle/.tmp/gradle_download11637123367661850880bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-core/2.14.2/jackson-core-2.14.2.module to /home/gradle/.gradle/.tmp/gradle_download14675670988451402197bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/java/dev/jna/jna/5.13.0/jna-5.13.0.pom to /home/gradle/.gradle/.tmp/gradle_download7576328285545701179bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.pom to /home/gradle/.gradle/.tmp/gradle_download13075335863269402641bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/core5/httpcore5/5.2.4/httpcore5-5.2.4.pom to /home/gradle/.gradle/.tmp/gradle_download13989728681632303328bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/core5/httpcore5-h2/5.2.4/httpcore5-h2-5.2.4.pom to /home/gradle/.gradle/.tmp/gradle_download2999897336088169163bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-parent/1.7.36/slf4j-parent-1.7.36.pom to /home/gradle/.gradle/.tmp/gradle_download4929413023839054133bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/core5/httpcore5-parent/5.2.4/httpcore5-parent-5.2.4.pom to /home/gradle/.gradle/.tmp/gradle_download9579865577461903897bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.9.3/junit-bom-5.9.3.pom to /home/gradle/.gradle/.tmp/gradle_download8738328106678166902bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.9.3/junit-bom-5.9.3.module to /home/gradle/.gradle/.tmp/gradle_download4617271512459252555bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-runtime/4.7.2/antlr4-runtime-4.7.2.pom to /home/gradle/.gradle/.tmp/gradle_download17816842108726459203bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.pom to /home/gradle/.gradle/.tmp/gradle_download14437055333872615549bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-master/4.7.2/antlr4-master-4.7.2.pom to /home/gradle/.gradle/.tmp/gradle_download792240021811557936bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/sonatype/oss/oss-parent/7/oss-parent-7.pom to /home/gradle/.gradle/.tmp/gradle_download3090627023203985332bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/sonatype/oss/oss-parent/9/oss-parent-9.pom to /home/gradle/.gradle/.tmp/gradle_download7359722366912366950bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/tomlj/tomlj/1.0.0/tomlj-1.0.0.jar to /home/gradle/.gradle/.tmp/gradle_download11676768149874150912bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-buildpack-platform/3.3.3/spring-boot-buildpack-platform-3.3.3.jar to /home/gradle/.gradle/.tmp/gradle_download10545072833972398333bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-gradle-plugin/3.3.3/spring-boot-gradle-plugin-3.3.3.jar to /home/gradle/.gradle/.tmp/gradle_download18158177852653325215bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-loader-tools/3.3.3/spring-boot-loader-tools-3.3.3.jar to /home/gradle/.gradle/.tmp/gradle_download10745589536717894490bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/spring/gradle/dependency-management-plugin/1.1.6/dependency-management-plugin-1.1.6.jar to /home/gradle/.gradle/.tmp/gradle_download1789867418140479857bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-databind/2.14.2/jackson-databind-2.14.2.jar to /home/gradle/.gradle/.tmp/gradle_download11251046463239007384bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar to /home/gradle/.gradle/.tmp/gradle_download2698382754001208550bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/core5/httpcore5-h2/5.2.4/httpcore5-h2-5.2.4.jar to /home/gradle/.gradle/.tmp/gradle_download2258157405956523708bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-annotations/2.14.2/jackson-annotations-2.14.2.jar to /home/gradle/.gradle/.tmp/gradle_download8524360912079266090bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/client5/httpclient5/5.3.1/httpclient5-5.3.1.jar to /home/gradle/.gradle/.tmp/gradle_download3063900836982770103bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/module/jackson-module-parameter-names/2.14.2/jackson-module-parameter-names-2.14.2.jar to /home/gradle/.gradle/.tmp/gradle_download17811778150683834083bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.1.12/spring-core-6.1.12.jar to /home/gradle/.gradle/.tmp/gradle_download7055227980155956749bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.jar to /home/gradle/.gradle/.tmp/gradle_download6758504684076168477bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-core/2.14.2/jackson-core-2.14.2.jar to /home/gradle/.gradle/.tmp/gradle_download4373138190746279780bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/commons/commons-compress/1.25.0/commons-compress-1.25.0.jar to /home/gradle/.gradle/.tmp/gradle_download13705446529252669931bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/httpcomponents/core5/httpcore5/5.2.4/httpcore5-5.2.4.jar to /home/gradle/.gradle/.tmp/gradle_download7286729658663475442bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/java/dev/jna/jna-platform/5.13.0/jna-platform-5.13.0.jar to /home/gradle/.gradle/.tmp/gradle_download6975373883072154668bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar to /home/gradle/.gradle/.tmp/gradle_download8164673066153654829bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar to /home/gradle/.gradle/.tmp/gradle_download9310282057988350258bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-runtime/4.7.2/antlr4-runtime-4.7.2.jar to /home/gradle/.gradle/.tmp/gradle_download11952391013965714266bin
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-gradle-plugin/3.3.3/93b0f0f9d39f972b3cc311712908ef6ae02aa771/spring-boot-gradle-plugin-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/io.spring.gradle/dependency-management-plugin/1.1.6/fc687c0a0664f764fae7f31baa68be7a6e7e89db/dependency-management-plugin-1.1.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-buildpack-platform/3.3.3/93b321f31840d2ff8732b8f0a762dca4bee42981/spring-boot-buildpack-platform-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-loader-tools/3.3.3/ef85cc2f3ace0d825fda789b43338d2d300d9b4d/spring-boot-loader-tools-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.25.0/9d35aec423da6c8a7f93d7e9e1c6b1d9fe14bb5e/commons-compress-1.25.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-core/6.1.12/5f4162fb645c4f72b57b21d721fce9f26edb9bb9/spring-core-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.14.2/a7aae9525864930723e3453ab799521fdfd9d873/jackson-annotations-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.14.2/f804090e6399ce0cf78242db086017512dd71fcc/jackson-core-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-parameter-names/2.14.2/2b6c19b3d99dda02915515df879ab9e23fed3864/jackson-module-parameter-names-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.14.2/1e71fddbc80bb86f71a6345ac1e8ab8a00e7134/jackson-databind-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna-platform/5.13.0/88e9a306715e9379f3122415ef4ae759a352640d/jna-platform-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.client5/httpclient5/5.3.1/56b53c8f4bcdaada801d311cf2ff8a24d6d96883/httpclient5-5.3.1.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-jcl/6.1.12/f46d6016fd1dd3801a0e6fcd64789ac468254944/spring-jcl-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.tomlj/tomlj/1.0.0/d1922fb5e672e04d8e8d8dac0b058b1897e6e940/tomlj-1.0.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/5.13.0/1200e7ebeedbe0d10062093f32925a912020e747/jna-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5-h2/5.2.4/2872764df7b4857549e2880dd32a6f9009166289/httpcore5-h2-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5/5.2.4/34d8332b975f9e9a8298efe4c883ec43d45b7059/httpcore5-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.36/6c62681a2f655b49963a5983b8b0950a6120ae14/slf4j-api-1.7.36.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4-runtime/4.7.2/e27d8ab4f984f9d186f54da984a6ab1cccac755e/antlr4-runtime-4.7.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for InstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/d79830600c9ad8cdafa280fdda7c42ef/transformed/.gradle-instrumented-classpath.marker because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/dc7b8ccfa9334fb6f91e91067221e8b6/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/a9b284bba645fbb24b481321d35ef9cd/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/583b00c6e68c2366978a17964aa395fa/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/12b92ec5be9b0b3d830e861ba7463c3b/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/d79830600c9ad8cdafa280fdda7c42ef/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/3240d6d61bc59a999620f02953b835c0/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/49e4b341bb86c6bd3df3e1e4477fcbec/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/8d0a1447dee0182fd2036af8da4e9a0d/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/c2332d276479d39056f6021cfcd2034b/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/3957d1a172377a0bf93f16444540f786/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/8df7a8d7deebcf12a0a2a903e5156d53/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/e2cc996b967dc2eb652466a0db577746/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/5978609eb0156ed61c11a0cc73c10709/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/82c4863292d08cb55ad1b52aaec4916e/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/d559447f376dd29d4d46b46b1a7303ac/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/a9b284bba645fbb24b481321d35ef9cd/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/12b92ec5be9b0b3d830e861ba7463c3b/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/583b00c6e68c2366978a17964aa395fa/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/baae6d404f8cc91cd9a0c7e91d11926e/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/8df7a8d7deebcf12a0a2a903e5156d53/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/49e4b341bb86c6bd3df3e1e4477fcbec/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/d79830600c9ad8cdafa280fdda7c42ef/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/e2cc996b967dc2eb652466a0db577746/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/82c4863292d08cb55ad1b52aaec4916e/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/3240d6d61bc59a999620f02953b835c0/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/d559447f376dd29d4d46b46b1a7303ac/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/5978609eb0156ed61c11a0cc73c10709/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/c2332d276479d39056f6021cfcd2034b/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/3957d1a172377a0bf93f16444540f786/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/dc7b8ccfa9334fb6f91e91067221e8b6/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/8d0a1447dee0182fd2036af8da4e9a0d/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/baae6d404f8cc91cd9a0c7e91d11926e/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-jcl/6.1.12/f46d6016fd1dd3801a0e6fcd64789ac468254944/spring-jcl-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-buildpack-platform/3.3.3/93b321f31840d2ff8732b8f0a762dca4bee42981/spring-boot-buildpack-platform-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.14.2/a7aae9525864930723e3453ab799521fdfd9d873/jackson-annotations-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-parameter-names/2.14.2/2b6c19b3d99dda02915515df879ab9e23fed3864/jackson-module-parameter-names-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.tomlj/tomlj/1.0.0/d1922fb5e672e04d8e8d8dac0b058b1897e6e940/tomlj-1.0.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-gradle-plugin/3.3.3/93b0f0f9d39f972b3cc311712908ef6ae02aa771/spring-boot-gradle-plugin-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.14.2/f804090e6399ce0cf78242db086017512dd71fcc/jackson-core-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/5.13.0/1200e7ebeedbe0d10062093f32925a912020e747/jna-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.25.0/9d35aec423da6c8a7f93d7e9e1c6b1d9fe14bb5e/commons-compress-1.25.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5-h2/5.2.4/2872764df7b4857549e2880dd32a6f9009166289/httpcore5-h2-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/7400d297fe86777bd526859bf50040b2/transformed/.gradle-instrumented-classpath.marker because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-loader-tools/3.3.3/ef85cc2f3ace0d825fda789b43338d2d300d9b4d/spring-boot-loader-tools-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.14.2/1e71fddbc80bb86f71a6345ac1e8ab8a00e7134/jackson-databind-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/io.spring.gradle/dependency-management-plugin/1.1.6/fc687c0a0664f764fae7f31baa68be7a6e7e89db/dependency-management-plugin-1.1.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna-platform/5.13.0/88e9a306715e9379f3122415ef4ae759a352640d/jna-platform-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-core/6.1.12/5f4162fb645c4f72b57b21d721fce9f26edb9bb9/spring-core-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.client5/httpclient5/5.3.1/56b53c8f4bcdaada801d311cf2ff8a24d6d96883/httpclient5-5.3.1.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/74927a004ca05751c39259bc7653af41/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/672a7e85daf1d7914b23166ad1770781/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/291d7165b9b781a39cc82be721d485ed/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/7400d297fe86777bd526859bf50040b2/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/efd897fc04124d6088b2aac8fddb0364/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/2bbbc09df22ef75b0ee2d1a788f3bf0b/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/df845acf101b5038868cd481be55ff7b/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/ffb1c21e3cbece4047dfeaa93315913b/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/11a49d4627ffcf00edbd522ca39ad69f/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/54ee2d501a0739352e9c930f090332f1/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/858f36da54000c932a528c90c690e48d/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/8b1a67e210058b57223ee77c56ab963b/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/12f8749132d1d79be9f617e45e4a4d32/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/da8bdd183ee7a9cf22ee267153e67e42/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/7c5898e9f12fae4688cf1c9c31755e06/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/a55a325dcb708b6d3b78be00f666d359/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-parameter-names/2.14.2/2b6c19b3d99dda02915515df879ab9e23fed3864/jackson-module-parameter-names-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-jcl/6.1.12/f46d6016fd1dd3801a0e6fcd64789ac468254944/spring-jcl-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/9a16a57b24000212e026a4cbde02c7be/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/9a16a57b24000212e026a4cbde02c7be/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/4bbc0a5ec75ab065537231367477dfec/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/4bbc0a5ec75ab065537231367477dfec/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.14.2/a7aae9525864930723e3453ab799521fdfd9d873/jackson-annotations-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-gradle-plugin/3.3.3/93b0f0f9d39f972b3cc311712908ef6ae02aa771/spring-boot-gradle-plugin-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5/5.2.4/34d8332b975f9e9a8298efe4c883ec43d45b7059/httpcore5-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/44931e32d8606d3ccb19e73e10b5d19f/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/2a909633d8cce5fb3f361be35ed29edc/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.36/6c62681a2f655b49963a5983b8b0950a6120ae14/slf4j-api-1.7.36.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-loader-tools/3.3.3/ef85cc2f3ace0d825fda789b43338d2d300d9b4d/spring-boot-loader-tools-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/44931e32d8606d3ccb19e73e10b5d19f/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/5.13.0/1200e7ebeedbe0d10062093f32925a912020e747/jna-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5-h2/5.2.4/2872764df7b4857549e2880dd32a6f9009166289/httpcore5-h2-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.tomlj/tomlj/1.0.0/d1922fb5e672e04d8e8d8dac0b058b1897e6e940/tomlj-1.0.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/6da7a58ee7fd15c85e9dfc4945efc6ac/transformed/analysis/instrumentation-hierarchy.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/3fc26aaaccea522d8ac080948efac69e/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.14.2/f804090e6399ce0cf78242db086017512dd71fcc/jackson-core-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-buildpack-platform/3.3.3/93b321f31840d2ff8732b8f0a762dca4bee42981/spring-boot-buildpack-platform-3.3.3.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.client5/httpclient5/5.3.1/56b53c8f4bcdaada801d311cf2ff8a24d6d96883/httpclient5-5.3.1.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/9.3.0/transforms/6da7a58ee7fd15c85e9dfc4945efc6ac/transformed/analysis/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4-runtime/4.7.2/e27d8ab4f984f9d186f54da984a6ab1cccac755e/antlr4-runtime-4.7.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/b4ab69b43315ce4a8208eb4f9ea91afd/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.36/6c62681a2f655b49963a5983b8b0950a6120ae14/slf4j-api-1.7.36.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for MergeInstrumentationAnalysisTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/9.3.0/transforms/7329ad9a1a264849bcf92060e9aa4d59/transformed/merge/instrumentation-dependencies.bin because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents.core5/httpcore5/5.2.4/34d8332b975f9e9a8298efe4c883ec43d45b7059/httpcore5-5.2.4.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.25.0/9d35aec423da6c8a7f93d7e9e1c6b1d9fe14bb5e/commons-compress-1.25.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna-platform/5.13.0/88e9a306715e9379f3122415ef4ae759a352640d/jna-platform-5.13.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.14.2/1e71fddbc80bb86f71a6345ac1e8ab8a00e7134/jackson-databind-2.14.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4-runtime/4.7.2/e27d8ab4f984f9d186f54da984a6ab1cccac755e/antlr4-runtime-4.7.2.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/org.springframework/spring-core/6.1.12/5f4162fb645c4f72b57b21d721fce9f26edb9bb9/spring-core-6.1.12.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/gradle/.gradle/caches/modules-2/files-2.1/io.spring.gradle/dependency-management-plugin/1.1.6/fc687c0a0664f764fae7f31baa68be7a6e7e89db/dependency-management-plugin-1.1.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Applying dependency management to configuration 'annotationProcessor' in project 'hazelcast-service'
+Applying dependency management to configuration 'apiElements' in project 'hazelcast-service'
+Applying dependency management to configuration 'archives' in project 'hazelcast-service'
+Applying dependency management to configuration 'bootArchives' in project 'hazelcast-service'
+Applying dependency management to configuration 'compileClasspath' in project 'hazelcast-service'
+Applying dependency management to configuration 'compileOnly' in project 'hazelcast-service'
+Applying dependency management to configuration 'default' in project 'hazelcast-service'
+Applying dependency management to configuration 'developmentOnly' in project 'hazelcast-service'
+Applying dependency management to configuration 'implementation' in project 'hazelcast-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'hazelcast-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'hazelcast-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'hazelcast-service'
+Applying dependency management to configuration 'runtimeElements' in project 'hazelcast-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'hazelcast-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'hazelcast-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'hazelcast-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'hazelcast-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'hazelcast-service'
+Applying dependency management to configuration 'testImplementation' in project 'hazelcast-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'hazelcast-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'hazelcast-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'hazelcast-service'
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/hazelcast-service/build.gradle' using BuildScriptTransformer.
+> Configure project :logging-service
+Evaluating project ':logging-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/logging-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/logging-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/logging-service/build.gradle' using BuildScriptTransformer.
+> Configure project :notification-service
+Evaluating project ':notification-service' using build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/notification-service/build.gradle'.
+Caching disabled for Groovy DSL script compilation (cp_proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/notification-service/build.gradle' using SubsetScriptTransformer.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'maven-publish']
+Caching disabled for Groovy DSL script compilation (proj) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/notification-service/build.gradle' using BuildScriptTransformer.
+All projects evaluated.
+Task name matched 'publish'
+Selected primary task 'publish' from project :captcha-service
+Tasks to be executed: [task ':captcha-service:compileJava', task ':captcha-service:processResources', task ':captcha-service:classes', task ':captcha-service:jar', task ':captcha-service:javadoc', task ':captcha-service:javadocJar', task ':captcha-service:sourcesJar', task ':captcha-service:generateMetadataFileForMavenJavaPublication', task ':captcha-service:generatePomFileForMavenJavaPublication', task ':captcha-service:publishMavenJavaPublicationToMavenRepository', task ':captcha-service:publish']
+Tasks that were excluded: []
+Resolve mutations for :captcha-service:compileJava (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:compileJava (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:compileJava
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.pom to /home/gradle/.gradle/.tmp/gradle_download6197638325093777772bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.pom to /home/gradle/.gradle/.tmp/gradle_download18352893466274936898bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.pom to /home/gradle/.gradle/.tmp/gradle_download8284595885390775009bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download9566126663932806300bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.pom to /home/gradle/.gradle/.tmp/gradle_download3925545425067439092bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download5813733659309269158bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom to /home/gradle/.gradle/.tmp/gradle_download2856735333162279416bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.module to /home/gradle/.gradle/.tmp/gradle_download2710162815763758850bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/activemq/activemq-bom/6.1.8/activemq-bom-6.1.8.pom to /home/gradle/.gradle/.tmp/gradle_download16523684874380126952bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.module to /home/gradle/.gradle/.tmp/gradle_download15642032270074159568bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download15957010263998839053bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/activemq/artemis-bom/2.40.0/artemis-bom-2.40.0.pom to /home/gradle/.gradle/.tmp/gradle_download1919324388642362272bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/activemq/artemis-project/2.40.0/artemis-project-2.40.0.pom to /home/gradle/.gradle/.tmp/gradle_download4342375763031879297bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/apache/33/apache-33.pom to /home/gradle/.gradle/.tmp/gradle_download8753077106962227686bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/assertj/assertj-bom/3.27.6/assertj-bom-3.27.6.pom to /home/gradle/.gradle/.tmp/gradle_download3482114635692349809bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/zipkin/reporter2/zipkin-reporter-bom/3.5.1/zipkin-reporter-bom-3.5.1.pom to /home/gradle/.gradle/.tmp/gradle_download3291836228409085214bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/zipkin/brave/brave-bom/6.1.0/brave-bom-6.1.0.pom to /home/gradle/.gradle/.tmp/gradle_download3281279484988912747bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/cassandra/java-driver-bom/4.19.2/java-driver-bom-4.19.2.pom to /home/gradle/.gradle/.tmp/gradle_download11190829608442384772bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/glassfish/jaxb/jaxb-bom/4.0.6/jaxb-bom-4.0.6.pom to /home/gradle/.gradle/.tmp/gradle_download9246568263337193059bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/eclipse/ee4j/project/1.0.9/project-1.0.9.pom to /home/gradle/.gradle/.tmp/gradle_download18349219048315602444bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/groovy/groovy-bom/4.0.29/groovy-bom-4.0.29.pom to /home/gradle/.gradle/.tmp/gradle_download2091766068745912315bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/groovy/groovy-bom/4.0.29/groovy-bom-4.0.29.module to /home/gradle/.gradle/.tmp/gradle_download15818666546451161647bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/infinispan/infinispan-bom/15.2.6.Final/infinispan-bom-15.2.6.Final.pom to /home/gradle/.gradle/.tmp/gradle_download6782076916289980712bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/infinispan/infinispan-build-configuration-parent/15.2.6.Final/infinispan-build-configuration-parent-15.2.6.Final.pom to /home/gradle/.gradle/.tmp/gradle_download192802534086857944bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/jackson-bom/2.19.4/jackson-bom-2.19.4.pom to /home/gradle/.gradle/.tmp/gradle_download2526124357935135964bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/jackson-parent/2.19.3/jackson-parent-2.19.3.pom to /home/gradle/.gradle/.tmp/gradle_download7596761706338857608bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/oss-parent/69/oss-parent-69.pom to /home/gradle/.gradle/.tmp/gradle_download2660334406175995109bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/glassfish/jersey/jersey-bom/3.1.11/jersey-bom-3.1.11.pom to /home/gradle/.gradle/.tmp/gradle_download4161050631364702482bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/eclipse/jetty/ee10/jetty-ee10-bom/12.0.31/jetty-ee10-bom-12.0.31.pom to /home/gradle/.gradle/.tmp/gradle_download14396368144030984014bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/eclipse/jetty/jetty-bom/12.0.31/jetty-bom-12.0.31.pom to /home/gradle/.gradle/.tmp/gradle_download3288185089734618395bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.12.2/junit-bom-5.12.2.pom to /home/gradle/.gradle/.tmp/gradle_download10531779520537218521bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.12.2/junit-bom-5.12.2.module to /home/gradle/.gradle/.tmp/gradle_download9418370620820476074bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jetbrains/kotlin/kotlin-bom/1.9.25/kotlin-bom-1.9.25.pom to /home/gradle/.gradle/.tmp/gradle_download13742798612978280514bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.1/kotlinx-coroutines-bom-1.8.1.pom to /home/gradle/.gradle/.tmp/gradle_download16429779400929766087bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jetbrains/kotlinx/kotlinx-serialization-bom/1.6.3/kotlinx-serialization-bom-1.6.3.pom to /home/gradle/.gradle/.tmp/gradle_download12928647442323404867bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/logging/log4j/log4j-bom/2.24.3/log4j-bom-2.24.3.pom to /home/gradle/.gradle/.tmp/gradle_download14945706380504927616bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/logging/logging-parent/11.3.0/logging-parent-11.3.0.pom to /home/gradle/.gradle/.tmp/gradle_download17793349546467365508bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-bom/1.15.7/micrometer-bom-1.15.7.pom to /home/gradle/.gradle/.tmp/gradle_download5224260309835139370bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-tracing-bom/1.5.7/micrometer-tracing-bom-1.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download15901262809740930961bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/mockito/mockito-bom/5.17.0/mockito-bom-5.17.0.pom to /home/gradle/.gradle/.tmp/gradle_download1209530144618370008bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/mongodb/mongodb-driver-bom/5.5.2/mongodb-driver-bom-5.5.2.pom to /home/gradle/.gradle/.tmp/gradle_download13289551395006820709bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/netty/netty-bom/4.1.130.Final/netty-bom-4.1.130.Final.pom to /home/gradle/.gradle/.tmp/gradle_download7013118432013530768bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/opentelemetry/opentelemetry-bom/1.49.0/opentelemetry-bom-1.49.0.pom to /home/gradle/.gradle/.tmp/gradle_download12377452947156887651bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/opentelemetry/opentelemetry-bom/1.49.0/opentelemetry-bom-1.49.0.module to /home/gradle/.gradle/.tmp/gradle_download2481498778385353885bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/prometheus/prometheus-metrics-bom/1.3.10/prometheus-metrics-bom-1.3.10.pom to /home/gradle/.gradle/.tmp/gradle_download13970722080534856673bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/prometheus/client_java_parent/1.3.10/client_java_parent-1.3.10.pom to /home/gradle/.gradle/.tmp/gradle_download9758206735353313918bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/prometheus/simpleclient_bom/0.16.0/simpleclient_bom-0.16.0.pom to /home/gradle/.gradle/.tmp/gradle_download4640142612975222200bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/prometheus/parent/0.16.0/parent-0.16.0.pom to /home/gradle/.gradle/.tmp/gradle_download2413162260644169765bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/pulsar/pulsar-bom/4.0.8/pulsar-bom-4.0.8.pom to /home/gradle/.gradle/.tmp/gradle_download5670327979564008784bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/apache/35/apache-35.pom to /home/gradle/.gradle/.tmp/gradle_download17386498932978545144bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/pulsar/pulsar-client-reactive-bom/0.6.0/pulsar-client-reactive-bom-0.6.0.pom to /home/gradle/.gradle/.tmp/gradle_download12135845753331267803bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/pulsar/pulsar-client-reactive-bom/0.6.0/pulsar-client-reactive-bom-0.6.0.module to /home/gradle/.gradle/.tmp/gradle_download12704469657076544193bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/querydsl/querydsl-bom/5.1.0/querydsl-bom-5.1.0.pom to /home/gradle/.gradle/.tmp/gradle_download13878586396781515368bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/projectreactor/reactor-bom/2024.0.13/reactor-bom-2024.0.13.pom to /home/gradle/.gradle/.tmp/gradle_download7145419999755583327bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/projectreactor/reactor-bom/2024.0.13/reactor-bom-2024.0.13.module to /home/gradle/.gradle/.tmp/gradle_download2024592803085348775bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/rest-assured/rest-assured-bom/5.5.6/rest-assured-bom-5.5.6.pom to /home/gradle/.gradle/.tmp/gradle_download8150144077053217997bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/rsocket/rsocket-bom/1.1.5/rsocket-bom-1.1.5.pom to /home/gradle/.gradle/.tmp/gradle_download18144589821231342188bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/seleniumhq/selenium/selenium-bom/4.31.0/selenium-bom-4.31.0.pom to /home/gradle/.gradle/.tmp/gradle_download3329757273880938039bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/amqp/spring-amqp-bom/3.2.8/spring-amqp-bom-3.2.8.pom to /home/gradle/.gradle/.tmp/gradle_download6809336411763391872bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/amqp/spring-amqp-bom/3.2.8/spring-amqp-bom-3.2.8.module to /home/gradle/.gradle/.tmp/gradle_download411112430899995bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/batch/spring-batch-bom/5.2.4/spring-batch-bom-5.2.4.pom to /home/gradle/.gradle/.tmp/gradle_download10217794957764307149bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-bom/2025.0.7/spring-data-bom-2025.0.7.pom to /home/gradle/.gradle/.tmp/gradle_download4069413126222021167bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-framework-bom/6.2.15/spring-framework-bom-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download8956240257570384921bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-framework-bom/6.2.15/spring-framework-bom-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download11177020236592078705bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/integration/spring-integration-bom/6.5.5/spring-integration-bom-6.5.5.pom to /home/gradle/.gradle/.tmp/gradle_download603939849858123910bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/integration/spring-integration-bom/6.5.5/spring-integration-bom-6.5.5.module to /home/gradle/.gradle/.tmp/gradle_download7677734541732053448bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/pulsar/spring-pulsar-bom/1.2.13/spring-pulsar-bom-1.2.13.pom to /home/gradle/.gradle/.tmp/gradle_download13340161915600667700bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/pulsar/spring-pulsar-bom/1.2.13/spring-pulsar-bom-1.2.13.module to /home/gradle/.gradle/.tmp/gradle_download4793223534887099628bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/restdocs/spring-restdocs-bom/3.0.5/spring-restdocs-bom-3.0.5.pom to /home/gradle/.gradle/.tmp/gradle_download1529674428294773867bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-bom/6.5.7/spring-security-bom-6.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download8106901774400916257bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-bom/6.5.7/spring-security-bom-6.5.7.module to /home/gradle/.gradle/.tmp/gradle_download1709137547144136682bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/session/spring-session-bom/3.5.4/spring-session-bom-3.5.4.pom to /home/gradle/.gradle/.tmp/gradle_download17769703038559422994bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/session/spring-session-bom/3.5.4/spring-session-bom-3.5.4.module to /home/gradle/.gradle/.tmp/gradle_download15051055170463411491bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/ws/spring-ws-bom/4.1.2/spring-ws-bom-4.1.2.pom to /home/gradle/.gradle/.tmp/gradle_download13437279413960654240bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/testcontainers/testcontainers-bom/1.21.4/testcontainers-bom-1.21.4.pom to /home/gradle/.gradle/.tmp/gradle_download9014785433204212399bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-autoconfigure/3.5.9/spring-boot-autoconfigure-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download4989323543686853690bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-autoconfigure/3.5.9/spring-boot-autoconfigure-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download9630581344193895155bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-data-jpa/3.5.9/spring-boot-starter-data-jpa-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download2951377387302272275bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-data-jpa/3.5.9/spring-boot-starter-data-jpa-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download1644732844275201797bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-validation/3.5.9/spring-boot-starter-validation-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download15160765107916818099bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-validation/3.5.9/spring-boot-starter-validation-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download7790699579170417309bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/projectreactor/reactor-core/3.7.14/reactor-core-3.7.14.pom to /home/gradle/.gradle/.tmp/gradle_download2368299447414982714bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-web/6.2.15/spring-web-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download3666409915514641332bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-beans/6.2.15/spring-beans-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download3094152624453307130bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.2.15/spring-core-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download7205724398970309956bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/projectreactor/reactor-core/3.7.14/reactor-core-3.7.14.module to /home/gradle/.gradle/.tmp/gradle_download9818712804577498778bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.2.15/spring-core-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download11011554257680830200bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-web/6.2.15/spring-web-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download4492173090453125815bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-beans/6.2.15/spring-beans-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download6025138237738687984bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot/3.5.9/spring-boot-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download18427833908051542822bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot/3.5.9/spring-boot-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download14538028995008610818bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aspects/6.2.15/spring-aspects-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download685856225838911273bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-jdbc/3.5.9/spring-boot-starter-jdbc-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download13502550131881892825bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter/3.5.9/spring-boot-starter-3.5.9.pom to /home/gradle/.gradle/.tmp/gradle_download10045779125870823457bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/hibernate/orm/hibernate-core/6.6.39.Final/hibernate-core-6.6.39.Final.pom to /home/gradle/.gradle/.tmp/gradle_download3258635422619990668bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-jpa/3.5.7/spring-data-jpa-3.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download17716622897728256151bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-jpa-parent/3.5.7/spring-data-jpa-parent-3.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download16236149922883366208bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-jdbc/3.5.9/spring-boot-starter-jdbc-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download16759875247548480455bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter/3.5.9/spring-boot-starter-3.5.9.module to /home/gradle/.gradle/.tmp/gradle_download10319248815776162732bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aspects/6.2.15/spring-aspects-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download1155576815913504786bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/build/spring-data-parent/3.5.7/spring-data-parent-3.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download11548797889617027447bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/build/spring-data-build/3.5.7/spring-data-build-3.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download11106900718533393489bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.9.0/kotlinx-coroutines-bom-1.9.0.pom to /home/gradle/.gradle/.tmp/gradle_download13119785100617630257bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/testcontainers/testcontainers-bom/1.20.6/testcontainers-bom-1.20.6.pom to /home/gradle/.gradle/.tmp/gradle_download3293337833135551358bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/hibernate/validator/hibernate-validator/8.0.3.Final/hibernate-validator-8.0.3.Final.pom to /home/gradle/.gradle/.tmp/gradle_download532525390796680594bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/tomcat/embed/tomcat-embed-el/10.1.50/tomcat-embed-el-10.1.50.pom to /home/gradle/.gradle/.tmp/gradle_download1943646694759868272bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.2.15/spring-jcl-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download17716971667130683039bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.2.15/spring-jcl-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download14527932655763206054bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-observation/1.15.7/micrometer-observation-1.15.7.pom to /home/gradle/.gradle/.tmp/gradle_download11527296083283439221bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.pom to /home/gradle/.gradle/.tmp/gradle_download6813324746350761016bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-context/6.2.15/spring-context-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download14445159411912246365bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-context/6.2.15/spring-context-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download14450095400467090828bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.pom to /home/gradle/.gradle/.tmp/gradle_download13872471754423945484bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/yaml/snakeyaml/2.4/snakeyaml-2.4.pom to /home/gradle/.gradle/.tmp/gradle_download8427332627089964180bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/eclipse/ee4j/project/1.0.7/project-1.0.7.pom to /home/gradle/.gradle/.tmp/gradle_download5710625135707370448bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jdbc/6.2.15/spring-jdbc-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download14613890357598456759bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/zaxxer/HikariCP/6.3.3/HikariCP-6.3.3.pom to /home/gradle/.gradle/.tmp/gradle_download7490505265712517965bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jdbc/6.2.15/spring-jdbc-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download16495831115241934435bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.pom to /home/gradle/.gradle/.tmp/gradle_download1088252359338498257bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.pom to /home/gradle/.gradle/.tmp/gradle_download14385198942788352019bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/eclipse/ee4j/project/1.0.6/project-1.0.6.pom to /home/gradle/.gradle/.tmp/gradle_download2329960660235138623bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.pom to /home/gradle/.gradle/.tmp/gradle_download8734296999261173067bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-master/4.13.0/antlr4-master-4.13.0.pom to /home/gradle/.gradle/.tmp/gradle_download17006142499567155856bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-tx/6.2.15/spring-tx-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download1516224248715083324bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-orm/6.2.15/spring-orm-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download2974066459604909885bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.pom to /home/gradle/.gradle/.tmp/gradle_download11186839170729329530bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aop/6.2.15/spring-aop-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download1708054655109903154bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-commons/3.5.7/spring-data-commons-3.5.7.pom to /home/gradle/.gradle/.tmp/gradle_download6551306717386637237bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-parent/2.0.17/slf4j-parent-2.0.17.pom to /home/gradle/.gradle/.tmp/gradle_download18204891561318528931bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-tx/6.2.15/spring-tx-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download9672671322401307283bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aop/6.2.15/spring-aop-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download10763437773987694142bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-orm/6.2.15/spring-orm-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download18361834640586620229bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-bom/2.0.17/slf4j-bom-2.0.17.pom to /home/gradle/.gradle/.tmp/gradle_download605380408330821426bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.pom to /home/gradle/.gradle/.tmp/gradle_download16843517485003029799bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/classmate/1.7.1/classmate-1.7.1.pom to /home/gradle/.gradle/.tmp/gradle_download10096047341033266288bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.pom to /home/gradle/.gradle/.tmp/gradle_download11537168548912335550bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.pom to /home/gradle/.gradle/.tmp/gradle_download4823022741585639263bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/oss-parent/68/oss-parent-68.pom to /home/gradle/.gradle/.tmp/gradle_download18109640949037140979bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jboss/logging/logging-parent/1.0.3.Final/logging-parent-1.0.3.Final.pom to /home/gradle/.gradle/.tmp/gradle_download12553446351947548832bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jboss/jboss-parent/42/jboss-parent-42.pom to /home/gradle/.gradle/.tmp/gradle_download1389852766038169264bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.pom to /home/gradle/.gradle/.tmp/gradle_download14646428080076385327bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.module to /home/gradle/.gradle/.tmp/gradle_download13484278238643579700bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-commons/1.15.7/micrometer-commons-1.15.7.pom to /home/gradle/.gradle/.tmp/gradle_download7096671673114699491bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-expression/6.2.15/spring-expression-6.2.15.pom to /home/gradle/.gradle/.tmp/gradle_download5586062439818041509bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-expression/6.2.15/spring-expression-6.2.15.module to /home/gradle/.gradle/.tmp/gradle_download12694236584569920620bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-jdbc/3.5.9/spring-boot-starter-jdbc-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download1117064817567646526bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-autoconfigure/3.5.9/spring-boot-autoconfigure-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download13917775888112288550bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-validation/3.5.9/spring-boot-starter-validation-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download6861694262749352116bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter-data-jpa/3.5.9/spring-boot-starter-data-jpa-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download1495729983167098776bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar to /home/gradle/.gradle/.tmp/gradle_download9330353892914269147bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.jar to /home/gradle/.gradle/.tmp/gradle_download11283857540676880969bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download5582167780320235833bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.jar to /home/gradle/.gradle/.tmp/gradle_download12676151686961588785bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-starter/3.5.9/spring-boot-starter-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download5352795991342037780bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-commons/1.15.7/micrometer-commons-1.15.7.jar to /home/gradle/.gradle/.tmp/gradle_download16470845415194716961bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-jpa/3.5.7/spring-data-jpa-3.5.7.jar to /home/gradle/.gradle/.tmp/gradle_download2164840144610073543bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.jar to /home/gradle/.gradle/.tmp/gradle_download5497048900841890265bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-context/6.2.15/spring-context-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download10195565227903245364bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.jar to /home/gradle/.gradle/.tmp/gradle_download11770014287262951467bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot/3.5.9/spring-boot-3.5.9.jar to /home/gradle/.gradle/.tmp/gradle_download7945528434271746525bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/projectreactor/reactor-core/3.7.14/reactor-core-3.7.14.jar to /home/gradle/.gradle/.tmp/gradle_download5628706422518561938bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar to /home/gradle/.gradle/.tmp/gradle_download18435174154764648045bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aspects/6.2.15/spring-aspects-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download13328725067951885263bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-web/6.2.15/spring-web-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download6411148783468545934bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/io/micrometer/micrometer-observation/1.15.7/micrometer-observation-1.15.7.jar to /home/gradle/.gradle/.tmp/gradle_download17511940407724429396bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/data/spring-data-commons/3.5.7/spring-data-commons-3.5.7.jar to /home/gradle/.gradle/.tmp/gradle_download14033489860384138298bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-orm/6.2.15/spring-orm-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download15197871793259676802bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-expression/6.2.15/spring-expression-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download13345442804063846957bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/hibernate/orm/hibernate-core/6.6.39.Final/hibernate-core-6.6.39.Final.jar to /home/gradle/.gradle/.tmp/gradle_download15423445061774744539bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/classmate/1.7.1/classmate-1.7.1.jar to /home/gradle/.gradle/.tmp/gradle_download16240023087261273769bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/zaxxer/HikariCP/6.3.3/HikariCP-6.3.3.jar to /home/gradle/.gradle/.tmp/gradle_download76977699338535650bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-aop/6.2.15/spring-aop-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download6794188420545030639bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/hibernate/validator/hibernate-validator/8.0.3.Final/hibernate-validator-8.0.3.Final.jar to /home/gradle/.gradle/.tmp/gradle_download13448262258643005144bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jdbc/6.2.15/spring-jdbc-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download7417908115033287805bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-core/6.2.15/spring-core-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download10631402778817229496bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-tx/6.2.15/spring-tx-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download2404537862057395432bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar to /home/gradle/.gradle/.tmp/gradle_download7089348889821076916bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar to /home/gradle/.gradle/.tmp/gradle_download4589608876402210098bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar to /home/gradle/.gradle/.tmp/gradle_download4565839455018739112bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar to /home/gradle/.gradle/.tmp/gradle_download10268571252092345360bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-beans/6.2.15/spring-beans-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download12672833029627836845bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-jcl/6.2.15/spring-jcl-6.2.15.jar to /home/gradle/.gradle/.tmp/gradle_download18267280910279358927bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar to /home/gradle/.gradle/.tmp/gradle_download11700675154474023422bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar to /home/gradle/.gradle/.tmp/gradle_download9042223139142542683bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar to /home/gradle/.gradle/.tmp/gradle_download297808202313204621bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/tomcat/embed/tomcat-embed-el/10.1.50/tomcat-embed-el-10.1.50.jar to /home/gradle/.gradle/.tmp/gradle_download6700854625854778115bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar to /home/gradle/.gradle/.tmp/gradle_download4951694027869656929bin
+Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/yaml/snakeyaml/2.4/snakeyaml-2.4.jar to /home/gradle/.gradle/.tmp/gradle_download15059143173274537216bin
+Caching disabled for task ':captcha-service:compileJava' because:
+  Build cache is disabled
+Task ':captcha-service:compileJava' is not up-to-date because:
+  No history is available.
+The input changes require a full rebuild for incremental task ':captcha-service:compileJava'.
+Compilation mode: in-process compilation
+Full recompilation is required because no incremental change information is available. This is usually caused by clean builds or changing compiler arguments.
+Compiling with toolchain '/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64'.
+Compiling with JDK Java compiler API.
+Class dependency analysis for incremental compilation took 0.098 secs.
+Created classpath snapshot for incremental compilation in 9.709 secs.
+Resolve mutations for :captcha-service:processResources (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:processResources (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:processResources
+Caching disabled for task ':captcha-service:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Task ':captcha-service:processResources' is not up-to-date because:
+  No history is available.
+Resolve mutations for :captcha-service:classes (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:classes (Thread[#159,Execution worker Thread 4,5,main]) started.
+> Task :captcha-service:classes
+Skipping task ':captcha-service:classes' as it has no actions.
+Resolve mutations for :captcha-service:jar (Thread[#159,Execution worker Thread 4,5,main]) started.
+:captcha-service:jar (Thread[#159,Execution worker Thread 4,5,main]) started.
+> Task :captcha-service:jar
+Caching disabled for task ':captcha-service:jar' because:
+  Build cache is disabled
+  Not worth caching
+Task ':captcha-service:jar' is not up-to-date because:
+  No history is available.
+Resolve mutations for :captcha-service:javadoc (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:javadoc (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:javadoc
+Caching disabled for task ':captcha-service:javadoc' because:
+  Build cache is disabled
+Task ':captcha-service:javadoc' is not up-to-date because:
+  No history is available.
+Starting process 'command '/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64/bin/javadoc''. Working directory: /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service Command: /usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64/bin/javadoc @/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/build/tmp/javadoc/javadoc.options
+Successfully started process 'command '/usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64/bin/javadoc''
+Resolve mutations for :captcha-service:javadocJar (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:javadocJar (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:javadocJar
+Caching disabled for task ':captcha-service:javadocJar' because:
+  Build cache is disabled
+  Not worth caching
+Task ':captcha-service:javadocJar' is not up-to-date because:
+  No history is available.
+Resolve mutations for :captcha-service:sourcesJar (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:sourcesJar (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:sourcesJar
+Caching disabled for task ':captcha-service:sourcesJar' because:
+  Build cache is disabled
+  Not worth caching
+Task ':captcha-service:sourcesJar' is not up-to-date because:
+  No history is available.
+Resolve mutations for :captcha-service:generateMetadataFileForMavenJavaPublication (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:generateMetadataFileForMavenJavaPublication (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:generateMetadataFileForMavenJavaPublication
+Caching disabled for task ':captcha-service:generateMetadataFileForMavenJavaPublication' because:
+  Build cache is disabled
+  Not made cacheable, yet
+Task ':captcha-service:generateMetadataFileForMavenJavaPublication' is not up-to-date because:
+  Task.upToDateWhen is false.
+Resolve mutations for :captcha-service:generatePomFileForMavenJavaPublication (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:generatePomFileForMavenJavaPublication (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:generatePomFileForMavenJavaPublication
+Caching disabled for task ':captcha-service:generatePomFileForMavenJavaPublication' because:
+  Build cache is disabled
+Task ':captcha-service:generatePomFileForMavenJavaPublication' is not up-to-date because:
+  Task is untracked because: Gradle doesn't understand the data structures used to configure this task
+Resolve mutations for :captcha-service:publishMavenJavaPublicationToMavenRepository (Thread[#156,Execution worker,5,main]) started.
+:captcha-service:publishMavenJavaPublicationToMavenRepository (Thread[#156,Execution worker,5,main]) started.
+> Task :captcha-service:publishMavenJavaPublicationToMavenRepository FAILED
+Caching disabled for task ':captcha-service:publishMavenJavaPublicationToMavenRepository' because:
+  Build cache is disabled
+Task ':captcha-service:publishMavenJavaPublicationToMavenRepository' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Publishing to repository 'maven' (https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/)
+Uploading captcha-service-1.1.0.jar to /artifactory/itepaypg-sbiepay2-maven-local/com/sbi/epay/captcha-service/1.1.0/captcha-service-1.1.0.jar
+[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/build/reports/problems/problems-report.html
 FAILURE: Build failed with an exception.
 * What went wrong:
-Execution failed for task ':compileJava'.
-> Could not resolve all files for configuration ':compileClasspath'.
-   > Could not resolve org.projectlombok:lombok:1.18.42.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve org.projectlombok:lombok:1.18.42.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/projectlombok/lombok/1.18.42/lombok-1.18.42.pom'. Received status code 401 from server: 
-   > Could not resolve org.springframework.boot:spring-boot-dependencies:3.5.9.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve org.springframework.boot:spring-boot-dependencies:3.5.9.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom'. Received status code 401 from server: 
-   > Could not find org.springframework.boot:spring-boot-autoconfigure:.
-     Searched in the following locations:
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-autoconfigure.jar
-     Required by:
-         root project 'captcha-service'
-   > Could not find org.springframework.boot:spring-boot-starter-data-jpa:.
-     Searched in the following locations:
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-starter-data-jpa.jar
-     Required by:
-         root project 'captcha-service'
-   > Could not find org.springframework.boot:spring-boot-starter-validation:.
-     Searched in the following locations:
-       - file:/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/captcha-service/libs/spring-boot-starter-validation.jar
-     Required by:
-         root project 'captcha-service'
-   > Could not resolve org.springframework:spring-webflux:6.2.15.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve org.springframework:spring-webflux:6.2.15.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/spring-webflux/6.2.15/spring-webflux-6.2.15.pom'. Received status code 401 from server: 
-   > Could not resolve com.sbi.epay:logging-service:1.0.0.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve com.sbi.epay:logging-service:1.0.0.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/logging-service/1.0.0/logging-service-1.0.0.pom'. Received status code 401 from server: 
-   > Could not resolve com.sbi.epay:encryption-decryption-service:1.0.0.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve com.sbi.epay:encryption-decryption-service:1.0.0.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/sbi/epay/encryption-decryption-service/1.0.0/encryption-decryption-service-1.0.0.pom'. Received status code 401 from server: 
-   > Could not resolve com.jhlabs:filters:2.0.235-1.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve com.jhlabs:filters:2.0.235-1.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/jhlabs/filters/2.0.235-1/filters-2.0.235-1.pom'. Received status code 401 from server: 
-   > Could not resolve net.sf.sociaal:freetts:1.2.2.
-     Required by:
-         root project 'captcha-service'
-      > Could not resolve net.sf.sociaal:freetts:1.2.2.
-         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.pom'.
-            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/sf/sociaal/freetts/1.2.2/freetts-1.2.2.pom'. Received status code 401 from server: 
+Execution failed for task ':captcha-service:publishMavenJavaPublicationToMavenRepository'.
+> Failed to publish publication 'mavenJava' to repository 'maven'
+   > Could not PUT 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/com/sbi/epay/captcha-service/1.1.0/captcha-service-1.1.0.jar'. Received status code 403 from server: 
 * Try:
 > Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
+> Run with --debug option to get more log output.
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 > Get more help at https://help.gradle.org.
-BUILD FAILED in 12s
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
 You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
 For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-1 actionable task: 1 executed
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
-ERROR: No files to upload                          
+BUILD FAILED in 38s
+9 actionable tasks: 9 executed
+Some of the file system contents retained in the virtual file system are on file systems that Gradle doesn't support watching. The relevant state was discarded to ensure changes to these locations are properly detected. You can override this by explicitly enabling file system watching.
 Cleaning up project directory and file based variables
 00:00
 ERROR: Job failed: exit code 1
-
-
-
-============================================================== root project settings.gradle ============
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = "V1021577"
-                password = "token"             
-                // username = System.getenv("JF_USER")
-                // password = System.getenv("JF_TOKEN")
-            }
-        }
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = "V1021577"
-                password = "token"
-                // username = System.getenv("JF_USER")
-                // password = System.getenv("JF_TOKEN")
-            }
-        }
-    }
-}
-
-rootProject.name = 'epay-java-utilities'
-
-include(
-    'authentication-service',
-    'cache-management-service',
-    'captcha-service',
-    'encryption-decryption-service',
-    'hazelcast-service',
-    'logging-service',
-    'notification-service'
-)
-
-
-===================================  Captcha-services settings.gradle ===========
-
-pluginManagement {
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = "V1021577"
-                password = "token"
-                // username = System.getenv("JF_USER")
-                // password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
-            credentials {
-                username = "V1021577"
-                password = "token"
-                // username = System.getenv("JF_USER")
-                // password = System.getenv("JFROG_PASSWORD")
-            }
-        }
-        flatDir {
-            dirs "libs"
-        }
-    }
-}
-
-rootProject.name = 'captcha-service'
-
-
-====================================  Captcha-services  build.gradle =============
-
-
-plugins {
-    id 'java-library'
-    id 'maven-publish'
-}
-group = 'com.sbi.epay'
-version = "${version}"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-    withSourcesJar()
-    withJavadocJar()
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-}
-
-// repositories {
-//     mavenCentral()
-//     flatDir {
-//         dirs 'lib'
-//     }
-//     maven {
-//         url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
-//         credentials(PasswordCredentials) {
-//             username = System.getenv("JF_USER")
-//             password = System.getenv("JFROG_PASSWORD")
-//         }
-//         authentication {
-//             basic(BasicAuthentication)
-//         }
-//     }
-// }
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
-            credentials(PasswordCredentials) {
-                username = "V1021577"
-                password = "token"               
-                // username = System.getenv("JF_USER")
-                // password = System.getenv("JF_TOKEN")
-            }
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-    }
-}
-
-dependencies {
-    api platform ("org.springframework.boot:spring-boot-dependencies:${spring_boot}")
-    implementation 'org.springframework.boot:spring-boot-autoconfigure'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    implementation "org.springframework:spring-webflux:${spring}"
-
-    implementation "com.sbi.epay:logging-service:${sbi_logging}"
-    implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
-
-    implementation "com.jhlabs:filters:${jhlabs}"
-    implementation "net.sf.sociaal:freetts:${freeTTS}"
-
-    compileOnly "org.projectlombok:lombok:${lombok}"
-    annotationProcessor "org.projectlombok:lombok:${lombok}"
-}
-
-configurations {
-    configureEach {
-        exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
-    }
-}
-
-test {
-    useJUnitPlatform()
-}
-
-tasks.withType(Javadoc).configureEach {
-    options.addStringOption('Xdoclint:none', '-quiet')
-}
-
-
-======================  .gitlab.ci.yaml ===================
-
-
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
-
-variables:
-  MONO_REPO_ROOT: "."
-
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
-
-.service-matrix:
-  parallel:
-    matrix:
-      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      - SERVICE: ["captcha-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix]
-
-test:
-  extends: [.test, .set-workdir, .service-matrix]
-
-publish:
-  extends: [.publish, .set-workdir, .service-matrix]
-
-
-================================================  java.library.yml =============
-
-# templates/ci/backend/java.library.yml
-# CI orchestrator for Java LIBRARY/UTILITY repos (JARs → JFrog Artifactory)
-# Examples: epay-java-utility (authentication, logging, notification, encryption JARs)
-# No image stages. Adds publish stage for JFrog Artifactory.
-#
-# Consumer services resolve from:
-#   url: artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual
-
-default:
-  tags:
-    - common_runner
-
-include:
-  # - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  # - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/release/tag.yml'
-  - local: 'ci/publish/gradle.artifactory.yml'
-
-stages:
-  # - version       # version generation
-  - build         # gradle compile (produces JARs)
-  - test          # unit tests
-  # - sast          # gitlab sast + fortify
-  # - security      # sca xray (scans JAR artifact)
-  # - release       # git tag — rc on release/*, prod on main
-  - publish       # gradle publish → JFrog Artifactory + Xray scan
-
-variables:
-  CI_TEMPLATE_REGISTRY_HOST: "artifactory.jfrog.sbi:443"
-  GIT_STRATEGY: clone
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-#   MONO_REPO_ROOT: "."
-
-# .set-workdir:
-#   before_script:
-#     - echo ">>> Service $SERVICE"
-#     - cd "$MONO_REPO_ROOT/$SERVICE"
-
-# .service-matrix:
-#   parallel:
-#     matrix:
-#       - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-
-# build:
-#   extends: [.build, .set-workdir, .service-matrix, .rules]
-
-# test:
-#   extends: [.test, .set-workdir, .service-matrix, .rules]
-
-# publish:
-#   extends: [.publish, .set-workdir, .service-matrix, .rules]
-
-
-.rules:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release|feature)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
-
-
-
-
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
-
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
-
-#── Stage: sast ────────────────────────────────────────────────────────────────
-# sast:gitlab:
-#   extends: [.sast, .rules]
-
-# sast:fortify:
-#   extends: [.sast_fortify, .rules]
-
-# #── Stage: security ────────────────────────────────────────────────────────────
-# sca:xray:
-#   extends: [.sca, .rules]
-
-# secret_detection:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# ── Stage: publish ─────────────────────────────────────────────────────────────
-publish:
-  extends: [.publish, .rules]
-# publish: auto on release/* and main post-merge
-# Defined in ci/publish/gradle.artifactory.yml with its own rules
-
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
-
-
-==================================================================   java.gradle.yml =============
-
-# ci/build/java.gradle.yml  |  Stage: build
-# Gradle compile — produces build/libs/ artifact consumed by test + dockerbuild stages
-
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
-  tags:
-    - common_runner
-  variables:
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  script:
-    - |
-      if [ -n "$VERSION" ]; then
-        gradle build -x test -Pversion=${VERSION}
-      else
-        gradle build -x test
-      fi
-    - ls -lrth build/libs
-    - echo "VERSION=$VERSION" >> build.env
-  artifacts:
-    paths:
-      - build/libs
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 week
-
-
-I have shared all of the configuration which we are using for java_package_registry to build , test and publish to jfrog ............
-
-
-But getting 401 error while accessing the jfrog repo which i attached the logs above in the .....I want you to please check and verify why i am getting this error even i have re-generated the jfrog username and password for that jfrog repo ...
-
-
-Request you please check and let me know why we are facing this issue and what exactly we are missing and need to add or remove and any other congiguration need imporvment...
-
-
-
