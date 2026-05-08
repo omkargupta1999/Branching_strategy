@@ -1,3 +1,60 @@
+ below is our current build configuration....
+ 
+ 
+ 
+ .build:
+  stage: build
+  image: 
+    name:  registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
+    pull_policy: always  
+  script:
+    - pwd
+    - ls -la
+    - |
+      if [ -n "$VERSION" ]; then
+        echo "version ${VERSION}"
+        gradle build -x test -Pversion=${VERSION}
+      else
+        gradle build -x test 
+      fi
+    - ls -lrth
+    - ls -lrth build/libs
+  artifacts:
+    paths:
+      - build/libs
+    when: on_success 
+    expire_in: 1 week
+	
+	
+	
+We have created a gitlab variavle name : OPENJDK_IMAGE_TAG and sharing below dockerfile for your reference ..........
+
+Please let me know the what changes are required in build here configuration share the updated one....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Dockerfile to build the application build  ..............
