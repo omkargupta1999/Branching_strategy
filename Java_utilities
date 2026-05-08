@@ -1,3 +1,7 @@
+
+
+Dockerfile to build the application build  ..............
+
 FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.22-1.1749462973
 ARG ENV
 ARG VERSION
@@ -8,3 +12,40 @@ ENV VERSION=$VERSION
 COPY /build/libs/epay_admin_service-${VERSION}.jar .
 # ENTRYPOINT ["java","-jar","epay_admin_service-$VERSION.jar"]
 ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
+
+
+We have multiple application services and have multiple dockerfile and each dockerfile we are using the same openjdk-21 image.. so whenever we have upgrade the jdk image we have to update every dockerfile from each dockerfile in all the branches...
+
+So we want something to make it dynamic and we will pass a variable like openjdk-21-version: 1.22-1.1749462973 in our Gitlab and it should take it from the variable that value and update it while building teh images in pipeline....i am also sharing the build stage configuration to you ....please check and suggest the best possible solution....
+
+and like this we can pass the 
+
+
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:${openjdk-21-version}
+
+
+java.gradle.yml -------------
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+    - common_runner
+  variables:
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  script:
+    - |
+      if [ -n "$VERSION" ]; then
+        gradle build -x test -Pversion=${VERSION}
+      else
+        gradle build -x test
+      fi
+    - ls -lrth build/libs
+    - echo "VERSION=$VERSION" >> build.env
+  artifacts:
+    paths:
+      - build/libs
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 week
