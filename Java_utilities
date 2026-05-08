@@ -71,6 +71,12 @@ image:push:
       pipeline_variables: true
       yaml_variables: true
 
+
+# ── DEV / SIT / UAT / INT / Perf — Release Manager ────────────────────────────
+.trigger_cd_nonprod:
+  extends: .trigger_cd
+  variables:
+    DEPLOYMENT_BRANCH: "deploy_cicd"  ##main
 ----------------------  deploy.jobs.yml --------------------------
 
 
