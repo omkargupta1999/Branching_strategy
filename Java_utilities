@@ -58,3 +58,56 @@ Error: creating build container: initializing source docker://registry.dev.sbiep
 Cleaning up project directory and file based variables
 00:02
 ERROR: Job failed: exit code 1
+
+
+
+
+
+
+
+ below is our current build configuration....
+ 
+ 
+ 
+.dockerbuild:
+  stage: dockerbuild
+  script:
+    - ls -ltrh
+    - echo $VERSION
+    - TAG="${VERSION}"
+    - echo "Generated Tag.. ${TAG}"
+    - podman login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASS $CI_TEMPLATE_REGISTRY_HOST --tls-verify=false
+    #- podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG
+    - podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG
+    - podman push $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG --tls-verify=false
+	
+	
+	
+	
+.gilab-vi.yml............
+
+include:
+  - project: 'epay/devops/ci-templates'
+    ref: feature/IMAGETAG-123_TESTING
+    file: 'templates/microservices/gradle.java.yml'
+
+variables:
+  RELEASE_NAME: admin
+  CHART_NAME: adminservice
+  
+  
+Dockerfile ------------------
+
+
+ARG OPENJDK_IMAGE_TAG=1.23-6.1758133907
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:${OPENJDK_IMAGE_TAG}
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+COPY /build/libs/epay_admin_service-${VERSION}.jar .
+### ENTRYPOINT ["java","-jar","epay_admin_service-$VERSION.jar"]
+ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
+
+
+
