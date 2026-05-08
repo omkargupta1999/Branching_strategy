@@ -1,94 +1,65 @@
-import gitlab
-import yaml
-import os
-import urllib3
-
-# Suppress SSL warnings
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# =========================
-# LOAD CONFIG
-# =========================
-with open("config.yaml") as f:
-    config = yaml.safe_load(f)
-
-GITLAB_URL = config["gitlab"]["url"]
-TOKEN = os.getenv("GITLAB_TOKEN")
-
-if not TOKEN:
-    raise Exception("❌ GITLAB_TOKEN not set")
-
-gl = gitlab.Gitlab(GITLAB_URL, private_token=TOKEN, ssl_verify=False)
-
-# =========================
-# HELPERS
-# =========================
-def get_group_id(name):
-    groups = gl.groups.list(search=name, all=True)
-    for g in groups:
-        if name in g.full_path:
-            return g.id
-    return None
-
-# =========================
-# PROCESS EACH DEVOPS REPO
-# =========================
-for repo in config["repos"]:
-    print(f"\n🔧 Processing: {repo}")
-    project = gl.projects.get(repo)
-
-    # -----------------------------------
-    # 1. APPLY RBAC (GROUP SHARING)
-    # -----------------------------------
-    for g in config["rbac"]["groups"]:
-        gid = get_group_id(g["name"])
-        if not gid:
-            print(f"❌ Group not found: {g['name']}")
-            continue
-        try:
-            project.share(gid, g["access"])
-            print(f"✔ Added group: {g['name']}")
-        except:
-            print(f"ℹ Already exists: {g['name']}")
-
-    # -----------------------------------
-    # 2. PROTECT MAIN BRANCH
-    # -----------------------------------
-    try:
-        project.protectedbranches.create({
-            "name": config["branch_protection"]["name"],
-            "push_access_level": config["branch_protection"]["push_access"],
-            "merge_access_level": config["branch_protection"]["merge_access"]
-        })
-        print("✔ Main branch protected")
-    except:
-        print("ℹ Main already protected")
-
-    # -----------------------------------
-    # 3. CREATE APPROVAL RULES
-    # -----------------------------------
-    existing_rules = [r.name for r in project.approvalrules.list(all=True)]
-    for rule in config["approvals"]:
-        if rule["name"] in existing_rules:
-            print(f"ℹ Rule exists: {rule['name']}")
-            continue
-        gid = get_group_id(rule["group"])
-        if not gid:
-            print(f"❌ Approval group missing: {rule['group']}")
-            continue
-        project.approvalrules.create({
-            "name": rule["name"],
-            "approvals_required": 1,
-            "group_ids": [gid]
-        })
-        print(f"✔ Rule created: {rule['name']}")
-
-    # -----------------------------------
-    # 4. MR SETTINGS
-    # -----------------------------------
-    project.merge_requests_author_approval = False
-    project.reset_approvals_on_push = True
+Running with gitlab-runner 17.8.0 (e4f782b3)
+  on DC-Gitlab-Runner rMTQxLq3, system ID: s_948d0ccb739a
+Resolving secrets
+Preparing the "docker" executor
+00:03
+Using Docker executor with image registry.dev.sbiepay.sbi:8443/library/python:v3.33 ...
+Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
+Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
+Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:c750904db8c82319696be23996a1c1d6f1de264f46b8c70b6f3e47d129b521c6 for registry.dev.sbiepay.sbi:8443/library/python:v3.33 with digest registry.dev.sbiepay.sbi:8443/library/python@sha256:0cd3f885a1aff5f919ef26c8593366d72bacaeb958beb3932866c36bbaadc329 ...
+Preparing environment
+00:02
+Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
+Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
+Running on runner-rmtqxlq3-project-160-concurrent-0 via Gitlab-DC-Runr...
+Getting source from Git repository
+00:04
+$ git config --global http.proxy $HTTP_PROXY; git config --global https.proxy $HTTPS_PROXY; git config --global no.proxy $NO_PROXY
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /tmp/builds/epay/infra/devops/epay-automation/.git/
+Checking out 06c3107c as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:09
+Using docker image sha256:c750904db8c82319696be23996a1c1d6f1de264f46b8c70b6f3e47d129b521c6 for registry.dev.sbiepay.sbi:8443/library/python:v3.33 with digest registry.dev.sbiepay.sbi:8443/library/python@sha256:0cd3f885a1aff5f919ef26c8593366d72bacaeb958beb3932866c36bbaadc329 ...
+$ python rbac_devops.py
+🔧 Processing: epay/infra/devops/ci-templates
+❌ Group not found: epay-gitlab-bank-infra-owner
+❌ Group not found: epay-gitlab-bank-infra-maintainer
+❌ Group not found: epay-gitlab-vendor-infra-maintainer
+❌ Group not found: epay-gitlab-vendor-infra-developer
+ℹ Main already protected
+❌ Approval group missing: epay-gitlab-bank-infra-owner
+❌ Approval group missing: epay-gitlab-bank-infra-maintainer
+❌ Approval group missing: epay-gitlab-vendor-infra-maintainer
+❌ Approval group missing: epay-gitlab-vendor-pm
+Traceback (most recent call last):
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/exceptions.py", line 336, in wrapped_f
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/mixins.py", line 368, in update
+    result = http_method(path, post_data=new_data, files=files, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/client.py", line 1075, in http_put
+    result = self.http_request(
+             ^^^^^^^^^^^^^^^^^^
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/client.py", line 794, in http_request
+    raise gitlab.exceptions.GitlabHttpError(
+gitlab.exceptions.GitlabHttpError: 400: allow_merge_on_skipped_pipeline, analytics_access_level, autoclose_referenced_issues, auto_devops_enabled, auto_devops_deploy_strategy, auto_cancel_pending_pipelines, build_git_strategy, build_timeout, builds_access_level, ci_config_path, ci_default_git_depth, ci_allow_fork_pipelines_to_run_in_parent_project, ci_forward_deployment_enabled, ci_forward_deployment_rollback_allowed, ci_separated_caches, container_registry_access_level, container_expiration_policy_attributes, default_branch, description, emails_disabled, emails_enabled, forking_access_level, issues_access_level, lfs_enabled, merge_pipelines_enabled, merge_requests_access_level, merge_requests_template, merge_trains_enabled, merge_method, name, only_allow_merge_if_all_discussions_are_resolved, only_allow_merge_if_pipeline_succeeds, pages_access_level, path, printing_merge_request_link_enabled, public_builds, public_jobs, remove_source_branch_after_merge, repository_access_level, request_access_enabled, resolve_outdated_diff_discussions, restrict_user_defined_variables, show_diff_preview_in_email, security_and_compliance_access_level, squash_option, shared_runners_enabled, group_runners_enabled, snippets_access_level, tag_list, topics, visibility, wiki_access_level, avatar, suggestion_commit_message, merge_commit_template, squash_commit_template, issue_branch_template, repository_storage, packages_enabled, service_desk_enabled, keep_latest_artifact, mr_default_target_self, enforce_auth_checks_on_uploads, releases_access_level, environments_access_level, feature_flags_access_level, infrastructure_access_level, monitor_access_level, model_experiments_access_level, model_registry_access_level, warn_about_potentially_unwanted_characters, ci_pipeline_variables_minimum_override_role, ci_push_repository_for_job_token_allowed, ci_delete_pipelines_in_seconds, issues_enabled, jobs_enabled, merge_requests_enabled, wiki_enabled, snippets_enabled, container_registry_enabled, allow_pipeline_trigger_approve_deployment, only_allow_merge_if_all_status_checks_passed, approvals_before_merge, external_authorization_classification_label, fallback_approvals_required, import_url, issues_template, mirror, merge_requests_template, merge_pipelines_enabled, merge_trains_enabled, merge_trains_skip_train_allowed, requirements_access_level, prevent_merge_without_jira_issue, ci_restrict_pipeline_cancellation_role are missing, at least one parameter must be provided
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/tmp/builds/epay/infra/devops/epay-automation/rbac_devops.py", line 91, in <module>
     project.save()
-    print("✔ MR settings applied")
-
-print("\n✅ ALL DEVOPS REPOS CONFIGURED")
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/mixins.py", line 503, in save
+    server_data = self.manager.update(obj_id, updated_data, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/app-root/lib64/python3.11/site-packages/gitlab/exceptions.py", line 338, in wrapped_f
+    raise error(e.error_message, e.response_code, e.response_body) from e
+gitlab.exceptions.GitlabUpdateError: 400: allow_merge_on_skipped_pipeline, analytics_access_level, autoclose_referenced_issues, auto_devops_enabled, auto_devops_deploy_strategy, auto_cancel_pending_pipelines, build_git_strategy, build_timeout, builds_access_level, ci_config_path, ci_default_git_depth, ci_allow_fork_pipelines_to_run_in_parent_project, ci_forward_deployment_enabled, ci_forward_deployment_rollback_allowed, ci_separated_caches, container_registry_access_level, container_expiration_policy_attributes, default_branch, description, emails_disabled, emails_enabled, forking_access_level, issues_access_level, lfs_enabled, merge_pipelines_enabled, merge_requests_access_level, merge_requests_template, merge_trains_enabled, merge_method, name, only_allow_merge_if_all_discussions_are_resolved, only_allow_merge_if_pipeline_succeeds, pages_access_level, path, printing_merge_request_link_enabled, public_builds, public_jobs, remove_source_branch_after_merge, repository_access_level, request_access_enabled, resolve_outdated_diff_discussions, restrict_user_defined_variables, show_diff_preview_in_email, security_and_compliance_access_level, squash_option, shared_runners_enabled, group_runners_enabled, snippets_access_level, tag_list, topics, visibility, wiki_access_level, avatar, suggestion_commit_message, merge_commit_template, squash_commit_template, issue_branch_template, repository_storage, packages_enabled, service_desk_enabled, keep_latest_artifact, mr_default_target_self, enforce_auth_checks_on_uploads, releases_access_level, environments_access_level, feature_flags_access_level, infrastructure_access_level, monitor_access_level, model_experiments_access_level, model_registry_access_level, warn_about_potentially_unwanted_characters, ci_pipeline_variables_minimum_override_role, ci_push_repository_for_job_token_allowed, ci_delete_pipelines_in_seconds, issues_enabled, jobs_enabled, merge_requests_enabled, wiki_enabled, snippets_enabled, container_registry_enabled, allow_pipeline_trigger_approve_deployment, only_allow_merge_if_all_status_checks_passed, approvals_before_merge, external_authorization_classification_label, fallback_approvals_required, import_url, issues_template, mirror, merge_requests_template, merge_pipelines_enabled, merge_trains_enabled, merge_trains_skip_train_allowed, requirements_access_level, prevent_merge_without_jira_issue, ci_restrict_pipeline_cancellation_role are missing, at least one parameter must be provided
+Cleaning up project directory and file based variables
+00:03
+ERROR: Job failed: exit code 1
