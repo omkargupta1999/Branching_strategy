@@ -1,113 +1,33 @@
-Running with gitlab-runner 17.8.0 (e4f782b3)
-  on DC-Gitlab-Runner rMTQxLq3, system ID: s_948d0ccb739a
-Resolving secrets
-Preparing the "docker" executor
-00:03
-Using Docker executor with image registry.dev.sbiepay.sbi:8443/library/podman:latest ...
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0b05fe47cd0b9224333c4534ba26af9e91f2d61f46cd0b833b4765abf5ede85a for registry.dev.sbiepay.sbi:8443/library/podman:latest with digest registry.dev.sbiepay.sbi:8443/library/podman@sha256:25e430bdecb8271dadafbc238b138218185efd0b771567285a12fda0c8e52a35 ...
-Preparing environment
-00:02
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Running on runner-rmtqxlq3-project-41-concurrent-0 via Gitlab-DC-Runr...
-Getting source from Git repository
-00:05
-$ git config --global http.proxy $HTTP_PROXY; git config --global https.proxy $HTTPS_PROXY; git config --global no.proxy $NO_PROXY
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /tmp/builds/epay/microservices/epay_admin_service/.git/
-Created fresh repository.
-Checking out 7bff292a as detached HEAD (ref is develop)...
-Skipping Git submodules setup
-Downloading artifacts
-00:19
-Downloading artifacts for build (320048)...
-Downloading artifacts from coordinator... ok        id=320048 responseStatus=200 OK token=glcbt-64
-WARNING: build/libs/: lchown build/libs/: operation not permitted (suppressing repeats) 
-Executing "step_script" stage of the job script
-00:03
-Using docker image sha256:0b05fe47cd0b9224333c4534ba26af9e91f2d61f46cd0b833b4765abf5ede85a for registry.dev.sbiepay.sbi:8443/library/podman:latest with digest registry.dev.sbiepay.sbi:8443/library/podman@sha256:25e430bdecb8271dadafbc238b138218185efd0b771567285a12fda0c8e52a35 ...
-$ ls -ltrh
-total 20K
--rw-rw-rw-. 1 1001 root  754 May  8 07:24 Dockerfile
-drwxrwxrwx. 2 1001 root   28 May  8 07:24 libs
--rw-rw-rw-. 1 1001 root  278 May  8 07:24 gradle.properties
--rw-rw-rw-. 1 1001 root 2.4K May  8 07:24 build.gradle
--rw-rw-rw-. 1 1001 root 2.0K May  8 07:24 README.md
-drwxrwxrwx. 3 1001 root   18 May  8 07:24 src
--rw-rw-rw-. 1 1001 root  109 May  8 07:24 settings.gradle
-drwxrwxrwx. 3 1001 root   18 May  8 07:24 build
-$ echo $VERSION
-v-develop-20260508072027
-$ TAG="${VERSION}"
-$ echo "Generated Tag.. ${TAG}"
-Generated Tag.. v-develop-20260508072027
-$ podman login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASS $CI_TEMPLATE_REGISTRY_HOST --tls-verify=false
-time="2026-05-08T07:24:48Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG
-time="2026-05-08T07:24:49Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-STEP 1/7: FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1758133907
-Trying to pull registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1758133907...
-Error: creating build container: initializing source docker://registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1758133907: reading manifest 1.23-6.1758133907 in registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21: manifest unknown
-Cleaning up project directory and file based variables
-00:02
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-
- below is our current build configuration....
- 
- 
- 
 .dockerbuild:
   stage: dockerbuild
+
   script:
     - ls -ltrh
-    - echo $VERSION
+
+    - echo "VERSION = $VERSION"
+
     - TAG="${VERSION}"
-    - echo "Generated Tag.. ${TAG}"
-    - podman login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASS $CI_TEMPLATE_REGISTRY_HOST --tls-verify=false
-    #- podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG
-    - podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG
-    - podman push $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG --tls-verify=false
-	
-	
-	
-	
-.gilab-vi.yml............
 
-include:
-  - project: 'epay/devops/ci-templates'
-    ref: feature/IMAGETAG-123_TESTING
-    file: 'templates/microservices/gradle.java.yml'
+    - echo "Generated Tag: ${TAG}"
 
-variables:
-  RELEASE_NAME: admin
-  CHART_NAME: adminservice
-  
-  
-Dockerfile ------------------
+    - echo "OPENJDK_IMAGE_TAG = ${OPENJDK_IMAGE_TAG}"
 
+    - podman login \
+        -u $IMAGE_REGISTRY_USERNAME \
+        -p $IMAGE_REGISTRY_PASS \
+        $CI_TEMPLATE_REGISTRY_HOST \
+        --tls-verify=false
 
-ARG OPENJDK_IMAGE_TAG=1.23-6.1758133907
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:${OPENJDK_IMAGE_TAG}
-ARG ENV
-ARG VERSION
-ENV ENV=$ENV
-ENV VERSION=$VERSION
-COPY /build/libs/epay_admin_service-${VERSION}.jar .
-### ENTRYPOINT ["java","-jar","epay_admin_service-$VERSION.jar"]
-ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
+    - |
+      podman build \
+        -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG \
+        -f Dockerfile \
+        --tls-verify=false \
+        --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG \
+        --build-arg ENV=$ENV \
+        --build-arg VERSION=$TAG \
+        .
 
-
-
+    - podman push \
+        $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG \
+        --tls-verify=false
