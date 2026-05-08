@@ -1,17 +1,20 @@
-Hi there
- 
-Thanks for contacting GitLab Support. 
- 
-My name is Paul and I am based in the EMEA region. I've taken assignment of the ticket to expedite the issue prior to a team member in your preferred region being available and I will transfer this to your preferred region at the end of my day.
- 
-The error shows that the export is failing because the path used to build the export archive has run out of space. 
- 
-Can you check your gitlab.rb file for the below setting? If this is a multi-node deployment, check the node(s) that run Rails/Sidekiq.
- 
- Verify the configured shared path is mounted and has free space.
- 
-gitlab_rails['shared_path'] = '/var/opt/gitlab/gitlab-rails/shared'
- 
-You should also check that you have sufficient space in /tmp as this is also used  during the export process.
- 
-Best Regards,
+Subject: Re: Project Export Failing - No space left on device [Ticket #XXXX]
+
+Hi Paul,
+
+Thanks for getting back on this.
+
+As requested, I checked the gitlab.rb and here is what I found:
+
+- The shared_path is not explicitly configured, so it is using the default: /var/opt/gitlab/gitlab-rails/shared
+- This node is a Geo Secondary (roles(['geo_secondary_role']))
+- None of the storage paths (artifacts, LFS, uploads, registry, tmp) have been customized — all are under the default shared path
+- /tmp is also on the same server
+
+Could you please help identify the root cause based on this configuration and advise on the recommended fix?
+
+Let me know if you need any additional details or logs from this node.
+
+Thanks,
+Om
+DevOps — SBI E-Pay
