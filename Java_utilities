@@ -1,4 +1,87 @@
- below is our current build configuration....
+
+
+
+Just **one line change** needed in your `.dockerbuild` stage — add `OPENJDK_IMAGE_TAG` to the existing `podman build` command:
+
+---
+
+## Updated `.dockerbuild` Stage
+
+```yaml
+.dockerbuild:
+  stage: dockerbuild
+  script:
+    - ls -ltrh
+    - echo $VERSION
+    - TAG="${VERSION}"
+    - echo "Generated Tag.. ${TAG}"
+    - podman login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASS $CI_TEMPLATE_REGISTRY_HOST --tls-verify=false
+    - podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG
+    - podman push $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG --tls-verify=false
+```
+
+---
+
+## What Changed
+
+```bash
+# Before
+--build-arg ENV=$ENV --build-arg VERSION=$TAG
+
+# After
+--build-arg ENV=$ENV --build-arg VERSION=$TAG --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG
+```
+
+Only `--build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG` was appended — everything else remains untouched.
+
+---
+
+## Updated Dockerfile
+
+```dockerfile
+ARG OPENJDK_IMAGE_TAG=1.22-1.1749462973
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:${OPENJDK_IMAGE_TAG}
+
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+
+COPY /build/libs/epay_admin_service-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
+```
+
+---
+
+## Complete Picture
+
+| Component | Change |
+|---|---|
+| `.dockerbuild` stage | Add `--build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG` to `podman build` |
+| `Dockerfile` | Add `ARG OPENJDK_IMAGE_TAG` before `FROM` line |
+| GitLab Variable | Already created ✅ |
+| `.build` (Gradle) stage | No change needed ✅ |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==============================================================
+
+====below is our current build configuration....
  
  
  
