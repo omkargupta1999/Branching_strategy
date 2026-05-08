@@ -1,60 +1,10 @@
-
-.gitlab-ci.yml -------------
-
-stages:
-  - rbac
-
-rbac-devops:
-  stage: rbac
-  image: registry.dev.sbiepay.sbi:8443/library/python:v3.33
-  variables:
-    REQUESTS_VERIFY_FALSE: "true"
-  script:
-    - python rbac_devops.py
-  only:
-    - main
-	
--------- config.yml -------
-
-gitlab:
-  url: "https://gitlab.epay.sbi"
-
-repos:
-  - "epay/infra/devops/ci-templates"
-  - "epay/infra/devops/deployment"
-
-rbac:
-  groups:
-    - name: "epay-gitlab-bank-infra-owner"
-      access: 50
-    - name: "epay-gitlab-bank-infra-maintainer"
-      access: 40
-    - name: "epay-gitlab-vendor-infra-maintainer"
-      access: 40
-    - name: "epay-gitlab-vendor-infra-developer"
-      access: 30
-
-branch_protection:
-  name: "main"
-  push_access: 0
-  merge_access: 40
-
-approvals:
-  - name: "Bank Owner"
-    group: "epay-gitlab-bank-infra-owner"
-  - name: "Bank Maintainer"
-    group: "epay-gitlab-bank-infra-maintainer"
-  - name: "Vendor Architect"
-    group: "epay-gitlab-vendor-infra-maintainer"
-  - name: "Vendor PM"
-    group: "epay-gitlab-vendor-pm"
-	
-------------  rbac_devops.py -------
-
-
 import gitlab
 import yaml
 import os
+import urllib3
+
+# Suppress SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # =========================
 # LOAD CONFIG
@@ -68,7 +18,7 @@ TOKEN = os.getenv("GITLAB_TOKEN")
 if not TOKEN:
     raise Exception("❌ GITLAB_TOKEN not set")
 
-gl = gitlab.Gitlab(GITLAB_URL, private_token=TOKEN)
+gl = gitlab.Gitlab(GITLAB_URL, private_token=TOKEN, ssl_verify=False)
 
 # =========================
 # HELPERS
@@ -85,7 +35,6 @@ def get_group_id(name):
 # =========================
 for repo in config["repos"]:
     print(f"\n🔧 Processing: {repo}")
-
     project = gl.projects.get(repo)
 
     # -----------------------------------
@@ -96,7 +45,6 @@ for repo in config["repos"]:
         if not gid:
             print(f"❌ Group not found: {g['name']}")
             continue
-
         try:
             project.share(gid, g["access"])
             print(f"✔ Added group: {g['name']}")
@@ -120,23 +68,19 @@ for repo in config["repos"]:
     # 3. CREATE APPROVAL RULES
     # -----------------------------------
     existing_rules = [r.name for r in project.approvalrules.list(all=True)]
-
     for rule in config["approvals"]:
         if rule["name"] in existing_rules:
             print(f"ℹ Rule exists: {rule['name']}")
             continue
-
         gid = get_group_id(rule["group"])
         if not gid:
             print(f"❌ Approval group missing: {rule['group']}")
             continue
-
         project.approvalrules.create({
             "name": rule["name"],
             "approvals_required": 1,
             "group_ids": [gid]
         })
-
         print(f"✔ Rule created: {rule['name']}")
 
     # -----------------------------------
@@ -145,7 +89,6 @@ for repo in config["repos"]:
     project.merge_requests_author_approval = False
     project.reset_approvals_on_push = True
     project.save()
-
     print("✔ MR settings applied")
 
 print("\n✅ ALL DEVOPS REPOS CONFIGURED")
