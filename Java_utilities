@@ -2,36 +2,21 @@
  
  
  
- .build:
-  stage: build
-  image: 
-    name:  registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6
-    pull_policy: always  
+.dockerbuild:
+  stage: dockerbuild
   script:
-    - pwd
-    - ls -la
-    - |
-      if [ -n "$VERSION" ]; then
-        echo "version ${VERSION}"
-        gradle build -x test -Pversion=${VERSION}
-      else
-        gradle build -x test 
-      fi
-    - ls -lrth
-    - ls -lrth build/libs
-  artifacts:
-    paths:
-      - build/libs
-    when: on_success 
-    expire_in: 1 week
-	
+    - ls -ltrh
+    - echo $VERSION
+    - TAG="${VERSION}"
+    - echo "Generated Tag.. ${TAG}"
+    - podman login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASS $CI_TEMPLATE_REGISTRY_HOST --tls-verify=false
+    - podman build -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG -f Dockerfile --tls-verify=false --build-arg ENV=$ENV --build-arg VERSION=$TAG
+    - podman push $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG --tls-verify=false 
 	
 	
 We have created a gitlab variavle name : OPENJDK_IMAGE_TAG and sharing below dockerfile for your reference ..........
 
 Please let me know the what changes are required in build here configuration share the updated one....
-
-
 
 
 
