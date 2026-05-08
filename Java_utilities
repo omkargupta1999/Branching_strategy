@@ -1,3 +1,13 @@
+Yes, the updated `.dockerbuild` YAML structure is correct and will work properly with Podman and GitLab CI, provided these conditions are met:
+
+* `OPENJDK_IMAGE_TAG` variable exists in GitLab
+* The image tag actually exists in registry
+* Dockerfile contains `ARG OPENJDK_IMAGE_TAG`
+* Build context (`.`) is passed correctly
+
+Your final working configuration should be:
+
+```yaml id="t2qmy9"
 .dockerbuild:
   stage: dockerbuild
 
@@ -10,7 +20,7 @@
 
     - echo "Generated Tag: ${TAG}"
 
-    - echo "OPENJDK_IMAGE_TAG = ${OPENJDK_IMAGE_TAG}"
+    - echo "OPENJDK_IMAGE_TAG=${OPENJDK_IMAGE_TAG}"
 
     - podman login \
         -u $IMAGE_REGISTRY_USERNAME \
@@ -23,11 +33,148 @@
         -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG \
         -f Dockerfile \
         --tls-verify=false \
-        --build-arg OPENJDK_IMAGE_TAG=$OPENJDK_IMAGE_TAG \
-        --build-arg ENV=$ENV \
-        --build-arg VERSION=$TAG \
+        --build-arg OPENJDK_IMAGE_TAG=${OPENJDK_IMAGE_TAG} \
+        --build-arg ENV=${ENV} \
+        --build-arg VERSION=${TAG} \
         .
 
     - podman push \
         $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG \
         --tls-verify=false
+```
+
+And Dockerfile:
+
+```dockerfile id="4s91cc"
+ARG OPENJDK_IMAGE_TAG=1.22-1.1749462973
+
+FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:${OPENJDK_IMAGE_TAG}
+
+ARG ENV
+ARG VERSION
+
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+
+COPY /build/libs/epay_admin_service-${VERSION}.jar .
+
+ENTRYPOINT ["sh", "-c", "java -jar epay_admin_service-${VERSION}.jar"]
+```
+
+---
+
+# One Critical Thing
+
+Your earlier failing command was missing the build context (`.`).
+
+You had:
+
+```bash id="dhlqz8"
+podman build -t xxx -f Dockerfile --build-arg ...
+```
+
+But Podman/Docker build must end with:
+
+```bash id="36edmn"
+.
+```
+
+The updated YAML already includes it correctly:
+
+```bash id="7z9j60"
+...
+--build-arg VERSION=${TAG} \
+.
+```
+
+Without `.`:
+
+* build context fails
+* COPY may fail
+* Dockerfile may behave inconsistently
+
+---
+
+# Why Your Earlier Pipeline Still Reached FROM
+
+Podman sometimes tolerates missing explicit context depending on CLI parsing/version, but it is not reliable or portable.
+
+Always use:
+
+```bash id="k3c44j"
+podman build [OPTIONS] .
+```
+
+---
+
+# Final Validation Checklist
+
+Before rerun:
+
+## GitLab Variable
+
+```text id="c7h6p1"
+OPENJDK_IMAGE_TAG
+```
+
+must contain valid existing tag.
+
+Example:
+
+```text id="6fcah0"
+1.22-1.1749462973
+```
+
+NOT:
+
+```text id="79exxn"
+1.23-6.1758133907
+```
+
+unless image actually exists.
+
+---
+
+## Verify Registry Manually
+
+Test once:
+
+```bash id="b66dfc"
+podman pull registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.22-1.1749462973
+```
+
+If pull succeeds:
+
+* pipeline will succeed.
+
+---
+
+# Enterprise Improvement (Highly Recommended)
+
+Instead of only tag variable:
+
+Use full image variable.
+
+Example:
+
+```text id="3dk8nj"
+BASE_RUNTIME_IMAGE=registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.22-1.1749462973
+```
+
+Then Dockerfile:
+
+```dockerfile id="3jlwmm"
+ARG BASE_RUNTIME_IMAGE
+
+FROM ${BASE_RUNTIME_IMAGE}
+```
+
+Advantages:
+
+* easier migration
+* supports UBI upgrades
+* supports registry migration
+* supports JDK family migration
+* fewer YAML changes
+
+This becomes very valuable in your SBI centralized GitLab migration program.
