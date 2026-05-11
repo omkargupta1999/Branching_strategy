@@ -1,68 +1,4 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1960-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:04
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
-Created fresh repository.
-Checking out cc0552de as detached HEAD (ref is release/v1.0.0)...
-Skipping Git submodules setup
-Downloading artifacts
-00:04
-Downloading artifacts for build (236223)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=236223 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:06
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-05-11T10:23:53Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-10:23:57 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-10:23:57 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=cc0552de
-Backend build detected
-total 76404
--rw-r--r-- 1 1001 1001   334696 May 11 10:22 epay_admin_service-cc0552de-plain.jar
--rw-r--r-- 1 1001 1001 77900725 May 11 10:22 epay_admin_service-cc0552de.jar
-Generated Tag.. cc0552de
-Image: artifactory.jfrog.sbi:443/:cc0552de
-time="2026-05-11T10:23:57Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Error: tag artifactory.jfrog.sbi:443/:cc0552de: invalid reference format
-Uploading artifacts for failed job
-00:02
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=236225 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-==============================================================================================
+image.build.yml ----------
 
 # ci/image/image.build.yml  |  Stage: image-build
 # Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
@@ -157,3 +93,192 @@ variables:
 
 image:build:
   extends: .image_build
+
+
+---------------- java.yml ---------
+
+
+# templates/ci/backend/java.yml
+# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
+# For library/utility repos (produce JARs → JFrog), use java.library.yml
+#
+# App repo .gitlab-ci.yml:
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: txn
+#     CHART_NAME:   transactionservice
+
+default:
+  tags:
+    - common_runner
+
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  #- local: 'ci/security/sast/sast.fortify.yml'    #----- Working 
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/iac/iac.scan.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  #- local: 'ci/image/image.scan.xray.yml'       #----- Working  
+  # - local: 'ci/image/image.scan.rhacs.yml'
+  # - local: 'ci/image/image.sign.yml'
+  # - local: 'ci/image/image.sbom.attest.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
+
+stages:
+  - version       # version generation
+  - build         # gradle compile
+  - test          # unit + integration
+  #- sast          # gitlab sast + fortify
+  # - security      # sca + secrets + iac + license + sbom
+  - image-build   # podman build (local only — no push)
+  #- image-scan    # trivy + xray + rhacs (gate before sign)
+  # - image-attest  # cosign sign + sbom attestation
+  - image-push    # push to JFrog (only after scan + sign)
+  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
+  - deploy        # trigger buttons → deployment repo CD pipeline
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+
+# Branch + MR filter — applied to all jobs via extends
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature|feature_ci)(\/.*)*$/'
+    - when: never
+
+# ── Stage: version ─────────────────────────────────────────────────────────────
+# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# # ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# # GitLab template jobs — override stage and apply rules
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# kics-iac-sast:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# # ── Stage: image-build ─────────────────────────────────────────────────────────
+image:build:
+  extends: [.image_build, .rules]
+
+# # ── Stage: image-scan ──────────────────────────────────────────────────────────
+# Trivy (GitLab template job) — override stage and rules
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# image:scan:rhacs:
+#   extends: [.image_scan_rhacs, .rules]
+
+# # ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# image:sbom:attest:
+#   extends: [.sbom_attest, .rules]
+
+# # ── Stage: image-push ──────────────────────────────────────────────────────────
+image:push:
+  extends: [.image_push, .rules]
+  # - release
+  # - deploy
+# # ── Stage: image-deploy ──────────────────────────────────────────────────────────
+.deploy:
+  extends: .trigger_cd
+
+.deploy_nonprod:
+  extends: .trigger_cd_nonprod
+
+
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
+# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
+# deploy-prod-dc/dr: manual — Bank Only
+
+
+
+----------------------------------------------------------------------- Dockerfile to build the application.---------
+
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+COPY /build/libs/epay_admin_service-${VERSION}.jar .
+# ENTRYPOINT ["java","-jar","epay_admin_service-$VERSION.jar"]
+ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
