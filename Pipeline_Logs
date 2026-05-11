@@ -1,71 +1,214 @@
-# =============================================================================
-# Base Image: UBI9 with OpenJDK 21 (pre-installed)
-# This avoids manual JDK setup and ensures enterprise compatibility
-# =============================================================================
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24-2.1776357031
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:35
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0 ...
+Using docker image sha256:db3cb22119269ffb2735a854a14ce7336ed9debd80bf92ac840e837e90e084e6 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git@sha256:db3cb22119269ffb2735a854a14ce7336ed9debd80bf92ac840e837e90e084e6 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1960-concurrent-1 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:04
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out 13125e80 as detached HEAD (ref is release/v1.0.0)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:db3cb22119269ffb2735a854a14ce7336ed9debd80bf92ac840e837e90e084e6 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git@sha256:db3cb22119269ffb2735a854a14ce7336ed9debd80bf92ac840e837e90e084e6 ...
+git: 'sh' is not a git command. See 'git --help'.
+The most similar commands are
+	show
+	push
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: version.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
-# =============================================================================
-# Environment Variables
-# - GRADLE_HOME: installation directory
-# - GRADLE_USER_HOME: cache location (important for CI/offline builds)
-# - PATH: ensures gradle binary is globally accessible
-# =============================================================================
-ENV GRADLE_VERSION=9.3.0 \
-    GRADLE_HOME=/opt/gradle \
-    GRADLE_USER_HOME=/home/gradle/.gradle \
-    PATH=/opt/gradle/bin:$PATH
 
-# =============================================================================
-# Switch to root user for installation and system-level changes
-# =============================================================================
-USER root
 
-# =============================================================================
-# Copy Gradle distribution and setup
-# - Copy pre-downloaded Gradle (offline-safe)
-# - Rename directly to final path (avoids symlink layer)
-# - Ensure executable permissions
-# =============================================================================
-COPY gradle-9.3.0/ ${GRADLE_HOME}/
 
-RUN chmod +x ${GRADLE_HOME}/bin/gradle
 
-# =============================================================================
-# Create non-root user for secure execution
-# - UID 1001 commonly used in OpenShift/Kubernetes environments
-# - Home directory required for Gradle cache
-# =============================================================================
-RUN useradd -u 1001 -m -s /bin/bash gradle \
-    && mkdir -p ${GRADLE_USER_HOME} \
-    && chown -R gradle:gradle /home/gradle ${GRADLE_HOME}
+========================================  
 
-# =============================================================================
-# Import internal CA certificate into JVM truststore
-# - Required for TLS communication with JFrog or internal registries
-# - Uses default Java cacerts truststore
-# =============================================================================
-COPY jfrog-chain.crt /tmp/jfrog-chain.crt
 
-RUN keytool -import \
-        -trustcacerts \
-        -file /tmp/jfrog-chain.crt \
-        -keystore ${JAVA_HOME}/lib/security/cacerts \
-        -alias SBI-INTERNAL \
-        -storepass changeit \
-        -noprompt \
-    && rm -f /tmp/jfrog-chain.crt
+# ci/version/semver.yml  |  Stage: version
+# Computes VERSION string based on branch/pipeline context → version.env
+# Consumed by ALL downstream jobs via dotenv artifact
+# NOTE: This job ONLY computes the version. Git tags created in ci/release/tag.yml
+#
+# ── VERSION output per context ────────────────────────────────────────────────
+#
+# Pipeline Source      Branch / Context                   VERSION
+# ──────────────────── ────────────────────────────────── ──────────────────────────────────────
+# merge_request_event  <any source> → <any target>        mr-<src>-<tgt>-<IID>-<short-sha>
+#                      e.g. feature/payment → develop     mr-feature-payment-develop-47-abc1234
+#                      e.g. bugfix/fix → release/1.0.0   mr-bugfix-fix-release-1.0.0-8-abc1234
+#                      e.g. hotfix/1.0.1 → main          mr-hotfix-1.0.1-main-12-abc1234
+# push                 feature/*                          feature-<name>-<short-sha>
+# push                 bugfix/*                           bugfix-<name>-<short-sha>
+# push                 hotfix/*                           hotfix-<version>-<short-sha>
+# push                 develop                            dev-<short-sha>
+# push                 release/1.0.0                      1.0.0-rc.1  (auto-incremented)
+# push                 main ← release/1.1.0               1.1.0  (from CI_COMMIT_TITLE)
+# push                 main ← hotfix/1.0.1                1.0.1  (from CI_COMMIT_TITLE)
+# unknown              any                                <short-sha>
+#
+# ── Branch name cleaning ──────────────────────────────────────────────────────
+# Applied to all branch-name-based versions and MR source/target:
+#   /  → -    (forward slash removed)
+#   Special chars → -
+#   Uppercase → lowercase
+#   Consecutive dashes collapsed
+#   Max 40 chars (before appending fixed suffixes)
+# Keeps all VERSION strings well within Docker image tag limit of 128 chars.
+#
+# ── main merge — how source branch is identified ──────────────────────────────
+# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME is NOT available in post-merge push pipeline.
+# CI_COMMIT_TITLE IS available — GitLab sets it to the merge commit subject:
+#   "Merge branch 'release/1.1.0' into 'main'"
+#   "Merge branch 'hotfix/1.0.1' into 'main'"
+# Source branch always present in standard merge commit (GitLab default format).
+# Squash / rebase merges are NOT permitted on Protected branch 'main' (bank policy).
+# If commit title does not match expected format → version job fails → pipeline fails.
+# RC tag fallback intentionally NOT used — multiple active release branches make
+# RC tag lookup ambiguous (e.g. 1.1.0-rc.3 and 1.2.0-rc.1 may both exist).
 
-# =============================================================================
-# Switch to non-root user for runtime (best practice)
-# =============================================================================
-USER gradle
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0
+  variables:
+    GIT_DEPTH: "0"    # full clone required — accurate RC tag counting
+  tags:
+    - common_runner
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+  script:
+    - |
+      set -eo pipefail
+      git fetch --tags
 
-# =============================================================================
-# Set working directory for CI/CD jobs
-# =============================================================================
-WORKDIR /workspace
+      # ── Helper: clean branch name for use in VERSION string ───────────────
+      # Replaces special chars with dash, lowercases, collapses dashes, max 40 chars
+      # Ensures VERSION is safe for Docker image tag (128 char limit)
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
 
-# =============================================================================
-# Default command (can be overridden in pipeline)
-# =============================================================================
-CMD ["gradle", "--version"]
+      # ── MR pipeline ────────────────────────────────────────────────────────
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        # All MR types use same pattern — source + target embedded for traceability
+        # CI_MERGE_REQUEST_SOURCE_BRANCH_NAME and TARGET available in MR pipelines
+        SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+        TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+
+      # ── feature/*, bugfix/*, hotfix/* push ────────────────────────────────
+      # No image build on these branches — JAR only (build, test, sast, security)
+      # One condition covers all three — same version pattern: <branch>-<sha>
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix)\/ ]]; then
+        BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
+        VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
+
+      # ── develop push ───────────────────────────────────────────────────────
+      # Post-merge integration build — image pushed to DEV registry
+      elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+
+      # ── release/* push ─────────────────────────────────────────────────────
+      # Post-merge RC build — auto-increments RC counter for this release version
+      # RC tag format: 1.0.0-rc.1  (NO v prefix — directly usable as image tag)
+      # RC count: searches tags WITHOUT v prefix (not v${RELEASE_VERSION}-rc.*)
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+        RELEASE_VERSION="${BASH_REMATCH[1]}"
+        RC_COUNT=$(git tag -l "${RELEASE_VERSION}-rc.*" | wc -l | tr -d ' ')
+        NEW_RC=$((RC_COUNT + 1))
+        VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
+
+      # ── main push ──────────────────────────────────────────────────────────
+      # Post-merge to main from release/* or hotfix/*
+      # CI_COMMIT_TITLE = GitLab predefined variable = merge commit subject line
+      # GitLab format: "Merge branch 'release/1.1.0' into 'main'"
+      #                "Merge branch 'hotfix/1.0.1' into 'main'"
+      # Source branch name always in title for standard merge commits.
+      # Squash/rebase not permitted on Protected 'main' (bank policy + GitLab setting).
+      # If title format not matched → version job fails → entire pipeline fails.
+      elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        echo "Merge commit title: $CI_COMMIT_TITLE"
+
+        if echo "$CI_COMMIT_TITLE" | grep -qE "(release|hotfix)/[0-9]+\.[0-9]+\.[0-9]+"; then
+          VERSION=$(echo "$CI_COMMIT_TITLE"                               \
+                    | grep -oE "(release|hotfix)/[0-9]+\.[0-9]+\.[0-9]+" \
+                    | grep -oE "[0-9]+\.[0-9]+\.[0-9]+"                  \
+                    | head -1)
+        else
+          # Source branch not found in commit title.
+          # Squash or rebase merge was used — NOT permitted on Protected main branch.
+          # RC tag fallback NOT attempted — multiple active release branches make
+          # tag lookup ambiguous. Fail the version job → pipeline fails entirely.
+          echo "❌ ERROR: Cannot determine release version from merge commit title."
+          echo "   Title was  : $CI_COMMIT_TITLE"
+          echo "   Expected   : \"Merge branch 'release/X.Y.Z' into 'main'\""
+          echo "   OR         : \"Merge branch 'hotfix/X.Y.Z' into 'main'\""
+          echo ""
+          echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
+          echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
+          echo "                Merge method → select 'Merge commit'"
+          echo "                Re-raise the MR and merge again."
+          exit 1
+        fi
+
+      # ── Unknown branch ─────────────────────────────────────────────────────
+      # Should not occur in normal flow — all configured branches handled above.
+      # Catches manual pipeline run on unrecognised branch.
+      else
+        echo "⚠️  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
+        VERSION="${CI_COMMIT_SHORT_SHA}"
+      fi
+
+      # ── Write dotenv ────────────────────────────────────────────────────────
+      # BRANCH_USED: use source branch for MR pipeline (CI_COMMIT_BRANCH is empty in MR)
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
+      else
+        echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
+      fi
+      echo "VERSION=$VERSION"                           >> version.env
+      echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
+
+      # ── Summary ─────────────────────────────────────────────────────────────
+      echo "──────────────────────────────────────────────────────"
+      echo "Source  : ${CI_PIPELINE_SOURCE}"
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "Branch  : ${CI_COMMIT_BRANCH}"
+      fi
+      echo "VERSION : ${VERSION}"
+      echo "──────────────────────────────────────────────────────"
+
+  artifacts:
+    reports:
+      dotenv: version.env
+    expire_in: 1 day
