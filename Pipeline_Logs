@@ -2,38 +2,6 @@
   stage: build
   tags:
     - common_runner
-  image: artifactory.jfrog.sbi:443/dso-base-image/node/nodejs-20:1-38
-  variables: 
-    NG_PERSISTENT_BUILD_CACHE: "1"
-    # NODE_OPTIONS: "--openssl-legacy-provider"
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - .angular/cache
-  before_script:
-    - node -v
-    - npm -v
-    - npm config set strict-ssl false
-    - npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
-  script:
-    - npm ci --prefer-offline --no-audit --legacy-peer-deps
-    - npm run build
-    - cd dist && tar -cvf dist.tar .
-    - sha256sum *.tar > checksums.txt
-    - cat checksums.txt
-  artifacts:
-    paths:
-      - dist/dist.tar
-    expire_in: 1 day
-Added thoese for frontend 
-
-######################################################### ----------------------------
-
-
-.build:
-  stage: build
-  tags:
-    - common_runner
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
   variables: 
     NG_PERSISTENT_BUILD_CACHE: "1"
