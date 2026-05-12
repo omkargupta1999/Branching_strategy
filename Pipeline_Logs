@@ -1,143 +1,148 @@
 Getting below error in build stages .....sharing the build configuration/...
 
-
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
 Preparing the "docker" executor
 00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 ...
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:5e8034c6d83dca601af89db88e20ecee9f5ffa5242e1dfd0ee7d63cf628dd40f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82@sha256:5320b779c2daad97f8edbbdf86aa67813309cd00502766344f7dec6f0fcde9fc ...
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
 Preparing environment
 00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-1992-concurrent-0 via PE3DSOPGrunners3...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
 Getting source from Git repository
-00:12
+00:06
 Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
 Created fresh repository.
-Checking out 4d5e5a04 as detached HEAD (ref is release/uat)...
+Checking out 69f89b36 as detached HEAD (ref is release/uat)...
 Skipping Git submodules setup
 Restoring cache
-00:01
-Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+00:02
+Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
 No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
 WARNING: Cache file does not exist                 
 Failed to extract cache
 Executing "step_script" stage of the job script
-00:03
-Using docker image sha256:5e8034c6d83dca601af89db88e20ecee9f5ffa5242e1dfd0ee7d63cf628dd40f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82@sha256:5320b779c2daad97f8edbbdf86aa67813309cd00502766344f7dec6f0fcde9fc ...
-$ php --version
-PHP 8.2.28 (cli) (built: Mar 11 2025 17:58:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.28, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.28, Copyright (c), by Zend Technologies
-$ echo "Downloading Composer from JFrog..." # collapsed multi-line command
-Downloading Composer from JFrog...
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100    74  100    74    0     0     41      0  0:00:01  0:00:01 --:--:--    41
-Checking composer file...
--rw-r--r-- 1 default root 74 May 12 10:53 composer.phar
-File size: 74
-ERROR: Invalid composer.phar (wrong path or access issue)
-Content:
-{
-  "errors" : [ {
-    "status" : 404,
-    "message" : "Not Found"
-  } ]
-}
+00:11
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+$ python3 --version
+Python 3.9.25
+$ pip3 --version
+pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
+$ pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+Writing to /opt/app-root/src/.config/pip/pip.conf
+$ set -eo pipefail # collapsed multi-line command
+Building VERSION: 69f89b36
+WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+ERROR: Could not find a version that satisfies the requirement Flask==3.0.0 (from versions: none)
+ERROR: No matching distribution found for Flask==3.0.0
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
 
 
 
--==========================
+++++++++++++++++++++++++++++++++
+
+
+# ci/build/python.yml  |  Stage: build
+# Python microservice build
+#
+# ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# Auth: JF_USER + JF_TOKEN embedded in index-url
+# SSL: JFrog internal CA added to pip's trusted CA via certifi / system cert
+#      trusted-host NOT used — disables SSL verification (security risk)
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
+# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
+# pip re-uses downloaded tarballs on next run — avoids re-downloading from JFrog
+#
+# ── App repo requirements ─────────────────────────────────────────────────────
+# requirements.txt  — runtime dependencies
+# pyproject.toml    — build config (PEP 517/518)  OR  setup.py
+#
+# Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
+# Version injected via --metadata-version or pyproject.toml dynamic versioning
 
 .build:
   stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526
-
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
   tags:
     - common_runner
-
   variables:
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-
+    # Redirect pip cache to project-relative path — required for Docker executor cache
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
   cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
     paths:
-      - .composer-cache/
-
+      - .pip-cache/   # pip downloaded package cache
   before_script:
-    - php --version
-
-    # ── Download Composer from Artifactory ─────────────────────────
-    - |
-      echo "Downloading Composer from JFrog..."
-
-      curl -k -u "${JF_USER}:${JF_TOKEN}" \
-        "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-generic-local/tools/composer/composer.phar" \
-        -o composer.phar
-
-      echo "Checking composer file..."
-      ls -lh composer.phar
-
-      SIZE=$(stat -c%s composer.phar)
-      echo "File size: $SIZE"
-
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: Invalid composer.phar (wrong path or access issue)"
-        echo "Content:"
-        cat composer.phar
-        exit 1
-      fi
-
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-
-      composer --version
-
-    # ── Configure Composer to use Artifactory ──────────────────────
-    - composer config --global repos.packagist composer https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
-    - composer config --global http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
-
+    - python3 --version
+    - pip3 --version
+    # ── Configure pip to use JFrog Python virtual repository ──────────────
+    # Credentials embedded in index-url — standard JFrog pip pattern
+    # Note: URL with credentials may appear in verbose pip output
+    #       Use --quiet flag in pip commands to reduce log verbosity
+    - pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+    # Trust JFrog internal CA via OS cert store (update-ca-trust)
+    # pip3 config set global.cert: belt-and-suspenders — explicitly tells pip to use cert
+    # - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/jfrog-internal.crt
+    # - update-ca-trust extract
+    # - pip3 config set global.cert "$ARTIFACTORY_CERT"
   script:
     - |
       set -eo pipefail
 
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h || true
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
 
-      echo "===== INSTALLING DEPENDENCIES ====="
+      # ── Install runtime dependencies ──────────────────────────────────────
+      pip3 install --quiet -r requirements.txt
 
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist
+      # ── Install build tools from JFrog ─────────────────────────────────────
+      pip3 install --quiet build wheel setuptools
 
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor folder not created"
+      # ── Build wheel package ───────────────────────────────────────────────
+      # --no-isolation: builds without creating a virtual environment
+      #                 faster — build tools already installed above
+      # Version injection: SETUPTOOLS_SCM_PRETEND_VERSION works with setuptools-scm
+      # For other build backends (hatch, flit, poetry): set version differently
+      #   hatch:  HATCH_BUILD_HOOK_ENABLE_VERSION=1 (or set in pyproject.toml)
+      #   flit:   version in pyproject.toml [tool.flit.metadata] version field
+      #   poetry: version in pyproject.toml [tool.poetry] version field
+      SETUPTOOLS_SCM_PRETEND_VERSION="${VERSION}" python3 -m build --wheel --no-isolation
+
+      # ── Validate build output ─────────────────────────────────────────────
+      if [ -z "$(ls dist/*.whl 2>/dev/null)" ]; then
+        echo "❌ ERROR: No .whl found in dist/ — build may have failed"
+        echo "   Check pyproject.toml [build-system] configuration"
         exit 1
       fi
 
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "Build complete"
+      echo "Build output:"
+      ls -lh dist/
+      echo "✅ Build complete"
 
   artifacts:
     paths:
-      - vendor/
+      - dist/
     expire_in: 1 day
