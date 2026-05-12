@@ -1,62 +1,239 @@
+Getting below error building Nodejs build stage in our pipeline shariung build configuration yaml -----------
+
+
 .build:
   stage: build
+
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+
   tags:
     - common_runner
+
+  # 🔥 Timeout fix (important)
+  timeout: 1h
+
+  # 🔥 Cache enable (MOST IMPORTANT)
   variables:
-    npm_config_cache:          "${CI_PROJECT_DIR}/.npm"
-    NG_PERSISTENT_BUILD_CACHE: "1"
-    LEGACY_PEER_DEPS:          "true"
-    # Angular CLI incremental build cache — Vite/React projects: ignored
-    # Override LEGACY_PEER_DEPS: "false" in orchestrator if not needed
+    npm_config_cache: "${CI_PROJECT_DIR}/.npm"
+    NODE_OPTIONS: "--max-old-space-size=4096"
+
   cache:
-    key: "${CI_PROJECT_NAME}-npm-${CI_COMMIT_REF_SLUG}"
+    key: "${CI_PROJECT_NAME}-npm"
     paths:
       - .npm/
-      # - .angular/cache/   # Uncomment for Angular projects only
+
   before_script:
-    # ── Configure npm to use JFrog virtual repository ──────────────────────
+    # Debug info
+    - echo "Node version:"
+    - node -v
+    - echo "NPM version:"
+    - npm -v
+
+    # Proxy config
+    - npm config set proxy http://serverswg.sbi.co.in:80
+    - npm config set https-proxy http://serverswg.sbi.co.in:9090
+
+    # JFrog registry setup
     - npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
     - npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
-    - npm config set cafile "$ARTIFACTORY_CERT"
-    - npm config set strict-ssl false
+
+    # Network stability tuning
+    - npm config set fetch-retries 5
+    - npm config set fetch-retry-mintimeout 20000
+    - npm config set fetch-retry-maxtimeout 120000
+    - npm set maxsockets 3
+
+    # Debug registry connectivity
+    - echo "Testing JFrog connectivity..."
+    - curl -I https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/ || true
+
   script:
     - |
       set -eo pipefail
 
-      # ── Install dependencies ──────────────────────────────────────────────
-      npm ci --prefer-offline --no-audit --legacy-peer-deps
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df -h || true
 
-      # ── Build ─────────────────────────────────────────────────────────────
-      # Angular: env config via angular.json fileReplacements
-      # Vite:    env config via vite.config.js mode
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      # Retry logic (safe)
+      npm ci --prefer-offline --no-audit --progress=false || \
+      npm ci --prefer-offline --no-audit --progress=false || \
+      npm ci --prefer-offline --no-audit --progress=false
+
+      echo "===== BUILD START ====="
       npm run build
 
-      # ── Normalize output (handles Next.js out/ AND Vite/React/Angular dist/) ──
-      if [ -d "out" ]; then
-        echo "Next.js detected — copying out/ to dist/"
-        rm -rf dist && mkdir -p dist
-        cp -r out/* dist/
-      elif [ ! -d "dist" ]; then
-        echo "❌ ERROR: No dist/ or out/ found after build"
-        echo "   Check outputPath in angular.json or build.outDir in vite.config.js"
+      echo "===== VALIDATING OUTPUT ====="
+
+      if [ -d "dist" ]; then
+        echo "✅ dist folder found"
+      elif [ -d "build" ]; then
+        echo "✅ build folder found"
+      else
+        echo "❌ ERROR: No build output found"
         exit 1
       fi
 
-      echo "dist/ contents: $(ls dist/ | wc -l) files"
-
-      # ── Package dist as TAR for image-build stage ─────────────────────────
-      cd dist
-      tar --exclude=./dist.tar -cf dist.tar .
-      echo "TAR size: $(du -sh dist.tar | cut -f1)"
-
-      # ── Checksum for integrity verification ───────────────────────────────
-      sha256sum dist.tar > checksums.txt
-      cat checksums.txt
-      echo "✅ Build complete"
-
   artifacts:
     paths:
-      - dist/dist.tar
-      - dist/checksums.txt
+      - dist/
+      - build/
     expire_in: 1 day
+
+------------------------------------- Pipeline Output ....................
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1991-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs/.git/
+Created fresh repository.
+Checking out d2374a02 as detached HEAD (ref is release/v0.1.0)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_nodejs-npm-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:04
+Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
+$ echo "Node version:"
+Node version:
+$ node -v
+v20.17.0
+$ echo "NPM version:"
+NPM version:
+$ npm -v
+10.8.2
+$ npm config set proxy http://serverswg.sbi.co.in:80
+$ npm config set https-proxy http://serverswg.sbi.co.in:9090
+$ npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
+$ npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
+$ npm config set fetch-retries 5
+$ npm config set fetch-retry-mintimeout 20000
+$ npm config set fetch-retry-maxtimeout 120000
+$ npm set maxsockets 3
+$ echo "Testing JFrog connectivity..."
+Testing JFrog connectivity...
+$ curl -I https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/ || true
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (60) SSL certificate problem: self-signed certificate in certificate chain
+More details here: https://curl.se/docs/sslcerts.html
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+$ set -eo pipefail # collapsed multi-line command
+===== SYSTEM INFO =====
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       7.6Gi       5.5Gi       1.5Gi        20Gi        23Gi
+Swap:          1.6Gi       719Mi       920Mi
+Filesystem                     Size  Used Avail Use% Mounted on
+overlay                        147G  142G  5.4G  97% /
+tmpfs                           64M     0   64M   0% /dev
+tmpfs                           16G     0   16G   0% /sys/fs/cgroup
+shm                            4.0G     0  4.0G   0% /dev/shm
+/dev/mapper/rhel-root          147G  142G  5.4G  97% /builds
+/dev/mapper/vg_runner-lv_data  600G   41G  560G   7% /cache
+tmpfs                          3.2G  160K  3.2G   1% /run/docker.sock
+devtmpfs                        16G     0   16G   0% /dev/dsa
+===== INSTALLING DEPENDENCIES =====
+npm error code EUSAGE
+npm error
+npm error The `npm ci` command can only install with an existing package-lock.json or
+npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+npm error later to generate a package-lock.json file, then try again.
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs/.npm/_logs/2026-05-12T07_33_15_847Z-debug-0.log
+npm error code EUSAGE
+npm error
+npm error The `npm ci` command can only install with an existing package-lock.json or
+npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+npm error later to generate a package-lock.json file, then try again.
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs/.npm/_logs/2026-05-12T07_33_16_325Z-debug-0.log
+npm error code EUSAGE
+npm error
+npm error The `npm ci` command can only install with an existing package-lock.json or
+npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+npm error later to generate a package-lock.json file, then try again.
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs/.npm/_logs/2026-05-12T07_33_16_791Z-debug-0.log
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+------------------------------------------------------------------------------------
