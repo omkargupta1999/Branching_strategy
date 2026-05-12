@@ -1,100 +1,107 @@
+# ci/build/python.yml
 
-Failed
- Started 39 seconds ago by 
-Omkar Gupta
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:05
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
-Created fresh repository.
-Checking out c90cc0da as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:29
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-$ python3 --version
-Python 3.9.25
-$ pip3 --version
-pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
-$ microdnf install -y openssl || true
-/usr/bin/bash: line 210: microdnf: command not found
-$ set -eo pipefail # collapsed multi-line command
-── Extracting CA chain from artifactory.jfrog.sbi:443 ──
-── Extracted certificates ──
-subject=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
-issuer=O=SBI, C=IN, CN=SBI-RCA
-subject=O=SBI, C=IN, CN=SBI-RCA
-issuer=O=SBI, C=IN, CN=SBI-RCA
-$ cat /etc/pki/tls/certs/ca-bundle.crt \ # collapsed multi-line command
-$ pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-Writing to /opt/app-root/src/.config/pip/pip.conf
-$ pip3 config set global.index-url \ # collapsed multi-line command
-Writing to /opt/app-root/src/.config/pip/pip.conf
-$ pip3 config set global.timeout 120
-Writing to /opt/app-root/src/.config/pip/pip.conf
-$ pip3 config set global.disable-pip-version-check true
-Writing to /opt/app-root/src/.config/pip/pip.conf
-$ set -eo pipefail # collapsed multi-line command
-Building VERSION: c90cc0da
-Looking in indexes: https://[MASKED]:****@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-Requirement already satisfied: pip in /opt/app-root/lib/python3.9/site-packages (24.2)
-Collecting pip
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/de/f0/c81e05b613866b76d2d1066490adf1a3dbc4ee9d9c839961c3fc8a6997af/pip-26.0.1-py3-none-any.whl (1.8 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 166.2 MB/s eta 0:00:00
-Requirement already satisfied: setuptools in /opt/app-root/lib/python3.9/site-packages (53.0.0)
-Collecting setuptools
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/9d/76/f789f7a86709c6b087c5a2f52f911838cad707cc613162401badc665acfe/setuptools-82.0.1-py3-none-any.whl (1.0 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.0/1.0 MB 203.4 MB/s eta 0:00:00
-Collecting wheel
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/87/1b/9e33c09813d65e248f7f773119148a612516a4bea93e9c6f545f78455b7c/wheel-0.47.0-py3-none-any.whl (32 kB)
-Collecting build
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/fa/88/6764e7a109dd84294850741501145da90d13cdeac9d4e614929464a37420/build-1.4.4-py3-none-any.whl (25 kB)
-Collecting packaging>=24.0 (from wheel)
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/df/b2/87e62e8c3e2f4b32e5fe99e0b86d576da1312593b39f47d8ceef365e95ed/packaging-26.2-py3-none-any.whl (100 kB)
-Collecting pyproject_hooks (from build)
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl (10 kB)
-Collecting importlib-metadata>=4.6 (from build)
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/fa/5e/f8e9a1d23b9c20a551a8a02ea3637b4642e22c2626e3a13a9a29cdea99eb/importlib_metadata-8.7.1-py3-none-any.whl (27 kB)
-Collecting tomli>=1.1.0 (from build)
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/7b/61/cceae43728b7de99d9b847560c262873a1f6c98202171fd5ed62640b494b/tomli-2.4.1-py3-none-any.whl (14 kB)
-Collecting zipp>=3.20 (from importlib-metadata>=4.6->build)
-  Downloading https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/packages/packages/08/8a/0861bec20485572fbddf3dfba2910e38fe249796cb73ecdeb74e07eeb8d3/zipp-3.23.1-py3-none-any.whl (10 kB)
-Installing collected packages: zipp, tomli, setuptools, pyproject_hooks, pip, packaging, wheel, importlib-metadata, build
-  Attempting uninstall: setuptools
-    Found existing installation: setuptools 53.0.0
-    Uninstalling setuptools-53.0.0:
-      Successfully uninstalled setuptools-53.0.0
-  Attempting uninstall: pip
-    Found existing installation: pip 24.2
-    Uninstalling pip-24.2:
-      Successfully uninstalled pip-24.2
-Successfully installed build-1.4.4 importlib-metadata-8.7.1 packaging-26.2 pip-26.0.1 pyproject_hooks-1.2.0 setuptools-82.0.1 tomli-2.4.1 wheel-0.47.0 zipp-3.23.1
-ERROR Source /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python does not appear to be a Python project: no pyproject.toml or setup.py
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+.build:
+  stage: build
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+
+  tags:
+    - common_runner
+
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
+
+  variables:
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+    JFROG_HOST: "artifactory.jfrog.sbi"
+    JFROG_PORT: "443"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pip-cache/
+
+  before_script:
+    # ─────────────────────────────────────────────
+    # Python Info
+    # ─────────────────────────────────────────────
+    - python3 --version
+    - pip3 --version
+
+    # ─────────────────────────────────────────────
+    # Extract JFrog CA Chain
+    # ─────────────────────────────────────────────
+    - |
+      set -eo pipefail
+
+      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
+
+      openssl s_client \
+        -connect "${JFROG_HOST}:${JFROG_PORT}" \
+        -showcerts \
+        </dev/null 2>/dev/null \
+      | awk '
+          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
+          capture && count > 1          { print }
+          /-----END CERTIFICATE-----/   { capture=0 }
+        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
+
+      echo "── Extracted certificates ──"
+
+      openssl crl2pkcs7 \
+        -nocrl \
+        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      | openssl pkcs7 -print_certs -noout || true
+
+    # ─────────────────────────────────────────────
+    # Merge CA Bundles
+    # ─────────────────────────────────────────────
+    - |
+      cat /etc/pki/tls/certs/ca-bundle.crt \
+        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+
+    # ─────────────────────────────────────────────
+    # Configure pip SSL
+    # ─────────────────────────────────────────────
+    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+
+    # ─────────────────────────────────────────────
+    # Configure JFrog Python Registry
+    # ─────────────────────────────────────────────
+    - |
+      pip3 config set global.index-url \
+      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
+
+  script:
+    - |
+      set -eo pipefail
+
+      echo "Installing Python dependencies..."
+
+      pip3 install --upgrade pip setuptools wheel
+
+      pip3 install -r requirements.txt
+
+      echo "Installed packages:"
+      pip3 list
+
+      echo "Application structure:"
+      ls -ltrh
+
+      echo "✅ Python application build completed successfully"
+
+  artifacts:
+    paths:
+      - app.py
+      - requirements.txt
+      - package-registry/
+
+    expire_in: 1 day
