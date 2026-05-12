@@ -1,88 +1,114 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-1991-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs/.git/
-Created fresh repository.
-Checking out c803dfb3 as detached HEAD (ref is release/v0.1.0)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_nodejs-npm-release-v0-1-0-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:43
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-$ echo "Node $(node -v) / npm $(npm -v)"
-Node v20.17.0 / npm 10.8.2
-$ npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
-$ npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
-$ npm config set cafile      "$ARTIFACTORY_CERT"
-$ npm config set strict-ssl  false
-$ npm config set fetch-retries          5
-$ npm config set fetch-retry-mintimeout 20000
-$ npm config set fetch-retry-maxtimeout 120000
-$ npm config set maxsockets             3
-$ curl -sk -o /dev/null -w "JFrog HTTP status:%{http_code}\n" https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/ || true
-JFrog HTTP status:401
-$ set -eo pipefail # collapsed multi-line command
-===== SYSTEM INFO =====
-               total        used        free      shared  buff/cache   available
-Mem:            31Gi       6.6Gi       3.4Gi        81Mi        21Gi        24Gi
-Swap:          4.0Gi       1.0Gi       3.0Gi
-Filesystem                     Size  Used Avail Use% Mounted on
-fuse-overlayfs                 600G   96G  504G  16% /
-tmpfs                           64M     0   64M   0% /dev
-shm                            4.0G     0  4.0G   0% /dev/shm
-/dev/mapper/vg_runner-lv_data  600G   96G  504G  16% /cache
-devtmpfs                       4.0M     0  4.0M   0% /dev/dsa
-===== INSTALLING DEPENDENCIES =====
-⚠️  No package-lock.json — falling back to npm install
-   ACTION REQUIRED: commit package-lock.json for reproducible builds
-added 81 packages in 7s
-25 packages are looking for funding
-  run `npm fund` for details
-===== BUILD START =====
-> merchantsimulatornodejs@1.0.0 build
-> esbuild index.js --bundle --platform=node --outfile=dist/index.js
-  dist/index.js  1.6mb ⚠️
-⚡ Done in 404ms
-===== VALIDATING OUTPUT =====
-✅ dist/ found — 1 files
-total 1.6M
--rw-r--r--. 1 default root 1.6M May 12 08:37 index.js
-✅ Build complete
-Saving cache for successful job
-00:04
-Creating cache merchant_api_simulator_nodejs-npm-release-v0-1-0-non_protected...
-.npm/: found 1014 matching artifact files and directories 
-No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
-Created cache
-Uploading artifacts for successful job
-00:03
-Uploading artifacts...
-dist/: found 2 matching artifact files and directories 
-WARNING: build/: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_nodejs) 
-Uploading artifacts as "archive" to coordinator... 201 Created  id=239503 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:00
-Job succeeded
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+  tags:
+    - common_runner
+  timeout: 1h
+  variables:
+    npm_config_cache: "${CI_PROJECT_DIR}/.npm"
+    NODE_OPTIONS:     "--max-old-space-size=4096"
+  cache:
+    key: "${CI_PROJECT_NAME}-npm-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .npm/
+  before_script:
+    - echo "Node $(node -v) / npm $(npm -v)"
+
+    # ── JFrog registry — sole external package source ──────────────────────
+    # No proxy — JFrog is on internal network, proxy breaks SSL cert chain
+    - npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
+    - npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
+
+    # ── SSL — internal CA ──────────────────────────────────────────────────
+    - npm config set cafile     "$ARTIFACTORY_CERT"
+    - npm config set strict-ssl false
+
+    # ── Network tuning ─────────────────────────────────────────────────────
+    - npm config set fetch-retries          5
+    - npm config set fetch-retry-mintimeout 20000
+    - npm config set fetch-retry-maxtimeout 120000
+    - npm config set maxsockets             3
+
+    # ── Connectivity + auth check — expects HTTP 200 ───────────────────────
+    # 401 = network OK but token wrong/missing
+    # 000 = network unreachable
+    # 200 = registry reachable and token valid
+    - |
+      JFROG_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer ${JF_TOKEN}" \
+        https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/)
+      echo "JFrog HTTP status: ${JFROG_STATUS}"
+      if [ "${JFROG_STATUS}" != "200" ]; then
+        echo "⚠️  WARNING: JFrog returned ${JFROG_STATUS}"
+        echo "   200 = OK | 401 = bad/missing JF_TOKEN | 000 = network unreachable"
+        echo "   npm install will likely fail — check JF_TOKEN CI variable"
+      fi
+
+  script:
+    - |
+      set -eo pipefail
+
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df   -h || true
+
+      # ── Disk space guard ───────────────────────────────────────────────────
+      AVAIL_GB=$(df / | awk 'NR==2 {print int($4/1048576)}')
+      if [ "${AVAIL_GB}" -lt 3 ]; then
+        echo "⚠️  WARNING: Only ${AVAIL_GB}GB free on runner — raise Infra ticket"
+      fi
+
+      echo "===== PRE-INSTALL CHECKS ====="
+
+      # ── Verify local SDK tarball is present ────────────────────────────────
+      # epay_nodejs_sdk resolves from repo (file: dependency) — never hits network
+      if [ ! -f "package-registry/epay_nodejs_sdk-1.0.0.tgz" ]; then
+        echo "❌ ERROR: package-registry/epay_nodejs_sdk-1.0.0.tgz not found"
+        echo "   This file must be committed to the repo alongside package.json"
+        exit 1
+      fi
+      echo "✅ Local SDK tarball found"
+
+      # ── Confirm npm registry is pointing to JFrog only ────────────────────
+      CONFIGURED_REGISTRY=$(npm config get registry)
+      echo "npm registry: ${CONFIGURED_REGISTRY}"
+      if [[ "${CONFIGURED_REGISTRY}" != *"artifactory.jfrog.sbi"* ]]; then
+        echo "❌ ERROR: npm is NOT pointing to JFrog — aborting"
+        exit 1
+      fi
+
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      if [ -f "package-lock.json" ]; then
+        echo "✅ package-lock.json found — using npm ci (reproducible)"
+        npm ci --prefer-offline --no-audit --legacy-peer-deps
+      else
+        echo "⚠️  No package-lock.json — falling back to npm install"
+        echo "   ACTION REQUIRED: run 'npm install --legacy-peer-deps' locally"
+        echo "   and commit package-lock.json for reproducible builds"
+        npm install --no-audit --legacy-peer-deps
+      fi
+
+      echo "===== BUILD START ====="
+      npm run build
+
+      echo "===== VALIDATING OUTPUT ====="
+      if [ -d "dist" ]; then
+        echo "✅ dist/ found — $(ls dist/ | wc -l) files"
+        ls -lh dist/
+      elif [ -d "build" ]; then
+        echo "✅ build/ found — $(ls build/ | wc -l) files"
+        ls -lh build/
+      else
+        echo "❌ ERROR: No dist/ or build/ found after build"
+        echo "   Check the build script in package.json"
+        exit 1
+      fi
+
+      echo "✅ Build complete"
+
+  artifacts:
+    paths:
+      - dist/
+      - build/
+    expire_in: 1 day
