@@ -1,104 +1,76 @@
-# ci/build/python.yml  |  Stage: build
-# Python microservice build
-#
-# ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# Auth: JF_USER + JF_TOKEN embedded in index-url
-# SSL: Combined CA bundle (system CAs + JFrog internal CA) written to project
-#      dir and passed to pip via global.cert — no root/sudo required
-#      trusted-host NOT used — disabling SSL verification is a security risk
-#
-# ── Prerequisites (GitLab CI/CD Variables) ───────────────────────────────────
-# ARTIFACTORY_CERT  — Type: File — PEM-encoded JFrog internal CA certificate
-#                     (can be intermediate CA, root CA, or full chain)
-#                     Settings → CI/CD → Variables → Add variable (Type = File)
-#                     GitLab mounts this as a temp file; $ARTIFACTORY_CERT holds the path
-# JF_USER           — JFrog username
-# JF_TOKEN          — JFrog identity token / API key
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
-# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
-#
-# ── App repo requirements ─────────────────────────────────────────────────────
-# requirements.txt  — runtime dependencies
-# pyproject.toml    — build config (PEP 517/518)  OR  setup.py
-#
-# Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
-# Version injected via SETUPTOOLS_SCM_PRETEND_VERSION
-
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
-  tags:
-    - common_runner
-  variables:
-    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-  cache:
-    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .pip-cache/
-  before_script:
-    - python3 --version
-    - pip3 --version
-
-    # ── Diagnostics: inspect the cert GitLab mounted ─────────────────────
-    # Remove this block once SSL is confirmed working
-    - echo "--- ARTIFACTORY_CERT path ---"
-    - echo "$ARTIFACTORY_CERT"
-    - echo "--- Cert subject / issuer / validity ---"
-    - openssl x509 -in "$ARTIFACTORY_CERT" -noout -subject -issuer -dates 2>&1 || echo "⚠️  Single-cert parse failed — may be a chain bundle"
-    - echo "--- All certs in file ---"
-    - openssl crl2pkcs7 -nocrl -certfile "$ARTIFACTORY_CERT" | openssl pkcs7 -print_certs -noout 2>&1 || true
-
-    # ── Build combined CA bundle (non-root safe) ──────────────────────────
-    # Merges system CA bundle with the JFrog internal CA cert.
-    # Handles cases where ARTIFACTORY_CERT is a root CA, intermediate CA,
-    # or a full chain — pip needs the complete trust chain in one file.
-    # Written to CI_PROJECT_DIR which is always writable by the job user.
-    - cat /etc/pki/tls/certs/ca-bundle.crt "$ARTIFACTORY_CERT" > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    # ── Configure pip to use JFrog Python virtual repository ──────────────
-    - pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-
-    # ── Confirm pip config ────────────────────────────────────────────────
-    - pip3 config list
-
-  script:
-    - |
-      set -eo pipefail
-
-      # ── Validate VERSION ──────────────────────────────────────────────────
-      if [ -z "$VERSION" ]; then
-        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
-        exit 1
-      fi
-      echo "Building VERSION: ${VERSION}"
-
-      # ── Install runtime dependencies ──────────────────────────────────────
-      pip3 install --quiet -r requirements.txt
-
-      # ── Install build tools from JFrog ─────────────────────────────────────
-      pip3 install --quiet build wheel setuptools
-
-      # ── Build wheel package ───────────────────────────────────────────────
-      # --no-isolation: builds without creating a virtual environment
-      #                 faster — build tools already installed above
-      SETUPTOOLS_SCM_PRETEND_VERSION="${VERSION}" python3 -m build --wheel --no-isolation
-
-      # ── Validate build output ─────────────────────────────────────────────
-      if [ -z "$(ls dist/*.whl 2>/dev/null)" ]; then
-        echo "❌ ERROR: No .whl found in dist/ — build may have failed"
-        echo "   Check pyproject.toml [build-system] configuration"
-        exit 1
-      fi
-
-      echo "Build output:"
-      ls -lh dist/
-      echo "✅ Build complete"
-
-  artifacts:
-    paths:
-      - dist/
-    expire_in: 1 day
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:05
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out 00a56caf as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:12
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+$ python3 --version
+Python 3.9.25
+$ pip3 --version
+pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
+$ echo "--- ARTIFACTORY_CERT path ---"
+--- ARTIFACTORY_CERT path ---
+$ echo "$ARTIFACTORY_CERT"
+/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python.tmp/ARTIFACTORY_CERT
+$ echo "--- Cert subject / issuer / validity ---"
+--- Cert subject / issuer / validity ---
+$ openssl x509 -in "$ARTIFACTORY_CERT" -noout -subject -issuer -dates 2>&1 || echo "⚠️  Single-cert parse failed — may be a chain bundle"
+subject=CN=*.jfrog.sbi
+issuer=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
+notBefore=Sep 16 09:26:28 2025 GMT
+notAfter=Sep 16 18:29:59 2026 GMT
+$ echo "--- All certs in file ---"
+--- All certs in file ---
+$ openssl crl2pkcs7 -nocrl -certfile "$ARTIFACTORY_CERT" | openssl pkcs7 -print_certs -noout 2>&1 || true
+subject=CN=*.jfrog.sbi
+issuer=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
+$ cat /etc/pki/tls/certs/ca-bundle.crt "$ARTIFACTORY_CERT" > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+$ pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+Writing to /opt/app-root/src/.config/pip/pip.conf
+$ pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+Writing to /opt/app-root/src/.config/pip/pip.conf
+$ pip3 config list
+:env:.cache-dir='/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.pip-cache'
+:env:.no-cache-dir='off'
+global.cert='/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/combined-ca-bundle.crt'
+global.index-url='https://[MASKED]:[MASKED]@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple'
+$ set -eo pipefail # collapsed multi-line command
+Building VERSION: 00a56caf
+WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1147)'))': /artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple/flask/
+ERROR: Could not find a version that satisfies the requirement Flask==3.0.0 (from versions: none)
+ERROR: No matching distribution found for Flask==3.0.0
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
