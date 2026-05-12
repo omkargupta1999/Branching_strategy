@@ -1,69 +1,62 @@
-# ci/build/python.yml  |  Stage: build
-# Python microservice build
+# ci/build/python.yml
+# Python microservice build using Red Hat UBI9 image
 #
-# ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# Auth: JF_USER + JF_TOKEN embedded in index-url
-#
-# ── SSL Trust Strategy ────────────────────────────────────────────────────────
-# ARTIFACTORY_CERT contained only the leaf/server cert (CN=*.jfrog.sbi),
-# not the issuer CA (CN=SBI-CA). pip cannot verify the chain with just the
-# leaf cert — it needs the signing CA.
-#
-# Fix: Pull the full TLS chain directly from the JFrog server at runtime using
-# openssl s_client. This always gets the correct, up-to-date CA chain and
-# requires no manual cert management or CI variable updates when certs rotate.
-#
-# Chain extraction: openssl s_client -showcerts dumps all certs in the TLS
-# handshake (leaf + intermediates). We skip the first (leaf) cert and keep
-# only the CA cert(s) — these are what pip needs for verification.
-#
-# ── Prerequisites (GitLab CI/CD Variables) ───────────────────────────────────
-# JF_USER           — JFrog username
-# JF_TOKEN          — JFrog identity token / API key
-# ARTIFACTORY_CERT  — No longer needed for SSL trust (can be removed from vars)
-#                     Kept optional for backward compatibility
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
-#
-# ── App repo requirements ─────────────────────────────────────────────────────
-# requirements.txt  — runtime dependencies
-# pyproject.toml    — build config (PEP 517/518)  OR  setup.py
-#
-# Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
-# Version injected via SETUPTOOLS_SCM_PRETEND_VERSION
+# Features:
+# - Standard Red Hat UBI9 Python image
+# - Dynamic JFrog CA chain extraction
+# - Non-root/OpenShift compatible
+# - pip cache optimization
+# - Wheel package generation
+# - Enterprise-safe SSL handling
+# - Retry + timeout hardening
 
 .build:
   stage: build
+
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+
   tags:
     - common_runner
+
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
+
   variables:
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-    # JFrog host used for cert extraction and pip index
+
+    # JFrog details
     JFROG_HOST: "artifactory.jfrog.sbi"
     JFROG_PORT: "443"
+
   cache:
     key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
     paths:
       - .pip-cache/
+
   before_script:
+    # ─────────────────────────────────────────────────────────────
+    # Python info
+    # ─────────────────────────────────────────────────────────────
     - python3 --version
     - pip3 --version
 
-    # ── Extract CA chain from JFrog TLS handshake (non-root safe) ────────
-    # openssl s_client -showcerts dumps ALL certs in the TLS handshake:
-    #   cert[0] = leaf server cert  (CN=*.jfrog.sbi)   — skip this
-    #   cert[1] = intermediate CA   (CN=SBI-CA)         — pip needs this
-    #   cert[2] = root CA           (if present)         — pip needs this
-    #
-    # The awk script skips the first PEM block and captures all remaining
-    # ones — these are the CA certs that form the trust chain.
-    #
-    # Combined with system CAs so pip also trusts standard HTTPS endpoints.
+    # ─────────────────────────────────────────────────────────────
+    # Ensure openssl exists (safe for minimal UBI images)
+    # ─────────────────────────────────────────────────────────────
+    - microdnf install -y openssl || true
+
+    # ─────────────────────────────────────────────────────────────
+    # Extract CA chain dynamically from JFrog
+    # ─────────────────────────────────────────────────────────────
     - |
+      set -eo pipefail
+
       echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
+
       openssl s_client \
         -connect "${JFROG_HOST}:${JFROG_PORT}" \
         -showcerts \
@@ -74,120 +67,86 @@
           /-----END CERTIFICATE-----/   { capture=0 }
         ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
-      echo "── Certs extracted into jfrog-ca-chain.crt ──"
-      openssl crl2pkcs7 -nocrl -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        | openssl pkcs7 -print_certs -noout 2>&1 \
-        || echo "⚠️  No CA certs extracted — check JFROG_HOST connectivity"
+      echo "── Extracted certificates ──"
 
-    # ── Merge with system CA bundle ───────────────────────────────────────
-    # Combines system CAs (for any other HTTPS) with the extracted JFrog CA
-    - cat /etc/pki/tls/certs/ca-bundle.crt "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      openssl crl2pkcs7 \
+        -nocrl \
+        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      | openssl pkcs7 -print_certs -noout
+
+    # ─────────────────────────────────────────────────────────────
+    # Merge system CA bundle + extracted JFrog CA chain
+    # ─────────────────────────────────────────────────────────────
+    - |
+      cat /etc/pki/tls/certs/ca-bundle.crt \
+        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
         > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+
+    # ─────────────────────────────────────────────────────────────
+    # Configure pip SSL trust
+    # ─────────────────────────────────────────────────────────────
     - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-    # ── Configure pip to use JFrog Python virtual repository ──────────────
-    - pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+    # ─────────────────────────────────────────────────────────────
+    # Configure pip to use JFrog virtual repository
+    # ─────────────────────────────────────────────────────────────
+    - |
+      pip3 config set global.index-url \
+      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
-    # ── Confirm final pip config ──────────────────────────────────────────
-    - pip3 config list
+    # ─────────────────────────────────────────────────────────────
+    # pip hardening
+    # ─────────────────────────────────────────────────────────────
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
 
   script:
     - |
       set -eo pipefail
 
-      # ── Validate VERSION ──────────────────────────────────────────────────
-      if [ -z "$VERSION" ]; then
-        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+      # ─────────────────────────────────────────────────────────
+      # Validate VERSION
+      # ─────────────────────────────────────────────────────────
+      if [ -z "${VERSION}" ]; then
+        echo "❌ ERROR: VERSION variable is empty"
+        echo "Ensure semver dotenv artifact is loaded"
         exit 1
       fi
+
       echo "Building VERSION: ${VERSION}"
 
-      # ── Install runtime dependencies ──────────────────────────────────────
+      # ─────────────────────────────────────────────────────────
+      # Upgrade build tooling
+      # ─────────────────────────────────────────────────────────
+      pip3 install --upgrade pip setuptools wheel build
+
+      # ─────────────────────────────────────────────────────────
+      # Install application dependencies
+      # ─────────────────────────────────────────────────────────
       pip3 install --quiet -r requirements.txt
 
-      # ── Install build tools from JFrog ────────────────────────────────────
-      pip3 install --quiet build wheel setuptools
+      # ─────────────────────────────────────────────────────────
+      # Build wheel package
+      # ─────────────────────────────────────────────────────────
+      SETUPTOOLS_SCM_PRETEND_VERSION="${VERSION}" \
+      python3 -m build --wheel --no-isolation
 
-      # ── Build wheel package ───────────────────────────────────────────────
-      # --no-isolation: builds without creating a virtual environment
-      #                 faster — build tools already installed above
-      # Version injection: SETUPTOOLS_SCM_PRETEND_VERSION works with setuptools-scm
-      # For other build backends (hatch, flit, poetry): set version differently
-      #   hatch:  HATCH_BUILD_HOOK_ENABLE_VERSION=1 (or set in pyproject.toml)
-      #   flit:   version in pyproject.toml [tool.flit.metadata] version field
-      #   poetry: version in pyproject.toml [tool.poetry] version field
-      SETUPTOOLS_SCM_PRETEND_VERSION="${VERSION}" python3 -m build --wheel --no-isolation
-
-      # ── Validate build output ─────────────────────────────────────────────
-      if [ -z "$(ls dist/*.whl 2>/dev/null)" ]; then
-        echo "❌ ERROR: No .whl found in dist/ — build may have failed"
-        echo "   Check pyproject.toml [build-system] configuration"
+      # ─────────────────────────────────────────────────────────
+      # Validate build output
+      # ─────────────────────────────────────────────────────────
+      if ! ls dist/*.whl >/dev/null 2>&1; then
+        echo "❌ ERROR: No wheel generated in dist/"
+        echo "Check pyproject.toml or setup.py"
         exit 1
       fi
 
-      echo "Build output:"
+      echo "── Build output ──"
       ls -lh dist/
-      echo "✅ Build complete"
+
+      echo "✅ Python wheel build completed successfully"
 
   artifacts:
     paths:
       - dist/
+
     expire_in: 1 day
-
-
-
-
-
-
-Getting below error ............while running above buil stage 
-
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:05
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
-Created fresh repository.
-Checking out 571da821 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:02
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-$ python3 --version
-Python 3.9.25
-$ pip3 --version
-pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
-$ echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──" # collapsed multi-line command
-── Extracting CA chain from artifactory.jfrog.sbi:443 ──
-── Certs extracted into jfrog-ca-chain.crt ──
-subject=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
-issuer=O=SBI, C=IN, CN=SBI-RCA
-subject=O=SBI, C=IN, CN=SBI-RCA
-issuer=O=SBI, C=IN, CN=SBI-RCA
-$ cat /etc/pki/tls/certs/ca-bundle.crt "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \ > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-cat: ' ': No such file or directory
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
