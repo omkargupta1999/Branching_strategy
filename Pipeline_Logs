@@ -1,45 +1,103 @@
+# ci/build/python.yml  |  Stage: build
+# Python microservice build
+#
+# ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# Auth: JF_USER + JF_TOKEN embedded in index-url
+# SSL: ARTIFACTORY_CERT (GitLab File variable) passed directly to pip via
+#      global.cert — no root/sudo required, no OS trust store modification
+#      trusted-host NOT used — disables SSL verification (security risk)
+#
+# ── Prerequisites (GitLab CI/CD Variables) ───────────────────────────────────
+# ARTIFACTORY_CERT  — Type: File — PEM-encoded JFrog internal CA certificate
+#                     Settings → CI/CD → Variables → Add variable (Type = File)
+#                     GitLab mounts this as a temp file; $ARTIFACTORY_CERT holds the path
+# JF_USER           — JFrog username
+# JF_TOKEN          — JFrog identity token / API key
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
+# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
+# pip re-uses downloaded tarballs on next run — avoids re-downloading from JFrog
+#
+# ── App repo requirements ─────────────────────────────────────────────────────
+# requirements.txt  — runtime dependencies
+# pyproject.toml    — build config (PEP 517/518)  OR  setup.py
+#
+# Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
+# Version injected via SETUPTOOLS_SCM_PRETEND_VERSION
 
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:05
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
-Created fresh repository.
-Checking out 099c32e0 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:01
-Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
-$ python3 --version
-Python 3.9.25
-$ pip3 --version
-pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/jfrog-internal.crt
-cp: cannot create regular file '/etc/pki/ca-trust/source/anchors/jfrog-internal.crt': Permission denied
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+  tags:
+    - common_runner
+  variables:
+    # Redirect pip cache to project-relative path — required for Docker executor cache
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+  cache:
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pip-cache/   # pip downloaded package cache
+  before_script:
+    - python3 --version
+    - pip3 --version
+
+    # ── Trust JFrog internal CA (non-root safe) ───────────────────────────
+    # ARTIFACTORY_CERT is a GitLab File variable — GitLab mounts it as a
+    # temporary file and sets $ARTIFACTORY_CERT to its path automatically.
+    # We do NOT touch the OS trust store (requires root).
+    # Instead, point pip directly at the cert file — works with any user.
+    - pip3 config set global.cert "$ARTIFACTORY_CERT"
+
+    # ── Configure pip to use JFrog Python virtual repository ──────────────
+    # Credentials embedded in index-url — standard JFrog pip pattern
+    # Note: URL with credentials may appear in verbose pip output;
+    #       use --quiet flag in pip commands to reduce log verbosity
+    - pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+
+    # ── Verify pip config (optional debug — remove after confirming SSL works) ──
+    - pip3 config list
+
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Install runtime dependencies ──────────────────────────────────────
+      pip3 install --quiet -r requirements.txt
+
+      # ── Install build tools from JFrog ─────────────────────────────────────
+      pip3 install --quiet build wheel setuptools
+
+      # ── Build wheel package ───────────────────────────────────────────────
+      # --no-isolation: builds without creating a virtual environment
+      #                 faster — build tools already installed above
+      # Version injection: SETUPTOOLS_SCM_PRETEND_VERSION works with setuptools-scm
+      # For other build backends (hatch, flit, poetry): set version differently
+      #   hatch:  HATCH_BUILD_HOOK_ENABLE_VERSION=1 (or set in pyproject.toml)
+      #   flit:   version in pyproject.toml [tool.flit.metadata] version field
+      #   poetry: version in pyproject.toml [tool.poetry] version field
+      SETUPTOOLS_SCM_PRETEND_VERSION="${VERSION}" python3 -m build --wheel --no-isolation
+
+      # ── Validate build output ─────────────────────────────────────────────
+      if [ -z "$(ls dist/*.whl 2>/dev/null)" ]; then
+        echo "❌ ERROR: No .whl found in dist/ — build may have failed"
+        echo "   Check pyproject.toml [build-system] configuration"
+        exit 1
+      fi
+
+      echo "Build output:"
+      ls -lh dist/
+      echo "✅ Build complete"
+
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
