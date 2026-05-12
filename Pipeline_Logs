@@ -1,114 +1,127 @@
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+# templates/ci/backend/nodejs.yml
+# CI orchestrator for Node.js microservices
+
+default:
   tags:
     - common_runner
-  timeout: 1h
-  variables:
-    npm_config_cache: "${CI_PROJECT_DIR}/.npm"
-    NODE_OPTIONS:     "--max-old-space-size=4096"
-  cache:
-    key: "${CI_PROJECT_NAME}-npm-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .npm/
-  before_script:
-    - echo "Node $(node -v) / npm $(npm -v)"
 
-    # ── JFrog registry — sole external package source ──────────────────────
-    # No proxy — JFrog is on internal network, proxy breaks SSL cert chain
-    - npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
-    - npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/nodejs.yml'
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  # - local: 'ci/image/image.scan.xray.yml'
+  # - local: 'ci/image/image.sign.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
 
-    # ── SSL — internal CA ──────────────────────────────────────────────────
-    - npm config set cafile     "$ARTIFACTORY_CERT"
-    - npm config set strict-ssl false
+stages:
+  - version
+  - build
+  # - sast
+  - security
+  - image-build
+  - image-scan
+  - image-attest
+  - image-push
+  - release
+  - deploy
 
-    # ── Network tuning ─────────────────────────────────────────────────────
-    - npm config set fetch-retries          5
-    - npm config set fetch-retry-mintimeout 20000
-    - npm config set fetch-retry-maxtimeout 120000
-    - npm config set maxsockets             3
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
 
-    # ── Connectivity + auth check — expects HTTP 200 ───────────────────────
-    # 401 = network OK but token wrong/missing
-    # 000 = network unreachable
-    # 200 = registry reachable and token valid
-    - |
-      JFROG_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
-        -H "Authorization: Bearer ${JF_TOKEN}" \
-        https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/)
-      echo "JFrog HTTP status: ${JFROG_STATUS}"
-      if [ "${JFROG_STATUS}" != "200" ]; then
-        echo "⚠️  WARNING: JFrog returned ${JFROG_STATUS}"
-        echo "   200 = OK | 401 = bad/missing JF_TOKEN | 000 = network unreachable"
-        echo "   npm install will likely fail — check JF_TOKEN CI variable"
-      fi
+.rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
 
-  script:
-    - |
-      set -eo pipefail
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
 
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df   -h || true
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
 
-      # ── Disk space guard ───────────────────────────────────────────────────
-      AVAIL_GB=$(df / | awk 'NR==2 {print int($4/1048576)}')
-      if [ "${AVAIL_GB}" -lt 3 ]; then
-        echo "⚠️  WARNING: Only ${AVAIL_GB}GB free on runner — raise Infra ticket"
-      fi
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
 
-      echo "===== PRE-INSTALL CHECKS ====="
+# ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
 
-      # ── Verify local SDK tarball is present ────────────────────────────────
-      # epay_nodejs_sdk resolves from repo (file: dependency) — never hits network
-      if [ ! -f "package-registry/epay_nodejs_sdk-1.0.0.tgz" ]; then
-        echo "❌ ERROR: package-registry/epay_nodejs_sdk-1.0.0.tgz not found"
-        echo "   This file must be committed to the repo alongside package.json"
-        exit 1
-      fi
-      echo "✅ Local SDK tarball found"
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    # - when: never
 
-      # ── Confirm npm registry is pointing to JFrog only ────────────────────
-      CONFIGURED_REGISTRY=$(npm config get registry)
-      echo "npm registry: ${CONFIGURED_REGISTRY}"
-      if [[ "${CONFIGURED_REGISTRY}" != *"artifactory.jfrog.sbi"* ]]; then
-        echo "❌ ERROR: npm is NOT pointing to JFrog — aborting"
-        exit 1
-      fi
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
 
-      echo "===== INSTALLING DEPENDENCIES ====="
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
 
-      if [ -f "package-lock.json" ]; then
-        echo "✅ package-lock.json found — using npm ci (reproducible)"
-        npm ci --prefer-offline --no-audit --legacy-peer-deps
-      else
-        echo "⚠️  No package-lock.json — falling back to npm install"
-        echo "   ACTION REQUIRED: run 'npm install --legacy-peer-deps' locally"
-        echo "   and commit package-lock.json for reproducible builds"
-        npm install --no-audit --legacy-peer-deps
-      fi
+# ── Stage: image-build ─────────────────────────────────────────────────────────
+image:build:
+  extends: [.image_build, .rules]
 
-      echo "===== BUILD START ====="
-      npm run build
 
-      echo "===== VALIDATING OUTPUT ====="
-      if [ -d "dist" ]; then
-        echo "✅ dist/ found — $(ls dist/ | wc -l) files"
-        ls -lh dist/
-      elif [ -d "build" ]; then
-        echo "✅ build/ found — $(ls build/ | wc -l) files"
-        ls -lh build/
-      else
-        echo "❌ ERROR: No dist/ or build/ found after build"
-        echo "   Check the build script in package.json"
-        exit 1
-      fi
+# ── Stage: image-deploy ─────────────────────────────────────────────────────────
+.deploy:
+  extends: [.trigger_cd, .rules]
+  #extends: .trigger_cd
 
-      echo "✅ Build complete"
+# ── Stage: image-scan ──────────────────────────────────────────────────────────
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
 
-  artifacts:
-    paths:
-      - dist/
-      - build/
-    expire_in: 1 day
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# ── Stage: image-push ──────────────────────────────────────────────────────────
+# image:push:
+#   extends: [.image_push, .rules]
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
+# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
+# deploy-prod-dc/dr: manual — Bank Only
