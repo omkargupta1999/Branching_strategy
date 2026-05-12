@@ -1,665 +1,143 @@
-.gitlab-ci.yml -----------
-
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test07052026
-    file: 'templates/cd/deploy.single.yml'
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test07052026
-    file: 'templates/cd/deployment-repo-gitlab-ci.yml'
+Getting below error in build stages .....sharing the build configuration/...
 
 
-deploy.drill.yml ========================
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:5e8034c6d83dca601af89db88e20ecee9f5ffa5242e1dfd0ee7d63cf628dd40f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82@sha256:5320b779c2daad97f8edbbdf86aa67813309cd00502766344f7dec6f0fcde9fc ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-1992-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:12
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out 4d5e5a04 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:03
+Using docker image sha256:5e8034c6d83dca601af89db88e20ecee9f5ffa5242e1dfd0ee7d63cf628dd40f for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82@sha256:5320b779c2daad97f8edbbdf86aa67813309cd00502766344f7dec6f0fcde9fc ...
+$ php --version
+PHP 8.2.28 (cli) (built: Mar 11 2025 17:58:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.28, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.28, Copyright (c), by Zend Technologies
+$ echo "Downloading Composer from JFrog..." # collapsed multi-line command
+Downloading Composer from JFrog...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    74  100    74    0     0     41      0  0:00:01  0:00:01 --:--:--    41
+Checking composer file...
+-rw-r--r-- 1 default root 74 May 12 10:53 composer.phar
+File size: 74
+ERROR: Invalid composer.phar (wrong path or access issue)
+Content:
+{
+  "errors" : [ {
+    "status" : 404,
+    "message" : "Not Found"
+  } ]
+}
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
-# templates/cd/deploy.drill.yml
-# DC/DR Drill orchestrator — switchover and switchback
-#
-# Included by deployment repo .gitlab-ci.yml when DRILL_TIER variable is set.
-# Owns all stages, variables, and includes. Deployment repo defines nothing.
-#
-# ── How to trigger ────────────────────────────────────────────────────────────
-# GitLab → deployment repo → CI/CD → Pipelines → Run pipeline
-#   Branch:   main
-#   Variable: DRILL_TIER = prod | preprod | nonprod
-#
-# ── Stages ────────────────────────────────────────────────────────────────────
-# Stage order matches operational drill sequence:
-#   Step 1: Maintenance_Page          — enable maintenance before scaling
-#   Step 2: DC_Application_Services   — scale DC (down for switchover, up for switchback)
-#   Step 3: DR_Application_Services   — scale DR (up for switchover, down for switchback)
-#   Step 4: MirrorMaker2              — toggle Kafka replication direction
-#
-# DC and DR are separate stages so operator confirms DC is done before touching DR.
-#
-# ── Tier → environments ───────────────────────────────────────────────────────
-#   DRILL_TIER=prod:
-#     Maintenance_Page:        prod-dc + prod-dr
-#     DC_Application_Services: prod-dc
-#     DR_Application_Services: prod-dr
-#     MirrorMaker2:            prod-dc + prod-dr
-#
-#   DRILL_TIER=preprod:
-#     Maintenance_Page:        pre-prod-dc + pre-prod
-#     DC_Application_Services: pre-prod-dc
-#     DR_Application_Services: pre-prod
-#     MirrorMaker2:            pre-prod-dc + pre-prod
-#
-#   DRILL_TIER=nonprod:
-#     DC_Application_Services: dev (scale test only — no maintenance, no MM2)
-#
-# ── Audit trail ───────────────────────────────────────────────────────────────
-#   GitLab pipeline: who triggered, when, DRILL_TIER value
-#   Git commits: drill(prod-dc): replicas=0 autoscaling=false [ci skip]
 
-stages:
-  - Maintenance_Page
-  - DC_Application_Services
-  - DR_Application_Services
-  - MirrorMaker2
 
-variables:
-  GIT_STRATEGY:        none
-  DEPLOYMENT_BRANCH:   "main"
-  DEPLOYMENT_REPO_URL: "https://gitlab-ci-token:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
-  MAINTENANCE_CHART:   "epay_maintenance_fe"
+-==========================
 
-  # All application service charts — updated during scale operations
-  ALL_CHARTS: >-
-    epay_admin_service,epay_key_managment,epay_merchant_fe,
-    epay_merchant_service,epay_merchant_simulator,epay_notification_service,
-    epay_operations_service,epay_order_hash,epay_payment_service,
-    epay_refund_service,epay_reports_service,epay_transaction_fe,
-    epay_transaction_service,java-utility-api-simulator
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526
 
-include:
-  - local: 'ops/drill/drill.maintenance.yml'
-  - local: 'ops/drill/drill.scale.yml'
-  - local: 'ops/drill/drill.mirrormaker2.yml'
-  
-  
-==============drill.maintenance.yml  =====================
-
-# ops/drill/drill.maintenance.yml
-# Maintenance page ON/OFF — GitOps approach
-# Clones deployment repo → updates epay_maintenance_fe/values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# What it changes:
-#   replicaCount:       1 (ON) or 0 (OFF)
-#   maintenance.enabled: true (ON) or false (OFF)
-#
-# ENV_LIST drives which environments are updated:
-#   prod:    prod-dc prod-dr
-#   preprod: pre-prod-dc pre-prod
-#   nonprod: dev (no maintenance page in nonprod — jobs skipped)
-
-.drill_git_setup:
-  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
   tags:
     - common_runner
+
+  variables:
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .composer-cache/
+
   before_script:
-    - git config --global http.sslVerify false
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+    - php --version
 
-# ── Shared script — reused by all maintenance jobs via YAML anchor ────────────
-.maintenance_script: &maintenance_script
-  - |
-    set -eo pipefail
+    # ── Download Composer from Artifactory ─────────────────────────
+    - |
+      echo "Downloading Composer from JFrog..."
 
-    git clone "$DEPLOYMENT_REPO_URL" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
+      curl -k -u "${JF_USER}:${JF_TOKEN}" \
+        "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-generic-local/tools/composer/composer.phar" \
+        -o composer.phar
 
-    for TARGET_ENV in $ENV_LIST; do
-      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
-      echo "Processing: $FILE"
-      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
+      echo "Checking composer file..."
+      ls -lh composer.phar
 
-      sed -i -E \
-        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
-        "$FILE"
-      sed -i -E \
-        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
-         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
-        "$FILE"
+      SIZE=$(stat -c%s composer.phar)
+      echo "File size: $SIZE"
 
-      git add "$FILE"
-      git commit \
-        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
-        || echo "No changes for ${TARGET_ENV}"
-    done
-
-    for i in 1 2 3; do
-      git push origin "$DEPLOYMENT_BRANCH" && break
-      echo "Push failed — retrying ($i/3)"
-      sleep 2
-      git pull --rebase origin "$DEPLOYMENT_BRANCH"
-    done
-    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
-
-# ── Prod ──────────────────────────────────────────────────────────────────────
-Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-# ── Preprod ───────────────────────────────────────────────────────────────────
-PreProd_Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-PreProd_Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-# Nonprod: no maintenance page — stage intentionally empty for nonprod tier
-
-==========================drill.mirrormaker2.yml ====================================
-
-# ops/drill/drill.mirrormaker2.yml
-# Kafka MirrorMaker2 toggle — GitOps approach
-# Clones deployment repo → updates epay_common/values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# mirrorMaker2.enabled=true:  replication ACTIVE (source → destination)
-# mirrorMaker2.enabled=false: replication STOPPED
-#
-# Nonprod: no MirrorMaker2 — jobs not shown for nonprod tier
-
-# ── Shared script — awk for precise mirrorMaker2 block update ─────────────────
-.mirrormaker2_script: &mirrormaker2_script
-  - |
-    set -eo pipefail
-
-    git clone "$DEPLOYMENT_REPO_URL" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
-
-    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
-    echo "Processing: $VALUES_FILE"
-    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
-
-    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
-    awk -v val="$MIRRORMAKER2_ENABLED" '
-      BEGIN { in_mm2=0 }
-      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
-      in_mm2 && /^[[:space:]]*enabled:/ {
-        match($0, /^([[:space:]]*)/, arr)
-        print arr[1] "enabled: " val
-        next
-      }
-      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
-      { print }
-    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
-    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
-
-    if git diff --quiet "$VALUES_FILE"; then
-      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
-      exit 0
-    fi
-
-    git add "$VALUES_FILE"
-    git commit \
-      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
-
-    for i in 1 2 3; do
-      git push origin "$DEPLOYMENT_BRANCH" && break
-      echo "Push failed — retrying ($i/3)"
-      sleep 2
-      git pull --rebase origin "$DEPLOYMENT_BRANCH"
-    done
-    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
-
-# ── Prod DC ───────────────────────────────────────────────────────────────────
-Prod_DC_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dc"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-Prod_DC_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dc"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-# ── Prod DR ───────────────────────────────────────────────────────────────────
-Prod_DR_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dr"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-Prod_DR_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dr"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-# ── Preprod DC ────────────────────────────────────────────────────────────────
-PreProd_DC_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod-dc"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-PreProd_DC_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod-dc"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-# ── Preprod DR ────────────────────────────────────────────────────────────────
-PreProd_DR_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-PreProd_DR_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-# Nonprod: no MirrorMaker2 — stage intentionally empty for nonprod tier
-
-
-========================================
-
-
-# ops/drill/drill.scale.yml
-# Scale ALL application services DOWN or UP — GitOps approach
-# Clones deployment repo → updates all service values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# What it changes per service:
-#   Scale Down: replicaCount=0, autoscaling.enabled=false
-#   Scale Up:   replicaCount=1, autoscaling.enabled=true
-#
-# Tiers:
-#   prod:    prod-dc / prod-dr
-#   preprod: pre-prod-dc / pre-prod
-#   nonprod: dev (scale test — no DC/DR concept)
-
-# ── Shared script — reused by all scale jobs via YAML anchor ──────────────────
-.scale_script: &scale_script
-  - |
-    set -eo pipefail
-
-    git clone "$DEPLOYMENT_REPO_URL" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
-
-    IFS=',' read -ra SERVICES <<< "$CHARTS"
-    CHANGED=false
-
-    for SERVICE in "${SERVICES[@]}"; do
-      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
-      echo "Processing: $FILE"
-      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
-
-      sed -i -E \
-        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
-        "$FILE"
-      sed -i -E \
-        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
-         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
-        "$FILE"
-
-      if ! git diff --quiet "$FILE"; then
-        git add "$FILE"
-        CHANGED=true
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: Invalid composer.phar (wrong path or access issue)"
+        echo "Content:"
+        cat composer.phar
+        exit 1
       fi
-    done
 
-    if [ "$CHANGED" = false ]; then
-      echo "No changes — already at target state"
-      exit 0
-    fi
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
 
-    git commit \
-      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+      composer --version
 
-    for i in 1 2 3; do
-      git push origin "$DEPLOYMENT_BRANCH" && break
-      echo "Push failed — retrying ($i/3)"
-      sleep 2
-      git pull --rebase origin "$DEPLOYMENT_BRANCH"
-    done
-    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+    # ── Configure Composer to use Artifactory ──────────────────────
+    - composer config --global repos.packagist composer https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+    - composer config --global http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
 
-# ── Prod DC ───────────────────────────────────────────────────────────────────
-Prod_DC_Scale_All_Down:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dc"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_script
+  script:
+    - |
+      set -eo pipefail
 
-Prod_DC_Scale_All_Up:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dc"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_script
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df -h || true
 
-# ── Prod DR ───────────────────────────────────────────────────────────────────
-Prod_DR_Scale_All_Down:
-  extends: .drill_git_setup
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dr"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_script
+      echo "===== INSTALLING DEPENDENCIES ====="
 
-Prod_DR_Scale_All_Up:
-  extends: .drill_git_setup
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dr"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_script
+      composer install \
+        --no-dev \
+        --optimize-autoloader \
+        --no-interaction \
+        --prefer-dist
 
-# ── Preprod DC ────────────────────────────────────────────────────────────────
-PreProd_DC_Scale_All_Down:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod-dc"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_script
+      if [ ! -d "vendor" ]; then
+        echo "ERROR: vendor folder not created"
+        exit 1
+      fi
 
-PreProd_DC_Scale_All_Up:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod-dc"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_script
+      echo "Vendor count: $(ls vendor | wc -l)"
+      echo "Build complete"
 
-# ── Preprod DR ────────────────────────────────────────────────────────────────
-PreProd_DR_Scale_All_Down:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_script
-
-PreProd_DR_Scale_All_Up:
-  extends: .drill_git_setup
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_script
-
-# ── Nonprod ───────────────────────────────────────────────────────────────────
-# No DC/DR concept in nonprod — single site scale test only
-NonProd_Scale_Down:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "dev"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "nonprod"'
-  script: *scale_script
-
-NonProd_Scale_Up:
-  extends: .drill_git_setup
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "dev"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-  rules:
-    - if: '$DRILL_TIER == "nonprod"'
-  script: *scale_script
-
-
-==============================================
-
-# DC/DR Drill — Runbook
-
-## Overview
-
-GitOps-based DC/DR switchover and switchback pipeline.
-All operations update the deployment repo via git push.
-ArgoCD detects the change and reconciles the cluster state.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `drill.maintenance.yml` | Enable/disable maintenance page (prod + preprod) |
-| `drill.scale.yml` | Scale all services DOWN or UP (prod + preprod + nonprod) |
-| `drill.mirrormaker2.yml` | Toggle Kafka MirrorMaker2 replication (prod + preprod) |
-| `templates/cd/deploy.drill.yml` | Orchestrator — included by deployment repo |
-
----
-
-## How to Run
-
-### GitLab UI
-
-```
-1. Go to: deployment repo → CI/CD → Pipelines → Run pipeline
-2. Branch: main
-3. Add variable:
-     Key:   DRILL_TIER
-     Value: prod   OR   preprod   OR   nonprod
-4. Click: Run pipeline
-5. All relevant manual jobs appear — click in sequence
-```
-
-### Switchover Sequence (DC → DR)
-
-```
-Stage 1 — maintenance:  Click Maintenance_ON
-                        (maintenance page appears on both DC + DR)
-
-Stage 2 — scale:        Click Prod_DC_Scale_All_Down  (scale DC to 0)
-                        Click Prod_DR_Scale_All_Up    (scale DR to 1)
-                        (traffic now served by DR)
-
-Stage 3 — mirrormaker2: Click Prod_DC_MirrorMaker2_Down  (stop DC replication)
-                        Click Prod_DR_MirrorMaker2_Up    (start DR replication)
-```
-
-### Switchback Sequence (DR → DC)
-
-```
-Stage 2 — scale:        Click Prod_DR_Scale_All_Down  (scale DR to 0)
-                        Click Prod_DC_Scale_All_Up    (scale DC to 1)
-
-Stage 3 — mirrormaker2: Click Prod_DR_MirrorMaker2_Down
-                        Click Prod_DC_MirrorMaker2_Up
-
-Stage 1 — maintenance:  Click Maintenance_OFF
-                        (maintenance page removed)
-```
-
----
-
-## Tier → Jobs Mapping
-
-| DRILL_TIER | Environments Updated | maintenance | scale | mirrormaker2 |
-|---|---|---|---|---|
-| `prod` | prod-dc + prod-dr | ✅ | ✅ | ✅ |
-| `preprod` | pre-prod-dc + pre-prod | ✅ | ✅ | ✅ |
-| `nonprod` | dev only | ❌ | ✅ | ❌ |
-
----
-
-## Variables Required (GitLab group CI/CD)
-
-| Variable | Value |
-|---|---|
-| `GIT_PAT` | GitLab deploy token with push access to deployment repo |
-| `DRILL_TIER` | Set at pipeline run time: prod / preprod / nonprod |
-
----
-
-## Audit Trail
-
-Every drill run produces:
-1. **GitLab pipeline record** — who triggered, when, which tier
-2. **Git commits in deployment repo** — `drill(prod-dc): replicas=0 [ci skip]`
-3. **ArgoCD sync history** — what changed in each cluster
-
-Satisfies PCI-DSS operational change audit requirements.
-
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 day
