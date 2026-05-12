@@ -1,3 +1,14 @@
+.gitlab-ci.yml -----------
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test07052026
+    file: 'templates/cd/deploy.single.yml'
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test07052026
+    file: 'templates/cd/deployment-repo-gitlab-ci.yml'
+
+
 deploy.drill.yml ========================
 
 # templates/cd/deploy.drill.yml
