@@ -1,134 +1,1704 @@
 Getting below error while triggering the pipeline ----------------
 
-This GitLab CI configuration is invalid: jobs:deploy-preprod-dc config contains unknown keys: manual_confirmation.
+
+Error:   This GitLab CI configuration is invalid: validate_service job: chosen stage validate does not exist; available stages are .pre, Maintenance_Page, DC_Application_Services, DR_Application_Services, MirrorMaker2, .post.
+
+
+Full Configuration : 
 
 
 
-
-# templates/ci/backend/nodejs.yml
-# CI orchestrator for Node.js microservices
-
-default:
+---
+".update_tag":
+  stage: publish
   tags:
-    - common_runner
-
-include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/nodejs.yml'
-  # - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/security/license/license.scan.yml'
-  # - local: 'ci/security/sbom/sbom.generate.yml'
-  - local: 'ci/image/image.build.yml'
-  # - local: 'ci/image/image.scan.trivy.yml'
-  # - local: 'ci/image/image.scan.xray.yml'
-  # - local: 'ci/image/image.sign.yml'
-  - local: 'ci/image/image.push.yml'
-  - local: 'ci/release/tag.yml'
-  # - local: 'ci/release/back-merge.yml'
-  - local: 'ci/deploy/trigger.cd.yml'
-  - local: 'ci/deploy/deploy.jobs.yml'
-
-stages:
-  - version
-  - build
-  - sast
-  - security
-  - image-build
-  - image-scan
-  - image-attest
-  - image-push
-  - release
-  - deploy
-
+  - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+  - "set -eo pipefail\necho \"========== DEBUG ==========\"\necho \"SERVICE_NAME=$SERVICE_NAME\"\necho
+    \"ENV=$ENV\"\necho \"VERSION=$VERSION\"\necho \"CHART_NAME=$CHART_NAME\"\necho
+    \"RELEASE_NAME=$RELEASE_NAME\"\necho \"===========================\"\n\nif [ -z
+    \"$SERVICE_NAME\" ] || \\\n   [ -z \"$ENV\" ] || \\\n   [ -z \"$VERSION\" ]; then\n
+    \ echo \"ERROR: Required variables missing\"\n  exit 1\nfi\n\n\nTAG=$VERSION\nSERVICE_PATH=\"${ENV}/charts/${SERVICE_NAME}\"\necho
+    \"Updating $SERVICE_PATH/values.yaml → image tag: $TAG\"\necho \"SERVICE_PATH=$SERVICE_PATH\"\nls
+    -ltrh $SERVICE_PATH\ngit fetch origin ##\ngit checkout $CI_COMMIT_BRANCH ##\n#
+    retry rebase\nfor i in 1 2 3; do\n  git pull --rebase origin $CI_COMMIT_BRANCH
+    && break \n  echo \"Rebase failed...retrying ($i)\"\n  sleep 2\n  if [ $i -eq
+    3 ]; then\n  echo \"Rebase failed after retries\"\n  exit 1\n  fi\ndone\n#git
+    fetch\n#git checkout $CI_COMMIT_BRANCH\nsed -i \"s/\\(tag:\\).*/\\1 \\\"${TAG}\\\"/\"
+    $SERVICE_PATH/values.yaml\ngit add $SERVICE_PATH/values.yaml\nif [[ $(git status
+    --porcelain) ]]; then\n  git commit -m \"chore: update image tag to $TAG [skip
+    ci]\"\n  for i in 1 2 3; do\n    git push origin $CI_COMMIT_BRANCH && break\n
+    \   echo \"Push failed...retrying ($i)\"\n    sleep 2\n    git pull --rebase origin
+    $CI_COMMIT_BRANCH\n    if [ $i -eq 3 ]; then\n      echo \"Push failed after retries\"\n
+    \     exit 1\n    fi\n  done\n  echo \"✅ values.yaml updated: $SERVICE_PATH →
+    $TAG\"\nelse\n  echo \"No changes — image tag already $TAG\"\nfi\ncat $SERVICE_PATH/values.yaml\n"
 variables:
-  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
-  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
-  GIT_STRATEGY: clone
-  RELEASE_NAME: ""
-  CHART_NAME:   ""
-  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+  SERVICES_CONFIG: |
+    - namespace: transaction
+      services:
+        - name: epay_transaction_service
+          release: txn
+          chart: epay_transaction_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_payment_service
+          release: payment
+          chart: epay_payment_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
 
-.rules:
+    - namespace: admin
+      services:
+        - name: epay_admin_service
+          release: admin
+          chart: epay_admin_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_admin_portal_service
+          release: admin-portal
+          chart: epay_admin_portal_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: kms
+      services:
+        - name: epay_key_managment
+          release: kms
+          chart: epay_key_managment
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: merchant
+      services:
+        - name: epay_merchant_service
+          release: merchant
+          chart: epay_merchant_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: rns
+      services:
+        - name: epay_refund_service
+          release: refund
+          chart: epay_refund_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_sftp_service
+          release: sftp
+          chart: epay_sftp_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_recon_settlement_service
+          release: rns
+          chart: epay_recon_settlement_service
+          health_check: /actuator/health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: frontend
+      services:
+        - name: epay_merchant_fe
+          release: merchantfe
+          chart: merchant-frontend
+          health_check: /health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+        - name: epay_transaction_fe
+          release: transactionfe
+          chart: transaction-frontend
+          health_check: /health
+          environments: [dev, sit, uat, int, perf, pre-prod, pre-prod-dc, prod-dr, prod-dc]
+
+    - namespace: utility
+      services:
+        - name: epay_java_utility
+          release: utility
+          chart: epay_java_utility
+          type: library
+          publish_target: itepaypg-sbiepay2-gradle-local
+          environments: []
+  DEV_CLUSTER: https://api.dev.sbiepay.sbi:6443
+  PREPROD_CLUSTER: https://api.preprod.epay.sbi:6443
+  PREPROD_DC_CLUSTER: https://api.dcpreprod.epay.sbi:6443
+  PROD_DR_CLUSTER: https://api.dr.prod.epay.sbi:6443
+  PROD_DC_CLUSTER: https://api.dc.prod.epay.sbi:6443
+  HELM_HISTORY_MAX: '10'
+  DEPLOYMENT_TIMEOUT: 15m
+  GIT_STRATEGY: none
+  GIT_DEPTH: 0
+  DEPLOYMENT_BRANCH: main
+  DEPLOYMENT_REPO_URL: https://gitlab-ci-token:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git
+  MAINTENANCE_CHART: epay_maintenance_fe
+  ALL_CHARTS: epay_admin_service,epay_key_managment,epay_merchant_fe, epay_merchant_service,epay_merchant_simulator,epay_notification_service,
+    epay_operations_service,epay_order_hash,epay_payment_service, epay_refund_service,epay_reports_service,epay_transaction_fe,
+    epay_transaction_service,java-utility-api-simulator
+stages:
+- ".pre"
+- Maintenance_Page
+- DC_Application_Services
+- DR_Application_Services
+- MirrorMaker2
+- ".post"
+".validate_inputs":
+  before_script:
+  - |
+    set -eo pipefail
+    if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+      echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+    fi
+    if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+      echo "ERROR: Invalid ENV '$ENV'"; exit 1
+    fi
+    echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+validate_service:
+  stage: validate
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - deploy_runner
+  script:
+  - "set -eo pipefail\necho \"$SERVICES_CONFIG\" > /tmp/services.yml\n\nif [ -z \"$SERVICE_NAME\"
+    ]; then\n  CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep
+    charts | head -1 || true)\n  \n  if [ -z \"$CHANGED_FILE\" ]; then\n    CHANGED_FILE=$(git
+    ls-files | grep charts | head -1 || true)\n  fi\n\n  if [ -z \"$CHANGED_FILE\"
+    ]; then\n    echo \"No chart changes found\"\n    exit 1\n  fi\n\n  ENV=$(echo
+    \"$CHANGED_FILE\" | cut -d'/' -f1)\n  SERVICE_NAME=$(echo \"$CHANGED_FILE\" |
+    cut -d'/' -f3)\n\n  echo \"Detected SERVICE_NAME=$SERVICE_NAME\"\n  echo \"Detected
+    ENV=$ENV\"\nfi\n\n# RELEASE_NAME extract from services.yaml\nRELEASE_NAME=$(awk
+    -v svc=\"$SERVICE_NAME\" '\n  $0 ~ \"name: \"svc {found=1}\n  found && /release:/
+    {print $2; exit}\n' /tmp/services.yml)\n\nRELEASE_NAME=${RELEASE_NAME:-$(echo
+    \"$SERVICE_NAME\" | tr '_' '-')}\n\nNAMESPACE=$(awk -v svc=\"$SERVICE_NAME\" '\n
+    \ /namespace:/ {ns=$3}\n  $0 ~ \"name: \"svc {print ns; exit}\n' /tmp/services.yml)\n\nNAMESPACE=\"${ENV}-${NAMESPACE}\"\n\necho
+    \"RAW NAMESPACE=$NAMESPACE\"\necho \"FINAL VALUES:\"\necho \"SERVICE_NAME=$SERVICE_NAME\"\necho
+    \"ENV=$ENV\"\necho \"RELEASE_NAME=$RELEASE_NAME\"\necho \"NAMESPACE=$NAMESPACE\"\n
+    \n[ -d \"${ENV}/charts/${SERVICE_NAME}\" ] || { echo \"Chart not found\"; exit
+    1; }\n\n# Helm validation\nhelm lint ${ENV}/charts/${SERVICE_NAME}/\n\nhelm template
+    ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \\\n  --set image.tag=${VERSION}
+    \\\n  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml\n\necho \"✅ Validation passed\"\n\n#
+    Export for next stages\necho \"SERVICE_NAME=$SERVICE_NAME\" >> build.env\necho
+    \"ENV=$ENV\" >> build.env\necho \"RELEASE_NAME=$RELEASE_NAME\" >> build.env\necho
+    \"NAMESPACE=$NAMESPACE\" >> build.env\n# - helm lint ${ENV}/charts/${SERVICE_NAME}/\n#
+    helm upgrade --install ${SERVICE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \\\n#   --dry-run=client
+    \\\n#   --set image.tag=${VERSION} \\\n#   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml\n#
+    - echo \"✅ Helm dry-run passed\"\n"
+  artifacts:
+    reports:
+      dotenv:
+      - build.env
+helm:deploy:
+  before_script:
+  - |
+    set -eo pipefail
+    if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+      echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+    fi
+    if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+      echo "ERROR: Invalid ENV '$ENV'"; exit 1
+    fi
+    echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+  stage: deploy
+  dependencies:
+  - validate_service
+  needs:
+  - job: validate_service
+    artifacts: true
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - deploy_runner
+  extends: ".validate_inputs"
+  script:
+  - "echo \"RELEASE_NAME=$RELEASE_NAME\"\necho \"SERVICE_NAME=$SERVICE_NAME\"\necho
+    \"ENV=$ENV\"\n\ncase \"$ENV\" in\n  dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;
+    \       TOKEN=$DEV_TOKEN ;;\n  pre-prod)              CLUSTER=$PREPROD_CLUSTER;
+    \   TOKEN=$PREPROD_TOKEN ;;\n  pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER;
+    TOKEN=$PREPRODDC_TOKEN ;;\n  prod-dr)               CLUSTER=$PROD_DR_CLUSTER;
+    \   TOKEN=$PRODDR_TOKEN ;;\n  prod-dc)               CLUSTER=$PROD_DC_CLUSTER;
+    \   TOKEN=$PRODDC_TOKEN ;;\nesac\noc login \"$CLUSTER\" --token=\"$TOKEN\" --insecure-skip-tls-verify\n#
+    helm upgrade --install ${SERVICE_NAME} \\\n#   ${ENV}/charts/${SERVICE_NAME}/
+    \\\n#   -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \\\n#   --set image.tag=${VERSION}
+    \\\n#   --history-max=${HELM_HISTORY_MAX} \\\n#   --timeout ${DEPLOYMENT_TIMEOUT}
+    \\\n#   --wait\n# helm upgrade --install ${RELEASE_NAME} \\\n#   ${ENV}/charts/${SERVICE_NAME}
+    \\\n#   -n ${ENV}-${SERVICE_NAME} \\               \n#   --create-namespace \\\n#
+    \  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \\\n#   --set image.tag=${VERSION}
+    \\\n#   --history-max=${HELM_HISTORY_MAX}\n#   --timeout ${DEPLOYMENT_TIMEOUT}\n#
+    \  --wait\nhelm upgrade --install ${RELEASE_NAME} \\\n  ${ENV}/charts/${SERVICE_NAME}
+    \\\n  -n ${NAMESPACE} \\\n  --create-namespace \\\n  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+    \\\n  --set image.tag=${VERSION} \\\n  --history-max=${HELM_HISTORY_MAX}\necho
+    \"✅ Deployed $SERVICE_NAME:$VERSION to $ENV\"\n"
+".drill_git_setup":
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+".maintenance_script":
+- |
+  set -eo pipefail
+
+  git clone "$DEPLOYMENT_REPO_URL" deployment
+  cd deployment
+  git checkout "$DEPLOYMENT_BRANCH"
+
+  for TARGET_ENV in $ENV_LIST; do
+    FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+    echo "Processing: $FILE"
+    [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
+
+    sed -i -E \
+      "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+      "$FILE"
+    sed -i -E \
+      "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+       s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+      "$FILE"
+
+    git add "$FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
+      || echo "No changes for ${TARGET_ENV}"
+  done
+
+  for i in 1 2 3; do
+    git push origin "$DEPLOYMENT_BRANCH" && break
+    echo "Push failed — retrying ($i/3)"
+    sleep 2
+    git pull --rebase origin "$DEPLOYMENT_BRANCH"
+  done
+  echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+Maintenance_ON:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    ENV_LIST: prod-dc prod-dr
+    REPLICA_COUNT: '1'
+    MAINTENANCE_ENABLED: 'true'
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
 
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
 
-# ── Stage: sast ────────────────────────────────────────────────────────────────
-# sast:gitlab:
-#   extends: [.sast, .rules]
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
 
-sast:fortify:
-  extends: [.sast_fortify, .rules]
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
 
-# ── Stage: security ────────────────────────────────────────────────────────────
-# sca:xray:
-#   extends: [.sca, .rules]
+      git add "$FILE"
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
+        || echo "No changes for ${TARGET_ENV}"
+    done
 
-# secret_detection:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    # - when: never
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+Maintenance_OFF:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    ENV_LIST: prod-dc prod-dr
+    REPLICA_COUNT: '0'
+    MAINTENANCE_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
 
-# license_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
 
-# dependency_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
 
-# ── Stage: image-build ─────────────────────────────────────────────────────────
-image:build:
-  extends: [.image_build, .rules]
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
 
+      git add "$FILE"
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
+        || echo "No changes for ${TARGET_ENV}"
+    done
 
-# ── Stage: image-deploy ─────────────────────────────────────────────────────────
-.deploy:
-  # extends: [.trigger_cd, .rules]
-  extends: .trigger_cd
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+PreProd_Maintenance_ON:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    ENV_LIST: pre-prod-dc pre-prod
+    REPLICA_COUNT: '1'
+    MAINTENANCE_ENABLED: 'true'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
 
-# ── Stage: image-scan ──────────────────────────────────────────────────────────
-# container_scanning:
-#   stage: image-scan
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
 
-# image:scan:xray:
-#   extends: [.image_scan_xray, .rules]
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
 
-# ── Stage: image-attest ────────────────────────────────────────────────────────
-# image:sign:
-#   extends: [.image_sign, .rules]
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
 
-# ── Stage: image-push ──────────────────────────────────────────────────────────
-# image:push:
-#   extends: [.image_push, .rules]
+      git add "$FILE"
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
+        || echo "No changes for ${TARGET_ENV}"
+    done
 
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+PreProd_Maintenance_OFF:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    ENV_LIST: pre-prod-dc pre-prod
+    REPLICA_COUNT: '0'
+    MAINTENANCE_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
 
-# ── Stage: deploy ─────────────────────────────────────────────────────────────
-# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
-# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
-# deploy-prod-dc/dr: manual — Bank Only
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
+
+      git add "$FILE"
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
+        || echo "No changes for ${TARGET_ENV}"
+    done
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+".scale_script":
+- |
+  set -eo pipefail
+
+  git clone "$DEPLOYMENT_REPO_URL" deployment
+  cd deployment
+  git checkout "$DEPLOYMENT_BRANCH"
+
+  IFS=',' read -ra SERVICES <<< "$CHARTS"
+  CHANGED=false
+
+  for SERVICE in "${SERVICES[@]}"; do
+    FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+    echo "Processing: $FILE"
+    [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+    sed -i -E \
+      "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+      "$FILE"
+    sed -i -E \
+      "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+       s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+      "$FILE"
+
+    if ! git diff --quiet "$FILE"; then
+      git add "$FILE"
+      CHANGED=true
+    fi
+  done
+
+  if [ "$CHANGED" = false ]; then
+    echo "No changes — already at target state"
+    exit 0
+  fi
+
+  git commit \
+    -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+  for i in 1 2 3; do
+    git push origin "$DEPLOYMENT_BRANCH" && break
+    echo "Push failed — retrying ($i/3)"
+    sleep 2
+    git pull --rebase origin "$DEPLOYMENT_BRANCH"
+  done
+  echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+Prod_DC_Scale_All_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dc
+    REPLICA_COUNT: '0'
+    AUTOSCALING_ENABLED: 'false'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+Prod_DC_Scale_All_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dc
+    REPLICA_COUNT: '1'
+    AUTOSCALING_ENABLED: 'true'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+Prod_DR_Scale_All_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dr
+    REPLICA_COUNT: '0'
+    AUTOSCALING_ENABLED: 'false'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+Prod_DR_Scale_All_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dr
+    REPLICA_COUNT: '1'
+    AUTOSCALING_ENABLED: 'true'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+PreProd_DC_Scale_All_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod-dc
+    REPLICA_COUNT: '0'
+    AUTOSCALING_ENABLED: 'false'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+PreProd_DC_Scale_All_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod-dc
+    REPLICA_COUNT: '1'
+    AUTOSCALING_ENABLED: 'true'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+PreProd_DR_Scale_All_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod
+    REPLICA_COUNT: '0'
+    AUTOSCALING_ENABLED: 'false'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+PreProd_DR_Scale_All_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod
+    REPLICA_COUNT: '1'
+    AUTOSCALING_ENABLED: 'true'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+NonProd_Scale_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: dev
+    REPLICA_COUNT: '0'
+    AUTOSCALING_ENABLED: 'false'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "nonprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+NonProd_Scale_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: dev
+    REPLICA_COUNT: '1'
+    AUTOSCALING_ENABLED: 'true'
+    CHARTS: "$ALL_CHARTS"
+  rules:
+  - if: $DRILL_TIER == "nonprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = false ]; then
+      echo "No changes — already at target state"
+      exit 0
+    fi
+
+    git commit \
+      -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Scaled ${TARGET_ENV}: replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+".mirrormaker2_script":
+- |
+  set -eo pipefail
+
+  git clone "$DEPLOYMENT_REPO_URL" deployment
+  cd deployment
+  git checkout "$DEPLOYMENT_BRANCH"
+
+  VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+  echo "Processing: $VALUES_FILE"
+  [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+  # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+  awk -v val="$MIRRORMAKER2_ENABLED" '
+    BEGIN { in_mm2=0 }
+    /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+    in_mm2 && /^[[:space:]]*enabled:/ {
+      match($0, /^([[:space:]]*)/, arr)
+      print arr[1] "enabled: " val
+      next
+    }
+    in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+    { print }
+  ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+  mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+  if git diff --quiet "$VALUES_FILE"; then
+    echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+    exit 0
+  fi
+
+  git add "$VALUES_FILE"
+  git commit \
+    -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+  for i in 1 2 3; do
+    git push origin "$DEPLOYMENT_BRANCH" && break
+    echo "Push failed — retrying ($i/3)"
+    sleep 2
+    git pull --rebase origin "$DEPLOYMENT_BRANCH"
+  done
+  echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+Prod_DC_MirrorMaker2_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dc
+    MIRRORMAKER2_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+Prod_DC_MirrorMaker2_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dc
+    MIRRORMAKER2_ENABLED: 'true'
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+Prod_DR_MirrorMaker2_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dr
+    MIRRORMAKER2_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+Prod_DR_MirrorMaker2_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: prod-dr
+    MIRRORMAKER2_ENABLED: 'true'
+  rules:
+  - if: $DRILL_TIER == "prod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+PreProd_DC_MirrorMaker2_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod-dc
+    MIRRORMAKER2_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+PreProd_DC_MirrorMaker2_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod-dc
+    MIRRORMAKER2_ENABLED: 'true'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+PreProd_DR_MirrorMaker2_Down:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod
+    MIRRORMAKER2_ENABLED: 'false'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+PreProd_DR_MirrorMaker2_Up:
+  image: registry.dev.sbiepay.sbi:8443/itepaypg-sbiepay2-docker-local/custom-ci/epay-ci-base:1.0.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.epay.sbi/epay/devops/deployment.git"
+  extends: ".drill_git_setup"
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+    TARGET_ENV: pre-prod
+    MIRRORMAKER2_ENABLED: 'true'
+  rules:
+  - if: $DRILL_TIER == "preprod"
+  script:
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED} [ci skip]"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+
