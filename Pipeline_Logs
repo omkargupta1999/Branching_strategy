@@ -1,31 +1,13 @@
-Checking out fd5586e4 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Downloading artifacts
-00:01
-Downloading artifacts for build (241276)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=241276 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:05
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-05-12T13:36:06Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-13:36:10 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-13:36:10 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=fd5586e4
-No build output found
-Uploading artifacts for failed job
-00:03
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=241280 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+FROM registry.dev.sbiepay.sbi:8443/ubi9/python-311:11-1757059399
+WORKDIR /app
+COPY . /app
+COPY requirements.txt ./
+COPY package-registry/epay_python_sdk-0.1.0.tar.gz ./
+RUN pip3 install --no-cache-dir -r requirements.txt \
+
+
+    && pip3 install --no-cache-dir ./epay_python_sdk-0.1.0.tar.gz
+
+ENV PYTHONPATH=/app
+EXPOSE 8080
+CMD ["python3", "app.py"]
