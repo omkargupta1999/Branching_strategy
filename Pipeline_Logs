@@ -82,6 +82,31 @@ Getting below error building Nodejs build stage in our pipeline shariung build c
       - build/
     expire_in: 1 day
 
+-------------------package.json ------------------------
+
+
+{
+  "name": "merchantsimulatornodejs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build": "esbuild index.js --bundle --platform=node --outfile=dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "epay_nodejs_sdk": "file:package-registry/epay_nodejs_sdk-1.0.0.tgz",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  }
+}
+
+
 ------------------------------------- Pipeline Output ....................
 
 Running with gitlab-runner 17.9.2 (14c5775c)
