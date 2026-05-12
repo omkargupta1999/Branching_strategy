@@ -133,3 +133,61 @@
     paths:
       - dist/
     expire_in: 1 day
+
+
+
+
+
+
+Getting below error ............while running above buil stage 
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1993-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:05
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out 571da821 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+$ python3 --version
+Python 3.9.25
+$ pip3 --version
+pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
+$ echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──" # collapsed multi-line command
+── Extracting CA chain from artifactory.jfrog.sbi:443 ──
+── Certs extracted into jfrog-ca-chain.crt ──
+subject=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
+issuer=O=SBI, C=IN, CN=SBI-RCA
+subject=O=SBI, C=IN, CN=SBI-RCA
+issuer=O=SBI, C=IN, CN=SBI-RCA
+$ cat /etc/pki/tls/certs/ca-bundle.crt "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \ > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+cat: ' ': No such file or directory
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
