@@ -1,83 +1,62 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-1955-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:06
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/frontends/epay_merchant_simulator/.git/
-Created fresh repository.
-Checking out 34ee2b9e as detached HEAD (ref is release/1.0.3)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for epay_merchant_simulator-npm-release-1-0-3-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-01:39
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-$ npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
-$ npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
-$ npm config set cafile "$ARTIFACTORY_CERT"
-$ npm config set strict-ssl false
-$ set -eo pipefail # collapsed multi-line command
-npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
-npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
-added 694 packages in 27s
-99 packages are looking for funding
-  run `npm fund` for details
-> epayment-final@0.0.0 build
-> node src/scripts/generateConfig.js blank && tsc -b && vite build
-✔ Blank runtime-config.json generated for final build
-vite v5.4.21 building for production...
-transforming...
-warn - The `darkMode` option in your Tailwind CSS configuration is set to `false`, which now behaves the same as `media`.
-warn - Change `darkMode` to `media` or remove it entirely.
-warn - https://tailwindcss.com/docs/upgrade-guide#remove-dark-mode-configuration
-/demo/assets/background.png referenced in /demo/assets/background.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
-/demo/assets/egrass_background.png referenced in /demo/assets/egrass_background.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
-✓ 113 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                   0.81 kB │ gzip:   0.47 kB
-dist/assets/index-CaIvQwO1.css   40.31 kB │ gzip:   7.55 kB
-dist/assets/index-DlYnq1jk.js   390.68 kB │ gzip: 124.37 kB
-✓ built in 16.66s
-dist/ contents: 7 files
-tar: ./dist.tar: file is the archive; not dumped
-6f8f7fd178aab9c10e49b7845bcebed1aebc7b02e044ecc6f2133bc4fae5f94d  dist.tar
-✅ Build complete
-Saving cache for successful job
-00:34
-Creating cache epay_merchant_simulator-npm-release-1-0-3-non_protected...
-.npm/: found 3061 matching artifact files and directories 
-WARNING: .angular/cache/: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/frontends/epay_merchant_simulator) 
-No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
-Created cache
-Uploading artifacts for successful job
-00:04
-Uploading artifacts...
-dist/dist.tar: found 1 matching artifact files and directories 
-dist/checksums.txt: found 1 matching artifact files and directories 
-Uploading artifacts as "archive" to coordinator... 201 Created  id=239216 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-Job succeeded
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/reactjs_npm:20241113
+  tags:
+    - common_runner
+  variables:
+    npm_config_cache:          "${CI_PROJECT_DIR}/.npm"
+    NG_PERSISTENT_BUILD_CACHE: "1"
+    LEGACY_PEER_DEPS:          "true"
+    # Angular CLI incremental build cache — Vite/React projects: ignored
+    # Override LEGACY_PEER_DEPS: "false" in orchestrator if not needed
+  cache:
+    key: "${CI_PROJECT_NAME}-npm-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .npm/
+      # - .angular/cache/   # Uncomment for Angular projects only
+  before_script:
+    # ── Configure npm to use JFrog virtual repository ──────────────────────
+    - npm config set registry https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
+    - npm config set //artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/:_authToken "${JF_TOKEN}"
+    - npm config set cafile "$ARTIFACTORY_CERT"
+    - npm config set strict-ssl false
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Install dependencies ──────────────────────────────────────────────
+      npm ci --prefer-offline --no-audit --legacy-peer-deps
+
+      # ── Build ─────────────────────────────────────────────────────────────
+      # Angular: env config via angular.json fileReplacements
+      # Vite:    env config via vite.config.js mode
+      npm run build
+
+      # ── Normalize output (handles Next.js out/ AND Vite/React/Angular dist/) ──
+      if [ -d "out" ]; then
+        echo "Next.js detected — copying out/ to dist/"
+        rm -rf dist && mkdir -p dist
+        cp -r out/* dist/
+      elif [ ! -d "dist" ]; then
+        echo "❌ ERROR: No dist/ or out/ found after build"
+        echo "   Check outputPath in angular.json or build.outDir in vite.config.js"
+        exit 1
+      fi
+
+      echo "dist/ contents: $(ls dist/ | wc -l) files"
+
+      # ── Package dist as TAR for image-build stage ─────────────────────────
+      cd dist
+      tar --exclude=./dist.tar -cf dist.tar .
+      echo "TAR size: $(du -sh dist.tar | cut -f1)"
+
+      # ── Checksum for integrity verification ───────────────────────────────
+      sha256sum dist.tar > checksums.txt
+      cat checksums.txt
+      echo "✅ Build complete"
+
+  artifacts:
+    paths:
+      - dist/dist.tar
+      - dist/checksums.txt
+    expire_in: 1 day
