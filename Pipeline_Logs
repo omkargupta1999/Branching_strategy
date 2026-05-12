@@ -1,107 +1,38 @@
-# ci/build/python.yml
-
-.build:
-  stage: build
-
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
-
-  tags:
-    - common_runner
-
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
-      - script_failure
-
-  variables:
-    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-    JFROG_HOST: "artifactory.jfrog.sbi"
-    JFROG_PORT: "443"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .pip-cache/
-
-  before_script:
-    # ─────────────────────────────────────────────
-    # Python Info
-    # ─────────────────────────────────────────────
-    - python3 --version
-    - pip3 --version
-
-    # ─────────────────────────────────────────────
-    # Extract JFrog CA Chain
-    # ─────────────────────────────────────────────
-    - |
-      set -eo pipefail
-
-      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
-
-      openssl s_client \
-        -connect "${JFROG_HOST}:${JFROG_PORT}" \
-        -showcerts \
-        </dev/null 2>/dev/null \
-      | awk '
-          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-          capture && count > 1          { print }
-          /-----END CERTIFICATE-----/   { capture=0 }
-        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
-
-      echo "── Extracted certificates ──"
-
-      openssl crl2pkcs7 \
-        -nocrl \
-        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-      | openssl pkcs7 -print_certs -noout || true
-
-    # ─────────────────────────────────────────────
-    # Merge CA Bundles
-    # ─────────────────────────────────────────────
-    - |
-      cat /etc/pki/tls/certs/ca-bundle.crt \
-        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    # ─────────────────────────────────────────────
-    # Configure pip SSL
-    # ─────────────────────────────────────────────
-    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    # ─────────────────────────────────────────────
-    # Configure JFrog Python Registry
-    # ─────────────────────────────────────────────
-    - |
-      pip3 config set global.index-url \
-      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-
-    - pip3 config set global.timeout 120
-    - pip3 config set global.disable-pip-version-check true
-
-  script:
-    - |
-      set -eo pipefail
-
-      echo "Installing Python dependencies..."
-
-      pip3 install --upgrade pip setuptools wheel
-
-      pip3 install -r requirements.txt
-
-      echo "Installed packages:"
-      pip3 list
-
-      echo "Application structure:"
-      ls -ltrh
-
-      echo "✅ Python application build completed successfully"
-
-  artifacts:
-    paths:
-      - app.py
-      - requirements.txt
-      - package-registry/
-
-    expire_in: 1 day
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1993-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:06
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out fbb2ace4 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Downloading artifacts
+00:01
+Downloading artifacts for build (241208)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=241208 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:07
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+$ update-ca-trust extract
+$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+Login Succeeded!
+$ jf config add \ # collapsed multi-line command
+13:14:50 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+$ jf config use "$JF_SERVER_ID"
+13:14:51 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+$ echo "VERSION=$VERSION" # collapsed multi-line command
+VERSION=fbb2ace4
+No build output found
+Uploading artifacts for failed job
+00:00
+Uploading artifacts...
+WARNING: image.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
