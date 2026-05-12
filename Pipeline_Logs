@@ -1,13 +1,90 @@
-FROM registry.dev.sbiepay.sbi:8443/ubi9/python-311:11-1757059399
-WORKDIR /app
-COPY . /app
-COPY requirements.txt ./
-COPY package-registry/epay_python_sdk-0.1.0.tar.gz ./
-RUN pip3 install --no-cache-dir -r requirements.txt \
+# ci/image/image.build.yml  |  Stage: image-build
+# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
+# Image pushed in image.push.yml after image-scan and image-attest stages complete.
 
+variables:
+  JF_SERVER_ID: "epay-server"
 
-    && pip3 install --no-cache-dir ./epay_python_sdk-0.1.0.tar.gz
+.image_podman_setup: &image_podman_setup
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN" ##Added
+  # - jf config add
+  #     --url="$JF_URL"
+  #     --xray-url="$JF_XRAY_URL"
+  #     --user="$JF_USER"
+  #     --access-token="$JF_TOKEN"
+  #     --interactive=false "$JF_SERVER_ID"
+  - |
+    jf config add \
+      --url="$JF_URL" \
+      --xray-url="$JF_XRAY_URL" \
+      --user="$JF_USER" \
+      --access-token="$JF_TOKEN" \
+      --interactive=false "$JF_SERVER_ID"     
+  - jf config use "$JF_SERVER_ID"
 
-ENV PYTHONPATH=/app
-EXPOSE 8080
-CMD ["python3", "app.py"]
+.image_base:
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+    - common_runner
+  before_script: *image_podman_setup
+
+.image_build:
+  extends: .image_base
+  stage: image-build
+  allow_failure: false
+  script:
+    # - echo "Building image locally: $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+    # - podman build
+    #     -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION
+    #     -f Dockerfile
+    #     --tls-verify=false
+    #added fronted build steps
+    - |
+      echo "VERSION=$VERSION"
+
+      # CHANGE: support both backend + frontend
+      if [ -d "build/libs" ]; then
+        echo "Backend build detected"
+        ls -l build/libs
+      elif [ -d "dist" ]; then
+        echo "Frontend build detected"
+        ls -l dist
+      else
+        echo "No build output found"
+        exit 1
+      fi
+
+      TAG="$VERSION"
+      echo "Generated Tag.. ${TAG}"
+      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+      echo "Image: $COMPUTED_IMAGE_TAG"
+      echo "TAG=${TAG}" >> image.env
+      echo "VERSION=$VERSION" >> image.env
+      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+      echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+
+      podman build \
+        -t "$COMPUTED_IMAGE_TAG" \
+        -f Dockerfile \
+        --build-arg ENV=$ENV \
+        --build-arg VERSION=$TAG \
+        --tls-verify=false
+      TAR_NAME="$CI_PROJECT_NAME.tar"
+      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+      echo "Image built and saved to $TAR_NAME"
+      echo "TAR_NAME=$TAR_NAME" >> image.env
+    # - echo "IMAGE_FULL=$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" >> image.env
+    # - echo "✅ Build complete — NOT pushed yet. Awaiting scan + sign."
+  artifacts:
+    paths:
+      - "*.tar"
+    reports:
+      dotenv: image.env
+    expire_in: 1 day
+
+image:build:
+  extends: .image_build
