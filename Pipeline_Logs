@@ -1,68 +1,19 @@
-Now that stage has been succes now ....
-
-Now I am getting the issue in image:sign issue ..sharing the Pipeline Output ......
-
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:12
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Authenticating with credentials from $DOCKER_AUTH_CONFIG
-Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 ...
-Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-1993-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
-Created fresh repository.
-Checking out f2668811 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Downloading artifacts
-00:21
-Downloading artifacts for build (244826)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=244826 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for image:build (244830)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=244830 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:01
-Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
-$ IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" # collapsed multi-line command
-Signing: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/merchant_api_simulator_python:f2668811
-Error: unknown flag: --tls-verify
-error during command execution: unknown flag: --tls-verify
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-
-
-
-
-
-======================================= image.sign.yml
-
-
-
 # ci/image/image.sign.yml  |  Stage: image-attest
 # Cosign key-based image signing — fully on-prem, no internet required
 # Signs image DIGEST (not tag) — immutable signature
 # Runs AFTER image-scan passes, BEFORE image-push
+#
+# ── Cosign version ────────────────────────────────────────────────────────────
+# Image: rhtas/cosign-rhel9:1.3.4 (Red Hat Trusted Artifact Signer build)
+# RHTAS cosign does not support --tls-verify flag (upstream cosign flag)
+# TLS trust handled via system CA store — ARTIFACTORY_CERT injected before signing
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# COSIGN_KEY     — private key file variable for signing
+# COSIGN_PUB     — public key file variable for verification
+# JF_USER        — Artifactory username for registry auth
+# JF_TOKEN       — Artifactory API key for registry auth
+# ARTIFACTORY_CERT — SBI internal CA certificate file variable
 
 .image_sign:
   stage: image-attest
@@ -70,16 +21,42 @@ ERROR: Job failed: exit code 1
 
   tags:
     - common_runner
+
   script:
     - |
+      set -eo pipefail
+
+      # ── Inject SBI CA into system trust store ─────────────────────────────
+      # cosign uses system CA store for registry TLS — ARTIFACTORY_CERT must
+      # be trusted before sign/verify calls or registry connection will fail
+      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+      update-ca-trust extract
+      echo "── CA trust updated ──"
+
+      # ── Registry login for cosign ─────────────────────────────────────────
+      # cosign needs registry credentials to push signature to registry
+      echo "$JF_TOKEN" | cosign login "$CI_TEMPLATE_REGISTRY_HOST" \
+        --username "$JF_USER" \
+        --password-stdin
+
+      # ── Sign and verify ───────────────────────────────────────────────────
       IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
-      echo "Signing: $IMAGE_REF"
-      cosign sign --key "$COSIGN_KEY" --tls-verify=false "$IMAGE_REF"
-      cosign verify --key "$COSIGN_PUB" --tls-verify=false "$IMAGE_REF"
-      echo "✅ Image signed and verified"
+      echo "── Signing: $IMAGE_REF ──"
+
+      cosign sign \
+        --key "$COSIGN_KEY" \
+        --allow-insecure-registry \
+        --yes \
+        "$IMAGE_REF"
+
+      echo "── Verifying: $IMAGE_REF ──"
+
+      cosign verify \
+        --key "$COSIGN_PUB" \
+        --allow-insecure-registry \
+        "$IMAGE_REF"
+
+      echo "✅ Image signed and verified: $IMAGE_REF"
 
 image:sign:
   extends: .image_sign
-
-
-
