@@ -1,170 +1,61 @@
-## Option 2 — JFrog Generic Remote Repo for Composer
 
-### Step 1: Create a Generic Remote Repository in JFrog
+Search visible log output
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:10
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out ce8ac660 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:03
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ echo "Downloading Composer from JFrog (via remote proxy)..." # collapsed multi-line command
+Downloading Composer from JFrog (via remote proxy)...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0    80    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+curl: (22) The requested URL returned error: 401
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
 
-Ask your **JFrog Admin** to do the following:
++++++++++++++++++++++++++++++++++++++++++++ Tried to download
 
-**Artifactory UI → Repositories → Add Repositories → Remote Repository**
+[osuser@bastion ~]$ curl -k -u "v1021577:Kalyan2026$$"   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar"   -o /tmp/composer.phar
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    80  100    80    0     0    165      0 --:--:-- --:--:-- --:--:--   165
+[osuser@bastion ~]$
+[osuser@bastion ~]$ ls -lrth /tmp/composer.phar
+-rw-r----- 1 osuser osuser 80 May 13 12:23 /tmp/composer.phar
 
-| Field | Value |
-|---|---|
-| **Package Type** | Generic |
-| **Repository Key** | `devsecops-composer-remote` |
-| **URL** | `https://getcomposer.org` |
-| **Description** | Remote proxy for Composer binary |
-| **Bypass HEAD Requests** | ✅ Enable |
-| **Store Artifacts Locally** | ✅ Enable (caches after first download) |
-| **Block Mismatching MIME Types** | ❌ Disable |
-
----
-
-### Step 2: Add the Remote Repo to Your Virtual Repo
-
-**Artifactory UI → Repositories → `itepaypg-sbiepay2-php-virtual` → Edit**
-
-Under **Repositories** (included repos), add:
-```
-devsecops-composer-remote
-```
-
-So the final virtual repo includes:
-```
-devsecops-package-php-remote
-devsecops-php-remote
-devsecops-repo-php-remote
-devsecops-composer-remote        ← ADD THIS
-```
-
----
-
-### Step 3: Verify the Path Resolves
-
-Once done, test from any machine:
-
-```bash
-curl -k -u "JF_USER:JF_TOKEN" \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar" \
-  -o /tmp/composer.phar
-
-ls -lh /tmp/composer.phar   # Should be ~2.5MB+
-```
-
-> **Note the path:** Composer's download endpoint is `https://getcomposer.org/download/composer.phar` — so the artifact path through the remote proxy will be `/download/composer.phar`, **not** `/tools/composer/composer.phar`.
-
----
-
-### Updated `.gitlab-ci.yml` Build Configuration
-
-```yaml
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
-
-  tags:
-    - common_runner
-
-  variables:
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-    # Artifactory base URL for convenience
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .composer-cache/
-
-  before_script:
-    - php --version
-
-    # ── Download Composer via JFrog Generic Remote Proxy ───────────
-    - |
-      echo "Downloading Composer from JFrog (via remote proxy)..."
-
-      curl -k -f -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/download/composer.phar" \
-        -o composer.phar
-
-      echo "Checking composer.phar..."
-      ls -lh composer.phar
-
-      SIZE=$(stat -c%s composer.phar)
-      echo "File size: $SIZE"
-
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small — download likely failed"
-        echo "Response content:"
-        cat composer.phar
-        exit 1
-      fi
-
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-
-      echo "Composer version:"
-      composer --version
-
-    # ── Point Composer to Artifactory Packagist proxy ──────────────
-    - |
-      composer config --global \
-        repos.packagist composer \
-        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
-
-      composer config --global \
-        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
-
-  script:
-    - |
-      set -eo pipefail
-
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h || true
-
-      echo "===== INSTALLING DEPENDENCIES ====="
-
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist
-
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor folder not created"
-        exit 1
-      fi
-
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "Build complete"
-
-  artifacts:
-    paths:
-      - vendor/
-    expire_in: 1 day
-```
-
----
-
-### What Changed vs Your Original YAML
-
-| What | Old | New |
-|---|---|---|
-| Composer download path | `/tools/composer/composer.phar` ❌ (didn't exist) | `/download/composer.phar` ✅ (proxied from getcomposer.org) |
-| curl flag | no `-f` | added `-f` so curl fails on HTTP errors instead of saving error JSON |
-| URL variables | hardcoded inline | extracted to `variables` block for maintainability |
-| Everything else | unchanged | unchanged |
-
----
-
-### Summary of Actions Required
-
-```
-JFrog Admin:
-  1. Create Generic Remote Repo → devsecops-composer-remote → URL: https://getcomposer.org
-  2. Add devsecops-composer-remote to itepaypg-sbiepay2-php-virtual
-
-Your team:
-  3. Update .gitlab-ci.yml with the path change: /download/composer.phar
-  4. Run pipeline and verify
-```
