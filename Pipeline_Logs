@@ -1,16 +1,50 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
+Now that stage has been succes now ....
 
-WORKDIR /app
+Now I am getting the issue in image:sign issue ..sharing the Pipeline Output ......
 
-# Copy application source and pre-installed dependencies from CI build stage
-COPY . /app
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:12
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 ...
+Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1993-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out f2668811 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Downloading artifacts
+00:21
+Downloading artifacts for build (244826)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=244826 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for image:build (244830)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=244830 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
+$ IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" # collapsed multi-line command
+Signing: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/merchant_api_simulator_python:f2668811
+Error: unknown flag: --tls-verify
+error during command execution: unknown flag: --tls-verify
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
-ENV PYTHONPATH=/app/packages:/app
-
-EXPOSE 8080
-
-CMD ["python3", "app.py"]
 
 
 
@@ -18,131 +52,34 @@ CMD ["python3", "app.py"]
 
 
 
-# ci/build/python.yml  |  Stage: build
-# Python microservice build
-#
-# ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# Auth: JF_USER + JF_TOKEN embedded in index-url
-# SSL: SBI internal CA extracted from JFrog TLS handshake via openssl s_client.
-#      Full CA chain extracted — pip requires complete chain for SSL validation.
-#      Merged with system ca-bundle.crt → combined-ca-bundle.crt
-#
-# ── Installation strategy ─────────────────────────────────────────────────────
-# All dependencies installed in CI build stage into ./packages/ (pip --target).
-# Dockerfile requires NO pip install, NO JFrog credentials, NO CA cert handling.
-# packages/ passed as artifact → Dockerfile simply COPYs into image.
-# Mirrors PHP build pattern: composer install → vendor/ → artifact → COPY vendor/
-#
-# ── Artifacts passed to image-build stage ────────────────────────────────────
-# app.py             — application entrypoint
-# requirements.txt   — dependency manifest
-# package-registry/  — local SDK packages
-# packages/          — all pip dependencies pre-installed (replaces pip in Dockerfile)
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# .pip-cache/ CACHED — pip package tarballs (PIP_CACHE_DIR)
-#
-# ── GitLab CI Variables required ─────────────────────────────────────────────
-# JF_USER  — Artifactory username
-# JF_TOKEN — Artifactory API key
 
-.build:
-  stage: build
 
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+
+======================================= image.sign.yml
+
+
+
+# ci/image/image.sign.yml  |  Stage: image-attest
+# Cosign key-based image signing — fully on-prem, no internet required
+# Signs image DIGEST (not tag) — immutable signature
+# Runs AFTER image-scan passes, BEFORE image-push
+
+.image_sign:
+  stage: image-attest
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019
 
   tags:
     - common_runner
-
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
-      - script_failure
-
-  variables:
-    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-    JFROG_HOST: "artifactory.jfrog.sbi"
-    JFROG_PORT: "443"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .pip-cache/
-
-  before_script:
-    # ── Python info ───────────────────────────────────────────────────────────
-    - python3 --version
-    - pip3 --version
-
-    # ── Extract SBI CA chain from JFrog TLS handshake ─────────────────────────
-    - |
-      set -eo pipefail
-
-      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
-
-      openssl s_client \
-        -connect "${JFROG_HOST}:${JFROG_PORT}" \
-        -showcerts \
-        </dev/null 2>/dev/null \
-      | awk '
-          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-          capture && count > 1          { print }
-          /-----END CERTIFICATE-----/   { capture=0 }
-        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
-
-      cat /etc/pki/tls/certs/ca-bundle.crt \
-        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── CA bundle ready: $(wc -l < ${CI_PROJECT_DIR}/combined-ca-bundle.crt) lines ──"
-
-    # ── Configure pip SSL + JFrog registry ───────────────────────────────────
-    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    - |
-      pip3 config set global.index-url \
-        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-
-    - pip3 config set global.timeout 120
-    - pip3 config set global.disable-pip-version-check true
-
   script:
-    # ── Install all dependencies into ./packages/ ─────────────────────────────
-    # --target installs into a local directory instead of system site-packages.
-    # Dockerfile COPYs packages/ into image — no pip or JFrog needed at image build time.
     - |
-      set -eo pipefail
+      IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+      echo "Signing: $IMAGE_REF"
+      cosign sign --key "$COSIGN_KEY" --tls-verify=false "$IMAGE_REF"
+      cosign verify --key "$COSIGN_PUB" --tls-verify=false "$IMAGE_REF"
+      echo "✅ Image signed and verified"
 
-      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
+image:sign:
+  extends: .image_sign
 
-      pip3 install --upgrade pip setuptools wheel
 
-      pip3 install \
-        --no-cache-dir \
-        --target="${CI_PROJECT_DIR}/packages" \
-        -r requirements.txt
 
-      pip3 install \
-        --no-cache-dir \
-        --target="${CI_PROJECT_DIR}/packages" \
-        ./package-registry/epay_python_sdk-0.1.0.tar.gz
-
-      echo "===== INSTALLED PACKAGES ====="
-      pip3 list
-
-      echo "Package count: $(ls packages | wc -l)"
-      echo "===== BUILD COMPLETE ====="
-
-  artifacts:
-    paths:
-      - app.py
-      - requirements.txt
-      - package-registry/
-      - packages/                     # pre-installed deps — Dockerfile COPYs directly
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
