@@ -1,99 +1,49 @@
-# ci/build/python.yml  |  Stage: build
-# Python microservice build
-#
-# ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# Auth: JF_USER + JF_TOKEN embedded in index-url
-# SSL: SBI internal CA appended directly into pip's certifi trust store.
-#      certifi is pip's internal CA bundle — appending here is the most
-#      reliable method as it survives pip self-upgrade and scope changes.
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
-# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
-#
-# ── App repo requirements ─────────────────────────────────────────────────────
-# requirements.txt — runtime dependencies
-#
-# ── GitLab CI Variables required ─────────────────────────────────────────────
-# JF_USER          — Artifactory username
-# JF_TOKEN         — Artifactory API key
-# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
-
-.build:
-  stage: build
-
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
-
-  tags:
-    - common_runner
-
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
-      - script_failure
-
-  variables:
-    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-    JFROG_HOST: "artifactory.jfrog.sbi"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .pip-cache/
-
-  before_script:
-    # ── Python info ───────────────────────────────────────────────────────────
-    - python3 --version
-    - pip3 --version
-
-    # ── Inject SBI CA into pip's certifi trust store ──────────────────────────
-    # certifi is pip's internal CA bundle used for all SSL connections.
-    # Appending here persists across pip self-upgrade and all subsequent calls.
-    # This is more reliable than pip.conf global.cert which can be lost on
-    # pip self-upgrade or cross-shell-scope issues.
-    - |
-      set -eo pipefail
-
-      CERTIFI_PATH=$(python3 -c "import certifi; print(certifi.where())")
-      echo "── Appending SBI CA to certifi bundle: $CERTIFI_PATH ──"
-      cat "$ARTIFACTORY_CERT" >> "$CERTIFI_PATH"
-      echo "── certifi bundle updated: $(wc -l < $CERTIFI_PATH) lines ──"
-
-    # ── Configure JFrog Python registry ───────────────────────────────────────
-    - |
-      pip3 config set global.index-url \
-        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-
-      pip3 config set global.timeout 120
-      pip3 config set global.disable-pip-version-check true
-
-  script:
-    - |
-      set -eo pipefail
-
-      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
-
-      pip3 install --upgrade pip setuptools wheel
-
-      pip3 install -r requirements.txt
-
-      echo "===== INSTALLED PACKAGES ====="
-      pip3 list
-
-      echo "===== APPLICATION STRUCTURE ====="
-      ls -ltrh
-
-      echo "===== BUILD COMPLETE ====="
-
-  artifacts:
-    paths:
-      - app.py
-      - requirements.txt
-      - package-registry/
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9f107bbf795887c5a8870864c014e91ff832e0aa46d460121a8d74ec7d84727d for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1993-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out d09ffde0 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_python-pip-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Executing "step_script" stage of the job script
+00:03
+Using docker image sha256:9f107bbf795887c5a8870864c014e91ff832e0aa46d460121a8d74ec7d84727d for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39@sha256:983b9a94196c742b134eb567a68ffdd34de5952920c8811b42f5d34588881396 ...
+$ python3 --version
+Python 3.9.25
+$ pip3 --version
+pip 24.2 from /opt/app-root/lib64/python3.9/site-packages/pip (python 3.9)
+$ set -eo pipefail # collapsed multi-line command
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'certifi'
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
