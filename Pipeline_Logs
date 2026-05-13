@@ -1,106 +1,110 @@
-# ci/build/python.yml  |  Stage: build
-# Python microservice build
-#
-# ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# Auth: JF_USER + JF_TOKEN embedded in index-url
-# SSL: SBI internal CA appended into pip's certifi trust store.
-#      certifi installed first using --trusted-host to bypass SSL (bootstrap only).
-#      Once certifi is available, ARTIFACTORY_CERT is appended permanently.
-#      All subsequent pip calls use the updated certifi bundle automatically.
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
-# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
-#
-# ── App repo requirements ─────────────────────────────────────────────────────
-# requirements.txt — runtime dependencies
-#
-# ── GitLab CI Variables required ─────────────────────────────────────────────
-# JF_USER          — Artifactory username
-# JF_TOKEN         — Artifactory API key
-# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
+# .build:
+#   stage: build
 
-.build:
-  stage: build
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
 
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+#   tags:
+#     - common_runner
 
-  tags:
-    - common_runner
+#   retry:
+#     max: 2
+#     when:
+#       - runner_system_failure
+#       - stuck_or_timeout_failure
+#       - script_failure
 
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
-      - script_failure
+#   variables:
+#     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+#     JFROG_HOST: "artifactory.jfrog.sbi"
+#     JFROG_PORT: "443"
 
-  variables:
-    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-    JFROG_HOST: "artifactory.jfrog.sbi"
+#   cache:
+#     key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
+#     paths:
+#       - .pip-cache/
 
-  cache:
-    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .pip-cache/
+#   before_script:
+#     # ─────────────────────────────────────────────
+#     # Python Info
+#     # ─────────────────────────────────────────────
+#     - python3 --version
+#     - pip3 --version
 
-  before_script:
-    # ── Python info ───────────────────────────────────────────────────────────
-    - python3 --version
-    - pip3 --version
+#     # ─────────────────────────────────────────────
+#     # Extract JFrog CA Chain
+#     # ─────────────────────────────────────────────
+#     - |
+#       set -eo pipefail
 
-    # ── Bootstrap certifi and inject SBI CA ───────────────────────────────────
-    # Step 1: Install certifi using --trusted-host (SSL bootstrap — one time only)
-    # Step 2: Append ARTIFACTORY_CERT into certifi bundle permanently
-    # After this, ALL pip calls in this job trust the SBI CA automatically.
-    - |
-      set -eo pipefail
+#       echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
 
-      echo "── Installing certifi (bootstrap with trusted-host) ──"
-      pip3 install certifi \
-        --trusted-host "${JFROG_HOST}" \
-        --index-url "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple" \
-        --quiet
+#       openssl s_client \
+#         -connect "${JFROG_HOST}:${JFROG_PORT}" \
+#         -showcerts \
+#         </dev/null 2>/dev/null \
+#       | awk '
+#           /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
+#           capture && count > 1          { print }
+#           /-----END CERTIFICATE-----/   { capture=0 }
+#         ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
-      echo "── Appending SBI CA into certifi trust store ──"
-      CERTIFI_PATH=$(python3 -c "import certifi; print(certifi.where())")
-      echo "certifi bundle path: $CERTIFI_PATH"
-      cat "$ARTIFACTORY_CERT" >> "$CERTIFI_PATH"
-      echo "── certifi bundle updated: $(wc -l < $CERTIFI_PATH) lines ──"
+#       echo "── Extracted certificates ──"
 
-    # ── Configure JFrog Python registry ───────────────────────────────────────
-    - |
-      pip3 config set global.index-url \
-        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+#       openssl crl2pkcs7 \
+#         -nocrl \
+#         -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+#       | openssl pkcs7 -print_certs -noout || true
 
-      pip3 config set global.timeout 120
-      pip3 config set global.disable-pip-version-check true
+#     # ─────────────────────────────────────────────
+#     # Merge CA Bundles
+#     # ─────────────────────────────────────────────
+#     - |
+#       cat /etc/pki/tls/certs/ca-bundle.crt \
+#         "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+#         > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-  script:
-    - |
-      set -eo pipefail
+#     # ─────────────────────────────────────────────
+#     # Configure pip SSL
+#     # ─────────────────────────────────────────────
+#     - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
+#     # ─────────────────────────────────────────────
+#     # Configure JFrog Python Registry
+#     # ─────────────────────────────────────────────
+#     - |
+#       pip3 config set global.index-url \
+#       "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
-      pip3 install --upgrade pip setuptools wheel
+#     - pip3 config set global.timeout 120
+#     - pip3 config set global.disable-pip-version-check true
 
-      pip3 install -r requirements.txt
+#   script:
+#     - |
+#       set -eo pipefail
 
-      echo "===== INSTALLED PACKAGES ====="
-      pip3 list
+#       echo "Installing Python dependencies..."
 
-      echo "===== APPLICATION STRUCTURE ====="
-      ls -ltrh
+#       pip3 install --upgrade pip setuptools wheel
 
-      echo "===== BUILD COMPLETE ====="
+#       pip3 install -r requirements.txt
 
-  artifacts:
-    paths:
-      - app.py
-      - requirements.txt
-      - package-registry/
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
+#       echo "Installed packages:"
+#       pip3 list
+
+#       echo "Application structure:"
+#       ls -ltrh
+
+#       echo "✅ Python application build completed successfully"
+
+
+
+#   artifacts:
+#     paths:
+#       - app.py
+#       - requirements.txt
+#       - package-registry/
+#     reports:
+#       dotenv: build.env
+#     when: on_success
+
+#     expire_in: 1 day
