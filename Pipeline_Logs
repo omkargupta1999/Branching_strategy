@@ -1,293 +1,128 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
+# ci/build/python.yml  |  Stage: build
+# Python microservice build
+#
+# ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# Auth: JF_USER + JF_TOKEN embedded in index-url
+# SSL: SBI internal CA extracted from JFrog TLS handshake via openssl s_client.
+#      Full CA chain extracted — pip requires complete chain for SSL validation.
+#      Merged with system ca-bundle.crt → combined-ca-bundle.crt
+#
+# ── Installation strategy ─────────────────────────────────────────────────────
+# All dependencies installed in CI build stage into ./packages/ (pip --target).
+# Dockerfile requires NO pip install, NO JFrog credentials, NO CA cert handling.
+# packages/ passed as artifact → Dockerfile simply COPYs into image.
+# Mirrors PHP build pattern: composer install → vendor/ → artifact → COPY vendor/
+#
+# ── Artifacts passed to image-build stage ────────────────────────────────────
+# app.py             — application entrypoint
+# requirements.txt   — dependency manifest
+# package-registry/  — local SDK packages
+# packages/          — all pip dependencies pre-installed (replaces pip in Dockerfile)
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# .pip-cache/ CACHED — pip package tarballs (PIP_CACHE_DIR)
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# JF_USER  — Artifactory username
+# JF_TOKEN — Artifactory API key
 
-WORKDIR /app
+.build:
+  stage: build
 
-COPY . /app
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
 
-# Copy CA cert (passed from CI)
-COPY combined-ca-bundle.crt /etc/pki/tls/certs/ca-bundle.crt
-
-# Configure pip to use JFrog
-RUN pip3 config set global.cert /etc/pki/tls/certs/ca-bundle.crt
-
-RUN pip3 config set global.index-url \
-"https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-
-RUN pip3 config set global.timeout 120
-
-# Install dependencies
-RUN pip3 install --upgrade pip setuptools wheel && \
-    pip3 install --no-cache-dir -r requirements.txt && \
-    pip3 install --no-cache-dir ./package-registry/epay_python_sdk-0.1.0.tar.gz
-
-ENV PYTHONPATH=/app
-
-EXPOSE 8080
-
-CMD ["python3", "app.py"]
-
-
-
-
-
-
-
-
-
-
-
-
-getting below error now ::::::::::::
-
-unning with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1993-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
-Created fresh repository.
-Checking out 6dc2517d as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Downloading artifacts
-00:02
-Downloading artifacts for build (244685)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=244685 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-01:16
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-05-13T11:48:40Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-11:48:44 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-11:48:44 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=6dc2517d
-Python app detected
--rw-rw-rw- 1 root root 11078 May 13 11:47 app.py
-Generated Tag.. 6dc2517d
-Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/merchant_api_simulator_python:6dc2517d
-time="2026-05-13T11:48:44Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-STEP 1/11: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
-Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668...
-Getting image source signatures
-Copying blob sha256:ae185e96fc2cb468a49a848dc7e8c8c357f2c89e9b7b7f51e58e44e855d56d53
-Copying blob sha256:e2ab12080d2c73d93703e255294036cabb5b94165f58db334c348dd8513e9a1d
-Copying blob sha256:f7db5374f6e675b6041777681d128e77efce1fcc80ba77316c708b1ff3667045
-Copying blob sha256:2cd37bfa55522989640b93952edcb17a717454b3735b59e5644987d179dde040
-Copying config sha256:9f107bbf795887c5a8870864c014e91ff832e0aa46d460121a8d74ec7d84727d
-Writing manifest to image destination
-STEP 2/11: WORKDIR /app
---> 329a89cf7ddf
-STEP 3/11: COPY . /app
---> 0951afddf896
-STEP 4/11: COPY combined-ca-bundle.crt /etc/pki/tls/certs/ca-bundle.crt
---> a5c68293f205
-STEP 5/11: RUN pip3 config set global.cert /etc/pki/tls/certs/ca-bundle.crt
-Writing to /opt/app-root/src/.config/pip/pip.conf
---> dbf54dc08b38
-STEP 6/11: RUN pip3 config set global.index-url "https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
-Writing to /opt/app-root/src/.config/pip/pip.conf
---> 123e86cae53e
-STEP 7/11: RUN pip3 config set global.timeout 120
-Writing to /opt/app-root/src/.config/pip/pip.conf
---> e42cc52ad35e
-STEP 8/11: RUN pip3 install --upgrade pip setuptools wheel &&     pip3 install --no-cache-dir -r requirements.txt &&     pip3 install --no-cache-dir ./package-registry/epay_python_sdk-0.1.0.tar.gz
-Looking in indexes: https://:****@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-Requirement already satisfied: pip in /opt/app-root/lib/python3.9/site-packages (24.2)
-User for artifactory.jfrog.sbi: User for artifactory.jfrog.sbi: WARNING: There was an error checking the latest version of pip.
-ERROR: Exception:
-Traceback (most recent call last):
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/cli/base_command.py", line 105, in _run_wrapper
-    status = _inner_run()
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/cli/base_command.py", line 96, in _inner_run
-    return self.run(options, args)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/cli/req_command.py", line 67, in wrapper
-    return func(self, options, args)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/commands/install.py", line 379, in run
-    requirement_set = resolver.resolve(
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/resolution/resolvelib/resolver.py", line 95, in resolve
-    result = self._result = resolver.resolve(
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/resolvelib/resolvers.py", line 546, in resolve
-    state = resolution.resolve(requirements, max_rounds=max_rounds)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/resolvelib/resolvers.py", line 397, in resolve
-    self._add_to_criteria(self.state.criteria, r, parent=None)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/resolvelib/resolvers.py", line 173, in _add_to_criteria
-    if not criterion.candidates:
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/resolvelib/structs.py", line 156, in __bool__
-    return bool(self._sequence)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/resolution/resolvelib/found_candidates.py", line 174, in __bool__
-    return any(self)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/resolution/resolvelib/found_candidates.py", line 162, in <genexpr>
-    return (c for c in iterator if id(c) not in self._incompatible_ids)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/resolution/resolvelib/found_candidates.py", line 109, in _iter_built_with_inserted
-    for version, func in infos:
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/resolution/resolvelib/factory.py", line 303, in iter_index_candidate_infos
-    result = self._finder.find_best_candidate(
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/package_finder.py", line 883, in find_best_candidate
-    candidates = self.find_all_candidates(project_name)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/package_finder.py", line 824, in find_all_candidates
-    page_candidates = list(page_candidates_it)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/sources.py", line 194, in page_candidates
-    yield from self._candidates_from_page(self._link)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/package_finder.py", line 784, in process_project_url
-    index_response = self._link_collector.fetch_response(project_url)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/collector.py", line 448, in fetch_response
-    return _get_index_content(location, session=self.session)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/collector.py", line 352, in _get_index_content
-    resp = _get_simple_response(url, session=session)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/index/collector.py", line 131, in _get_simple_response
-    resp = session.get(
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/requests/sessions.py", line 602, in get
-    return self.request("GET", url, **kwargs)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/network/session.py", line 522, in request
-    return super().request(method, url, *args, **kwargs)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/requests/sessions.py", line 589, in request
-    resp = self.send(prep, **send_kwargs)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/requests/sessions.py", line 710, in send
-    r = dispatch_hook("response", hooks, r, **kwargs)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_vendor/requests/hooks.py", line 30, in dispatch_hook
-    _hook_data = hook(hook_data, **kwargs)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/network/auth.py", line 505, in handle_401
-    username, password, save = self._prompt_for_password(parsed.netloc)
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/network/auth.py", line 460, in _prompt_for_password
-    username = ask_input(f"User for {netloc}: ") if self.prompting else None
-  File "/opt/app-root/lib64/python3.9/site-packages/pip/_internal/utils/misc.py", line 247, in ask_input
-    return input(message)
-EOFError: EOF when reading a line
-Error: building at STEP "RUN pip3 install --upgrade pip setuptools wheel &&     pip3 install --no-cache-dir -r requirements.txt &&     pip3 install --no-cache-dir ./package-registry/epay_python_sdk-0.1.0.tar.gz": while running runtime: exit status 2
-Uploading artifacts for failed job
-00:02
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=244689 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
------------------------------------ image: build configuration -----------------
-
-
-# ci/image/image.build.yml  |  Stage: image-build
-# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
-# Image pushed in image.push.yml after image-scan and image-attest stages complete.
-
-variables:
-  JF_SERVER_ID: "epay-server"
-
-.image_podman_setup: &image_podman_setup
-  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-  - update-ca-trust extract
-  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN" ##Added
-  # - jf config add
-  #     --url="$JF_URL"
-  #     --xray-url="$JF_XRAY_URL"
-  #     --user="$JF_USER"
-  #     --access-token="$JF_TOKEN"
-  #     --interactive=false "$JF_SERVER_ID"
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false "$JF_SERVER_ID"     
-  - jf config use "$JF_SERVER_ID"
-
-.image_base:
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
   tags:
     - common_runner
-  before_script: *image_podman_setup
 
-.image_build:
-  extends: .image_base
-  stage: image-build
-  allow_failure: false
-  script:
-    # - echo "Building image locally: $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
-    # - podman build
-    #     -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION
-    #     -f Dockerfile
-    #     --tls-verify=false
-    #added fronted build steps
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
+
+  variables:
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+    JFROG_HOST: "artifactory.jfrog.sbi"
+    JFROG_PORT: "443"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pip-cache/
+
+  before_script:
+    # ── Python info ───────────────────────────────────────────────────────────
+    - python3 --version
+    - pip3 --version
+
+    # ── Extract SBI CA chain from JFrog TLS handshake ─────────────────────────
     - |
-      echo "VERSION=$VERSION"
+      set -eo pipefail
 
-      # CHANGE: support both backend + frontend
-      if [ -d "build/libs" ]; then
-        echo "Backend build detected"
-        ls -l build/libs
-      elif [ -d "dist" ]; then
-        echo "Frontend build detected"
-        ls -l dist
-      elif [ -f "app.py" ]; then
-        echo "Python app detected"
-        ls -l app.py
-      elif [ -d "vendor" ]; then
-        echo "PHP build detected"
-        echo "Vendor packages: $(ls vendor | wc -l)"
-      else
-        echo "No build output found"
-        exit 1
-      fi
+      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
 
-      TAG="$VERSION"
-      echo "Generated Tag.. ${TAG}"
-      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-      echo "Image: $COMPUTED_IMAGE_TAG"
-      echo "TAG=${TAG}" >> image.env
-      echo "VERSION=$VERSION" >> image.env
-      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
-      echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
-      echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV" >> image.env
+      openssl s_client \
+        -connect "${JFROG_HOST}:${JFROG_PORT}" \
+        -showcerts \
+        </dev/null 2>/dev/null \
+      | awk '
+          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
+          capture && count > 1          { print }
+          /-----END CERTIFICATE-----/   { capture=0 }
+        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
-      podman build \
-        -t "$COMPUTED_IMAGE_TAG" \
-        -f Dockerfile \
-        --build-arg ENV=$ENV \
-        --build-arg VERSION=$TAG \
-        --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
-        --tls-verify=false
-      TAR_NAME="$CI_PROJECT_NAME.tar"
-      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
-      echo "Image built and saved to $TAR_NAME"
-      echo "TAR_NAME=$TAR_NAME" >> image.env
-    # - echo "IMAGE_FULL=$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" >> image.env
-    # - echo "✅ Build complete — NOT pushed yet. Awaiting scan + sign."
+      cat /etc/pki/tls/certs/ca-bundle.crt \
+        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+
+      echo "── CA bundle ready: $(wc -l < ${CI_PROJECT_DIR}/combined-ca-bundle.crt) lines ──"
+
+    # ── Configure pip SSL + JFrog registry ───────────────────────────────────
+    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+
+    - |
+      pip3 config set global.index-url \
+        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
+
+  script:
+    # ── Install all dependencies into ./packages/ ─────────────────────────────
+    # --target installs into a local directory instead of system site-packages.
+    # Dockerfile COPYs packages/ into image — no pip or JFrog needed at image build time.
+    - |
+      set -eo pipefail
+
+      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
+
+      pip3 install --upgrade pip setuptools wheel
+
+      pip3 install \
+        --no-cache-dir \
+        --target="${CI_PROJECT_DIR}/packages" \
+        -r requirements.txt
+
+      pip3 install \
+        --no-cache-dir \
+        --target="${CI_PROJECT_DIR}/packages" \
+        ./package-registry/epay_python_sdk-0.1.0.tar.gz
+
+      echo "===== INSTALLED PACKAGES ====="
+      pip3 list
+
+      echo "Package count: $(ls packages | wc -l)"
+      echo "===== BUILD COMPLETE ====="
+
   artifacts:
     paths:
-      - "*.tar"
+      - app.py
+      - requirements.txt
+      - package-registry/
+      - packages/                     # pre-installed deps — Dockerfile COPYs directly
     reports:
-      dotenv: image.env
+      dotenv: build.env
+    when: on_success
     expire_in: 1 day
-
-image:build:
-  extends: .image_build
-
