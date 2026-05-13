@@ -1,3 +1,43 @@
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+
+WORKDIR /app
+
+COPY . /app
+
+# Copy CA cert (passed from CI)
+COPY combined-ca-bundle.crt /etc/pki/tls/certs/ca-bundle.crt
+
+# Configure pip to use JFrog
+RUN pip3 config set global.cert /etc/pki/tls/certs/ca-bundle.crt
+
+RUN pip3 config set global.index-url \
+"https://${JF_USER}:${JF_TOKEN}@artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+
+RUN pip3 config set global.timeout 120
+
+# Install dependencies
+RUN pip3 install --upgrade pip setuptools wheel && \
+    pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 install --no-cache-dir ./package-registry/epay_python_sdk-0.1.0.tar.gz
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8080
+
+CMD ["python3", "app.py"]
+
+
+
+
+
+
+
+
+
+
+
+
 getting below error now ::::::::::::
 
 unning with gitlab-runner 17.9.2 (14c5775c)
