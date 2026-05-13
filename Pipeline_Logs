@@ -1,131 +1,80 @@
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
-
-  tags:
-    - common_runner
-
-  variables:
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    JFROG_HOST: "artifactory.jfrog.sbi"
-    JFROG_PORT: "443"
-    COMPOSER_ALLOW_SUPERUSER: "1"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .composer-cache/
-
-  before_script:
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
-
-    # ── Extract SBI CA chain and build combined bundle ─────────────
-    - |
-      set -eo pipefail
-
-      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
-
-      openssl s_client \
-        -connect "${JFROG_HOST}:${JFROG_PORT}" \
-        -showcerts \
-        </dev/null 2>/dev/null \
-      | awk '
-          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-          capture && count > 1          { print }
-          /-----END CERTIFICATE-----/   { capture=0 }
-        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
-
-      cat /etc/pki/tls/certs/ca-bundle.crt \
-        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── CA bundle ready: $(wc -l < ${CI_PROJECT_DIR}/combined-ca-bundle.crt) lines ──"
-
-    # ── Download Composer from JFrog ───────────────────────────────
-    - |
-      set -eo pipefail
-
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── Downloading Composer from JFrog ──"
-
-      curl -k -f \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
-
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
-
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small — download failed"
-        cat composer.phar
-        exit 1
-      fi
-
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    # ── Configure Composer to use Artifactory ──────────────────────
-    - |
-      set -eo pipefail
-
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── Configuring Composer ──"
-
-      composer config --global \
-        repos.packagist composer \
-        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
-
-      composer config --global \
-        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
-
-      composer config --global \
-        cafile "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── Composer configured ──"
-
-  script:
-    - |
-      set -eo pipefail
-
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h || true
-
-      echo "===== INSTALLING DEPENDENCIES ====="
-
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist
-
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor directory not created"
-        exit 1
-      fi
-
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "===== BUILD COMPLETE ====="
-
-  artifacts:
-    paths:
-      - vendor/
-    expire_in: 1 day
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1992-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:12
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out b4f2d77b as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+01:05
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Extracting CA chain from artifactory.jfrog.sbi:443 ──
+── CA bundle ready: 3992 lines ──
+$ set -eo pipefail # collapsed multi-line command
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0   9.9M      0 --:--:-- --:--:-- --:--:--  9.9M
+Downloaded size: 3485155 bytes
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+$ set -eo pipefail # collapsed multi-line command
+── Configuring Composer ──
+── Composer configured ──
+$ set -eo pipefail # collapsed multi-line command
+===== SYSTEM INFO =====
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       7.7Gi       2.1Gi       1.1Gi        22Gi        23Gi
+Swap:          1.6Gi       1.1Gi       544Mi
+Filesystem                     Size  Used Avail Use% Mounted on
+overlay                        600G  151G  450G  26% /
+tmpfs                           64M     0   64M   0% /dev
+tmpfs                           16G     0   16G   0% /sys/fs/cgroup
+shm                            4.0G     0  4.0G   0% /dev/shm
+/dev/mapper/vg_runner-lv_data  600G  151G  450G  26% /cache
+devtmpfs                        16G     0   16G   0% /dev/dsa
+===== INSTALLING DEPENDENCIES =====
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+The following exception probably indicates you are offline or have misconfigured DNS resolver(s)
+In CurlDownloader.php line 409:
+                                                                               
+  curl error 6 while downloading https://repo.packagist.org/packages.json: Co  
+  uld not resolve host: repo.packagist.org                                     
+                                                                               
+install [--prefer-source] [--prefer-dist] [--prefer-install PREFER-INSTALL] [--dry-run] [--download-only] [--dev] [--no-suggest] [--no-dev] [--no-security-blocking] [--no-blocking] [--no-autoloader] [--no-progress] [--no-install] [--audit] [--audit-format AUDIT-FORMAT] [-v|vv|vvv|--verbose] [-o|--optimize-autoloader] [-a|--classmap-authoritative] [--strict-psr-autoloader] [--apcu-autoloader] [--apcu-autoloader-prefix APCU-AUTOLOADER-PREFIX] [--ignore-platform-req IGNORE-PLATFORM-REQ] [--ignore-platform-reqs] [--source-fallback|--no-source-fallback] [--] [<packages>...]
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
