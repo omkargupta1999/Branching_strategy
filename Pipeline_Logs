@@ -1,90 +1,164 @@
-# ci/image/image.build.yml  |  Stage: image-build
-# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
-# Image pushed in image.push.yml after image-scan and image-attest stages complete.
 
-variables:
-  JF_SERVER_ID: "epay-server"
 
-.image_podman_setup: &image_podman_setup
-  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-  - update-ca-trust extract
-  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN" ##Added
-  # - jf config add
-  #     --url="$JF_URL"
-  #     --xray-url="$JF_XRAY_URL"
-  #     --user="$JF_USER"
-  #     --access-token="$JF_TOKEN"
-  #     --interactive=false "$JF_SERVER_ID"
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false "$JF_SERVER_ID"     
-  - jf config use "$JF_SERVER_ID"
+Below jfrog repo is created ----: 
 
-.image_base:
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+itepaypg-sbiepay2-php-virtual --  include (devsecops-package-php-remote, devsecops-php-remote, devsecops-repo-php-remote)
+itepaypg-sbiepay2-php-local --  include (itepaypg-sbiepay2-php-virtual)
+
+
+https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-local/
+https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/
+
+
+
+Getting below error for php build stages---
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:22
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:15
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out 4d483879 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:03
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ echo "Downloading Composer from JFrog..." # collapsed multi-line command
+Downloading Composer from JFrog...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   156    0   156    0     0     85      0 --:--:--  0:00:01 --:--:--    85
+Checking composer file...
+-rw-r--r--. 1 default root 156 May 13 05:16 composer.phar
+File size: 156
+ERROR: Invalid composer.phar (wrong path or access issue)
+Content:
+{
+  "errors" : [ {
+    "status" : 404,
+    "message" : "Could not find resource; Path: 'itepaypg-sbiepay2-php-virtual:tools/composer/composer.phar'"
+  } ]
+}
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+
+
+=---------------------- Below Sharing the PHP Build Configuration yaml files ---------
+
+.build:
+  stage: build
+  #image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778000668
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+
   tags:
     - common_runner
-  before_script: *image_podman_setup
 
-.image_build:
-  extends: .image_base
-  stage: image-build
-  allow_failure: false
-  script:
-    # - echo "Building image locally: $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
-    # - podman build
-    #     -t $CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION
-    #     -f Dockerfile
-    #     --tls-verify=false
-    #added fronted build steps
+  variables:
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .composer-cache/
+
+  before_script:
+    - php --version
+
+    # ── Download Composer from Artifactory ─────────────────────────
     - |
-      echo "VERSION=$VERSION"
+      echo "Downloading Composer from JFrog..."
 
-      # CHANGE: support both backend + frontend
-      if [ -d "build/libs" ]; then
-        echo "Backend build detected"
-        ls -l build/libs
-      elif [ -d "dist" ]; then
-        echo "Frontend build detected"
-        ls -l dist
-      else
-        echo "No build output found"
+      curl -k -u "${JF_USER}:${JF_TOKEN}" \
+        "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/tools/composer/composer.phar" \
+        -o composer.phar
+
+      echo "Checking composer file..."
+      ls -lh composer.phar
+
+      SIZE=$(stat -c%s composer.phar)
+      echo "File size: $SIZE"
+
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: Invalid composer.phar (wrong path or access issue)"
+        echo "Content:"
+        cat composer.phar
         exit 1
       fi
 
-      TAG="$VERSION"
-      echo "Generated Tag.. ${TAG}"
-      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-      echo "Image: $COMPUTED_IMAGE_TAG"
-      echo "TAG=${TAG}" >> image.env
-      echo "VERSION=$VERSION" >> image.env
-      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
-      echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
 
-      podman build \
-        -t "$COMPUTED_IMAGE_TAG" \
-        -f Dockerfile \
-        --build-arg ENV=$ENV \
-        --build-arg VERSION=$TAG \
-        --tls-verify=false
-      TAR_NAME="$CI_PROJECT_NAME.tar"
-      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
-      echo "Image built and saved to $TAR_NAME"
-      echo "TAR_NAME=$TAR_NAME" >> image.env
-    # - echo "IMAGE_FULL=$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" >> image.env
-    # - echo "✅ Build complete — NOT pushed yet. Awaiting scan + sign."
+      composer --version
+
+    # ── Configure Composer to use Artifactory ──────────────────────
+    - composer config --global repos.packagist composer https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+    - composer config --global http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
+
+  script:
+    - |
+      set -eo pipefail
+
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df -h || true
+
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      composer install \
+        --no-dev \
+        --optimize-autoloader \
+        --no-interaction \
+        --prefer-dist
+
+      if [ ! -d "vendor" ]; then
+        echo "ERROR: vendor folder not created"
+        exit 1
+      fi
+
+      echo "Vendor count: $(ls vendor | wc -l)"
+      echo "Build complete"
+
   artifacts:
     paths:
-      - "*.tar"
-    reports:
-      dotenv: image.env
+      - vendor/
     expire_in: 1 day
+	
+	
+	
+---------------------------------------------------
 
-image:build:
-  extends: .image_build
+Now you have almost all the information please help me to identify the issue and provide the permanent fix for this issue.
