@@ -1,21 +1,79 @@
-# Test 1: Check what the remote proxy actually returns
-curl -k -v -u "v1021577:YOUR_TOKEN" \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar" \
-  2>&1 | head -50
+[osuser@bastion ~]$ curl -k -v -u "v1021577:Kalyan2026$$"   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar"   2>&1 | head -50
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [25 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [2941 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [264 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, [no content] (0):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
+* ALPN, server accepted to use http/1.1
+* Server certificate:
+*  subject: CN=*.jfrog.sbi
+*  start date: Sep 16 09:26:28 2025 GMT
+*  expire date: Sep 16 18:29:59 2026 GMT
+*  issuer: ST=Maharashtra; postalCode=400614; OU=PE-III; O=SBI; C=IN; CN=SBI-CA
+*  SSL certificate verify result: self signed certificate in certificate chain (19), continuing anyway.
+* Server auth using Basic with user 'v1021577'
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS app data, [no content] (0):
+} [1 bytes data]
+> GET /artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar HTTP/1.1
+[osuser@bastion ~]$ curl -k -I -u "v1021577:Kalyan2026$$" \
+>   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
+HTTP/1.1 401
+Server: nginx/1.20.1
+Date: Wed, 13 May 2026 07:08:12 GMT
+Content-Type: application/json;charset=ISO-8859-1
+Content-Length: 80
+Connection: keep-alive
+WWW-Authenticate: Basic realm="Artifactory Realm"
 
-# Test 2: Check if the local repo path works (if you uploaded manually)
-curl -k -I -u "v1021577:YOUR_TOKEN" \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
-
-# Test 3: List what's actually IN the virtual repo at /tools path
-curl -k -u "v1021577:YOUR_TOKEN" \
-  "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
-# Check what getcomposer.org actually returns
-curl -v "https://getcomposer.org/download/latest-stable/composer.phar" 2>&1 | grep -E "Location|HTTP/"
-
-
-curl -k -u "v1021577:YOUR_TOKEN" \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar" \
-  -o /tmp/composer.phar
-
-ls -lh /tmp/composer.phar   # Must be ~2.5MB
+[osuser@bastion ~]$ curl -k -u "v1021577:Kalyan2026$$" \
+>   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+}[osuser@bastion ~]$ curl -v "https://getcomposer.org/download/latest-stable/composer.phar" 2>&1 | grep -E "Location|HTTP/"
+[osuser@bastion ~]$ curl -k -u "v1021577:Kalyan2026$$" \
+>   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar" \
+>   -o /tmp/composer.phar
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    80  100    80    0     0    167      0 --:--:-- --:--:-- --:--:--   166
+[osuser@bastion ~]$
+[osuser@bastion ~]$ ls -lh /tmp/composer.phar
+-rw-r----- 1 osuser osuser 80 May 13 12:39 /tmp/composer.phar
+[osuser@bastion ~]$
