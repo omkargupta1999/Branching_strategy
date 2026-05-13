@@ -1,6 +1,23 @@
-Currently we are managing the certificate like below in our build configuration....
-
-
+# ci/build/php.yml  |  Stage: build
+# PHP microservice build with Composer
+#
+# ── Dependency resolution — JFrog Composer virtual repository ────────────────
+# Repository: https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+# Auth: JF_USER + JF_TOKEN (HTTP basic via Composer global config)
+# SSL: SBI internal CA sourced from $ARTIFACTORY_CERT (CI variable — file type)
+#
+# ── Composer PHAR ─────────────────────────────────────────────────────────────
+# ubi9/php-82 does not include Composer. PHAR downloaded from JFrog at runtime.
+# Path: https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# vendor/          NOT cached — resolved fresh from composer.lock each run
+# .composer-cache/ CACHED — Composer package tarballs (COMPOSER_CACHE_DIR)
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# JF_USER          — Artifactory username
+# JF_TOKEN         — Artifactory API key
+# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
 
 .build:
   stage: build
@@ -13,8 +30,6 @@ Currently we are managing the certificate like below in our build configuration.
     COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
     JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
     PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    JFROG_HOST: "artifactory.jfrog.sbi"
-    JFROG_PORT: "443"
     COMPOSER_ALLOW_SUPERUSER: "1"
 
   cache:
@@ -27,43 +42,14 @@ Currently we are managing the certificate like below in our build configuration.
     - git config --global --add safe.directory "${CI_PROJECT_DIR}"
     - php --version
 
-    # ── Extract SBI CA chain from JFrog and build combined CA bundle ──────────
-    # Container does not have write access to system trust store (/etc/pki),
-    # so CA is injected directly into Composer and curl via env vars + cafile.
+    # ── Download Composer PHAR from JFrog virtual repo ────────────────────────
     - |
       set -eo pipefail
-
-      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
-
-      openssl s_client \
-        -connect "${JFROG_HOST}:${JFROG_PORT}" \
-        -showcerts \
-        </dev/null 2>/dev/null \
-      | awk '
-          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-          capture && count > 1          { print }
-          /-----END CERTIFICATE-----/   { capture=0 }
-        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
-
-      cat /etc/pki/tls/certs/ca-bundle.crt \
-        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── CA bundle ready: $(wc -l < ${CI_PROJECT_DIR}/combined-ca-bundle.crt) lines ──"
-
-    # ── Download Composer PHAR from JFrog virtual repo ───────────────────────
-    - |
-      set -eo pipefail
-
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
       echo "── Downloading Composer from JFrog ──"
 
-      curl -k -f \
+      curl -f \
+        --cacert "$ARTIFACTORY_CERT" \
         -u "${JF_USER}:${JF_TOKEN}" \
         "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
         -o composer.phar
@@ -82,13 +68,11 @@ Currently we are managing the certificate like below in our build configuration.
       export PATH="$CI_PROJECT_DIR:$PATH"
       composer --version
 
-    # ── Configure Composer — Artifactory as sole package source ─────────────
+    # ── Configure Composer — Artifactory as sole package source ──────────────
     - |
       set -eo pipefail
 
       export PATH="$CI_PROJECT_DIR:$PATH"
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
       echo "── Configuring Composer ──"
 
@@ -101,9 +85,8 @@ Currently we are managing the certificate like below in our build configuration.
       composer config --global \
         http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
 
-      # Trust SBI internal CA — avoids SSL cert errors on package downloads
-      composer config --global \
-        cafile "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+      # Trust SBI internal CA — reads directly from ARTIFACTORY_CERT file variable
+      composer config --global cafile "$ARTIFACTORY_CERT"
 
       # Disable fallback to public packagist.org — enforce JFrog-only resolution
       composer config --global repo.packagist false
@@ -111,13 +94,11 @@ Currently we are managing the certificate like below in our build configuration.
       echo "── Composer configured ──"
 
   script:
-    # ── Install dependencies from composer.lock ──────────────────────────────
+    # ── Install dependencies from composer.lock ───────────────────────────────
     - |
       set -eo pipefail
 
       export PATH="$CI_PROJECT_DIR:$PATH"
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
       echo "===== SYSTEM INFO ====="
       free -h || true
@@ -143,18 +124,3 @@ Currently we are managing the certificate like below in our build configuration.
     paths:
       - vendor/
     expire_in: 1 day
-
-
-
-
-
-
-
-
-================================================
-
-can we manage the certificate in below format .....
-
-
-composer config --global cafile "$ARTIFACTORY_CERT" # reads file directly ✅
-
