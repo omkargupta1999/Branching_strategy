@@ -1,110 +1,131 @@
-# .build:
-#   stage: build
+# ci/build/python.yml  |  Stage: build
+# Python microservice build
+#
+# ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# Auth: JF_USER + JF_TOKEN embedded in index-url
+# SSL: SBI internal CA extracted from JFrog TLS handshake via openssl s_client.
+#      Full CA chain (intermediate + root) extracted — pip requires complete chain.
+#      Merged with system ca-bundle.crt and passed to pip via global.cert config.
+#      Note: $ARTIFACTORY_CERT alone is insufficient — contains only leaf cert.
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# .pip-cache/ CACHED  — pip package tarballs (PIP_CACHE_DIR)
+#             avoids re-downloading from JFrog on every run
+# dist/        NOT cached — built fresh each run from requirements.txt
+#
+# ── App repo requirements ─────────────────────────────────────────────────────
+# requirements.txt — runtime dependencies (must be committed)
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# JF_USER  — Artifactory username
+# JF_TOKEN — Artifactory API key
 
-#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
+.build:
+  stage: build
 
-#   tags:
-#     - common_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
 
-#   retry:
-#     max: 2
-#     when:
-#       - runner_system_failure
-#       - stuck_or_timeout_failure
-#       - script_failure
+  tags:
+    - common_runner
 
-#   variables:
-#     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
-#     JFROG_HOST: "artifactory.jfrog.sbi"
-#     JFROG_PORT: "443"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
 
-#   cache:
-#     key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
-#     paths:
-#       - .pip-cache/
+  variables:
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+    JFROG_HOST: "artifactory.jfrog.sbi"
+    JFROG_PORT: "443"
 
-#   before_script:
-#     # ─────────────────────────────────────────────
-#     # Python Info
-#     # ─────────────────────────────────────────────
-#     - python3 --version
-#     - pip3 --version
+  cache:
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pip-cache/
 
-#     # ─────────────────────────────────────────────
-#     # Extract JFrog CA Chain
-#     # ─────────────────────────────────────────────
-#     - |
-#       set -eo pipefail
+  before_script:
+    # ── Python info ───────────────────────────────────────────────────────────
+    - python3 --version
+    - pip3 --version
 
-#       echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
+    # ── Extract SBI CA chain from JFrog TLS handshake ─────────────────────────
+    # openssl s_client retrieves all certs presented during TLS negotiation.
+    # awk skips the first cert (server/leaf) and captures intermediate + root CA.
+    # pip strict chain validation requires the full chain — not just the leaf cert.
+    - |
+      set -eo pipefail
 
-#       openssl s_client \
-#         -connect "${JFROG_HOST}:${JFROG_PORT}" \
-#         -showcerts \
-#         </dev/null 2>/dev/null \
-#       | awk '
-#           /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-#           capture && count > 1          { print }
-#           /-----END CERTIFICATE-----/   { capture=0 }
-#         ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
+      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
 
-#       echo "── Extracted certificates ──"
+      openssl s_client \
+        -connect "${JFROG_HOST}:${JFROG_PORT}" \
+        -showcerts \
+        </dev/null 2>/dev/null \
+      | awk '
+          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
+          capture && count > 1          { print }
+          /-----END CERTIFICATE-----/   { capture=0 }
+        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
-#       openssl crl2pkcs7 \
-#         -nocrl \
-#         -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-#       | openssl pkcs7 -print_certs -noout || true
+      echo "── Extracted CA certificates ──"
 
-#     # ─────────────────────────────────────────────
-#     # Merge CA Bundles
-#     # ─────────────────────────────────────────────
-#     - |
-#       cat /etc/pki/tls/certs/ca-bundle.crt \
-#         "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-#         > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+      openssl crl2pkcs7 \
+        -nocrl \
+        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      | openssl pkcs7 -print_certs -noout || true
 
-#     # ─────────────────────────────────────────────
-#     # Configure pip SSL
-#     # ─────────────────────────────────────────────
-#     - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+    # ── Merge system CA bundle with extracted JFrog CA chain ──────────────────
+    # System ca-bundle.crt provides well-known public roots.
+    # jfrog-ca-chain.crt provides SBI internal intermediate + root CA.
+    # Combined bundle passed to pip covers all SSL verification scenarios.
+    - |
+      cat /etc/pki/tls/certs/ca-bundle.crt \
+        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-#     # ─────────────────────────────────────────────
-#     # Configure JFrog Python Registry
-#     # ─────────────────────────────────────────────
-#     - |
-#       pip3 config set global.index-url \
-#       "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+      echo "── CA bundle ready: $(wc -l < ${CI_PROJECT_DIR}/combined-ca-bundle.crt) lines ──"
 
-#     - pip3 config set global.timeout 120
-#     - pip3 config set global.disable-pip-version-check true
+    # ── Configure pip SSL + JFrog registry ───────────────────────────────────
+    # global.cert — combined CA bundle for SSL verification on all pip calls
+    # index-url   — JFrog PyPI virtual repo as sole package source
+    # timeout     — increased for large packages over internal network
+    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-#   script:
-#     - |
-#       set -eo pipefail
+    - |
+      pip3 config set global.index-url \
+        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
-#       echo "Installing Python dependencies..."
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
 
-#       pip3 install --upgrade pip setuptools wheel
+  script:
+    # ── Install dependencies from requirements.txt ────────────────────────────
+    - |
+      set -eo pipefail
 
-#       pip3 install -r requirements.txt
+      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
 
-#       echo "Installed packages:"
-#       pip3 list
+      pip3 install --upgrade pip setuptools wheel
 
-#       echo "Application structure:"
-#       ls -ltrh
+      pip3 install -r requirements.txt
 
-#       echo "✅ Python application build completed successfully"
+      echo "===== INSTALLED PACKAGES ====="
+      pip3 list
 
+      echo "===== APPLICATION STRUCTURE ====="
+      ls -ltrh
 
+      echo "===== BUILD COMPLETE ====="
 
-#   artifacts:
-#     paths:
-#       - app.py
-#       - requirements.txt
-#       - package-registry/
-#     reports:
-#       dotenv: build.env
-#     when: on_success
-
-#     expire_in: 1 day
+  artifacts:
+    paths:
+      - app.py
+      - requirements.txt
+      - package-registry/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
