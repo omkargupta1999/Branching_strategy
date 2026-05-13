@@ -1,23 +1,24 @@
-# # ci/build/python.yml  |  Stage: build
-# # Python microservice build
-# #
-# # ── Dependency resolution — JFrog Python virtual repository ──────────────────
-# # Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
-# # Auth: JF_USER + JF_TOKEN embedded in index-url
-# # SSL: JFrog internal CA added to pip's trusted CA via certifi / system cert
-# #      trusted-host NOT used — disables SSL verification (security risk)
-# #
-# # ── Cache ─────────────────────────────────────────────────────────────────────
-# # pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
-# # PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
-# # pip re-uses downloaded tarballs on next run — avoids re-downloading from JFrog
-# #
-# # ── App repo requirements ─────────────────────────────────────────────────────
-# # requirements.txt  — runtime dependencies
-# # pyproject.toml    — build config (PEP 517/518)  OR  setup.py
-# #
-# # Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
-# # Version injected via --metadata-version or pyproject.toml dynamic versioning
+# ci/build/python.yml  |  Stage: build
+# Python microservice build
+#
+# ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# Auth: JF_USER + JF_TOKEN embedded in index-url
+# SSL: SBI internal CA sourced from $ARTIFACTORY_CERT (CI variable — file type)
+#      passed directly to pip via `pip3 config set global.cert`
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
+# PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
+# pip re-uses downloaded tarballs on next run — avoids re-downloading from JFrog
+#
+# ── App repo requirements ─────────────────────────────────────────────────────
+# requirements.txt — runtime dependencies
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# JF_USER          — Artifactory username
+# JF_TOKEN         — Artifactory API key
+# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
 
 .build:
   stage: build
@@ -37,7 +38,6 @@
   variables:
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
     JFROG_HOST: "artifactory.jfrog.sbi"
-    JFROG_PORT: "443"
 
   cache:
     key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
@@ -45,56 +45,17 @@
       - .pip-cache/
 
   before_script:
-    # ─────────────────────────────────────────────
-    # Python Info
-    # ─────────────────────────────────────────────
+    # ── Python info ───────────────────────────────────────────────────────────
     - python3 --version
     - pip3 --version
 
-    # ─────────────────────────────────────────────
-    # Extract JFrog CA Chain
-    # ─────────────────────────────────────────────
-    - |
-      set -eo pipefail
+    # ── Configure pip SSL — reads SBI CA directly from ARTIFACTORY_CERT ───────
+    - pip3 config set global.cert "$ARTIFACTORY_CERT"
 
-      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
-
-      openssl s_client \
-        -connect "${JFROG_HOST}:${JFROG_PORT}" \
-        -showcerts \
-        </dev/null 2>/dev/null \
-      | awk '
-          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
-          capture && count > 1          { print }
-          /-----END CERTIFICATE-----/   { capture=0 }
-        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
-
-      echo "── Extracted certificates ──"
-
-      openssl crl2pkcs7 \
-        -nocrl \
-        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-      | openssl pkcs7 -print_certs -noout || true
-
-    # ─────────────────────────────────────────────
-    # Merge CA Bundles
-    # ─────────────────────────────────────────────
-    - |
-      cat /etc/pki/tls/certs/ca-bundle.crt \
-        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    # ─────────────────────────────────────────────
-    # Configure pip SSL
-    # ─────────────────────────────────────────────
-    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-    # ─────────────────────────────────────────────
-    # Configure JFrog Python Registry
-    # ─────────────────────────────────────────────
+    # ── Configure JFrog Python registry ───────────────────────────────────────
     - |
       pip3 config set global.index-url \
-      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
+        "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
     - pip3 config set global.timeout 120
     - pip3 config set global.disable-pip-version-check true
@@ -103,21 +64,19 @@
     - |
       set -eo pipefail
 
-      echo "Installing Python dependencies..."
+      echo "===== INSTALLING PYTHON DEPENDENCIES ====="
 
       pip3 install --upgrade pip setuptools wheel
 
       pip3 install -r requirements.txt
 
-      echo "Installed packages:"
+      echo "===== INSTALLED PACKAGES ====="
       pip3 list
 
-      echo "Application structure:"
+      echo "===== APPLICATION STRUCTURE ====="
       ls -ltrh
 
-      echo "✅ Python application build completed successfully"
-
-
+      echo "===== BUILD COMPLETE ====="
 
   artifacts:
     paths:
@@ -127,12 +86,4 @@
     reports:
       dotenv: build.env
     when: on_success
-
     expire_in: 1 day
-
-+++++++++++++++++++++++++++++++++++++++++++
-
-Can we do the same for python like we do in php build and share the updated yaml.....and update the documented part which is commented according to our configuration
-
-# ── pip (python build/test) ──────────────────────────────────────────────────
-pip3 config set global.cert "$ARTIFACTORY_CERT"    # reads file directly ✅
