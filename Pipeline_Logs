@@ -1,126 +1,138 @@
-# ci/build/php.yml  |  Stage: build
-# PHP microservice build with Composer
-#
-# ── Dependency resolution — JFrog Composer virtual repository ────────────────
-# Repository: https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
-# Auth: JF_USER + JF_TOKEN (HTTP basic via Composer global config)
-# SSL: SBI internal CA sourced from $ARTIFACTORY_CERT (CI variable — file type)
-#
-# ── Composer PHAR ─────────────────────────────────────────────────────────────
-# ubi9/php-82 does not include Composer. PHAR downloaded from JFrog at runtime.
-# Path: https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# vendor/          NOT cached — resolved fresh from composer.lock each run
-# .composer-cache/ CACHED — Composer package tarballs (COMPOSER_CACHE_DIR)
-#
-# ── GitLab CI Variables required ─────────────────────────────────────────────
-# JF_USER          — Artifactory username
-# JF_TOKEN         — Artifactory API key
-# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
+# # ci/build/python.yml  |  Stage: build
+# # Python microservice build
+# #
+# # ── Dependency resolution — JFrog Python virtual repository ──────────────────
+# # Registry: https://artifactory.jfrog.sbi/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple
+# # Auth: JF_USER + JF_TOKEN embedded in index-url
+# # SSL: JFrog internal CA added to pip's trusted CA via certifi / system cert
+# #      trusted-host NOT used — disables SSL verification (security risk)
+# #
+# # ── Cache ─────────────────────────────────────────────────────────────────────
+# # pip downloads cached in .pip-cache/ (project-relative, Docker executor safe)
+# # PIP_CACHE_DIR redirects ~/.cache/pip → .pip-cache/
+# # pip re-uses downloaded tarballs on next run — avoids re-downloading from JFrog
+# #
+# # ── App repo requirements ─────────────────────────────────────────────────────
+# # requirements.txt  — runtime dependencies
+# # pyproject.toml    — build config (PEP 517/518)  OR  setup.py
+# #
+# # Produces: dist/*.whl — consumed by Dockerfile (COPY + pip install dist/*.whl)
+# # Version injected via --metadata-version or pyproject.toml dynamic versioning
 
 .build:
   stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
 
   tags:
     - common_runner
 
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
+
   variables:
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    COMPOSER_ALLOW_SUPERUSER: "1"
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+    JFROG_HOST: "artifactory.jfrog.sbi"
+    JFROG_PORT: "443"
 
   cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
     paths:
-      - .composer-cache/
+      - .pip-cache/
 
   before_script:
-    # ── Git safe directory (required when runner user differs from repo owner) ─
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
+    # ─────────────────────────────────────────────
+    # Python Info
+    # ─────────────────────────────────────────────
+    - python3 --version
+    - pip3 --version
 
-    # ── Download Composer PHAR from JFrog virtual repo ────────────────────────
+    # ─────────────────────────────────────────────
+    # Extract JFrog CA Chain
+    # ─────────────────────────────────────────────
     - |
       set -eo pipefail
 
-      echo "── Downloading Composer from JFrog ──"
+      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
 
-      curl -f \
-        --cacert "$ARTIFACTORY_CERT" \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
+      openssl s_client \
+        -connect "${JFROG_HOST}:${JFROG_PORT}" \
+        -showcerts \
+        </dev/null 2>/dev/null \
+      | awk '
+          /-----BEGIN CERTIFICATE-----/ { count++; capture=1 }
+          capture && count > 1          { print }
+          /-----END CERTIFICATE-----/   { capture=0 }
+        ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
+      echo "── Extracted certificates ──"
 
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small — download failed"
-        cat composer.phar
-        exit 1
-      fi
+      openssl crl2pkcs7 \
+        -nocrl \
+        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      | openssl pkcs7 -print_certs -noout || true
 
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    # ── Configure Composer — Artifactory as sole package source ──────────────
+    # ─────────────────────────────────────────────
+    # Merge CA Bundles
+    # ─────────────────────────────────────────────
     - |
-      set -eo pipefail
+      cat /etc/pki/tls/certs/ca-bundle.crt \
+        "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+        > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-      export PATH="$CI_PROJECT_DIR:$PATH"
+    # ─────────────────────────────────────────────
+    # Configure pip SSL
+    # ─────────────────────────────────────────────
+    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-      echo "── Configuring Composer ──"
+    # ─────────────────────────────────────────────
+    # Configure JFrog Python Registry
+    # ─────────────────────────────────────────────
+    - |
+      pip3 config set global.index-url \
+      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
-      # Route all package resolution through JFrog Composer virtual repo
-      composer config --global \
-        repos.packagist composer \
-        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
-
-      # Artifactory credentials for package downloads
-      composer config --global \
-        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
-
-      # Trust SBI internal CA — reads directly from ARTIFACTORY_CERT file variable
-      composer config --global cafile "$ARTIFACTORY_CERT"
-
-      # Disable fallback to public packagist.org — enforce JFrog-only resolution
-      composer config --global repo.packagist false
-
-      echo "── Composer configured ──"
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
 
   script:
-    # ── Install dependencies from composer.lock ───────────────────────────────
     - |
       set -eo pipefail
 
-      export PATH="$CI_PROJECT_DIR:$PATH"
+      echo "Installing Python dependencies..."
 
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h || true
+      pip3 install --upgrade pip setuptools wheel
 
-      echo "===== INSTALLING DEPENDENCIES ====="
+      pip3 install -r requirements.txt
 
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist
+      echo "Installed packages:"
+      pip3 list
 
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor directory not created"
-        exit 1
-      fi
+      echo "Application structure:"
+      ls -ltrh
 
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "===== BUILD COMPLETE ====="
+      echo "✅ Python application build completed successfully"
+
+
 
   artifacts:
     paths:
-      - vendor/
+      - app.py
+      - requirements.txt
+      - package-registry/
+    reports:
+      dotenv: build.env
+    when: on_success
+
     expire_in: 1 day
+
++++++++++++++++++++++++++++++++++++++++++++
+
+Can we do the same for python like we do in php build and share the updated yaml.....and update the documented part which is commented according to our configuration
+
+# ── pip (python build/test) ──────────────────────────────────────────────────
+pip3 config set global.cert "$ARTIFACTORY_CERT"    # reads file directly ✅
