@@ -136,3 +136,171 @@
     paths:
       - vendor/
     expire_in: 1 day
+
+
+
+
+=========================== Using the above build configuration now build is happing ========
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:13
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out bcd12605 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:02
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Executing "step_script" stage of the job script
+00:32
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Extracting CA chain from artifactory.jfrog.sbi:443 ──
+── CA bundle ready: 3992 lines ──
+$ set -eo pipefail # collapsed multi-line command
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0  11.3M      0 --:--:-- --:--:-- --:--:-- 11.3M
+Downloaded size: 3485155 bytes
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+$ set -eo pipefail # collapsed multi-line command
+── Configuring Composer ──
+── Composer configured ──
+$ set -eo pipefail # collapsed multi-line command
+===== SYSTEM INFO =====
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       6.6Gi        10Gi        71Mi        14Gi        24Gi
+Swap:          4.0Gi       887Mi       3.1Gi
+Filesystem                     Size  Used Avail Use% Mounted on
+fuse-overlayfs                 600G  101G  499G  17% /
+tmpfs                           64M     0   64M   0% /dev
+shm                            4.0G     0  4.0G   0% /dev/shm
+/dev/mapper/vg_runner-lv_data  600G  101G  499G  17% /cache
+devtmpfs                       4.0M     0  4.0M   0% /dev/dsa
+===== INSTALLING DEPENDENCIES =====
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+Package operations: 0 installs, 0 updates, 35 removals
+  - Removing theseer/tokenizer (1.2.3)
+  - Removing symfony/yaml (v7.3.3)
+  - Removing staabm/side-effects-detector (1.0.5)
+  - Removing sebastian/version (5.0.2)
+  - Removing sebastian/type (5.1.3)
+  - Removing sebastian/recursion-context (6.0.3)
+  - Removing sebastian/object-reflector (4.0.1)
+  - Removing sebastian/object-enumerator (6.0.1)
+  - Removing sebastian/lines-of-code (3.0.1)
+  - Removing sebastian/global-state (7.0.2)
+  - Removing sebastian/exporter (6.3.0)
+  - Removing sebastian/environment (7.2.1)
+  - Removing sebastian/diff (6.0.2)
+  - Removing sebastian/complexity (4.0.1)
+  - Removing sebastian/comparator (6.3.2)
+  - Removing sebastian/code-unit-reverse-lookup (4.0.1)
+  - Removing sebastian/code-unit (3.0.3)
+  - Removing sebastian/cli-parser (3.0.2)
+  - Removing phpunit/phpunit (11.5.35)
+  - Removing phpunit/php-timer (7.0.1)
+  - Removing phpunit/php-text-template (4.0.1)
+  - Removing phpunit/php-invoker (5.0.1)
+  - Removing phpunit/php-file-iterator (5.1.0)
+  - Removing phpunit/php-code-coverage (11.0.11)
+  - Removing phar-io/version (3.2.1)
+  - Removing phar-io/manifest (2.0.4)
+  - Removing nunomaduro/collision (v8.8.2)
+  - Removing myclabs/deep-copy (1.13.4)
+  - Removing mockery/mockery (1.6.12)
+  - Removing laravel/sail (v1.45.0)
+  - Removing laravel/pint (v1.24.0)
+  - Removing laravel/pail (v1.2.3)
+  - Removing hamcrest/hamcrest-php (v2.1.1)
+  - Removing filp/whoops (2.18.4)
+  - Removing fakerphp/faker (v1.24.1)
+Generating optimized autoload files
+Class App\Traits\ResponseFormat located in ./app/Http/Controllers/Traits/ResponseFormat.php does not comply with psr-4 autoloading standard (rule: App\ => ./app). Skipping.
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+   INFO  Discovering packages.  
+  laravel/sanctum ....................................................... DONE
+  laravel/tinker ........................................................ DONE
+  nesbot/carbon ......................................................... DONE
+  nunomaduro/termwind ................................................... DONE
+54 packages you are using are looking for funding.
+Use the `composer fund` command to find out more!
+Vendor count: 31
+===== BUILD COMPLETE =====
+Saving cache for successful job
+00:01
+Creating cache merchant_api_simulator_php-composer-release-uat-non_protected...
+.composer-cache/: found 2 matching artifact files and directories 
+Archive is up to date!                             
+Created cache
+Uploading artifacts for successful job
+00:04
+Uploading artifacts...
+vendor/: found 6719 matching artifact files and directories 
+Uploading artifacts as "archive" to coordinator... 201 Created  id=243154 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:01
+Job succeeded
+
+
+
+
+I want you to please check if evevrything is correct or not or if anything needs to remove ......
+
+
+And I want you to please add the description like below accordingly to our build configuration..................
+
+
+# ci/build/php.yml  |  Stage: build
+# PHP microservice build with Composer
+#
+# ── Dependency resolution — JFrog Composer virtual repository ────────────────
+# Repository: https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+# Auth: JF_USER + JF_TOKEN (HTTP basic via Composer config)
+# SSL: JFrog internal CA trusted via OS cert store + Composer cafile
+#
+# ── Composer PHAR ─────────────────────────────────────────────────────────────
+# ubi9/php-82 does not include Composer. Composer PHAR downloaded from JFrog.
+# Store composer.phar in JFrog generic repo before first use:
+#   Download: https://getcomposer.org/composer-stable.phar
+#   Upload to: itepaypg-sbiepay2-generic-local/tools/composer.phar
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# vendor/          NOT cached — composer install resolves from composer.lock each time
+# .composer-cache/ CACHED — Composer package tarballs (COMPOSER_CACHE_DIR)
+#
+# ── App repo requirements ─────────────────────────────────────────────────────
+# composer.json — dependencies declaration
+# composer.lock — locked versions (must be committed)
