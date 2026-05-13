@@ -1,100 +1,71 @@
-# ci/image/image.build.yml  |  Stage: image-build
-# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
-# Image pushed in image.push.yml after image-scan and image-attest stages complete.
-
-variables:
-  JF_SERVER_ID: "epay-server"
-
-.image_podman_setup: &image_podman_setup
-  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-  - update-ca-trust extract
-  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-  - |
-    jf config add \
-      --url="$JF_URL" \
-      --xray-url="$JF_XRAY_URL" \
-      --user="$JF_USER" \
-      --access-token="$JF_TOKEN" \
-      --interactive=false "$JF_SERVER_ID"
-  - jf config use "$JF_SERVER_ID"
-
-.image_base:
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  tags:
-    - common_runner
-  before_script: *image_podman_setup
-
-.image_build:
-  extends: .image_base
-  stage: image-build
-  allow_failure: false
-  script:
-    - |
-      set -eo pipefail
-
-      echo "VERSION=$VERSION"
-
-      # ── Detect build output by project type ──────────────────────
-      if [ -d "build/libs" ]; then
-        echo "Java/Gradle backend build detected"
-        ls -l build/libs
-
-      elif [ -d "dist" ]; then
-        echo "Frontend build detected"
-        ls -l dist
-
-      elif [ -f "app.py" ]; then
-        echo "Python app detected"
-        ls -l app.py
-
-      elif [ -d "vendor" ]; then
-        echo "PHP build detected"
-        echo "Vendor packages: $(ls vendor | wc -l)"
-
-      else
-        echo "ERROR: No recognised build output found."
-        echo "Expected one of: build/libs/, dist/, app.py, vendor/"
-        echo "Current directory contents:"
-        ls -lh
-        exit 1
-      fi
-
-      # ── Compute image tag and metadata ───────────────────────────
-      TAG="$VERSION"
-      echo "Generated Tag: ${TAG}"
-      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-      echo "Image: $COMPUTED_IMAGE_TAG"
-
-      # ── Write dotenv for downstream stages ───────────────────────
-      echo "TAG=${TAG}"                               >> image.env
-      echo "VERSION=$VERSION"                         >> image.env
-      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG"   >> image.env
-      echo "IMAGE_NAME=$IMAGE_NAME"                   >> image.env
-      echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV"   >> image.env
-
-      # ── Build container image ─────────────────────────────────────
-      podman build \
-        -t "$COMPUTED_IMAGE_TAG" \
-        -f Dockerfile \
-        --build-arg ENV=$ENV \
-        --build-arg VERSION=$TAG \
-        --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
-        --tls-verify=false
-
-      # ── Save image as tar for scan + push stages ──────────────────
-      TAR_NAME="$CI_PROJECT_NAME.tar"
-      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
-      echo "Image saved to: $TAR_NAME"
-      echo "TAR_NAME=$TAR_NAME" >> image.env
-
-  artifacts:
-    paths:
-      - "*.tar"
-    reports:
-      dotenv: image.env
-    expire_in: 1 day
-
-image:build:
-  extends: .image_build
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:14
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out e2f37b67 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Downloading artifacts
+00:04
+Downloading artifacts for build (243411)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=243411 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:28
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+$ update-ca-trust extract
+$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+Login Succeeded!
+$ jf config add \ # collapsed multi-line command
+09:05:39 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+$ jf config use "$JF_SERVER_ID"
+09:05:39 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+$ echo "VERSION=$VERSION" # collapsed multi-line command
+VERSION=e2f37b67
+PHP build detected
+Vendor packages: 41
+Generated Tag.. e2f37b67
+Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/merchant_api_simulator_php:e2f37b67
+STEP 1/10: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526
+Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/ubi9/php-82:120526...
+Getting image source signatures
+Copying blob sha256:b9a23cfe9322066fc207d52f88d0cdebb73070fff4e8c982e530f6b4ef8e0287
+Copying blob sha256:d3cc7dd0729141f3fc64ea3f5d623225b86f29c02caefee54aa160c837b9b68e
+Copying blob sha256:5421398e4c94a8cf3b8024b51b9d86a177bfc25ab072ea2bd0da5fc28c5b211e
+Copying blob sha256:f1cb8c857177c7524711e894ec399eb85f7725c36919fe67682aff9ad5fd9802
+Copying config sha256:5e8034c6d83dca601af89db88e20ecee9f5ffa5242e1dfd0ee7d63cf628dd40f
+Writing manifest to image destination
+STEP 2/10: WORKDIR /app
+--> 7a2962406642
+STEP 3/10: USER root
+--> 77d277be187b
+STEP 4/10: COPY jfrog-internal.crt /etc/pki/ca-trust/source/anchors/jfrog-internal.crt
+Error: building at STEP "COPY jfrog-internal.crt /etc/pki/ca-trust/source/anchors/jfrog-internal.crt": checking on sources under "/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php": copier: stat: "/jfrog-internal.crt": no such file or directory
+Uploading artifacts for failed job
+00:02
+Uploading artifacts...
+image.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  id=243413 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
