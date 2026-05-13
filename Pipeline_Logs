@@ -1,61 +1,114 @@
+## Analysis of Current Error
 
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:10
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
-Created fresh repository.
-Checking out ce8ac660 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:03
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-$ php --version
-PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.30, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
-$ echo "Downloading Composer from JFrog (via remote proxy)..." # collapsed multi-line command
-Downloading Composer from JFrog (via remote proxy)...
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0    80    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+You have **two separate problems**:
+
+### Problem 1 — 401 in CI pipeline
+```
 curl: (22) The requested URL returned error: 401
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+```
+The `${JF_USER}` / `${JF_TOKEN}` CI variables are either **not set**, **masked incorrectly**, or **not accessible** in this job's scope.
 
-+++++++++++++++++++++++++++++++++++++++++++ Tried to download
-
-[osuser@bastion ~]$ curl -k -u "v1021577:Kalyan2026$$"   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar"   -o /tmp/composer.phar
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100    80  100    80    0     0    165      0 --:--:-- --:--:-- --:--:--   165
-[osuser@bastion ~]$
-[osuser@bastion ~]$ ls -lrth /tmp/composer.phar
+### Problem 2 — Remote proxy not working (80 bytes returned)
+```bash
+# Bastion test returned only 80 bytes — NOT composer.phar (~2.5MB)
 -rw-r----- 1 osuser osuser 80 May 13 12:23 /tmp/composer.phar
+```
+The remote repo `devsecops-composer-remote` is **not correctly proxying** `getcomposer.org`. It's returning a small error/redirect response.
 
+---
+
+## Fix Both Issues
+
+### Fix 1 — Verify CI Variables
+
+Go to **GitLab → Project → Settings → CI/CD → Variables** and confirm:
+
+| Variable | Should be | Check |
+|---|---|---|
+| `JF_USER` | Your Artifactory username | Not masked for this job? |
+| `JF_TOKEN` | Your Artifactory API key/password | Scope = All environments? |
+
+Add a quick debug step temporarily to confirm:
+```yaml
+before_script:
+  - echo "JF_USER is set -> ${JF_USER:+YES}" 
+  - echo "JF_TOKEN is set -> ${JF_TOKEN:+YES}"
+```
+This prints `YES` if set, nothing if empty — **safe, does not expose credentials**.
+
+---
+
+### Fix 2 — Correct the JFrog Remote Repo URL
+
+The 80-byte response from bastion tells us the remote repo URL is wrong. The issue is `getcomposer.org/download/composer.phar` — `getcomposer.org` does a **redirect** to a versioned URL on GitHub, which JFrog generic remote repos don't follow by default.
+
+**Ask your JFrog Admin to update the remote repo:**
+
+Instead of proxying `getcomposer.org` (which redirects), point directly to the **stable direct download URL**:
+
+| Field | Value |
+|---|---|
+| **Remote Repo URL** | `https://getcomposer.org/download/latest-stable/` |
+| **OR better — use GitHub releases** | `https://github.com/composer/composer/releases/latest/download/` |
+
+Then the artifact path in your pipeline becomes:
+```
+/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar
+```
+
+---
+
+### Fix 3 — Recommended Alternative: Upload Directly (Guaranteed to Work)
+
+Given the network complexity (air-gapped/proxy issues), **uploading `composer.phar` manually is the most reliable path**. You already have bastion access:
+
+```bash
+# Step 1: Download a real composer.phar from a machine that has internet
+# OR copy from any existing PHP server in your infra that already has composer
+
+# Step 2: Upload to JFrog local repo from bastion
+curl -k -u "v1021577:YOUR_TOKEN" \
+  -T /path/to/composer.phar \
+  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
+
+# Step 3: Verify upload (should be ~2.5MB)
+curl -k -u "v1021577:YOUR_TOKEN" \
+  -I "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
+```
+
+Then revert pipeline path back to:
+```yaml
+"${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/tools/composer/composer.phar"
+```
+
+---
+
+## Immediate Debug Steps (Do These Now)
+
+**From bastion**, run these to isolate the real problem:
+
+```bash
+# Test 1: Check what the remote proxy actually returns
+curl -k -v -u "v1021577:YOUR_TOKEN" \
+  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/download/composer.phar" \
+  2>&1 | head -50
+
+# Test 2: Check if the local repo path works (if you uploaded manually)
+curl -k -I -u "v1021577:YOUR_TOKEN" \
+  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
+
+# Test 3: List what's actually IN the virtual repo at /tools path
+curl -k -u "v1021577:YOUR_TOKEN" \
+  "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
+```
+
+Share the output and I can pinpoint exactly what's misconfigured in JFrog.
+
+---
+
+## Summary
+
+| Issue | Root Cause | Fix |
+|---|---|---|
+| 401 in CI | `JF_USER`/`JF_TOKEN` variables not reaching the job | Verify GitLab CI variable scope/masking |
+| 80 bytes from bastion | Remote repo URL redirects, JFrog doesn't follow | Upload `composer.phar` directly to local repo (fastest fix) |
