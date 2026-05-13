@@ -10,3 +10,12 @@ curl -k -I -u "v1021577:YOUR_TOKEN" \
 # Test 3: List what's actually IN the virtual repo at /tools path
 curl -k -u "v1021577:YOUR_TOKEN" \
   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
+# Check what getcomposer.org actually returns
+curl -v "https://getcomposer.org/download/latest-stable/composer.phar" 2>&1 | grep -E "Location|HTTP/"
+
+
+curl -k -u "v1021577:YOUR_TOKEN" \
+  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar" \
+  -o /tmp/composer.phar
+
+ls -lh /tmp/composer.phar   # Must be ~2.5MB
