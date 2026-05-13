@@ -1,30 +1,107 @@
+
+Search visible log output
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1992-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:15
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out 3b874e27 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:01
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Extracting SBI CA chain from JFrog ──
+cp: cannot create regular file '/etc/pki/ca-trust/source/anchors/jfrog-sbi-ca.crt': Permission denied
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+++++++++++++++++++++++++Sharing the complete configuration which was working in another build..................
+
 .build:
   stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/python-39:1-1778000668
 
   tags:
     - common_runner
 
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
+
   variables:
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
     JFROG_HOST: "artifactory.jfrog.sbi"
     JFROG_PORT: "443"
-    COMPOSER_ALLOW_SUPERUSER: "1"
 
   cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    key: "${CI_PROJECT_NAME}-pip-${CI_COMMIT_REF_SLUG}"
     paths:
-      - .composer-cache/
+      - .pip-cache/
 
   before_script:
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
+    # ─────────────────────────────────────────────
+    # Python Info
+    # ─────────────────────────────────────────────
+    - python3 --version
+    - pip3 --version
 
+    # ─────────────────────────────────────────────
+    # Extract JFrog CA Chain
+    # ─────────────────────────────────────────────
     - |
       set -eo pipefail
-      echo "── Extracting SBI CA chain from JFrog ──"
+
+      echo "── Extracting CA chain from ${JFROG_HOST}:${JFROG_PORT} ──"
+
       openssl s_client \
         -connect "${JFROG_HOST}:${JFROG_PORT}" \
         -showcerts \
@@ -35,81 +112,64 @@
           /-----END CERTIFICATE-----/   { capture=0 }
         ' > "${CI_PROJECT_DIR}/jfrog-ca-chain.crt"
 
+      echo "── Extracted certificates ──"
+
+      openssl crl2pkcs7 \
+        -nocrl \
+        -certfile "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
+      | openssl pkcs7 -print_certs -noout || true
+
+    # ─────────────────────────────────────────────
+    # Merge CA Bundles
+    # ─────────────────────────────────────────────
+    - |
       cat /etc/pki/tls/certs/ca-bundle.crt \
         "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
         > "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-      cp "${CI_PROJECT_DIR}/jfrog-ca-chain.crt" \
-         /etc/pki/ca-trust/source/anchors/jfrog-sbi-ca.crt
-      update-ca-trust extract
+    # ─────────────────────────────────────────────
+    # Configure pip SSL
+    # ─────────────────────────────────────────────
+    - pip3 config set global.cert "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
 
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-
-      echo "── CA trust updated successfully ──"
-
+    # ─────────────────────────────────────────────
+    # Configure JFrog Python Registry
+    # ─────────────────────────────────────────────
     - |
-      set -eo pipefail
-      echo "── Downloading Composer from JFrog ──"
-      curl -k -f \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
+      pip3 config set global.index-url \
+      "https://${JF_USER}:${JF_TOKEN}@${JFROG_HOST}/artifactory/api/pypi/itepaypg-sbiepay2-python-virtual/simple"
 
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
-
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small — download failed"
-        cat composer.phar
-        exit 1
-      fi
-
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    - |
-      set -eo pipefail
-      echo "── Configuring Composer to use Artifactory ──"
-      composer config --global \
-        repos.packagist composer \
-        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
-
-      composer config --global \
-        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
-
-      composer config --global \
-        cafile "${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+    - pip3 config set global.timeout 120
+    - pip3 config set global.disable-pip-version-check true
 
   script:
     - |
       set -eo pipefail
 
-      export SSL_CERT_FILE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
-      export CURL_CA_BUNDLE="${CI_PROJECT_DIR}/combined-ca-bundle.crt"
+      echo "Installing Python dependencies..."
 
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h || true
+      pip3 install --upgrade pip setuptools wheel
 
-      echo "===== INSTALLING DEPENDENCIES ====="
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist
+      pip3 install -r requirements.txt
 
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor directory not created"
-        exit 1
-      fi
+      echo "Installed packages:"
+      pip3 list
 
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "===== BUILD COMPLETE ====="
+      echo "Application structure:"
+      ls -ltrh
+
+      echo "✅ Python application build completed successfully"
+
+
 
   artifacts:
     paths:
-      - vendor/
+      - app.py
+      - requirements.txt
+      - package-registry/
+    reports:
+      dotenv: build.env
+    when: on_success
+
     expire_in: 1 day
+
