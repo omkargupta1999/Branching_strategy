@@ -1,3 +1,23 @@
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+
+WORKDIR /app
+
+# Copy application source and pre-installed dependencies from CI build stage
+COPY . /app
+
+ENV PYTHONPATH=/app/packages:/app
+
+EXPOSE 8080
+
+CMD ["python3", "app.py"]
+
+
+
+
+
+
+
 # ci/build/python.yml  |  Stage: build
 # Python microservice build
 #
