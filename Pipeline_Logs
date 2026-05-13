@@ -1,76 +1,52 @@
-## Critical Finding — Wrong Password / Credentials
+[osuser@bastion ~]$ curl -k -u 'v1021577:Kalyan2026$$' \
+>   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+}[osuser@bastion ~]$ curl -k -u 'v1021577:Kalyan2026$$'   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/"
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+}[osuser@bastion ~]$
+[osuser@bastion ~]$ curl -k -u 'v1021577:Kalyan2026$$' \
+>   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/"
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+}[osuser@bastion ~]$ curl -k -I -u 'v1021577:Kalyan2026$$' \
+>   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
+HTTP/1.1 401
+Server: nginx/1.20.1
+Date: Wed, 13 May 2026 07:11:53 GMT
+Content-Type: application/json;charset=ISO-8859-1
+Content-Length: 80
+Connection: keep-alive
+WWW-Authenticate: Basic realm="Artifactory Realm"
 
-Every single request is returning **401 Bad Credentials**. The credentials `v1021577:Kalyan2026$$` are **not working** against Artifactory.
-
-The `$$` in bash is a special variable (current process ID). When you type it in the shell, bash **expands `$$` to a number** like `12345`, so the actual password being sent is `Kalyan202612345` instead of `Kalyan2026$$`.
-
----
-
-## Verify This Is the Issue
-
-```bash
-# Check what $$ expands to in your shell
-echo $$
-# Will print something like: 23456
-
-# This means your curl is actually sending: Kalyan202623456
-echo "Kalyan2026$$"
-```
-
----
-
-## Fix — Quote the Password Correctly
-
-Use **single quotes** to prevent bash expansion:
-
-```bash
-# Use single quotes around the password — prevents $$ expansion
-curl -k -u 'v1021577:Kalyan2026$$' \
-  "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/tools/" 
-
-# Test all three commands with single quotes:
-
-# Test 1 — Verify credentials work
-curl -k -u 'v1021577:Kalyan2026$$' \
-  "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/"
-
-# Test 2 — Check local repo path
-curl -k -I -u 'v1021577:Kalyan2026$$' \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-local/tools/composer/composer.phar"
-
-# Test 3 — Download composer.phar via virtual repo
-curl -k -u 'v1021577:Kalyan2026$$' \
-  "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar" \
-  -o /tmp/composer.phar && ls -lh /tmp/composer.phar
-```
-
----
-
-## Also — Use API Key Instead of Password
-
-If your Artifactory password genuinely contains `$$` or other special characters, using an **API key** is far safer and avoids all shell escaping issues entirely.
-
-**Generate API key:**
-Artifactory UI → Top right → your username → **Edit Profile** → **Generate API Key**
-
-Then:
-```bash
-# Store in a variable safely
-JF_TOKEN="your-api-key-here"
-
-curl -k -u "v1021577:${JF_TOKEN}" \
-  "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/"
-```
-
-And in GitLab CI variables — set `JF_TOKEN` to the API key value, which has no special characters.
-
----
-
-## Summary
-
-| Problem | Cause | Fix |
-|---|---|---|
-| All requests returning 401 | `$$` in password expands in bash double quotes | Use single quotes `'v1021577:Kalyan2026$$'` in terminal |
-| CI pipeline 401 | Same or `JF_TOKEN` variable not set correctly | Use Artifactory API key — no special chars |
-
-**Run Test 1 first with single quotes** — once that returns 200, everything else will follow.
+[osuser@bastion ~]$
+[osuser@bastion ~]$ curl -k -u 'v1021577:Kalyan2026$$' \
+>   "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar" \
+>   -o /tmp/composer.phar && ls -lh /tmp/composer.phar
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    80  100    80    0     0    155      0 --:--:-- --:--:-- --:--:--   155
+-rw-r----- 1 osuser osuser 80 May 13 12:42 /tmp/composer.phar
+[osuser@bastion ~]$
+[osuser@bastion ~]$ JF_TOKEN="Kalyan2026$$"
+[osuser@bastion ~]$
+[osuser@bastion ~]$ curl -k -u "v1021577:${JF_TOKEN}" \
+>   "https://artifactory.jfrog.sbi/artifactory/api/storage/itepaypg-sbiepay2-php-virtual/"
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+}[osuser@bastion ~]$
+[osuser@bastion ~]$ echo JF_TOKEN
+JF_TOKEN
