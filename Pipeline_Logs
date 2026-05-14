@@ -1,78 +1,169 @@
-.image_sign:
-  stage: image-attest
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1990-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/.git/
+Created fresh repository.
+Checking out 9d38b644 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_dotnet-nuget-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
+$ dotnet --version
+9.0.109
+$ update-ca-trust --help || true
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt: Unknown error 13
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem: Unknown error 13
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/email-ca-bundle.pem: Unknown error 13
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/objsign-ca-bundle.pem: Unknown error 13
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/java/cacerts: Unknown error 13
+p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/edk2/cacerts.bin: Unknown error 13
+$ set -eo pipefail # collapsed multi-line command
+=== Extracting CA chain ===
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
+
+
+
+
+
+
+
+
+
+dotnet.yml ====================
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
   tags:
     - common_runner
 
+  variables:
+    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
+    JFROG_HOST: "artifactory.jfrog.sbi"
+    JFROG_PORT: "443"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .nuget/packages/
+
+  before_script:
+    - dotnet --version
+    - update-ca-trust --help || true
+    
+    # Extract JFrog certificate chain
+    - |
+        set -eo pipefail
+    
+        echo "=== Extracting CA chain ==="
+    
+        openssl s_client \
+          -connect "${JFROG_HOST}:${JFROG_PORT}" \
+          -showcerts \
+          </dev/null 2>/dev/null \
+        | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+        > /tmp/jfrog-chain.crt
+    
+        echo "=== Extracted certs ==="
+    
+        grep "BEGIN CERTIFICATE" /tmp/jfrog-chain.crt
+    
+    # Register into OS trust store
+    - |
+        cp /tmp/jfrog-chain.crt /etc/pki/ca-trust/source/anchors/jfrog-chain.crt
+    
+        update-ca-trust
+    
+        echo "=== Trust store updated ==="
+    
+    # Verify trust
+    - |
+        openssl s_client \
+          -connect "${JFROG_HOST}:${JFROG_PORT}" \
+          -CApath /etc/ssl/certs \
+          </dev/null
+    
+    # Create NuGet config
+    - |
+        cat > /tmp/nuget.config <<EOF
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+    
+          <packageSources>
+            <clear />
+            <add key="jfrog" value="https://${JFROG_HOST}/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
+          </packageSources>
+    
+          <packageSourceCredentials>
+            <jfrog>
+              <add key="Username" value="${JF_USER}" />
+              <add key="ClearTextPassword" value="${JF_TOKEN}" />
+            </jfrog>
+          </packageSourceCredentials>
+    
+        </configuration>
+        EOF
   script:
     - |
       set -eo pipefail
 
-      # ── Debug CI variables ────────────────────────────────────────────────
-      echo "── Checking CI variable availability ──"
-      echo "COSIGN_KEY is set:       ${COSIGN_KEY:+YES}"
-      echo "COSIGN_PUB is set:       ${COSIGN_PUB:+YES}"
-      echo "ARTIFACTORY_CERT is set: ${ARTIFACTORY_CERT:+YES}"
-      echo "JF_USER is set:          ${JF_USER:+YES}"
-      echo "JF_TOKEN is set:         ${JF_TOKEN:+YES}"
-      echo "COSIGN_KEY value:        $COSIGN_KEY"
-      echo "COSIGN_PUB value:        $COSIGN_PUB"
-      echo "ARTIFACTORY_CERT value:  $ARTIFACTORY_CERT"
+      if [ -z "$VERSION" ]; then
+        echo "ERROR: VERSION missing"
+        exit 1
+      fi
 
-      # ── Redirect Docker config to writable directory ───────────────────────
-      export DOCKER_CONFIG="${CI_PROJECT_DIR}/.docker"
-      mkdir -p "${DOCKER_CONFIG}"
+      echo "Building VERSION: $VERSION"
 
-      # ── Inject SBI CA via env var ─────────────────────────────────────────
-      export SSL_CERT_FILE="$ARTIFACTORY_CERT"
-      export CURL_CA_BUNDLE="$ARTIFACTORY_CERT"
-      echo "── CA trust configured ──"
+      dotnet restore --configfile /tmp/nuget.config
 
-      # ── Disable keyless/Fulcio signing completely ──────────────────────────
-      export COSIGN_EXPERIMENTAL=0
-      export SIGSTORE_NO_CACHE=1
-      export COSIGN_FULCIO_URL="http://localhost"
-      export COSIGN_REKOR_URL="http://localhost"
+      cat /tmp/nuget.config
 
-      # ── Write key files to known writable paths ────────────────────────────
-      SIGN_KEY_PATH="${CI_PROJECT_DIR}/cosign.key"
-      VERIFY_KEY_PATH="${CI_PROJECT_DIR}/cosign.pub"
+      dotnet build \
+        --configuration Release \
+        --no-restore \
+        /p:Version="$VERSION"
 
-      cp "$COSIGN_KEY" "$SIGN_KEY_PATH"
-      cp "$COSIGN_PUB" "$VERIFY_KEY_PATH"
-      chmod 600 "$SIGN_KEY_PATH"
-      chmod 644 "$VERIFY_KEY_PATH"
+      dotnet publish \
+        --configuration Release \
+        --no-build \
+        --output ./publish
 
-      echo "── Key files ready ──"
-      echo "Private key: $(wc -c < $SIGN_KEY_PATH) bytes"
-      echo "Public key:  $(wc -c < $VERIFY_KEY_PATH) bytes"
+      echo "Publish output:"
+      ls -lh publish/
 
-      # ── Registry login ────────────────────────────────────────────────────
-      echo "$JF_TOKEN" | cosign login "$CI_TEMPLATE_REGISTRY_HOST" \
-        --username "$JF_USER" \
-        --password-stdin
-      echo "── Registry login successful ──"
+  artifacts:
+    paths:
+      - publish/
+    expire_in: 1 day
 
-      # ── Sign image ────────────────────────────────────────────────────────
-      IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
-      echo "── Signing: $IMAGE_REF ──"
 
-      cosign sign \
-        --key "${SIGN_KEY_PATH}" \
-        --allow-insecure-registry \
-        --yes \
-        "$IMAGE_REF"
-
-      # ── Verify signature ──────────────────────────────────────────────────
-      echo "── Verifying: $IMAGE_REF ──"
-
-      cosign verify \
-        --key "${VERIFY_KEY_PATH}" \
-        --allow-insecure-registry \
-        "$IMAGE_REF"
-
-      echo "✅ Image signed and verified: $IMAGE_REF"
-
-image:sign:
-  extends: .image_sign
+# ACTUAL JOB (IMPORTANT)
+build:
+  extends: .build
