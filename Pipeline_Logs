@@ -1,48 +1,218 @@
-before_script:
-  - dotnet --version
+# ci/build/dotnet.yml  |  Stage: build
+# .NET microservice build with dotnet CLI
+#
+# ── Dependency resolution — JFrog NuGet virtual repository ───────────────────
+# Repository:
+# https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json
+#
+# Auth:
+# JF_USER + JF_TOKEN via NuGet packageSourceCredentials
+#
+# SSL/TLS:
+# Non-root container → cannot modify OS trust store (/etc/pki)
+# Use GitLab File Variable ARTIFACTORY_CERT directly through:
+#   SSL_CERT_FILE
+#   CURL_CA_BUNDLE
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# .nuget/packages/ reused between pipelines
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# dotnet SDK image required for restore/build/publish
+# runtime image cannot compile applications
 
-  # ── Configure certificate for non-root container ───────────────────────
-  - |
-      echo "========================================"
-      echo "Configuring JFrog certificate"
-      echo "========================================"
+.build:
+  stage: build
 
-      if [ ! -f "$ARTIFACTORY_CERT" ]; then
-        echo "ERROR: ARTIFACTORY_CERT file variable missing"
-        exit 1
-      fi
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
 
-      ls -lh "$ARTIFACTORY_CERT"
+  tags:
+    - common_runner
 
-      # Use certificate directly without OS trust-store modification
-      export SSL_CERT_FILE="$ARTIFACTORY_CERT"
-      export CURL_CA_BUNDLE="$ARTIFACTORY_CERT"
+  variables:
+    # NuGet cache location
+    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
 
-      echo "SSL_CERT_FILE=$SSL_CERT_FILE"
+    # Non-root TLS trust configuration
+    SSL_CERT_FILE: "${ARTIFACTORY_CERT}"
+    CURL_CA_BUNDLE: "${ARTIFACTORY_CERT}"
 
-  # ── Create NuGet.config ────────────────────────────────────────────────
-  - |
-      mkdir -p "${NUGET_PACKAGES}"
+  cache:
+    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
 
-      cat > /tmp/nuget.config << NUGETEOF
-      <?xml version="1.0" encoding="utf-8"?>
-      <configuration>
+    paths:
+      - .nuget/packages/
 
-        <packageSources>
-          <clear />
-          <add
-            key="JFrog-NuGet"
-            value="https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
-        </packageSources>
+  before_script:
+    # ── Verify dotnet SDK ───────────────────────────────────────────────────
+    - dotnet --version
 
-        <packageSourceCredentials>
-          <JFrog-NuGet>
-            <add key="Username" value="${JF_USER}" />
-            <add key="ClearTextPassword" value="${JF_TOKEN}" />
-          </JFrog-NuGet>
-        </packageSourceCredentials>
+    # ── Diagnostics ─────────────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Container Diagnostics"
+        echo "========================================"
 
-      </configuration>
-      NUGETEOF
+        whoami || true
+        id || true
+        pwd || true
 
-      echo "NuGet configuration created"
+    # ── Validate GitLab File Variable ──────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Validating ARTIFACTORY_CERT"
+        echo "========================================"
+
+        if [ -z "$ARTIFACTORY_CERT" ]; then
+          echo "ERROR: ARTIFACTORY_CERT variable missing"
+          exit 1
+        fi
+
+        if [ ! -f "$ARTIFACTORY_CERT" ]; then
+          echo "ERROR: ARTIFACTORY_CERT file not found"
+          exit 1
+        fi
+
+        ls -lh "$ARTIFACTORY_CERT"
+
+        echo "Certificate detected successfully"
+
+    # ── Validate certificate format ────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Validating certificate format"
+        echo "========================================"
+
+        openssl x509 \
+          -in "$ARTIFACTORY_CERT" \
+          -text \
+          -noout >/dev/null
+
+        echo "Certificate validation successful"
+
+    # ── Connectivity validation ────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Testing JFrog TLS connectivity"
+        echo "========================================"
+
+        curl -vkI \
+          --cacert "$ARTIFACTORY_CERT" \
+          https://artifactory.jfrog.sbi || true
+
+    # ── Create NuGet configuration ─────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Creating NuGet configuration"
+        echo "========================================"
+
+        mkdir -p "${NUGET_PACKAGES}"
+
+        cat > /tmp/nuget.config << NUGETEOF
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+
+          <packageSources>
+            <clear />
+
+            <add
+              key="JFrog-NuGet"
+              value="https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
+
+          </packageSources>
+
+          <packageSourceCredentials>
+
+            <JFrog-NuGet>
+              <add key="Username" value="${JF_USER}" />
+              <add key="ClearTextPassword" value="${JF_TOKEN}" />
+            </JFrog-NuGet>
+
+          </packageSourceCredentials>
+
+        </configuration>
+        NUGETEOF
+
+        echo "NuGet configuration created"
+
+  script:
+    - |
+        set -eo pipefail
+
+        echo "========================================"
+        echo "Validating VERSION variable"
+        echo "========================================"
+
+        if [ -z "$VERSION" ]; then
+          echo "ERROR: VERSION is empty"
+          echo "semver dotenv artifact may not be loaded"
+          exit 1
+        fi
+
+        echo "Building VERSION: ${VERSION}"
+
+    # ── Restore dependencies ───────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet restore"
+        echo "========================================"
+
+        dotnet restore \
+          --configfile /tmp/nuget.config \
+          --verbosity minimal
+
+    # ── Build application ──────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet build"
+        echo "========================================"
+
+        dotnet build \
+          --configuration Release \
+          --no-restore \
+          /p:Version="${VERSION}" \
+          /p:AssemblyVersion="${VERSION}" \
+          /p:FileVersion="${VERSION}"
+
+    # ── Publish application ────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet publish"
+        echo "========================================"
+
+        dotnet publish \
+          --configuration Release \
+          --no-build \
+          --output ./publish
+
+    # ── Validate publish output ────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Validating publish output"
+        echo "========================================"
+
+        if [ ! -d "publish" ]; then
+          echo "ERROR: publish directory not found"
+          exit 1
+        fi
+
+        if [ -z "$(ls -A publish/)" ]; then
+          echo "ERROR: publish directory is empty"
+          exit 1
+        fi
+
+        echo "Publish output:"
+        ls -lh publish/
+
+        echo "Build completed successfully"
+
+  artifacts:
+    paths:
+      - publish/
+
+    expire_in: 1 day
+
+
+# Actual Build Job
+build:
+  extends: .build
