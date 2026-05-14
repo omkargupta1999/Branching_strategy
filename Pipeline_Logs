@@ -1,169 +1,170 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1990-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/.git/
-Created fresh repository.
-Checking out 9d38b644 as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for merchant_api_simulator_dotnet-nuget-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:02
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-$ dotnet --version
-9.0.109
-$ update-ca-trust --help || true
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt: Unknown error 13
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem: Unknown error 13
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/email-ca-bundle.pem: Unknown error 13
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/pem/objsign-ca-bundle.pem: Unknown error 13
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/java/cacerts: Unknown error 13
-p11-kit: couldn't create file: /etc/pki/ca-trust/extracted/edk2/cacerts.bin: Unknown error 13
-$ set -eo pipefail # collapsed multi-line command
-=== Extracting CA chain ===
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-
-
-
-
-dotnet.yml ====================
-
 .build:
   stage: build
+
   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
+
   tags:
     - common_runner
 
   variables:
     NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
+
     JFROG_HOST: "artifactory.jfrog.sbi"
     JFROG_PORT: "443"
 
+    # Use local CA bundle instead of modifying OS trust store
+    SSL_CERT_FILE: "/tmp/jfrog-chain.crt"
+    CURL_CA_BUNDLE: "/tmp/jfrog-chain.crt"
+
   cache:
     key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
+
     paths:
       - .nuget/packages/
 
   before_script:
     - dotnet --version
-    - update-ca-trust --help || true
-    
+
     # Extract JFrog certificate chain
     - |
         set -eo pipefail
-    
-        echo "=== Extracting CA chain ==="
-    
+
+        echo "========================================"
+        echo "Extracting JFrog certificate chain"
+        echo "========================================"
+
         openssl s_client \
+          -servername "${JFROG_HOST}" \
           -connect "${JFROG_HOST}:${JFROG_PORT}" \
           -showcerts \
           </dev/null 2>/dev/null \
-        | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+        | awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/' \
         > /tmp/jfrog-chain.crt
-    
-        echo "=== Extracted certs ==="
-    
+
+        test -s /tmp/jfrog-chain.crt
+
+        echo "Certificates extracted successfully"
+
         grep "BEGIN CERTIFICATE" /tmp/jfrog-chain.crt
-    
-    # Register into OS trust store
+
+    # Validate extracted certificate
     - |
-        cp /tmp/jfrog-chain.crt /etc/pki/ca-trust/source/anchors/jfrog-chain.crt
-    
-        update-ca-trust
-    
-        echo "=== Trust store updated ==="
-    
-    # Verify trust
+        echo "========================================"
+        echo "Validating certificate"
+        echo "========================================"
+
+        openssl x509 \
+          -in /tmp/jfrog-chain.crt \
+          -text \
+          -noout >/dev/null
+
+        echo "Certificate validation successful"
+
+    # Verify connectivity to JFrog using extracted CA
     - |
+        echo "========================================"
+        echo "Testing TLS connectivity"
+        echo "========================================"
+
         openssl s_client \
+          -servername "${JFROG_HOST}" \
           -connect "${JFROG_HOST}:${JFROG_PORT}" \
-          -CApath /etc/ssl/certs \
-          </dev/null
-    
-    # Create NuGet config
+          -CAfile /tmp/jfrog-chain.crt \
+          </dev/null >/dev/null 2>&1
+
+        echo "TLS verification successful"
+
+    # Create NuGet configuration
     - |
+        echo "========================================"
+        echo "Creating NuGet configuration"
+        echo "========================================"
+
         cat > /tmp/nuget.config <<EOF
         <?xml version="1.0" encoding="utf-8"?>
         <configuration>
-    
+
           <packageSources>
             <clear />
-            <add key="jfrog" value="https://${JFROG_HOST}/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
+            <add
+              key="jfrog"
+              value="https://${JFROG_HOST}/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
           </packageSources>
-    
+
           <packageSourceCredentials>
             <jfrog>
               <add key="Username" value="${JF_USER}" />
               <add key="ClearTextPassword" value="${JF_TOKEN}" />
             </jfrog>
           </packageSourceCredentials>
-    
+
         </configuration>
         EOF
+
+        echo "NuGet configuration created"
+
   script:
     - |
-      set -eo pipefail
+        set -eo pipefail
 
-      if [ -z "$VERSION" ]; then
-        echo "ERROR: VERSION missing"
-        exit 1
-      fi
+        echo "========================================"
+        echo "Validating VERSION variable"
+        echo "========================================"
 
-      echo "Building VERSION: $VERSION"
+        if [ -z "$VERSION" ]; then
+          echo "ERROR: VERSION variable is missing"
+          exit 1
+        fi
 
-      dotnet restore --configfile /tmp/nuget.config
+        echo "Building VERSION: $VERSION"
 
-      cat /tmp/nuget.config
+    # Restore dependencies
+    - |
+        echo "========================================"
+        echo "Running dotnet restore"
+        echo "========================================"
 
-      dotnet build \
-        --configuration Release \
-        --no-restore \
-        /p:Version="$VERSION"
+        dotnet restore \
+          --configfile /tmp/nuget.config \
+          --verbosity minimal
 
-      dotnet publish \
-        --configuration Release \
-        --no-build \
-        --output ./publish
+    # Build application
+    - |
+        echo "========================================"
+        echo "Running dotnet build"
+        echo "========================================"
 
-      echo "Publish output:"
-      ls -lh publish/
+        dotnet build \
+          --configuration Release \
+          --no-restore \
+          /p:Version="$VERSION"
+
+    # Publish application
+    - |
+        echo "========================================"
+        echo "Running dotnet publish"
+        echo "========================================"
+
+        dotnet publish \
+          --configuration Release \
+          --no-build \
+          --output ./publish
+
+    # Verify publish output
+    - |
+        echo "========================================"
+        echo "Publish output"
+        echo "========================================"
+
+        ls -lh publish/
 
   artifacts:
     paths:
       - publish/
+
     expire_in: 1 day
 
 
-# ACTUAL JOB (IMPORTANT)
+# Actual Job
 build:
   extends: .build
