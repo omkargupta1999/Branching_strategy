@@ -1,58 +1,204 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:16
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Authenticating with credentials from $DOCKER_AUTH_CONFIG
-Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-1975-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:01
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_php/.git/
-Created fresh repository.
-Checking out 930954af as detached HEAD (ref is feature/php_sdk_140526)...
-Skipping Git submodules setup
-Restoring cache
-00:01
-Checking cache for epay_transaction_sdk_php-composer-feature-php-sdk-140526-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-01:01
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
-$ php --version
-PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.30, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
-$ set -eo pipefail # collapsed multi-line command
-── Downloading Composer from JFrog ──
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 3403k  100 3403k    0     0  38.6M      0 --:--:-- --:--:-- --:--:-- 38.6M
-Downloaded size: 3485155 bytes
-Storing "stable" as default update channel for the next self-update run.
-The following exception probably indicates you are offline or have misconfigured DNS resolver(s)
-In CurlDownloader.php line 409:
-                                                                               
-  curl error 6 while downloading https://getcomposer.org/versions: Could not   
-  resolve host: getcomposer.org                                                
-                                                                               
-self-update [-r|--rollback] [--clean-backups] [--no-progress] [--update-keys] [--stable] [--preview] [--snapshot] [--1] [--2] [--2.2] [--set-channel-only] [--] [<version>]
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+# ci/build/dotnet.yml  |  Stage: build
+# .NET microservice build with dotnet CLI
+#
+# ── Dependency resolution — JFrog NuGet virtual repository ───────────────────
+# Repository:
+# https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json
+#
+# Auth:
+# JF_USER + JF_TOKEN via NuGet packageSourceCredentials
+#
+# SSL/TLS:
+# Non-root container → cannot modify OS trust store (/etc/pki)
+# Use GitLab File Variable ARTIFACTORY_CERT directly through:
+#   SSL_CERT_FILE
+#   CURL_CA_BUNDLE
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# .nuget/packages/ reused between pipelines
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# dotnet SDK image required for restore/build/publish
+# runtime image cannot compile applications
+
+.build:
+  stage: build
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
+
+  tags:
+    - common_runner
+
+  variables:
+    # NuGet cache
+    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
+
+    # TLS certificate configuration for non-root containers
+    SSL_CERT_FILE: "${ARTIFACTORY_CERT}"
+    CURL_CA_BUNDLE: "${ARTIFACTORY_CERT}"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
+
+    paths:
+      - .nuget/packages/
+
+  before_script:
+    # ── Verify SDK ─────────────────────────────────────────────────────────
+    - dotnet --version
+
+    # ── Diagnostics ───────────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Container Diagnostics"
+        echo "========================================"
+
+        whoami || true
+        id || true
+        pwd || true
+
+    # ── Validate GitLab file variable ─────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Validating ARTIFACTORY_CERT"
+        echo "========================================"
+
+        if [ -z "$ARTIFACTORY_CERT" ]; then
+          echo "ERROR: ARTIFACTORY_CERT variable missing"
+          exit 1
+        fi
+
+        if [ ! -f "$ARTIFACTORY_CERT" ]; then
+          echo "ERROR: ARTIFACTORY_CERT file not found"
+          exit 1
+        fi
+
+        ls -lh "$ARTIFACTORY_CERT"
+
+        echo "Certificate file detected"
+
+    # # ── Validate JFrog connectivity ───────────────────────────────────────
+    # - |
+    #     echo "========================================"
+    #     echo "Testing JFrog connectivity"
+    #     echo "========================================"
+
+    #     curl -vkI \
+    #       --cacert "$ARTIFACTORY_CERT" \
+    #       https://artifactory.jfrog.sbi || true
+
+    # ── Create NuGet config ───────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Creating NuGet configuration"
+        echo "========================================"
+
+        mkdir -p "${NUGET_PACKAGES}"
+
+        cat > /tmp/nuget.config <<EOF
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+
+          <packageSources>
+            <clear />
+            <add key="LocalPackages" value="${CI_PROJECT_DIR}/package-registry" />
+            <add
+              key="JFrog-NuGet"
+              value="https://artifactory.jfrog.sbi/artifactory/api/nuget/v3/itepaypg-sbiepay2-nuget-virtual/index.json" />
+
+          </packageSources>
+
+          <packageSourceCredentials>
+
+            <JFrog-NuGet>
+              <add key="Username" value="${JF_USER}" />
+              <add key="ClearTextPassword" value="${JF_TOKEN}" />
+            </JFrog-NuGet>
+
+          </packageSourceCredentials>
+
+        </configuration>
+        EOF
+
+        echo "NuGet configuration created"
+
+  script:
+    # ── Validate VERSION ──────────────────────────────────────────────────
+    - |
+        set -eo pipefail
+
+        echo "========================================"
+        echo "Validating VERSION"
+        echo "========================================"
+
+        if [ -z "$VERSION" ]; then
+          echo "ERROR: VERSION variable missing"
+          exit 1
+        fi
+
+        echo "Building VERSION: ${VERSION}"
+
+    # ── Restore dependencies ──────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet restore"
+        echo "========================================"
+
+        dotnet restore \
+          --configfile /tmp/nuget.config \
+          --verbosity minimal
+
+    # ── Build application ─────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet build"
+        echo "========================================"
+
+        dotnet build \
+          --configuration Release \
+          --no-restore \
+          /p:Version="${VERSION}" \
+          /p:AssemblyVersion="${VERSION}" \
+          /p:FileVersion="${VERSION}"
+
+    # ── Publish application ───────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Running dotnet publish"
+        echo "========================================"
+
+        dotnet publish \
+          --configuration Release \
+          --no-build \
+          --output ./publish
+
+    # ── Validate output ───────────────────────────────────────────────────
+    - |
+        echo "========================================"
+        echo "Validating publish output"
+        echo "========================================"
+
+        if [ ! -d "publish" ]; then
+          echo "ERROR: publish directory missing"
+          exit 1
+        fi
+
+        if [ -z "$(ls -A publish/)" ]; then
+          echo "ERROR: publish directory empty"
+          exit 1
+        fi
+
+        echo "Publish output:"
+        ls -lh publish/
+
+        echo "Build completed successfully"
+
+  artifacts:
+    paths:
+      - publish/
+
+    expire_in: 1 day
+
+
+build:
+  extends: .build
