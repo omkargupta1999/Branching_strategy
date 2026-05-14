@@ -20,9 +20,10 @@ Still getting the same error for your reference and other details help me to reo
 pipeline Output ...........
 
 
+
 Search visible log output
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
 Resolving secrets
 Preparing the "docker" executor
 00:01
@@ -35,16 +36,16 @@ Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a6
 Using locally found image version due to "if-not-present" pull policy
 Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
 Preparing environment
-00:01
+00:00
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1990-concurrent-0 via PE3DSOPGrunners4...
+Running on runner-6v7r1sqdv-project-1990-concurrent-0 via PE3DSOPGRUNNERS5...
 Getting source from Git repository
-00:03
+00:04
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/.git/
 Created fresh repository.
-Checking out 90ec6b97 as detached HEAD (ref is release/uat)...
+Checking out 7aeea58b as detached HEAD (ref is release/uat)...
 Skipping Git submodules setup
 Restoring cache
 00:01
@@ -53,7 +54,7 @@ No URL provided, cache will not be downloaded from shared cache server. Instead 
 WARNING: Cache file does not exist                 
 Failed to extract cache
 Executing "step_script" stage of the job script
-00:03
+00:05
 Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
 $ dotnet --version
 9.0.109
@@ -68,7 +69,7 @@ $ echo "========================================" # collapsed multi-line command
 ========================================
 Validating ARTIFACTORY_CERT
 ========================================
--rw-rw-rw- 1 root root 4.1K May 14 09:37 /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet.tmp/ARTIFACTORY_CERT
+-rw-rw-rw-. 1 root root 4.1K May 14 09:53 /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet.tmp/ARTIFACTORY_CERT
 Certificate file detected
 $ echo "========================================" # collapsed multi-line command
 ========================================
@@ -79,16 +80,16 @@ $ set -eo pipefail # collapsed multi-line command
 ========================================
 Validating VERSION
 ========================================
-Building VERSION: 1.0.57705
+Building VERSION: 1.0.57722
 $ echo "========================================" # collapsed multi-line command
 ========================================
 Running dotnet restore
 ========================================
   Determining projects to restore...
 /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj : error NU1101: Unable to find package epay_dotnet_sdk. No packages exist with this id in source(s): /usr/lib64/dotnet/library-packs, JFrog-NuGet
-  Failed to restore /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj (in 1.63 sec).
+  Failed to restore /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj (in 825 ms).
 Cleaning up project directory and file based variables
-00:01
+00:00
 ERROR: Job failed: exit code 1
 
 
@@ -308,9 +309,11 @@ build:
 <configuration>
 	<packageSources>
 		<!-- Official NuGet feed for dependencies -->
+		<add key="LocalPackages" value="./package-registry" />
 		<add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+
 	</packageSources>
-</configuratio
+</configuration>
 
 =============================================== From Jfrog I fetch it from Set me up 
 
