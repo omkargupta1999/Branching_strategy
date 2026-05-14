@@ -1,95 +1,40 @@
-# ci/image/image.sign.yml  |  Stage: image-attest
-# Cosign key-based image signing — fully on-prem, no internet required
-# Signs image DIGEST (not tag) — immutable signature
-# Runs AFTER image-scan passes, BEFORE image-push
-#
-# ── Cosign version ────────────────────────────────────────────────────────────
-# Image: rhtas/cosign-rhel9:1.3.4 (Red Hat Trusted Artifact Signer build)
-# --tls-verify flag not supported — use --allow-insecure-registry
-# file:// scheme not supported — key path passed directly to --key
-# Keyless signing disabled via COSIGN_FULCIO_URL + COSIGN_REKOR_URL override
-#
-# ── TLS trust ─────────────────────────────────────────────────────────────────
-# Container runs as non-root — SSL_CERT_FILE used instead of system store
-#
-# ── Registry auth ─────────────────────────────────────────────────────────────
-# DOCKER_CONFIG redirected to CI_PROJECT_DIR — writable by non-root runner
-#
-# ── GitLab CI Variables required ─────────────────────────────────────────────
-# COSIGN_KEY       — private key file variable for signing
-# COSIGN_PUB       — public key file variable for verification
-# JF_USER          — Artifactory username for registry login
-# JF_TOKEN         — Artifactory API key for registry login
-# ARTIFACTORY_CERT — SBI internal CA certificate file variable
-
-.image_sign:
-  stage: image-attest
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019
-
-  tags:
-    - common_runner
-
-  script:
-    - |
-      set -eo pipefail
-
-      # ── Redirect Docker config to writable directory ───────────────────────
-      export DOCKER_CONFIG="${CI_PROJECT_DIR}/.docker"
-      mkdir -p "${DOCKER_CONFIG}"
-
-      # ── Inject SBI CA via env var ─────────────────────────────────────────
-      export SSL_CERT_FILE="$ARTIFACTORY_CERT"
-      export CURL_CA_BUNDLE="$ARTIFACTORY_CERT"
-      echo "── CA trust configured ──"
-
-      # ── Disable keyless/Fulcio signing completely ──────────────────────────
-      export COSIGN_EXPERIMENTAL=0
-      export SIGSTORE_NO_CACHE=1
-      export COSIGN_FULCIO_URL="http://localhost"
-      export COSIGN_REKOR_URL="http://localhost"
-
-      # ── Write key files to known writable paths ────────────────────────────
-      # COSIGN_KEY/COSIGN_PUB are GitLab file variables — GitLab sets them to
-      # a temp file path containing the key content. Copy to project dir to
-      # guarantee a clean known path. Pass path directly — no file:// scheme.
-      SIGN_KEY_PATH="${CI_PROJECT_DIR}/cosign.key"
-      VERIFY_KEY_PATH="${CI_PROJECT_DIR}/cosign.pub"
-
-      cp "$COSIGN_KEY" "$SIGN_KEY_PATH"
-      cp "$COSIGN_PUB" "$VERIFY_KEY_PATH"
-      chmod 600 "$SIGN_KEY_PATH"
-      chmod 644 "$VERIFY_KEY_PATH"
-
-      echo "── Key files ready ──"
-      echo "Private key: $(wc -c < $SIGN_KEY_PATH) bytes"
-      echo "Public key:  $(wc -c < $VERIFY_KEY_PATH) bytes"
-
-      # ── Registry login ────────────────────────────────────────────────────
-      echo "$JF_TOKEN" | cosign login "$CI_TEMPLATE_REGISTRY_HOST" \
-        --username "$JF_USER" \
-        --password-stdin
-      echo "── Registry login successful ──"
-
-      # ── Sign image ────────────────────────────────────────────────────────
-      # Key path passed directly — file:// scheme not supported in rhtas 1.3.4
-      IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
-      echo "── Signing: $IMAGE_REF ──"
-
-      cosign sign \
-        --key "${SIGN_KEY_PATH}" \
-        --allow-insecure-registry \
-        --yes \
-        "$IMAGE_REF"
-
-      # ── Verify signature ──────────────────────────────────────────────────
-      echo "── Verifying: $IMAGE_REF ──"
-
-      cosign verify \
-        --key "${VERIFY_KEY_PATH}" \
-        --allow-insecure-registry \
-        "$IMAGE_REF"
-
-      echo "✅ Image signed and verified: $IMAGE_REF"
-
-image:sign:
-  extends: .image_sign
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1993-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_python/.git/
+Created fresh repository.
+Checking out b1453add as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Downloading artifacts
+00:12
+Downloading artifacts for build (246700)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=246700 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for image:build (246704)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=246704 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:c1c9fa225f38429112da5b0fa4f162cbe3daa31a693750224e622c55c64966a8 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9:1.3.4-1776330019 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/rhtas/cosign-rhel9@sha256:b7599fcedc9a0777b71b048f7a5ca39371484483d25ddf33c4b4949a66d7eb78 ...
+$ set -eo pipefail # collapsed multi-line command
+── CA trust configured ──
+cp: cannot stat '': No such file or directory
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
