@@ -1,120 +1,218 @@
 
 Search visible log output
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
 Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 ...
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
 Preparing environment
-00:02
+00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1990-concurrent-0 via PE3DSOPGrunners4...
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1975-concurrent-0 via PE3DSOPGRUNNERS6...
 Getting source from Git repository
-00:04
+00:02
 Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/.git/
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_php/.git/
 Created fresh repository.
-Checking out 1301430a as detached HEAD (ref is release/uat)...
+Checking out 13750021 as detached HEAD (ref is feature/php_sdk_140526)...
 Skipping Git submodules setup
 Restoring cache
 00:01
-Checking cache for merchant_api_simulator_dotnet-nuget-release-uat-non_protected...
-Failed to extract cache
+Checking cache for epay_transaction_sdk_php-composer-feature-php-sdk-140526-non_protected...
 No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
 WARNING: Cache file does not exist                 
+Failed to extract cache
 Executing "step_script" stage of the job script
-00:19
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-$ dotnet --version
-9.0.109
-$ echo "========================================" # collapsed multi-line command
-========================================
-Container Diagnostics
-========================================
-default
-uid=1001(default) gid=0(root) groups=0(root)
-/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet
-$ echo "========================================" # collapsed multi-line command
-========================================
-Validating ARTIFACTORY_CERT
-========================================
--rw-rw-rw- 1 root root 4.1K May 14 10:06 /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet.tmp/ARTIFACTORY_CERT
-Certificate file detected
-$ echo "========================================" # collapsed multi-line command
-========================================
-Creating NuGet configuration
-========================================
-NuGet configuration created
+00:04
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
 $ set -eo pipefail # collapsed multi-line command
-========================================
-Validating VERSION
-========================================
-Building VERSION: 1.0.57744
-$ echo "========================================" # collapsed multi-line command
-========================================
-Running dotnet restore
-========================================
-  Determining projects to restore...
-/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj : warning NU1701: Package 'BouncyCastle 1.8.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net9.0'. This package may not be fully compatible with your project.
-  Restored /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj (in 2.57 sec).
-$ echo "========================================" # collapsed multi-line command
-========================================
-Running dotnet build
-========================================
-/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj : warning NU1701: Package 'BouncyCastle 1.8.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net9.0'. This package may not be fully compatible with your project.
-  Simulator -> /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/bin/Release/net9.0/Simulator.dll
-Build succeeded.
-/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj : warning NU1701: Package 'BouncyCastle 1.8.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net9.0'. This package may not be fully compatible with your project.
-    1 Warning(s)
-    0 Error(s)
-Time Elapsed 00:00:11.29
-$ echo "========================================" # collapsed multi-line command
-========================================
-Running dotnet publish
-========================================
-/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/Simulator.csproj : warning NU1701: Package 'BouncyCastle 1.8.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net9.0'. This package may not be fully compatible with your project.
-  Simulator -> /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/publish/
-$ echo "========================================" # collapsed multi-line command
-========================================
-Validating publish output
-========================================
-Publish output:
-total 3.3M
--rwxr--r-- 1 default root 2.5M Dec  8  2020 BouncyCastle.Crypto.dll
--rwxr--r-- 1 default root 233K Jul 10  2025 Polly.Core.dll
--rwxr--r-- 1 default root 281K Jul 10  2025 Polly.dll
--rwxr--r-- 1 default root  69K Jan 30 06:24 SBIePay.SDK.dll
--rwxr-xr-x 1 default root  93K May 14 10:07 Simulator
--rw-r--r-- 1 default root 3.1K May 14 10:07 Simulator.deps.json
--rw-r--r-- 1 default root  30K May 14 10:07 Simulator.dll
--rw-r--r-- 1 default root  25K May 14 10:07 Simulator.pdb
--rw-r--r-- 1 default root  469 May 14 10:07 Simulator.runtimeconfig.json
--rw-r--r-- 1 default root   66 May 14 10:07 Simulator.staticwebassets.endpoints.json
-drwxr-xr-x 2 default root   22 May 14 10:07 config
--rwxr--r-- 1 default root  21K Jul 11  2025 dotenv.net.dll
--rw-rw-rw- 1 default root  305 May 14 10:06 nuget.config
--rw-r--r-- 1 default root  485 May 14 10:07 web.config
-Build completed successfully
-Saving cache for successful job
-00:02
-Creating cache merchant_api_simulator_dotnet-nuget-release-uat-non_protected...
-.nuget/packages/: found 93 matching artifact files and directories 
-No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
-Created cache
-Uploading artifacts for successful job
-00:02
-Uploading artifacts...
-publish/: found 16 matching artifact files and directories 
-Uploading artifacts as "archive" to coordinator... 201 Created  id=306010 responseStatus=201 Created token=eyJraWQiO
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0  10.0M      0 --:--:-- --:--:-- --:--:--  9.9M
+Downloaded size: 3485155 bytes
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+$ set -eo pipefail # collapsed multi-line command
+── Configuring Composer ──
+── Composer configured ──
+$ set -eo pipefail # collapsed multi-line command
+===== SYSTEM INFO =====
+               total        used        free      shared  buff/cache   available
+Mem:           125Gi        90Gi       7.5Gi        33Mi        28Gi        34Gi
+Swap:          4.0Gi          0B       4.0Gi
+Filesystem                     Size  Used Avail Use% Mounted on
+overlay                        600G  162G  439G  27% /
+tmpfs                           64M     0   64M   0% /dev
+shm                            4.0G     0  4.0G   0% /dev/shm
+/dev/mapper/vg_runner-lv_data  600G  162G  439G  27% /cache
+devtmpfs                       4.0M     0  4.0M   0% /dev/dsa
+===== INSTALLING DEPENDENCIES =====
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+Warning: The lock file is not up to date with the latest changes in composer.json. You may be getting outdated dependencies. It is recommended that you run `composer update` or `composer update <package name>`.
+Nothing to install, update or remove
+Generating optimized autoload files
+In ClassMapGenerator.php line 136:
+                                                                               
+  Could not scan for classes inside "/builds/itepaypg-sbiepay2/application/sd  
+  ks/server-sdk/epay_transaction_sdk_php/vendor/symfony/polyfill-php80/Resour  
+  ces/stubs" which does not appear to be a file nor a folder                   
+                                                                               
+install [--prefer-source] [--prefer-dist] [--prefer-install PREFER-INSTALL] [--dry-run] [--download-only] [--dev] [--no-suggest] [--no-dev] [--no-security-blocking] [--no-blocking] [--no-autoloader] [--no-progress] [--no-install] [--audit] [--audit-format AUDIT-FORMAT] [-v|vv|vvv|--verbose] [-o|--optimize-autoloader] [-a|--classmap-authoritative] [--strict-psr-autoloader] [--apcu-autoloader] [--apcu-autoloader-prefix APCU-AUTOLOADER-PREFIX] [--ignore-platform-req IGNORE-PLATFORM-REQ] [--ignore-platform-reqs] [--source-fallback|--no-source-fallback] [--] [<packages>...]
 Cleaning up project directory and file based variables
-00:00
-Job succeeded
+00:01
+ERROR: Job failed: exit code 1
+
+
+
+
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  Build stage ===========
+
+
+# ci/build/php.yml  |  Stage: build
+# PHP microservice build with Composer
+#
+# ── Dependency resolution — JFrog Composer virtual repository ────────────────
+# Repository: https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+# Auth: JF_USER + JF_TOKEN (HTTP basic via Composer global config)
+# SSL: SBI internal CA sourced from $ARTIFACTORY_CERT (CI variable — file type)
+#
+# ── Composer PHAR ─────────────────────────────────────────────────────────────
+# ubi9/php-82 does not include Composer. PHAR downloaded from JFrog at runtime.
+# Path: https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# vendor/          NOT cached — resolved fresh from composer.lock each run
+# .composer-cache/ CACHED — Composer package tarballs (COMPOSER_CACHE_DIR)
+#
+# ── GitLab CI Variables required ─────────────────────────────────────────────
+# JF_USER          — Artifactory username
+# JF_TOKEN         — Artifactory API key
+# ARTIFACTORY_CERT — File variable containing SBI internal CA certificate
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+
+  tags:
+    - common_runner
+
+  variables:
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
+    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
+    COMPOSER_ALLOW_SUPERUSER: "1"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .composer-cache/
+
+  before_script:
+    # ── Git safe directory (required when runner user differs from repo owner) ─
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+    - php --version
+
+    # ── Download Composer PHAR from JFrog virtual repo ────────────────────────
+    - |
+      set -eo pipefail
+
+      echo "── Downloading Composer from JFrog ──"
+
+      curl -f \
+        --cacert "$ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
+        -o composer.phar
+
+      SIZE=$(stat -c%s composer.phar)
+      echo "Downloaded size: $SIZE bytes"
+
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: composer.phar too small — download failed"
+        cat composer.phar
+        exit 1
+      fi
+
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      composer --version
+
+    # ── Configure Composer — Artifactory as sole package source ──────────────
+    - |
+      set -eo pipefail
+
+      export PATH="$CI_PROJECT_DIR:$PATH"
+
+      echo "── Configuring Composer ──"
+
+      # Route all package resolution through JFrog Composer virtual repo
+      composer config --global \
+        repos.packagist composer \
+        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
+
+      # Artifactory credentials for package downloads
+      composer config --global \
+        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
+
+      # Trust SBI internal CA — reads directly from ARTIFACTORY_CERT file variable
+      composer config --global cafile "$ARTIFACTORY_CERT"
+
+      # Disable fallback to public packagist.org — enforce JFrog-only resolution
+      composer config --global repo.packagist false
+
+      echo "── Composer configured ──"
+
+  script:
+    # ── Install dependencies from composer.lock ───────────────────────────────
+    - |
+      set -eo pipefail
+
+      export PATH="$CI_PROJECT_DIR:$PATH"
+
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df -h || true
+
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      composer install \
+        --no-dev \
+        --optimize-autoloader \
+        --no-interaction \
+        --prefer-dist
+
+      if [ ! -d "vendor" ]; then
+        echo "ERROR: vendor directory not created"
+        exit 1
+      fi
+
+      echo "Vendor count: $(ls vendor | wc -l)"
+      echo "===== BUILD COMPLETE ====="
+
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 day
+
