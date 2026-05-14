@@ -1,43 +1,96 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1990-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_dotnet/.git/
-Created fresh repository.
-Checking out 249e939e as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:00
-Checking cache for merchant_api_simulator_dotnet-nuget-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:01
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-$ dotnet --version
-9.0.109
-$ set -eo pipefail # collapsed multi-line command
-========================================
-Extracting JFrog certificate chain
-========================================
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+# ci/build/dotnet.yml  |  Stage: build
+# .NET microservice build with dotnet CLI
+#
+# ── Dependency resolution — JFrog NuGet virtual repository ───────────────────
+# Repository: https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json
+# Auth: JF_USER + JF_TOKEN (NuGet packageSourceCredentials in /tmp/nuget.config)
+# SSL: JFrog internal CA trusted via OS cert store — dotnet uses OS cert store
+#
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# .nuget/packages/ CACHED — NuGet does NOT clear package cache before restore
+#                           (unlike npm ci). Cache reused directly by dotnet restore.
+# NUGET_PACKAGES in variables: — persists across before_script + script blocks
+# (export in before_script does NOT persist in Docker executor — use variables:)
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# ubi9/dotnet-80 — .NET 8.0 SDK (compiler + dotnet CLI)
+# NOT ubi9/dotnet-80-runtime — runtime only, cannot compile
+# Mirror ubi9/dotnet-80 SDK image to JFrog docker-virtual before first use
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/dotnet-80:1-1778000668
+  tags:
+    - common_runner
+  variables:
+    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
+  cache:
+    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .nuget/packages/
+  before_script:
+    - dotnet --version
+    # ── Trust JFrog internal CA ────────────────────────────────────────────
+    # dotnet uses OS cert store — update-ca-trust is sufficient
+    - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/jfrog-internal.crt
+    - update-ca-trust extract
+    # ── NuGet.config — routes all packages through JFrog, disables nuget.org ─
+    - |
+      mkdir -p "${NUGET_PACKAGES}"
+      cat > /tmp/nuget.config << NUGETEOF
+      <?xml version="1.0" encoding="utf-8"?>
+      <configuration>
+        <packageSources>
+          <clear />
+          <add key="JFrog-NuGet"
+               value="https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json" />
+        </packageSources>
+        <packageSourceCredentials>
+          <JFrog-NuGet>
+            <add key="Username" value="${JF_USER}" />
+            <add key="ClearTextPassword" value="${JF_TOKEN}" />
+          </JFrog-NuGet>
+        </packageSourceCredentials>
+      </configuration>
+      NUGETEOF
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Restore NuGet packages from JFrog ─────────────────────────────────
+      dotnet restore --configfile /tmp/nuget.config
+
+      # ── Build in Release configuration ────────────────────────────────────
+      dotnet build \
+        --configuration Release \
+        --no-restore \
+        /p:Version="${VERSION}" \
+        /p:AssemblyVersion="${VERSION}" \
+        /p:FileVersion="${VERSION}"
+
+      # ── Publish output for Dockerfile COPY ────────────────────────────────
+      dotnet publish \
+        --configuration Release \
+        --no-build \
+        --output ./publish
+
+      # ── Validate build output ─────────────────────────────────────────────
+      if [ ! -d "publish" ] || [ -z "$(ls publish/)" ]; then
+        echo "❌ ERROR: publish/ empty or not found"
+        exit 1
+      fi
+      echo "Publish output:"
+      ls -lh publish/
+      echo "✅ Build complete"
+
+  artifacts:
+    paths:
+      - publish/
+    expire_in: 1 day
