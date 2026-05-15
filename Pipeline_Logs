@@ -136,3 +136,145 @@ ERROR: No files to upload
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
+
+
+
+
+
+
+
+build configuration for the same .............. Same build is working for another java build appplication without any issue or error .;
+
+
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/*.jar consumed by image-build stage
+#
+# ── Dependency resolution — JFrog Artifactory ────────────────────────────────
+# Approach: JFrog virtual Gradle repository configured in app repo settings.gradle
+#
+# Current active approach (configured in each app repo):
+#   App repo settings.gradle defines:
+#     pluginManagement {
+#       repositories {
+#         maven {
+#           url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+#           credentials {
+#             username = System.getenv("JF_USER")
+#             password = System.getenv("JF_TOKEN")
+#           }
+#         }
+#       }
+#     }
+#     dependencyResolutionManagement {
+#       repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+#       repositories {
+#         maven {
+#           url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/'
+#           credentials {
+#             username = System.getenv("JF_USER")
+#             password = System.getenv("JF_TOKEN")
+#           }
+#         }
+#         flatDir {
+#           dirs "libs"
+#         }
+#       }
+#     }
+#   JF_USER and JF_TOKEN injected by GitLab group CI/CD variables.
+#   All dependency resolution routed through JFrog — no public internet access.
+#
+# ── JVM TLS — JFrog Internal CA ───────────────────────────────────────────────
+# Image: ubi9/openjdk-21 (non-root) — $JAVA_HOME/lib/security/cacerts is read-only.
+# Approach:
+#   1. Copy cacerts to $CI_PROJECT_DIR (writable workspace)
+#   2. chmod 644 — keytool requires write access to update the keystore
+#   3. Import JFrog internal CA cert via keytool
+#   4. Export JAVA_TOOL_OPTIONS to point JVM at custom truststore
+# $ARTIFACTORY_CERT — file-type CI/CD variable injected by GitLab (PEM certificate)
+# Error - Gradle Core Plugins (plugin is not in 'org.gradle' namespace) but actually SSL Issue 
+# https://jfrog.com/help/r/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+    - common_runner
+
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+
+  before_script:
+    # ── Verify toolchain versions ─────────────────────────────────────────────
+    - java -version
+    - gradle --version
+
+    # ── Trust JFrog internal CA ───────────────────────────────────────────────
+    # ubi9/openjdk-21 runs as non-root — $JAVA_HOME/lib/security/cacerts is read-only
+    # Copy to writable project dir, fix permissions, import cert, point JVM at copy
+    # The cp copies $JAVA_HOME/lib/security/cacerts but preserves the source file's read-only permissions (JVM cacerts is typically 444 or r--r--r--). 
+    # Keytool parses and imports in memory successfully, but can't write the modified keystore back to disk — hence the misleading "added" message followed by the error.
+    # Hence permission need to change from 444 to 644
+    - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+    - chmod 644 "$CACERT_PATH"
+    - keytool -importcert
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
+        -file "$ARTIFACTORY_CERT"
+        -noprompt
+    - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+                                -Djavax.net.ssl.trustStorePassword=changeit"
+
+    # ── Verify cert import ────────────────────────────────────────────────────
+    - keytool -list
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
+    
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Gradle build ──────────────────────────────────────────────────────
+      # Dependencies resolved from JFrog via settings.gradle in app repo
+      # -x test: unit tests run separately in test stage (java.unit.yml)
+      # -Pversion: sets project version used in bootJar archiveFileName
+      gradle build -x test -Pversion="${VERSION}"
+
+      # ── Verify output ─────────────────────────────────────────────────────
+      echo "Build output:"
+      ls -lh build/libs/
+
+      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+        exit 1
+      fi
+
+      # ── Build metadata for downstream stages ────────────────────────────────
+      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+      # BUILD_TIME: consumed by image-build stage for OCI image labels
+      JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+      echo "✅ JAR: ${JAR_FILE}"
+      echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"   >> build.env
+
+  artifacts:
+    paths:
+      - build/libs/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
