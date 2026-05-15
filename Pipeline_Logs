@@ -1,204 +1,62 @@
-# ci/build/dotnet.yml  |  Stage: build
-# .NET microservice build with dotnet CLI
+
+
+Deployment repo --
+
+.gitlab-ci.yml ---
+
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test15052026
+    file: 'templates/cd/deploy.single.yml'
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test15052026
+    file: 'templates/cd/deployment-repo-gitlab-ci.yml'
+	
+Getting below error While updating the .gitlab-ci.yml in deployment:
+
+This GitLab CI configuration is invalid: validate_service job: chosen stage validate does not exist; available stages are .pre, Maintenance_Page, DC_Application_Services, DR_Application_Services, MirrorMaker2, .post.
+
+============================
+
+I want you to refer the all the include stages and yaml files which is mentinoned in both include files i.e  deployment-repo-gitlab-ci.yml and deploy.single.yml 
+
+
+# deployment-repo/.gitlab-ci.yml
+# =============================================================================
+# Minimal include router — all logic inside each template.
+# Discriminated by DEPLOY_TYPE variable (or DRILL_TIER for drills).
 #
-# ── Dependency resolution — JFrog NuGet virtual repository ───────────────────
-# Repository:
-# https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json
+# ── Use Case 1: App service deployment ────────────────────────────────────────
+#   Trigger: App CI pipeline → deploy.jobs.yml → pipeline trigger
+#   Variable: DEPLOY_TYPE=app   (set inside trigger.cd.yml)
+#   Template: templates/cd/deploy.single.yml
+#   Flow:     values:update → validate → helm:deploy → verify → notify
 #
-# Auth:
-# JF_USER + JF_TOKEN via NuGet packageSourceCredentials
+# ── Use Case 2: DC/DR Drill ───────────────────────────────────────────────────
+#   Trigger: Manual — GitLab UI → Run pipeline → set DRILL_TIER variable
+#   Variable: DRILL_TIER=prod|preprod|nonprod
+#   Template: templates/cd/deploy.drill.yml
+#   Flow:     Drill-specific failover and verification stages
 #
-# SSL/TLS:
-# Non-root container → cannot modify OS trust store (/etc/pki)
-# Use GitLab File Variable ARTIFACTORY_CERT directly through:
-#   SSL_CERT_FILE
-#   CURL_CA_BUNDLE
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# .nuget/packages/ reused between pipelines
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# dotnet SDK image required for restore/build/publish
-# runtime image cannot compile applications
-
-.build:
-  stage: build
-
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
-
-  tags:
-    - common_runner
-
-  variables:
-    # NuGet cache
-    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
-
-    # TLS certificate configuration for non-root containers
-    SSL_CERT_FILE: "${ARTIFACTORY_CERT}"
-    CURL_CA_BUNDLE: "${ARTIFACTORY_CERT}"
-
-  cache:
-    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
-
-    paths:
-      - .nuget/packages/
-
-  before_script:
-    # ── Verify SDK ─────────────────────────────────────────────────────────
-    - dotnet --version
-
-    # ── Diagnostics ───────────────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Container Diagnostics"
-        echo "========================================"
-
-        whoami || true
-        id || true
-        pwd || true
-
-    # ── Validate GitLab file variable ─────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Validating ARTIFACTORY_CERT"
-        echo "========================================"
-
-        if [ -z "$ARTIFACTORY_CERT" ]; then
-          echo "ERROR: ARTIFACTORY_CERT variable missing"
-          exit 1
-        fi
-
-        if [ ! -f "$ARTIFACTORY_CERT" ]; then
-          echo "ERROR: ARTIFACTORY_CERT file not found"
-          exit 1
-        fi
-
-        ls -lh "$ARTIFACTORY_CERT"
-
-        echo "Certificate file detected"
-
-    # # ── Validate JFrog connectivity ───────────────────────────────────────
-    # - |
-    #     echo "========================================"
-    #     echo "Testing JFrog connectivity"
-    #     echo "========================================"
-
-    #     curl -vkI \
-    #       --cacert "$ARTIFACTORY_CERT" \
-    #       https://artifactory.jfrog.sbi || true
-
-    # ── Create NuGet config ───────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Creating NuGet configuration"
-        echo "========================================"
-
-        mkdir -p "${NUGET_PACKAGES}"
-
-        cat > /tmp/nuget.config <<EOF
-        <?xml version="1.0" encoding="utf-8"?>
-        <configuration>
-
-          <packageSources>
-            <clear />
-            <add key="LocalPackages" value="${CI_PROJECT_DIR}/package-registry" />
-            <add
-              key="JFrog-NuGet"
-              value="https://artifactory.jfrog.sbi/artifactory/api/nuget/v3/itepaypg-sbiepay2-nuget-virtual/index.json" />
-
-          </packageSources>
-
-          <packageSourceCredentials>
-
-            <JFrog-NuGet>
-              <add key="Username" value="${JF_USER}" />
-              <add key="ClearTextPassword" value="${JF_TOKEN}" />
-            </JFrog-NuGet>
-
-          </packageSourceCredentials>
-
-        </configuration>
-        EOF
-
-        echo "NuGet configuration created"
-
-  script:
-    # ── Validate VERSION ──────────────────────────────────────────────────
-    - |
-        set -eo pipefail
-
-        echo "========================================"
-        echo "Validating VERSION"
-        echo "========================================"
-
-        if [ -z "$VERSION" ]; then
-          echo "ERROR: VERSION variable missing"
-          exit 1
-        fi
-
-        echo "Building VERSION: ${VERSION}"
-
-    # ── Restore dependencies ──────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Running dotnet restore"
-        echo "========================================"
-
-        dotnet restore \
-          --configfile /tmp/nuget.config \
-          --verbosity minimal
-
-    # ── Build application ─────────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Running dotnet build"
-        echo "========================================"
-
-        dotnet build \
-          --configuration Release \
-          --no-restore \
-          /p:Version="${VERSION}" \
-          /p:AssemblyVersion="${VERSION}" \
-          /p:FileVersion="${VERSION}"
-
-    # ── Publish application ───────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Running dotnet publish"
-        echo "========================================"
-
-        dotnet publish \
-          --configuration Release \
-          --no-build \
-          --output ./publish
-
-    # ── Validate output ───────────────────────────────────────────────────
-    - |
-        echo "========================================"
-        echo "Validating publish output"
-        echo "========================================"
-
-        if [ ! -d "publish" ]; then
-          echo "ERROR: publish directory missing"
-          exit 1
-        fi
-
-        if [ -z "$(ls -A publish/)" ]; then
-          echo "ERROR: publish directory empty"
-          exit 1
-        fi
-
-        echo "Publish output:"
-        ls -lh publish/
-
-        echo "Build completed successfully"
-
-  artifacts:
-    paths:
-      - publish/
-
-    expire_in: 1 day
+# ── Discriminator logic ───────────────────────────────────────────────────────
+#   Use Case 1 vs Use Case 2: Both triggered by pipeline (CI_PIPELINE_SOURCE=pipeline)
+#   Distinguished by DEPLOY_TYPE:
+#     DEPLOY_TYPE=app    → deploy.single.yml   (set by app CI trigger.cd.yml)
+#     DEPLOY_TYPE=config → deploy.config.yml   (set by config CI config.deploy.yml)
+#   Use Case 3: DRILL_TIER != "" → deploy.drill.yml
+#               (manually set in Run Pipeline dialog — never set by CI triggers)
+# =============================================================================
 
 
-build:
-  extends: .build
+
+basically in single .gitlab-ci.yml we want to run the both kind of pipeline which is  Use Case 1: App service deployment and  Use Case 2: DC/DR Drill.
+
+Whenever we run the new pipeline using Variable: DRILL_TIER=prod|preprod|nonprod it should trigger Use Case 2: DC/DR Drill only else it should always trigger Use Case 1: App service deployment.
+
+i am sharing the complete repo of our cicd-templates to you to refer the each yamls files ....
+
+let me know if you have any other doubt but i want a proper explanation and permannet fix for this.
+
+
+
