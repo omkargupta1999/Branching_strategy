@@ -1,42 +1,138 @@
-# deployment-repo/.gitlab-ci.yml
-# =============================================================================
-# Minimal include router — all logic inside each template.
-# Discriminated by DEPLOY_TYPE variable (or DRILL_TIER for drills).
-#
-# ── Use Case 1: App service deployment ────────────────────────────────────────
-#   Trigger: App CI pipeline → deploy.jobs.yml → pipeline trigger
-#   Variable: DEPLOY_TYPE=app   (set inside trigger.cd.yml)
-#   Template: templates/cd/deploy.single.yml
-#   Flow:     values:update → validate → helm:deploy → verify → notify
-#
-# ── Use Case 2: DC/DR Drill ───────────────────────────────────────────────────
-#   Trigger: Manual — GitLab UI → Run pipeline → set DRILL_TIER variable
-#   Variable: DRILL_TIER=prod|preprod|nonprod
-#   Template: templates/cd/deploy.drill.yml
-#   Flow:     Drill-specific failover and verification stages
-#
-# ── Discriminator logic ───────────────────────────────────────────────────────
-#   Use Case 1 (default): DRILL_TIER is empty / unset → deploy.single.yml
-#   Use Case 2:           DRILL_TIER != ""            → deploy.drill.yml
-# =============================================================================
 
-include:
-  # ── Use Case 1: App service deployment ──────────────────────────────────────
-  # Default path — active whenever DRILL_TIER is NOT set.
-  # Stages defined inside this template: publish · validate · deploy
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test15052026
-    file: 'templates/cd/deploy.single.yml'
-    rules:
-      - if: '$DRILL_TIER == null || $DRILL_TIER == ""'
-
-  # ── Use Case 2: DC/DR Drill ─────────────────────────────────────────────────
-  # Active ONLY when operator sets DRILL_TIER in "Run pipeline" dialog.
-  # Stages defined inside this template: Maintenance_Page · DC_Application_Services
-  #                                       DR_Application_Services · MirrorMaker2
-  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator.
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test15052026
-    file: 'templates/cd/deploy.drill.yml'
-    rules:
-      - if: '$DRILL_TIER != null && $DRILL_TIER != ""'
+Search visible log output
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-1978-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:03
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_java/.git/
+Created fresh repository.
+Checking out c8e8a5f4 as detached HEAD (ref is develop)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:14
+Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
+$ echo "Setting Workdir for $SERVICE"
+Setting Workdir for 
+$ set -eo pipefail # collapsed multi-line command
+Building VERSION: dev-c8e8a5f4
+Welcome to Gradle 9.4.1!
+Here are the highlights of this release:
+ - Java 26 support
+ - Non-class-based JVM tests
+ - Enhanced console progress bar
+For more details see https://docs.gradle.org/9.4.1/release-notes.html
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_java/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+* Where:
+Build file '/builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_java/build.gradle' line: 75
+* What went wrong:
+Could not determine the dependencies of task ':fatJar'.
+> Could not resolve all files for configuration ':runtimeClasspath'.
+   > Could not resolve org.json:json:20240303.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve org.json:json:20240303.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/json/json/20240303/json-20240303.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/json/json/20240303/json-20240303.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve com.fasterxml.jackson.core:jackson-databind:2.15.2.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve com.fasterxml.jackson.core:jackson-databind:2.15.2.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-databind/2.15.2/jackson-databind-2.15.2.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/core/jackson-databind/2.15.2/jackson-databind-2.15.2.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve commons-codec:commons-codec:1.13.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve commons-codec:commons-codec:1.13.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/commons-codec/commons-codec/1.13/commons-codec-1.13.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/commons-codec/commons-codec/1.13/commons-codec-1.13.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve org.apache.commons:commons-text:1.15.0.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve org.apache.commons:commons-text:1.15.0.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/commons/commons-text/1.15.0/commons-text-1.15.0.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/apache/commons/commons-text/1.15.0/commons-text-1.15.0.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/datatype/jackson-datatype-joda/2.12.3/jackson-datatype-joda-2.12.3.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/fasterxml/jackson/datatype/jackson-datatype-joda/2.12.3/jackson-datatype-joda-2.12.3.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve com.squareup.okhttp3:okhttp:4.12.0.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve com.squareup.okhttp3:okhttp:4.12.0.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve com.squareup.okhttp3:logging-interceptor:4.9.3.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve com.squareup.okhttp3:logging-interceptor:4.9.3.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/squareup/okhttp3/logging-interceptor/4.9.3/logging-interceptor-4.9.3.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/com/squareup/okhttp3/logging-interceptor/4.9.3/logging-interceptor-4.9.3.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve org.slf4j:slf4j-api:1.7.25.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve org.slf4j:slf4j-api:1.7.25.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve ch.qos.logback:logback-classic:1.3.15.
+     Required by:
+         root project 'sbiepay_java_sdk'
+      > Could not resolve ch.qos.logback:logback-classic:1.3.15.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/ch/qos/logback/logback-classic/1.3.15/logback-classic-1.3.15.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/ch/qos/logback/logback-classic/1.3.15/logback-classic-1.3.15.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+BUILD FAILED in 12s
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+Uploading artifacts for failed job
+00:00
+Uploading artifacts...
+WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_java) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
