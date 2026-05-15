@@ -11,11 +11,12 @@ default:
 
 include:
   - local: 'ci/version/semver.yml'
-  - local: 'ci/build/php.yml'
+  - local: 'ci/build/java.gradle.yml'
   # - local: 'ci/test/java.unit.yml'
   - local: 'ci/security/sast/sast.gitlab.yml'
   - local: 'ci/security/sast/sast.fortify.yml'
   - local: 'ci/publish/gradle.artifactory.yml'
+
 
 stages:
   - version
@@ -40,17 +41,14 @@ variables:
 .rules:
   rules:
     # Run if the merge request created for target branch('develop', 'release' or 'main')
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(develop|release|main|feature\/.*)$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(develop|release|main)$/'
     # Run if anything commited to the commit branch(('develop', 'release' or 'main')
-    - if: '$CI_COMMIT_BRANCH =~ /^(develop|release|main|feature\/.*)$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(develop|release|main)$/'
 
-# php_build:
 build:
-  # variables:
-  #   SERVICE: "."
   extends:
     - .build
-    # - .set-workdir
+    - .set-workdir
     - .rules
   artifacts:
     paths:
@@ -61,7 +59,27 @@ sast:
     - .sast
     - .rules
 
+# send-reports:
+#   extends:
+#     - .send-reports
+#     - .rules
+
+# hp-fortify:
+#   extends:
+#     - .HPFortify
+#     - .rules
+
+publish:
+  extends:
+    - .publish
+    - .set-workdir
+  dependencies:
+    - build
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(develop)$/'
+
 -------------------------this above script is successfull run for below script----------------------
+java.gradle.yml -branch-name - release/140226
 
 .build:
   stage: build
@@ -148,6 +166,8 @@ sast:
 
 ------------------------------------------
 and for below script same pipeline is not running.......................
+
+java.gradle.yml -branch-name - main
 
 .build:
   stage: build
