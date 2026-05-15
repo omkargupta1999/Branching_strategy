@@ -1,27 +1,3 @@
-
-
-Deployment repo --
-
-.gitlab-ci.yml ---
-
-
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test15052026
-    file: 'templates/cd/deploy.single.yml'
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/test15052026
-    file: 'templates/cd/deployment-repo-gitlab-ci.yml'
-	
-Getting below error While updating the .gitlab-ci.yml in deployment:
-
-This GitLab CI configuration is invalid: validate_service job: chosen stage validate does not exist; available stages are .pre, Maintenance_Page, DC_Application_Services, DR_Application_Services, MirrorMaker2, .post.
-
-============================
-
-I want you to refer the all the include stages and yaml files which is mentinoned in both include files i.e  deployment-repo-gitlab-ci.yml and deploy.single.yml 
-
-
 # deployment-repo/.gitlab-ci.yml
 # =============================================================================
 # Minimal include router — all logic inside each template.
@@ -40,23 +16,27 @@ I want you to refer the all the include stages and yaml files which is mentinone
 #   Flow:     Drill-specific failover and verification stages
 #
 # ── Discriminator logic ───────────────────────────────────────────────────────
-#   Use Case 1 vs Use Case 2: Both triggered by pipeline (CI_PIPELINE_SOURCE=pipeline)
-#   Distinguished by DEPLOY_TYPE:
-#     DEPLOY_TYPE=app    → deploy.single.yml   (set by app CI trigger.cd.yml)
-#     DEPLOY_TYPE=config → deploy.config.yml   (set by config CI config.deploy.yml)
-#   Use Case 3: DRILL_TIER != "" → deploy.drill.yml
-#               (manually set in Run Pipeline dialog — never set by CI triggers)
+#   Use Case 1 (default): DRILL_TIER is empty / unset → deploy.single.yml
+#   Use Case 2:           DRILL_TIER != ""            → deploy.drill.yml
 # =============================================================================
 
+include:
+  # ── Use Case 1: App service deployment ──────────────────────────────────────
+  # Default path — active whenever DRILL_TIER is NOT set.
+  # Stages defined inside this template: publish · validate · deploy
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test15052026
+    file: 'templates/cd/deploy.single.yml'
+    rules:
+      - if: '$DRILL_TIER == null || $DRILL_TIER == ""'
 
-
-basically in single .gitlab-ci.yml we want to run the both kind of pipeline which is  Use Case 1: App service deployment and  Use Case 2: DC/DR Drill.
-
-Whenever we run the new pipeline using Variable: DRILL_TIER=prod|preprod|nonprod it should trigger Use Case 2: DC/DR Drill only else it should always trigger Use Case 1: App service deployment.
-
-i am sharing the complete repo of our cicd-templates to you to refer the each yamls files ....
-
-let me know if you have any other doubt but i want a proper explanation and permannet fix for this.
-
-
-
+  # ── Use Case 2: DC/DR Drill ─────────────────────────────────────────────────
+  # Active ONLY when operator sets DRILL_TIER in "Run pipeline" dialog.
+  # Stages defined inside this template: Maintenance_Page · DC_Application_Services
+  #                                       DR_Application_Services · MirrorMaker2
+  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator.
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/test15052026
+    file: 'templates/cd/deploy.drill.yml'
+    rules:
+      - if: '$DRILL_TIER != null && $DRILL_TIER != ""'
