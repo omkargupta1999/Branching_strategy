@@ -1,56 +1,136 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1992-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
-Created fresh repository.
-Checking out dd035eca as detached HEAD (ref is release/uat)...
-Skipping Git submodules setup
-Restoring cache
-00:00
-Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-Successfully extracted cache
-Executing "step_script" stage of the job script
-00:04
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
-$ php --version
-PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.30, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
-$ set -euo pipefail # collapsed multi-line command
-── Downloading Composer from JFrog ──
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 3403k  100 3403k    0     0  2640k      0  0:00:01  0:00:01 --:--:-- 2640k
-PHP version 8.2.30 (/usr/bin/php)
-Run the "diagnose" command to get more detailed diagnostics output.
-Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
-$ set -euo pipefail # collapsed multi-line command
-── Fetching and patching packages.json ──
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   392    0   392    0     0    311      0 --:--:--  0:00:01 --:--:--   311
-── Verifying patched URL sample ──
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+.build:
+  stage: build
+
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+
+  variables:
+    COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer"
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+
+    COMPOSER_AUTH: >
+      {
+        "http-basic": {
+          "artifactory.jfrog.sbi": {
+            "username": "${JF_USER}",
+            "password": "${JF_TOKEN}"
+          },
+          "artifactory.jfrog.sbi:443": {
+            "username": "${JF_USER}",
+            "password": "${JF_TOKEN}"
+          }
+        }
+      }
+
+  cache:
+    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .composer-cache/
+      - vendor/
+
+  before_script:
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+
+    - php --version
+
+    - |
+      set -euo pipefail
+
+      echo "── Downloading Composer from JFrog ──"
+
+      curl --fail -k \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -o composer.phar \
+        "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar"
+
+      chmod +x composer.phar
+
+      php composer.phar --version
+
+    - |
+      set -euo pipefail
+
+      echo "── Probing packages.json endpoints ──"
+
+      mkdir -p /tmp/composer-repo
+
+      echo "--- Attempt 1: api/composer endpoint ---"
+      curl -sk \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -w "\nHTTP_STATUS:%{http_code}\nCONTENT_LENGTH:%{size_download}\n" \
+        "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json" \
+        | tail -20
+
+      echo "--- Attempt 2: direct virtual repo endpoint ---"
+      curl -sk \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -w "\nHTTP_STATUS:%{http_code}\nCONTENT_LENGTH:%{size_download}\n" \
+        "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/packages.json" \
+        | tail -20
+
+      echo "── Fetching packages.json (api/composer) ──"
+      curl --fail -sk \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -o /tmp/composer-repo/packages.json \
+        "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json"
+
+      echo "Raw size: $(wc -c < /tmp/composer-repo/packages.json) bytes"
+      echo "First 300 chars:"
+      head -c 300 /tmp/composer-repo/packages.json
+
+      # Strip the /repos/ segment from all download URLs
+      sed -i \
+        's|/itepaypg-sbiepay2-php-virtual/repos/|/itepaypg-sbiepay2-php-virtual/|g' \
+        /tmp/composer-repo/packages.json
+
+      echo "── Verifying patched URL sample ──"
+      grep -o '"url":"https://[^"]*' /tmp/composer-repo/packages.json | head -5 || echo "WARNING: No URLs found in packages.json"
+
+  script:
+
+    - |
+      set -euo pipefail
+
+      echo "── Configuring Composer ──"
+
+      mkdir -p "${COMPOSER_HOME}"
+      mkdir -p "${COMPOSER_CACHE_DIR}"
+
+      php composer.phar config -g repo.packagist false
+
+      php composer.phar config -g repositories.jfrog composer \
+        "file:///tmp/composer-repo"
+
+      php composer.phar config -g secure-http true
+      php composer.phar config -g cafile "${JF_ARTIFACTORY_CERT}"
+
+      php composer.phar config -g preferred-install dist
+      php composer.phar config -g github-protocols https
+      php composer.phar config -g use-github-api false
+      php composer.phar config -g source-fallback false
+
+      echo "── Composer Global Config ──"
+
+      php composer.phar config --global --list
+
+    - |
+      set -euo pipefail
+
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      php composer.phar install \
+        --prefer-dist \
+        --no-dev \
+        --no-interaction \
+        --no-progress \
+        --optimize-autoloader \
+        --no-cache \
+        --no-scripts \
+        --no-source-fallback \
+        -vvv
+
+  artifacts:
+    expire_in: 1 day
+
+    paths:
+      - vendor/
+      - composer.lock
