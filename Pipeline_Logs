@@ -1,688 +1,122 @@
-Now again getting this Error ______
+regenerate-lock:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+  tags:
+    - common_runner
+  variables:
+    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
+    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
+    COMPOSER_ALLOW_SUPERUSER: "1"
+    COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer-home"
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+  script:
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+    - php --version
 
+    # Download Composer from JFrog
+    - |
+      set -eo pipefail
+      echo "── Downloading Composer from JFrog ──"
+      curl -f \
+        --cacert "$JF_ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
+        -o composer.phar
+      SIZE=$(stat -c%s composer.phar)
+      echo "Downloaded size: $SIZE bytes"
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: composer.phar too small"
+        exit 1
+      fi
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      composer --version
 
+    # Configure Composer with clean home — credentials for both hostname variants
+    - |
+      set -eo pipefail
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
+      mkdir -p "$COMPOSER_HOME"
 
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1992-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Reinitialized existing Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
-Created fresh repository.
-Checking out 8b10ebba as detached HEAD (ref is release/uat)...
-Removing composer
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:19
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
-$ php --version
-PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.30, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
-$ set -eo pipefail # collapsed multi-line command
-── Downloading Composer from JFrog ──
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 3403k  100 3403k    0     0  11.7M      0 --:--:-- --:--:-- --:--:-- 11.7M
-Downloaded size: 3485155 bytes
-Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
-PHP version 8.2.30 (/usr/bin/php)
-Run the "diagnose" command to get more detailed diagnostics output.
-$ set -eo pipefail # collapsed multi-line command
-── Writing config.json ──
-── Writing auth.json (both hostname variants) ──
-── Config written ──
-{
-    "config": {
-        "use-github-api": false,
-        "preferred-install": "dist",
-        "secure-http": true,
-        "cafile": "/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT"
-    },
-    "repositories": {
-        "packagist": {
-            "type": "composer",
-            "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
-        }
-    }
-}
-$ set -eo pipefail # collapsed multi-line command
-===== DELETING OLD composer.lock =====
-===== REGENERATING composer.lock VIA JFROG =====
-Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 4.18.0-553.117.1.el8_10.x86_64
-Reading ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
-Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/config.json
-Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/auth.json
-Loading config file ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
-Checked CA file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT: valid
-Executing command (CWD): 'git' '--version'
-Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'branch' '-a' '--no-color' '--no-abbrev' '-v'
-Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'describe' '--exact-match' '--tags'
-Failed to initialize global composer: Composer could not find the config file: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/composer.json
-Loading composer repositories with package information
-Using HTTP basic authentication with username "[MASKED]"
-Downloading https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json
-[200] https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/packages.json into cache
-Using HTTP basic authentication with username "[MASKED]"
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/framework.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sanctum.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/tinker.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/guzzle.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/caseyamcl/guzzle_retry_middleware.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fakerphp/faker.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pail.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pint.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sail.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/mockery/mockery.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/collision.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/phpunit.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/framework.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~framework.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sanctum.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~sanctum.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/mockery/mockery.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-mockery~mockery.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/guzzle.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-guzzlehttp~guzzle.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/caseyamcl/guzzle_retry_middleware.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-caseyamcl~guzzle_retry_middleware.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pint.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~pint.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fakerphp/faker.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-fakerphp~faker.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pail.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~pail.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/collision.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nunomaduro~collision.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sail.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~sail.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/tinker.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~tinker.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/phpunit.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~phpunit.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/brick/math.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/inflector.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/dragonmantank/cron-expression.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/egulias/email-validator.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fruitcake/php-cors.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/uri-template.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/prompts.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/serializable-closure.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/commonmark.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/flysystem.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/flysystem-local.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/uri.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/inflector.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-doctrine~inflector.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/monolog/monolog.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/uri-template.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-guzzlehttp~uri-template.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nesbot/carbon.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fruitcake/php-cors.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-fruitcake~php-cors.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/termwind.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/prompts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~prompts.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/container.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/brick/math.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-brick~math.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/dragonmantank/cron-expression.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-dragonmantank~cron-expression.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/log.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/simple-cache.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/egulias/email-validator.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-egulias~email-validator.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ramsey/uuid.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/serializable-closure.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~serializable-closure.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/console.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/termwind.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nunomaduro~termwind.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/error-handler.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/flysystem-local.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~flysystem-local.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/finder.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/monolog/monolog.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-monolog~monolog.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/http-foundation.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/flysystem.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~flysystem.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/http-kernel.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/commonmark.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~commonmark.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/mailer.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nesbot/carbon.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nesbot~carbon.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/mime.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/simple-cache.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~simple-cache.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php83.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ramsey/uuid.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-ramsey~uuid.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php84.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/error-handler.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~error-handler.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php85.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/finder.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~finder.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/process.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/uri.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~uri.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/routing.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/http-foundation.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~http-foundation.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/uid.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/console.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~console.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/var-dumper.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/http-kernel.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~http-kernel.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/tijsverkoyen/css-to-inline-styles.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/mailer.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~mailer.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/vlucas/phpdotenv.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php83.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php83.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/voku/portable-ascii.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/mime.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~mime.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phiki/phiki.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php84.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php84.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/console.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php85.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php85.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/contracts.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/process.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~process.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/database.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/uid.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~uid.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/support.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/routing.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~routing.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/hamcrest/hamcrest-php.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/var-dumper.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~var-dumper.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/promises.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/tijsverkoyen/css-to-inline-styles.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-tijsverkoyen~css-to-inline-styles.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/psr7.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/vlucas/phpdotenv.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-vlucas~phpdotenv.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-client.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/voku/portable-ascii.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-voku~portable-ascii.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/deprecation-contracts.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phiki/phiki.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phiki~phiki.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/log.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/promises.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-guzzlehttp~promises.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/process.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/hamcrest/hamcrest-php.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-hamcrest~hamcrest-php.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/filp/whoops.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/psr7.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-guzzlehttp~psr7.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/yaml.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-client.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~http-client.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~contracts.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/deprecation-contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~deprecation-contracts.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/console.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~console.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/filp/whoops.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-filp~whoops.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/yaml.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~yaml.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/container.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~container.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/database.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~database.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/support.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~support.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/log.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~log.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/process.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~process.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/log.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~log.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psy/psysh.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/myclabs/deep-copy.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phar-io/manifest.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phar-io/version.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-code-coverage.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-file-iterator.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-invoker.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-text-template.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-timer.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/cli-parser.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/code-unit.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/comparator.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psy/psysh.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psy~psysh.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/diff.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/myclabs/deep-copy.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-myclabs~deep-copy.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-file-iterator.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~php-file-iterator.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/environment.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/exporter.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-text-template.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~php-text-template.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/global-state.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phar-io/manifest.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phar-io~manifest.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/object-enumerator.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phar-io/version.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phar-io~version.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/recursion-context.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-invoker.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~php-invoker.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/type.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/cli-parser.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~cli-parser.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/version.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/code-unit.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~code-unit.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/staabm/side-effects-detector.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-timer.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~php-timer.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/environment.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~environment.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/global-state.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~global-state.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/php-code-coverage.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpunit~php-code-coverage.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/recursion-context.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~recursion-context.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/exporter.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~exporter.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/object-enumerator.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~object-enumerator.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/version.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~version.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/diff.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~diff.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/comparator.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~comparator.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/type.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~type.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/staabm/side-effects-detector.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-staabm~side-effects-detector.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php80.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~http-foundation.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/webmozart/assert.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/lexer.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-idn.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~console.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~flysystem.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/mime-type-detection.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~flysystem-local.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/config.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/event-dispatcher.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~deprecation-contracts.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/carbonphp/carbon-doctrine-types.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/clock.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/clock.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-mbstring.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/translation.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-brick~math.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php83.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~error-handler.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-egulias~email-validator.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~mime.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~commonmark.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~process.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-laravel~prompts.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nunomaduro~termwind.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-doctrine~inflector.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nesbot~carbon.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-voku~portable-ascii.json from cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/event-dispatcher.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~event-dispatcher.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ramsey/collection.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/carbonphp/carbon-doctrine-types.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-carbonphp~carbon-doctrine-types.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/uri-interfaces.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/lexer.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-doctrine~lexer.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-factory.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-idn.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-intl-idn.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/service-contracts.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/config.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~config.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/string.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php80.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php80.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/event-dispatcher.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/webmozart/assert.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-webmozart~assert.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-ctype.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/mime-type-detection.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~mime-type-detection.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-uuid.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/clock.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~clock.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php72.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/clock.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~clock.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/css-selector.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ramsey/collection.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-ramsey~collection.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/graham-campbell/result-type.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/service-contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~service-contracts.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpoption/phpoption.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/translation.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~translation.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-message.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-mbstring.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-mbstring.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ralouphie/getallheaders.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/event-dispatcher.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~event-dispatcher.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/collections.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-uuid.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-uuid.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/macroable.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-ctype.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-ctype.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/view.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/graham-campbell/result-type.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-graham-campbell~result-type.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/container.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php72.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php72.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php86.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/league/uri-interfaces.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-league~uri-interfaces.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/conditionable.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/css-selector.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~css-selector.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/reflection.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-message.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~http-message.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpoption/phpoption.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phpoption~phpoption.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php86.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php86.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/ralouphie/getallheaders.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-ralouphie~getallheaders.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/macroable.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~macroable.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/http-factory.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~http-factory.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/collections.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~collections.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/view.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~view.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/conditionable.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~conditionable.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/string.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~string.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/container.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~container.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/reflection.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~reflection.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nikic/php-parser.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~var-dumper.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-phar-io~version.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/object-reflector.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~recursion-context.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/code-unit-reverse-lookup.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/complexity.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/lines-of-code.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/theseer/tokenizer.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~diff.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~exporter.json from cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nikic/php-parser.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nikic~php-parser.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/code-unit-reverse-lookup.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~code-unit-reverse-lookup.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/lines-of-code.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~lines-of-code.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/complexity.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~complexity.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/theseer/tokenizer.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-theseer~tokenizer.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/sebastian/object-reflector.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-sebastian~object-reflector.json into cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~mime.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php73.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~string.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/contracts.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/debug.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php80.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-doctrine~lexer.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-carbonphp~carbon-doctrine-types.json from cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~translation.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/deprecations.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-normalizer.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php70.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/dflydev/dot-access-data.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nette/schema.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php81.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/translation-contracts.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/event-dispatcher-contracts.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/paragonie/random_compat.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~container.json from cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php70.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php70.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/events.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-normalizer.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-intl-normalizer.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/filesystem.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/dflydev/dot-access-data.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-dflydev~dot-access-data.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-grapheme.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/doctrine/deprecations.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-doctrine~deprecations.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~contracts.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php73.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php73.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nette/schema.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nette~schema.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/debug.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~debug.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-php81.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-php81.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/translation-contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~translation-contracts.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/event-dispatcher-contracts.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~event-dispatcher-contracts.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/symfony/polyfill-intl-grapheme.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~polyfill-intl-grapheme.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/paragonie/random_compat.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-paragonie~random_compat.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/events.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~events.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/filesystem.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~filesystem.json into cache
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~translation-contracts.json from cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/cache.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nette/utils.json
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/bus.json
-Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-symfony~finder.json from cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nette/utils.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-nette~utils.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/psr/cache.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-psr~cache.json into cache
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/bus.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~bus.json into cache
-Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/pipeline.json
-[200] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/illuminate/pipeline.json
-Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/provider-illuminate~pipeline.json into cache
-Built pool.
-Running security advisory pool filter.
-Running filter list pool filter.
-Running pool optimizer.
-Pool optimizer completed in 0.974 seconds
-Found 11,751 package versions referenced in your dependency graph. 10,856 (92%) were optimized away.
-Updating dependencies
-Generating rules
-Resolving dependencies through SAT
-Looking at all rules.
-Something's changed, looking at all rules again (pass #1)
-Dependency resolution completed in 0.007 seconds
-Analyzed 895 packages to resolve dependencies
-Analyzed 9342 rules to resolve dependencies
-Generating rules
-Resolving dependencies through SAT
-Looking at all rules.
-Dependency resolution completed in 0.000 seconds
-Lock file operations: 114 installs, 0 updates, 0 removals
-Installs: symfony/deprecation-contracts:v3.7.0, psr/http-message:2.0, psr/http-client:1.0.3, ralouphie/getallheaders:3.0.3, psr/http-factory:1.1.0, guzzlehttp/psr7:2.9.0, guzzlehttp/promises:2.3.0, guzzlehttp/guzzle:7.10.0, caseyamcl/guzzle_retry_middleware:v2.13.0, doctrine/inflector:2.1.0, doctrine/lexer:3.0.1, dragonmantank/cron-expression:v3.6.0, psr/container:2.0.2, fakerphp/faker:v1.24.1, symfony/polyfill-mbstring:v1.37.0, symfony/http-foundation:v7.4.8, fruitcake/php-cors:v1.4.0, symfony/polyfill-php80:v1.37.0, guzzlehttp/uri-template:v1.0.5, symfony/polyfill-intl-normalizer:v1.37.0, symfony/polyfill-intl-grapheme:v1.37.0, symfony/polyfill-ctype:v1.37.0, symfony/string:v7.4.11, symfony/service-contracts:v3.7.0, symfony/console:v7.4.11, nunomaduro/termwind:v2.4.0, voku/portable-ascii:2.1.1, phpoption/phpoption:1.9.5, graham-campbell/result-type:v1.1.4, vlucas/phpdotenv:v5.6.3, symfony/css-selector:v7.4.9, tijsverkoyen/css-to-inline-styles:v2.4.0, symfony/var-dumper:v7.4.8, symfony/polyfill-uuid:v1.37.0, symfony/uid:v7.4.9, symfony/routing:v7.4.9, symfony/process:v7.4.11, symfony/polyfill-php85:v1.37.0, symfony/polyfill-php84:v1.37.0, symfony/polyfill-php83:v1.37.0, symfony/polyfill-intl-idn:v1.37.0, symfony/mime:v7.4.9, psr/event-dispatcher:1.0.0, symfony/event-dispatcher-contracts:v3.7.0, symfony/event-dispatcher:v7.4.9, psr/log:3.0.2, egulias/email-validator:4.0.4, symfony/mailer:v7.4.8, symfony/error-handler:v7.4.8, symfony/http-kernel:v7.4.11, symfony/finder:v7.4.8, ramsey/collection:2.1.1, brick/math:0.14.8, ramsey/uuid:4.9.2, psr/simple-cache:3.0.0, symfony/translation-contracts:v3.7.0, symfony/translation:v7.4.10, psr/clock:1.0.0, symfony/clock:v7.4.8, carbonphp/carbon-doctrine-types:3.2.0, nesbot/carbon:3.11.4, monolog/monolog:3.10.0, league/uri-interfaces:7.8.1, league/uri:7.8.1, league/mime-type-detection:1.16.0, league/flysystem-local:3.31.0, league/flysystem:3.34.0, nette/utils:v4.1.4, nette/schema:v1.3.5, dflydev/dot-access-data:v3.0.3, league/config:v1.2.0, league/commonmark:2.8.2, laravel/serializable-closure:v2.0.13, laravel/prompts:v0.3.17, laravel/framework:v12.59.0, laravel/pail:v1.2.6, laravel/pint:v1.29.1, symfony/yaml:v7.4.11, laravel/sail:v1.59.0, laravel/sanctum:v4.3.2, nikic/php-parser:v5.7.0, psy/psysh:v0.12.22, laravel/tinker:v2.11.1, hamcrest/hamcrest-php:v2.1.1, mockery/mockery:1.6.12, filp/whoops:2.18.4, nunomaduro/collision:v8.9.4, staabm/side-effects-detector:1.0.5, sebastian/version:5.0.2, sebastian/type:5.1.3, sebastian/recursion-context:6.0.3, sebastian/object-reflector:4.0.1, sebastian/object-enumerator:6.0.1, sebastian/global-state:7.0.2, sebastian/exporter:6.3.2, sebastian/environment:7.2.1, sebastian/diff:6.0.2, sebastian/comparator:6.3.3, sebastian/code-unit:3.0.3, sebastian/cli-parser:3.0.2, phpunit/php-timer:7.0.1, phpunit/php-text-template:4.0.1, phpunit/php-invoker:5.0.1, phpunit/php-file-iterator:5.1.1, theseer/tokenizer:1.3.1, sebastian/lines-of-code:3.0.1, sebastian/complexity:4.0.1, sebastian/code-unit-reverse-lookup:4.0.1, phpunit/php-code-coverage:11.0.12, phar-io/version:3.2.1, phar-io/manifest:2.0.4, myclabs/deep-copy:1.13.4, phpunit/phpunit:11.5.55, sbiepay/epay-php-sdk:1.0.0
-  - Locking brick/math (0.14.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking carbonphp/carbon-doctrine-types (3.2.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking caseyamcl/guzzle_retry_middleware (v2.13.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking dflydev/dot-access-data (v3.0.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking doctrine/inflector (2.1.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking doctrine/lexer (3.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking dragonmantank/cron-expression (v3.6.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking egulias/email-validator (4.0.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking fakerphp/faker (v1.24.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking filp/whoops (2.18.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking fruitcake/php-cors (v1.4.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking graham-campbell/result-type (v1.1.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking guzzlehttp/guzzle (7.10.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking guzzlehttp/promises (2.3.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking guzzlehttp/psr7 (2.9.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking guzzlehttp/uri-template (v1.0.5) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking hamcrest/hamcrest-php (v2.1.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/framework (v12.59.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/pail (v1.2.6) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/pint (v1.29.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/prompts (v0.3.17) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/sail (v1.59.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/sanctum (v4.3.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/serializable-closure (v2.0.13) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking laravel/tinker (v2.11.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/commonmark (2.8.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/config (v1.2.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/flysystem (3.34.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/flysystem-local (3.31.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/mime-type-detection (1.16.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/uri (7.8.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking league/uri-interfaces (7.8.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking mockery/mockery (1.6.12) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking monolog/monolog (3.10.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking myclabs/deep-copy (1.13.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nesbot/carbon (3.11.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nette/schema (v1.3.5) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nette/utils (v4.1.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nikic/php-parser (v5.7.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nunomaduro/collision (v8.9.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking nunomaduro/termwind (v2.4.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phar-io/manifest (2.0.4) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phar-io/version (3.2.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpoption/phpoption (1.9.5) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/php-code-coverage (11.0.12) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/php-file-iterator (5.1.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/php-invoker (5.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/php-text-template (4.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/php-timer (7.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking phpunit/phpunit (11.5.55) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/clock (1.0.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/container (2.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/event-dispatcher (1.0.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/http-client (1.0.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/http-factory (1.1.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/http-message (2.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/log (3.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psr/simple-cache (3.0.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking psy/psysh (v0.12.22) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking ralouphie/getallheaders (3.0.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking ramsey/collection (2.1.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking ramsey/uuid (4.9.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sbiepay/epay-php-sdk (1.0.0) from package repo (defining 1 package)
-  - Locking sebastian/cli-parser (3.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/code-unit (3.0.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/code-unit-reverse-lookup (4.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/comparator (6.3.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/complexity (4.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/diff (6.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/environment (7.2.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/exporter (6.3.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/global-state (7.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/lines-of-code (3.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/object-enumerator (6.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/object-reflector (4.0.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/recursion-context (6.0.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/type (5.1.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking sebastian/version (5.0.2) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking staabm/side-effects-detector (1.0.5) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/clock (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/console (v7.4.11) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/css-selector (v7.4.9) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/deprecation-contracts (v3.7.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/error-handler (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/event-dispatcher (v7.4.9) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/event-dispatcher-contracts (v3.7.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/finder (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/http-foundation (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/http-kernel (v7.4.11) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/mailer (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/mime (v7.4.9) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-ctype (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-intl-grapheme (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-intl-idn (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-intl-normalizer (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-mbstring (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-php80 (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-php83 (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-php84 (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-php85 (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/polyfill-uuid (v1.37.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/process (v7.4.11) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/routing (v7.4.9) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/service-contracts (v3.7.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/string (v7.4.11) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/translation (v7.4.10) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/translation-contracts (v3.7.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/uid (v7.4.9) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/var-dumper (v7.4.8) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking symfony/yaml (v7.4.11) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking theseer/tokenizer (1.3.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking tijsverkoyen/css-to-inline-styles (v2.4.0) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking vlucas/phpdotenv (v5.6.3) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-  - Locking voku/portable-ascii (2.1.1) from composer repo (https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual)
-Writing lock file
-Reading ./composer.lock (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.lock)
-45 package suggestions were added by new dependencies, use `composer suggest` to see details.
-> post-update-cmd: @php artisan vendor:publish --tag=laravel-assets --ansi --force
-Executing command (CWD): '/usr/bin/php' -d allow_url_fopen='1' -d disable_functions='' -d memory_limit='1536M' artisan vendor:publish --tag=laravel-assets --ansi --force
-PHP Warning:  require(/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/autoload.php): Failed to open stream: No such file or directory in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/artisan on line 10
-PHP Fatal error:  Uncaught Error: Failed opening required '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/autoload.php' (include_path='.:/usr/share/pear:/usr/share/php') in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/artisan:10
-Stack trace:
-#0 {main}
-  thrown in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/artisan on line 10
-Script @php artisan vendor:publish --tag=laravel-assets --ansi --force handling the post-update-cmd event returned with error code 255
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+      echo "── Writing config.json ──"
+      cat > "$COMPOSER_HOME/config.json" <<EOF
+      {
+          "config": {
+              "use-github-api": false,
+              "preferred-install": "dist",
+              "secure-http": true,
+              "cafile": "${JF_ARTIFACTORY_CERT}"
+          },
+          "repositories": {
+              "packagist": {
+                  "type": "composer",
+                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
+              }
+          }
+      }
+      EOF
+
+      echo "── Writing auth.json ──"
+      cat > "$COMPOSER_HOME/auth.json" <<EOF
+      {
+          "http-basic": {
+              "artifactory.jfrog.sbi": {
+                  "username": "${JF_USER}",
+                  "password": "${JF_TOKEN}"
+              },
+              "artifactory.jfrog.sbi:443": {
+                  "username": "${JF_USER}",
+                  "password": "${JF_TOKEN}"
+              }
+          }
+      }
+      EOF
+      echo "── Config written ──"
+
+    # Regenerate composer.lock and commit back
+    - |
+      set -eo pipefail
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
+
+      echo "===== DELETING OLD composer.lock ====="
+      rm -f composer.lock
+
+      echo "===== REGENERATING composer.lock VIA JFROG ====="
+      composer update \
+        --no-install \
+        --no-scripts \
+        --no-interaction \
+        --prefer-dist \
+        --no-source-fallback \
+        -vvv
+
+      echo "===== VERIFYING URLS IN LOCK FILE ====="
+      JFROG_COUNT=$(grep -c "artifactory.jfrog.sbi" composer.lock 2>/dev/null || echo 0)
+      GITHUB_COUNT=$(grep -c "api.github.com" composer.lock 2>/dev/null || echo 0)
+      echo "JFrog URLs found  : $JFROG_COUNT"
+      echo "GitHub URLs found : $GITHUB_COUNT"
+
+      if [ "$GITHUB_COUNT" -gt 0 ]; then
+        echo "WARNING: GitHub URLs still present"
+        grep "api.github.com" composer.lock | head -5
+      else
+        echo "SUCCESS: All dist URLs point to JFrog"
+      fi
+
+      echo "===== COMMITTING NEW composer.lock TO REPO ====="
+      git config user.email "ci-bot@sbi.com"
+      git config user.name "GitLab CI"
+      git add composer.lock
+      git diff --cached --stat
+      git commit -m "chore: regenerate composer.lock with JFrog dist URLs [skip ci]"
+      git push \
+        "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" \
+        HEAD:${CI_COMMIT_REF_NAME}
+
+      echo "===== composer.lock COMMITTED SUCCESSFULLY ====="
+
+  rules:
+    - when: manual
