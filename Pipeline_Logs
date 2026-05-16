@@ -1,128 +1,153 @@
-regenerate-lock:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
-  tags:
-    - common_runner
-  variables:
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    COMPOSER_ALLOW_SUPERUSER: "1"
-    # ── KEY FIX: Override COMPOSER_HOME so we bypass the image's
-    # pre-baked config at /opt/app-root/src/.config/composer/ ──────────────
-    COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer-home"
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-  script:
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
-
-    # Download Composer from JFrog
-    - |
-      set -eo pipefail
-      echo "── Downloading Composer from JFrog ──"
-      curl -f \
-        --cacert "$JF_ARTIFACTORY_CERT" \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small"
-        exit 1
-      fi
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    # Configure Composer with a clean COMPOSER_HOME — no inherited config
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-
-      echo "── Configuring Composer (clean home: $COMPOSER_HOME) ──"
-      mkdir -p "$COMPOSER_HOME"
-
-      # Write config.json directly — more reliable than composer config --global
-      cat > "$COMPOSER_HOME/config.json" <<EOF
-      {
-          "config": {
-              "use-github-api": false,
-              "preferred-install": "dist",
-              "secure-http": true,
-              "cafile": "${JF_ARTIFACTORY_CERT}"
-          },
-          "repositories": {
-              "packagist": {
-                  "type": "composer",
-                  "url": "${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}"
-              }
-          },
-          "disable-tls": false
-      }
-      EOF
-
-      # Write auth.json directly
-      cat > "$COMPOSER_HOME/auth.json" <<EOF
-      {
-          "http-basic": {
-              "artifactory.jfrog.sbi": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              }
-          }
-      }
-      EOF
-
-      echo "── Config written ──"
-      echo "── config.json contents: ──"
-      cat "$COMPOSER_HOME/config.json"
-
-      # Verify Composer now reads our config
-      composer config --list | grep -E "repo|packagist|github|preferred" || true
-
-    # Regenerate composer.lock via JFrog and commit back
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-
-      echo "===== DELETING OLD composer.lock ====="
-      rm -f composer.lock
-
-      echo "===== REGENERATING composer.lock VIA JFROG ====="
-      composer update \
-        --no-install \
-        --no-interaction \
-        --prefer-dist \
-        --no-source-fallback \
-        -vvv
-
-      echo "===== VERIFYING URLS IN LOCK FILE ====="
-      JFROG_COUNT=$(grep -c "artifactory.jfrog.sbi" composer.lock 2>/dev/null || echo 0)
-      GITHUB_COUNT=$(grep -c "api.github.com" composer.lock 2>/dev/null || echo 0)
-      echo "JFrog URLs found  : $JFROG_COUNT"
-      echo "GitHub URLs found : $GITHUB_COUNT"
-
-      if [ "$GITHUB_COUNT" -gt 0 ]; then
-        echo "WARNING: GitHub URLs still present"
-        grep "api.github.com" composer.lock | head -5
-      else
-        echo "SUCCESS: All dist URLs point to JFrog"
-      fi
-
-      echo "===== COMMITTING NEW composer.lock TO REPO ====="
-      git config user.email "ci-bot@sbi.com"
-      git config user.name "GitLab CI"
-      git add composer.lock
-      git diff --cached --stat
-      git commit -m "chore: regenerate composer.lock with JFrog dist URLs [skip ci]"
-      git push \
-        "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" \
-        HEAD:${CI_COMMIT_REF_NAME}
-
-      echo "===== composer.lock COMMITTED SUCCESSFULLY ====="
-
-  rules:
-    - when: manual
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:05
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out 902e7231 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:08
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0  11.3M      0 --:--:-- --:--:-- --:--:-- 11.3M
+Downloaded size: 3485155 bytes
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+$ set -eo pipefail # collapsed multi-line command
+── Configuring Composer (clean home: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home) ──
+── Config written ──
+── config.json contents: ──
+{
+    "config": {
+        "use-github-api": false,
+        "preferred-install": "dist",
+        "secure-http": true,
+        "cafile": "/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
+        }
+    },
+    "disable-tls": false
+}
+[repositories.0.type] package
+[repositories.0.package.name] sbiepay/epay-php-sdk
+[repositories.0.package.version] 1.0.0
+[repositories.0.package.dist.url] package-registry/sbiepay-epay-php-sdk.zip
+[repositories.0.package.dist.type] zip
+[repositories.packagist.org.type] composer
+[repositories.packagist.org.url] https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual
+[preferred-install] dist
+[github-protocols] [https, ssh]
+[cache-repo-dir] {$cache-dir}/repo (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo)
+[github-domains] [github.com]
+[github-expose-hostname] true
+[use-github-api] false
+$ set -eo pipefail # collapsed multi-line command
+===== DELETING OLD composer.lock =====
+===== REGENERATING composer.lock VIA JFROG =====
+Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 5.14.0-611.36.1.el9_7.x86_64
+Reading ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
+Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/config.json
+Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/auth.json
+Loading config file ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
+Checked CA file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT: valid
+Executing command (CWD): 'git' '--version'
+Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'branch' '-a' '--no-color' '--no-abbrev' '-v'
+Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'describe' '--exact-match' '--tags'
+Failed to initialize global composer: Composer could not find the config file: /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-home/composer.json
+Loading composer repositories with package information
+Using HTTP basic authentication with username "[MASKED]"
+Downloading https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json
+[200] https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/packages.json
+Writing /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer-cache/repo/https---artifactory.jfrog.sbi-artifactory-api-composer-itepaypg-sbiepay2-php-virtual/packages.json into cache
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/framework.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sanctum.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/tinker.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/guzzle.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/caseyamcl/guzzle_retry_middleware.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fakerphp/faker.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pail.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pint.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sail.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/mockery/mockery.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/collision.json
+Downloading https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/phpunit.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/framework.json
+https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual could not be fully loaded (The 'https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/framework.json' URL required authentication (HTTP 401).
+You must be using the interactive console to authenticate), package information was loaded from the local cache and may be out of date
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sail.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/mockery/mockery.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/nunomaduro/collision.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/phpunit/phpunit.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/tinker.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/guzzlehttp/guzzle.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/caseyamcl/guzzle_retry_middleware.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/fakerphp/faker.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pail.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/pint.json
+[401] https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sbiepay2-php-virtual/p2/laravel/sanctum.json
+In AuthHelper.php line 218:
+                                                                               
+  [Composer\Downloader\TransportException (100)]                               
+  The 'https://artifactory.jfrog.sbi:443/artifactory/api/composer/itepaypg-sb  
+  iepay2-php-virtual/p2/laravel/framework.json' URL required authentication (  
+  HTTP 401).                                                                   
+  You must be using the interactive console to authenticate                    
+                                                                               
+Exception trace:
+  at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Util/AuthHelper.php:218
+ Composer\Util\AuthHelper->promptAuthIfNeeded() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Util/Http/CurlDownloader.php:586
+ Composer\Util\Http\CurlDownloader->isAuthenticatedRetryNeeded() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Util/Http/CurlDownloader.php:452
+ Composer\Util\Http\CurlDownloader->tick() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Util/HttpDownloader.php:392
+ Composer\Util\HttpDownloader->countActiveJobs() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Util/Loop.php:86
+ Composer\Util\Loop->wait() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Repository/ComposerRepository.php:1219
+ Composer\Repository\ComposerRepository->loadAsyncPackages() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Repository/ComposerRepository.php:590
+ Composer\Repository\ComposerRepository->loadPackages() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/DependencyResolver/PoolBuilder.php:452
+ Composer\DependencyResolver\PoolBuilder->loadPackagesMarkedForLoading() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/DependencyResolver/PoolBuilder.php:289
+ Composer\DependencyResolver\PoolBuilder->buildPool() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Repository/RepositorySet.php:348
+ Composer\Repository\RepositorySet->createPool() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Installer.php:533
+ Composer\Installer->doUpdate() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Installer.php:324
+ Composer\Installer->run() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Command/UpdateCommand.php:308
+ Composer\Command\UpdateCommand->execute() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/vendor/symfony/console/Command/Command.php:298
+ Symfony\Component\Console\Command\Command->run() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/vendor/symfony/console/Application.php:1040
+ Symfony\Component\Console\Application->doRunCommand() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/vendor/symfony/console/Application.php:301
+ Symfony\Component\Console\Application->doRun() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Console/Application.php:443
+ Composer\Console\Application->doRun() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/vendor/symfony/console/Application.php:171
+ Symfony\Component\Console\Application->run() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/src/Composer/Console/Application.php:139
+ Composer\Console\Application->run() at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer/bin/composer:112
+ require() at /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer:30
+update [--with WITH] [--prefer-source] [--prefer-dist] [--prefer-install PREFER-INSTALL] [--dry-run] [--dev] [--no-dev] [--lock] [--no-install] [--no-audit] [--audit-format AUDIT-FORMAT] [--no-security-blocking] [--no-blocking] [--no-autoloader] [--no-suggest] [--no-progress] [--source-fallback|--no-source-fallback] [-w|--with-dependencies] [-W|--with-all-dependencies] [-v|vv|vvv|--verbose] [-o|--optimize-autoloader] [-a|--classmap-authoritative] [--strict-psr-autoloader] [--apcu-autoloader] [--apcu-autoloader-prefix APCU-AUTOLOADER-PREFIX] [--ignore-platform-req IGNORE-PLATFORM-REQ] [--ignore-platform-reqs] [--prefer-stable] [--prefer-lowest] [-m|--minimal-changes] [--patch-only] [-i|--interactive] [--root-reqs] [--bump-after-update [BUMP-AFTER-UPDATE]] [--] [<packages>...]
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
