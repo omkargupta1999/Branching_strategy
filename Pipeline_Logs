@@ -1,167 +1,31 @@
 
-Getting below error .......
+I have export the a complete project from old gitlab and import it to our centralized Gitlab, although it imported successfully alomost all the things but 
+i have observed that assignee name of issue has been changed after import from actual owner to the imported owner name even you see for almost all the things like MR as well.
+sharing the details for your information. Actual name should not be change after import.
 
 
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-1946-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:01
-Skipping Git repository setup
-Skipping Git checkout
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:00
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global user.name "ci"
-$ git config --global user.email "ci.cedge@sbi.co.in"
-$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
-fatal: not a git repository (or any parent up to mount point /)
-Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+Old Gitlab: 
+
+Release/v1.9.0 Mobikwik Integration
+Open
+PUNAM ANIL RAJPUT
+requested to merge
+release/v1.9.0
+into
+main
+1 day ago
 
 
+Centralized Gitlab :
 
-++++++++++++++++++++++++++++++++drill.maintainance.yml =========
-
-
-# ops/drill/drill.maintenance.yml
-# Maintenance page ON/OFF — GitOps approach
-# Clones deployment repo → updates epay_maintenance_fe/values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# What it changes:
-#   replicaCount:       1 (ON) or 0 (OFF)
-#   maintenance.enabled: true (ON) or false (OFF)
-#
-# ENV_LIST drives which environments are updated:
-#   prod:    prod-dc prod-dr
-#   preprod: pre-prod-dc pre-prod
-#   nonprod: dev (no maintenance page in nonprod — jobs skipped)
-
-.drill_git_setup:
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - common_runner
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    #- git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.sbi/epay/devops/deployment.git"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
-
-# ── Shared script — reused by all maintenance jobs via YAML anchor ────────────
-.maintenance_script: &maintenance_script
-  - |
-    set -eo pipefail
-
-    git clone "$DEPLOYMENT_REPO_URL" deployment
-    cd deployment
-    #git checkout "$DEPLOYMENT_BRANCH"
-    git checkout "main"
-
-    for TARGET_ENV in $ENV_LIST; do
-      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
-      echo "Processing: $FILE"
-      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
-
-      sed -i -E \
-        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
-        "$FILE"
-      sed -i -E \
-        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
-         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
-        "$FILE"
-
-      git add "$FILE"
-      git commit \
-        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} [ci skip]" \
-        || echo "No changes for ${TARGET_ENV}"
-    done
-
-    for i in 1 2 3; do
-      git push origin "$DEPLOYMENT_BRANCH" && break
-      echo "Push failed — retrying ($i/3)"
-      sleep 2
-      git pull --rebase origin "$DEPLOYMENT_BRANCH"
-    done
-    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
-
-# ── Prod ──────────────────────────────────────────────────────────────────────
-Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-# ── Preprod ───────────────────────────────────────────────────────────────────
-PreProd_Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-PreProd_Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-# Nonprod: no maintenance page — stage intentionally empty for nonprod tier
+Release/v1.9.0
+Open
+Imported
+Vishnu Gehlot
+requested to merge
+release/v1.9.0
+into
+main
+1 day ago
 
 
