@@ -1,104 +1,98 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-1992-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:03
-Fetching changes with git depth set to 20...
-Reinitialized existing Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
-Created fresh repository.
-Checking out da52d9f6 as detached HEAD (ref is release/uat)...
-Removing composer
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:03
-Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
-$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
-$ php --version
-PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
-Copyright (c) The PHP Group
-Zend Engine v4.2.30, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
-$ set -eo pipefail # collapsed multi-line command
-── Downloading Composer from JFrog ──
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 3403k  100 3403k    0     0   9.9M      0 --:--:-- --:--:-- --:--:-- 10.0M
-Downloaded size: 3485155 bytes
-Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
-PHP version 8.2.30 (/usr/bin/php)
-Run the "diagnose" command to get more detailed diagnostics output.
-$ set -eo pipefail # collapsed multi-line command
-── Configuring Composer ──
-── Composer configured ──
-$ set -eo pipefail # collapsed multi-line command
-===== DELETING OLD composer.lock =====
-===== REGENERATING composer.lock VIA JFROG =====
-Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 4.18.0-553.117.1.el8_10.x86_64
-Reading ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
-Loading config file /opt/app-root/src/.config/composer/config.json
-Loading config file /opt/app-root/src/.config/composer/auth.json
-Loading config file ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
-Checked CA file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT: valid
-Executing command (CWD): 'git' '--version'
-Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'branch' '-a' '--no-color' '--no-abbrev' '-v'
-Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'describe' '--exact-match' '--tags'
-Failed to initialize global composer: Composer could not find the config file: /opt/app-root/src/.config/composer/composer.json
-Loading composer repositories with package information
-Built pool.
-Running security advisory pool filter.
-Running filter list pool filter.
-Running pool optimizer.
-Updating dependencies
-Generating rules
-Resolving dependencies through SAT
-Looking at all rules.
-Dependency resolution completed in 0.000 seconds
-Your requirements could not be resolved to an installable set of packages.
-  Problem 1
-    - Root composer.json requires laravel/framework, it could not be found in any version, there may be a typo in the package name.
-  Problem 2
-    - Root composer.json requires laravel/sanctum, it could not be found in any version, there may be a typo in the package name.
-  Problem 3
-    - Root composer.json requires laravel/tinker, it could not be found in any version, there may be a typo in the package name.
-  Problem 4
-    - Root composer.json requires guzzlehttp/guzzle, it could not be found in any version, there may be a typo in the package name.
-  Problem 5
-    - Root composer.json requires caseyamcl/guzzle_retry_middleware, it could not be found in any version, there may be a typo in the package name.
-  Problem 6
-    - Root composer.json requires fakerphp/faker, it could not be found in any version, there may be a typo in the package name.
-  Problem 7
-    - Root composer.json requires laravel/pail, it could not be found in any version, there may be a typo in the package name.
-  Problem 8
-    - Root composer.json requires laravel/pint, it could not be found in any version, there may be a typo in the package name.
-  Problem 9
-    - Root composer.json requires laravel/sail, it could not be found in any version, there may be a typo in the package name.
-  Problem 10
-    - Root composer.json requires mockery/mockery, it could not be found in any version, there may be a typo in the package name.
-  Problem 11
-    - Root composer.json requires nunomaduro/collision, it could not be found in any version, there may be a typo in the package name.
-  Problem 12
-    - Root composer.json requires phpunit/phpunit, it could not be found in any version, there may be a typo in the package name.
-Potential causes:
- - A typo in the package name
- - The package is not available in a stable-enough version according to your minimum-stability setting
-   see <https://getcomposer.org/doc/04-schema.md#minimum-stability> for more details.
- - It's a private package and you forgot to add a custom repository to find it
-Read <https://getcomposer.org/doc/articles/troubleshooting.md> for further common problems.
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+regenerate-lock:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
+  tags:
+    - common_runner
+  variables:
+    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
+    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
+    COMPOSER_ALLOW_SUPERUSER: "1"
+  script:
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+    - php --version
+
+    # Download Composer from JFrog
+    - |
+      set -eo pipefail
+      echo "── Downloading Composer from JFrog ──"
+      curl -f \
+        --cacert "$JF_ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
+        -o composer.phar
+      SIZE=$(stat -c%s composer.phar)
+      echo "Downloaded size: $SIZE bytes"
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: composer.phar too small"
+        exit 1
+      fi
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      composer --version
+
+    # Configure Composer to use JFrog only
+    - |
+      set -eo pipefail
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      echo "── Configuring Composer ──"
+      composer config --global repos.packagist composer \
+        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
+      composer config --global \
+        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
+      composer config --global cafile "$JF_ARTIFACTORY_CERT"
+      composer config --global repo.packagist false
+      composer config --global use-github-api false
+      composer config --global preferred-install dist
+      echo "── Composer configured ──"
+
+    # ── DIAGNOSTIC: Test JFrog Composer API responses ──────────────────────
+    - |
+      set -eo pipefail
+      export PATH="$CI_PROJECT_DIR:$PATH"
+
+      echo "===== DIAGNOSING JFROG COMPOSER API ====="
+
+      # Test 1: Can we reach the packages.json endpoint at all?
+      echo ""
+      echo "--- Test 1: packages.json root endpoint ---"
+      curl -s \
+        --cacert "$JF_ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -o /tmp/packages.json \
+        -w "HTTP Status: %{http_code}\n" \
+        "${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}/packages.json" || true
+      echo "Response size: $(stat -c%s /tmp/packages.json 2>/dev/null || echo 0) bytes"
+      echo "Response content (first 500 chars):"
+      head -c 500 /tmp/packages.json || true
+      echo ""
+
+      # Test 2: Can we find laravel/framework specifically?
+      echo ""
+      echo "--- Test 2: laravel/framework package lookup ---"
+      curl -s \
+        --cacert "$JF_ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        -o /tmp/laravel_framework.json \
+        -w "HTTP Status: %{http_code}\n" \
+        "${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}/p2/laravel/framework.json" || true
+      echo "Response size: $(stat -c%s /tmp/laravel_framework.json 2>/dev/null || echo 0) bytes"
+      echo "Response content (first 500 chars):"
+      head -c 500 /tmp/laravel_framework.json || true
+      echo ""
+
+      # Test 3: Check what Composer diagnose says about the repo
+      echo ""
+      echo "--- Test 3: Composer diagnose ---"
+      composer diagnose || true
+
+      # Test 4: Show Composer's view of configured repos
+      echo ""
+      echo "--- Test 4: Composer config repos ---"
+      composer config --list --global | grep -E "repo|packagist|github" || true
+
+      echo "===== DIAGNOSIS COMPLETE ====="
+      echo "Share the output above with your JFrog admin"
+
+  rules:
+    - when: manual
