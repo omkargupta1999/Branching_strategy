@@ -27,16 +27,12 @@
 
       echo "── Downloading Composer from JFrog ──"
 
-      mkdir -p "${CI_PROJECT_DIR}/tmp"
-
       curl --fail -k \
         -u "${JF_USER}:${JF_TOKEN}" \
         -o composer.phar \
         "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/composer.phar"
 
       chmod +x composer.phar
-
-      test -f composer.phar
 
       php composer.phar --version
 
@@ -55,18 +51,18 @@
       mkdir -p "${COMPOSER_CACHE_DIR}"
 
       #
-      # Disable public Packagist completely
+      # Disable public packagist completely
       #
       php composer.phar config -g repo.packagist false
 
       #
-      # Use ONLY JFrog Composer Virtual Repository
+      # Use ONLY JFrog composer virtual repository
       #
       php composer.phar config -g repositories.jfrog composer \
         "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
 
       #
-      # JFrog Authentication
+      # Authentication
       #
       php composer.phar config -g \
         http-basic.artifactory.jfrog.sbi \
@@ -74,39 +70,27 @@
         "${JF_TOKEN}"
 
       #
-      # SSL Certificate
+      # SSL
       #
       php composer.phar config -g secure-http true
       php composer.phar config -g cafile "${JF_ARTIFACTORY_CERT}"
 
       #
-      # Recommended Settings
+      # STRICT ENTERPRISE SETTINGS
       #
       php composer.phar config -g preferred-install dist
       php composer.phar config -g github-protocols https
       php composer.phar config -g use-github-api false
+      php composer.phar config -g source-fallback false
 
-      echo "── Composer configured ──"
+      #
+      # HARD BLOCK GITHUB FALLBACK
+      #
+      export COMPOSER_DISABLE_NETWORK=1
 
       echo "── Composer Global Config ──"
 
       php composer.phar config --global --list
-
-      echo "── Repository Validation ──"
-
-      php composer.phar config --global --list | grep repositories || true
-
-    # =====================================================
-    # Build Info
-    # =====================================================
-
-    - |
-      set -euo pipefail
-
-      echo "===== SYSTEM INFO ====="
-
-      free -h
-      df -h
 
     # =====================================================
     # Install Dependencies
@@ -118,11 +102,12 @@
       echo "===== INSTALLING DEPENDENCIES ====="
 
       php composer.phar install \
+        --prefer-dist \
+        --no-dev \
         --no-interaction \
         --no-progress \
-        --prefer-dist \
         --optimize-autoloader \
-        --no-dev \
+        --no-cache \
         -vvv
 
   artifacts:
