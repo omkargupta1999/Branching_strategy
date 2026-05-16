@@ -1,271 +1,186 @@
-stages:
-  - build
-
-# ─────────────────────────────────────────────────────────────────────────────
-# JOB 1: Run ONCE manually — commits composer.lock via GitLab API (no git push)
-# DELETE this entire job after it succeeds
-# ─────────────────────────────────────────────────────────────────────────────
-regenerate-lock:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
-  tags:
-    - common_runner
-  variables:
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    COMPOSER_ALLOW_SUPERUSER: "1"
-    COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer-home"
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-  script:
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
-
-    # ── Download Composer PHAR from JFrog ─────────────────────────────────────
-    - |
-      set -eo pipefail
-      echo "── Downloading Composer from JFrog ──"
-      curl -f \
-        --cacert "$JF_ARTIFACTORY_CERT" \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small"
-        exit 1
-      fi
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    # ── Configure Composer — clean home, JFrog only ───────────────────────────
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-      mkdir -p "$COMPOSER_HOME"
-
-      echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<EOF
-      {
-          "config": {
-              "use-github-api": false,
-              "preferred-install": "dist",
-              "secure-http": true,
-              "cafile": "${JF_ARTIFACTORY_CERT}"
-          },
-          "repositories": {
-              "packagist": {
-                  "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
-              }
-          }
-      }
-      EOF
-
-      echo "── Writing auth.json ──"
-      cat > "$COMPOSER_HOME/auth.json" <<EOF
-      {
-          "http-basic": {
-              "artifactory.jfrog.sbi": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              },
-              "artifactory.jfrog.sbi:443": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              }
-          }
-      }
-      EOF
-      echo "── Composer configured ──"
-
-    # ── Regenerate lock file and commit via GitLab API ────────────────────────
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-
-      echo "===== DELETING OLD composer.lock ====="
-      rm -f composer.lock
-
-      echo "===== REGENERATING composer.lock VIA JFROG ====="
-      composer update \
-        --no-install \
-        --no-scripts \
-        --no-interaction \
-        --prefer-dist \
-        --no-source-fallback \
-        -vvv
-
-      echo "===== VERIFYING URLS IN LOCK FILE ====="
-      JFROG_COUNT=$(grep -c "artifactory.jfrog.sbi" composer.lock 2>/dev/null || true)
-      GITHUB_COUNT=$(grep -c "api.github.com" composer.lock 2>/dev/null || true)
-      echo "JFrog URLs found  : $JFROG_COUNT"
-      echo "GitHub URLs found : $GITHUB_COUNT"
-      echo "SUCCESS: All dist URLs point to JFrog"
-
-      echo "===== COMMITTING composer.lock VIA GITLAB API ====="
-      echo "Project ID   : ${CI_PROJECT_ID}"
-      echo "Branch       : ${CI_COMMIT_REF_NAME}"
-      echo "GitLab host  : ${CI_SERVER_HOST}"
-
-      # Base64 encode the lock file (no line wrapping)
-      LOCK_CONTENT=$(base64 -w 0 composer.lock)
-      echo "Lock file base64 size: ${#LOCK_CONTENT} chars"
-
-      # Commit via GitLab Repository Files API
-      # Uses curl with SBI CA cert — bypasses git SSL completely
-      HTTP_STATUS=$(curl -s \
-        -o /tmp/api_response.json \
-        -w "%{http_code}" \
-        --cacert "$JF_ARTIFACTORY_CERT" \
-        -X PUT \
-        -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN}" \
-        -H "Content-Type: application/json" \
-        "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/repository/files/composer.lock" \
-        -d "{
-          \"branch\": \"${CI_COMMIT_REF_NAME}\",
-          \"content\": \"${LOCK_CONTENT}\",
-          \"encoding\": \"base64\",
-          \"commit_message\": \"chore: regenerate composer.lock with JFrog dist URLs [skip ci]\"
-        }")
-
-      echo "GitLab API HTTP Status: $HTTP_STATUS"
-      echo "GitLab API Response:"
-      cat /tmp/api_response.json || true
-      echo ""
-
-      if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ]; then
-        echo "===== composer.lock COMMITTED SUCCESSFULLY ====="
-      else
-        echo "ERROR: Failed to commit (HTTP $HTTP_STATUS)"
-        echo "Trying with GIT_SSL_NO_VERIFY as last resort..."
-        GIT_SSL_NO_VERIFY=true git push \
-          "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" \
-          HEAD:${CI_COMMIT_REF_NAME} || true
-        exit 1
-      fi
-
-  rules:
-    - when: manual   # ← trigger ONCE manually, then DELETE this entire job
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# JOB 2: Permanent build job — runs on every pipeline
-# ─────────────────────────────────────────────────────────────────────────────
-.build:
-  stage: build
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
-  tags:
-    - common_runner
-  variables:
-    COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer-home"
-    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
-    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
-    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
-    COMPOSER_ALLOW_SUPERUSER: "1"
-  cache:
-    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .composer-cache/
-  before_script:
-    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
-    - php --version
-
-    # ── Download Composer PHAR from JFrog ─────────────────────────────────────
-    - |
-      set -eo pipefail
-      echo "── Downloading Composer from JFrog ──"
-      curl -f \
-        --cacert "$JF_ARTIFACTORY_CERT" \
-        -u "${JF_USER}:${JF_TOKEN}" \
-        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
-        -o composer.phar
-      SIZE=$(stat -c%s composer.phar)
-      echo "Downloaded size: $SIZE bytes"
-      if [ "$SIZE" -lt 1000000 ]; then
-        echo "ERROR: composer.phar too small"
-        exit 1
-      fi
-      chmod +x composer.phar
-      mv composer.phar composer
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      composer --version
-
-    # ── Configure Composer — clean home, JFrog only ───────────────────────────
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-      mkdir -p "$COMPOSER_HOME"
-
-      echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<EOF
-      {
-          "config": {
-              "use-github-api": false,
-              "preferred-install": "dist",
-              "secure-http": true,
-              "cafile": "${JF_ARTIFACTORY_CERT}"
-          },
-          "repositories": {
-              "packagist": {
-                  "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
-              }
-          }
-      }
-      EOF
-
-      echo "── Writing auth.json ──"
-      cat > "$COMPOSER_HOME/auth.json" <<EOF
-      {
-          "http-basic": {
-              "artifactory.jfrog.sbi": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              },
-              "artifactory.jfrog.sbi:443": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              }
-          }
-      }
-      EOF
-      echo "── Composer configured ──"
-
-  script:
-    - |
-      set -eo pipefail
-      export PATH="$CI_PROJECT_DIR:$PATH"
-      export COMPOSER_HOME="${CI_PROJECT_DIR}/.composer-home"
-
-      echo "===== SYSTEM INFO ====="
-      free -h || true
-      df -h   || true
-
-      echo "===== INSTALLING DEPENDENCIES ====="
-      composer install \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --prefer-dist \
-        --no-scripts \
-        --no-source-fallback \
-        -vvv
-
-      if [ ! -d "vendor" ]; then
-        echo "ERROR: vendor directory not created"
-        exit 1
-      fi
-
-      echo "Vendor count: $(ls vendor | wc -l)"
-      echo "===== BUILD COMPLETE ====="
-
-  artifacts:
-    paths:
-      - vendor/
-    expire_in: 1 day
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1992-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:02
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out 5eb0efa4 as detached HEAD (ref is release/uat)...
+Removing .composer-cache/
+Removing .composer-home/
+Removing composer
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:09
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0  11.5M      0 --:--:-- --:--:-- --:--:-- 11.5M
+Downloaded size: 3485155 bytes
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+$ set -eo pipefail # collapsed multi-line command
+── Writing config.json ──
+── Writing auth.json ──
+── Composer configured ──
+$ set -eo pipefail # collapsed multi-line command
+===== DELETING OLD composer.lock =====
+===== REGENERATING composer.lock VIA JFROG =====
+Loading composer repositories with package information
+Updating dependencies
+Lock file operations: 114 installs, 0 updates, 0 removals
+  - Locking brick/math (0.14.8)
+  - Locking carbonphp/carbon-doctrine-types (3.2.0)
+  - Locking caseyamcl/guzzle_retry_middleware (v2.13.0)
+  - Locking dflydev/dot-access-data (v3.0.3)
+  - Locking doctrine/inflector (2.1.0)
+  - Locking doctrine/lexer (3.0.1)
+  - Locking dragonmantank/cron-expression (v3.6.0)
+  - Locking egulias/email-validator (4.0.4)
+  - Locking fakerphp/faker (v1.24.1)
+  - Locking filp/whoops (2.18.4)
+  - Locking fruitcake/php-cors (v1.4.0)
+  - Locking graham-campbell/result-type (v1.1.4)
+  - Locking guzzlehttp/guzzle (7.10.0)
+  - Locking guzzlehttp/promises (2.3.0)
+  - Locking guzzlehttp/psr7 (2.9.0)
+  - Locking guzzlehttp/uri-template (v1.0.5)
+  - Locking hamcrest/hamcrest-php (v2.1.1)
+  - Locking laravel/framework (v12.59.0)
+  - Locking laravel/pail (v1.2.6)
+  - Locking laravel/pint (v1.29.1)
+  - Locking laravel/prompts (v0.3.17)
+  - Locking laravel/sail (v1.59.0)
+  - Locking laravel/sanctum (v4.3.2)
+  - Locking laravel/serializable-closure (v2.0.13)
+  - Locking laravel/tinker (v2.11.1)
+  - Locking league/commonmark (2.8.2)
+  - Locking league/config (v1.2.0)
+  - Locking league/flysystem (3.34.0)
+  - Locking league/flysystem-local (3.31.0)
+  - Locking league/mime-type-detection (1.16.0)
+  - Locking league/uri (7.8.1)
+  - Locking league/uri-interfaces (7.8.1)
+  - Locking mockery/mockery (1.6.12)
+  - Locking monolog/monolog (3.10.0)
+  - Locking myclabs/deep-copy (1.13.4)
+  - Locking nesbot/carbon (3.11.4)
+  - Locking nette/schema (v1.3.5)
+  - Locking nette/utils (v4.1.4)
+  - Locking nikic/php-parser (v5.7.0)
+  - Locking nunomaduro/collision (v8.9.4)
+  - Locking nunomaduro/termwind (v2.4.0)
+  - Locking phar-io/manifest (2.0.4)
+  - Locking phar-io/version (3.2.1)
+  - Locking phpoption/phpoption (1.9.5)
+  - Locking phpunit/php-code-coverage (11.0.12)
+  - Locking phpunit/php-file-iterator (5.1.1)
+  - Locking phpunit/php-invoker (5.0.1)
+  - Locking phpunit/php-text-template (4.0.1)
+  - Locking phpunit/php-timer (7.0.1)
+  - Locking phpunit/phpunit (11.5.55)
+  - Locking psr/clock (1.0.0)
+  - Locking psr/container (2.0.2)
+  - Locking psr/event-dispatcher (1.0.0)
+  - Locking psr/http-client (1.0.3)
+  - Locking psr/http-factory (1.1.0)
+  - Locking psr/http-message (2.0)
+  - Locking psr/log (3.0.2)
+  - Locking psr/simple-cache (3.0.0)
+  - Locking psy/psysh (v0.12.22)
+  - Locking ralouphie/getallheaders (3.0.3)
+  - Locking ramsey/collection (2.1.1)
+  - Locking ramsey/uuid (4.9.2)
+  - Locking sbiepay/epay-php-sdk (1.0.0)
+  - Locking sebastian/cli-parser (3.0.2)
+  - Locking sebastian/code-unit (3.0.3)
+  - Locking sebastian/code-unit-reverse-lookup (4.0.1)
+  - Locking sebastian/comparator (6.3.3)
+  - Locking sebastian/complexity (4.0.1)
+  - Locking sebastian/diff (6.0.2)
+  - Locking sebastian/environment (7.2.1)
+  - Locking sebastian/exporter (6.3.2)
+  - Locking sebastian/global-state (7.0.2)
+  - Locking sebastian/lines-of-code (3.0.1)
+  - Locking sebastian/object-enumerator (6.0.1)
+  - Locking sebastian/object-reflector (4.0.1)
+  - Locking sebastian/recursion-context (6.0.3)
+  - Locking sebastian/type (5.1.3)
+  - Locking sebastian/version (5.0.2)
+  - Locking staabm/side-effects-detector (1.0.5)
+  - Locking symfony/clock (v7.4.8)
+  - Locking symfony/console (v7.4.11)
+  - Locking symfony/css-selector (v7.4.9)
+  - Locking symfony/deprecation-contracts (v3.7.0)
+  - Locking symfony/error-handler (v7.4.8)
+  - Locking symfony/event-dispatcher (v7.4.9)
+  - Locking symfony/event-dispatcher-contracts (v3.7.0)
+  - Locking symfony/finder (v7.4.8)
+  - Locking symfony/http-foundation (v7.4.8)
+  - Locking symfony/http-kernel (v7.4.11)
+  - Locking symfony/mailer (v7.4.8)
+  - Locking symfony/mime (v7.4.9)
+  - Locking symfony/polyfill-ctype (v1.37.0)
+  - Locking symfony/polyfill-intl-grapheme (v1.37.0)
+  - Locking symfony/polyfill-intl-idn (v1.37.0)
+  - Locking symfony/polyfill-intl-normalizer (v1.37.0)
+  - Locking symfony/polyfill-mbstring (v1.37.0)
+  - Locking symfony/polyfill-php80 (v1.37.0)
+  - Locking symfony/polyfill-php83 (v1.37.0)
+  - Locking symfony/polyfill-php84 (v1.37.0)
+  - Locking symfony/polyfill-php85 (v1.37.0)
+  - Locking symfony/polyfill-uuid (v1.37.0)
+  - Locking symfony/process (v7.4.11)
+  - Locking symfony/routing (v7.4.9)
+  - Locking symfony/service-contracts (v3.7.0)
+  - Locking symfony/string (v7.4.11)
+  - Locking symfony/translation (v7.4.10)
+  - Locking symfony/translation-contracts (v3.7.0)
+  - Locking symfony/uid (v7.4.9)
+  - Locking symfony/var-dumper (v7.4.8)
+  - Locking symfony/yaml (v7.4.11)
+  - Locking theseer/tokenizer (1.3.1)
+  - Locking tijsverkoyen/css-to-inline-styles (v2.4.0)
+  - Locking vlucas/phpdotenv (v5.6.3)
+  - Locking voku/portable-ascii (2.1.1)
+Writing lock file
+45 package suggestions were added by new dependencies, use `composer suggest` to see details.
+No security vulnerability advisories found.
+===== VERIFYING URLS IN LOCK FILE =====
+JFrog URLs found  : 113
+GitHub URLs found : 0
+SUCCESS: All dist URLs point to JFrog
+===== COMMITTING composer.lock VIA GITLAB API =====
+Project ID   : 1992
+Branch       : release/uat
+GitLab host  : gitlab.sbi
+Lock file base64 size: 420700 chars
+/usr/bin/bash: line 296: /usr/bin/curl: Argument list too long
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
