@@ -1,27 +1,27 @@
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
 Resolving secrets
 Preparing the "docker" executor
-00:01
+00:02
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
 Preparing environment
-00:01
+00:00
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-1992-concurrent-0 via PE3DSOPGRUNNERS6...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-1992-concurrent-0 via PE3DSOPGRUNNERS5...
 Getting source from Git repository
-00:02
+00:04
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
 Created fresh repository.
-Checking out 3ca83a9b as detached HEAD (ref is release/uat)...
+Checking out 4512de98 as detached HEAD (ref is release/uat)...
 Skipping Git submodules setup
 Restoring cache
 00:01
@@ -29,8 +29,8 @@ Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected
 No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
 Successfully extracted cache
 Executing "step_script" stage of the job script
-00:18
-Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+00:25
+Using docker image sha256:9933ceadd145a96dd3b38fde4ed8d0a3d5f90ea9b24a49f3abd628a35c6c9bf4 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
 $ git config --global --add safe.directory "${CI_PROJECT_DIR}"
 $ php --version
 PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
@@ -107,7 +107,7 @@ $ set -euo pipefail # collapsed multi-line command
 $ set -euo pipefail # collapsed multi-line command
 ===== INSTALLING DEPENDENCIES =====
 Disabling cache usage
-Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 5.14.0-611.47.1.el9_7.x86_64
+Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 5.14.0-611.36.1.el9_7.x86_64
 Reading ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
 Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer/config.json
 Loading config file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.composer/auth.json
@@ -131,34 +131,33 @@ Downloading https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbie
 Generating rules
 Resolving dependencies through SAT
 Looking at all rules.
-Dependency resolution completed in 0.000 seconds
+Dependency resolution completed in 0.001 seconds
 Package operations: 80 installs, 0 updates, 0 removals
 Installs: symfony/deprecation-contracts:v3.6.0, psr/http-message:2.0, psr/http-client:1.0.3, ralouphie/getallheaders:3.0.3, psr/http-factory:1.1.0, guzzlehttp/psr7:2.8.0, guzzlehttp/promises:2.3.0, guzzlehttp/guzzle:7.10.0, caseyamcl/guzzle_retry_middleware:v2.13.0, doctrine/inflector:2.1.0, doctrine/lexer:3.0.1, symfony/polyfill-ctype:v1.33.0, webmozart/assert:1.11.0, dragonmantank/cron-expression:v3.4.0, symfony/polyfill-php83:v1.33.0, symfony/polyfill-mbstring:v1.33.0, symfony/http-foundation:v7.3.3, fruitcake/php-cors:v1.3.0, symfony/polyfill-php80:v1.33.0, guzzlehttp/uri-template:v1.0.5, symfony/polyfill-intl-normalizer:v1.33.0, symfony/polyfill-intl-grapheme:v1.33.0, symfony/string:v7.3.3, psr/container:2.0.2, symfony/service-contracts:v3.6.0, symfony/console:v7.3.3, laravel/prompts:v0.3.6, voku/portable-ascii:2.0.3, phpoption/phpoption:1.9.4, graham-campbell/result-type:v1.1.3, vlucas/phpdotenv:v5.6.2, symfony/css-selector:v7.3.0, tijsverkoyen/css-to-inline-styles:v2.3.0, symfony/var-dumper:v7.3.3, symfony/polyfill-uuid:v1.33.0, symfony/uid:v7.3.1, symfony/routing:v7.3.2, symfony/process:v7.3.3, symfony/polyfill-php85:v1.33.0, symfony/polyfill-php84:v1.33.0, symfony/polyfill-intl-idn:v1.33.0, symfony/mime:v7.3.2, psr/event-dispatcher:1.0.0, symfony/event-dispatcher-contracts:v3.6.0, symfony/event-dispatcher:v7.3.3, psr/log:3.0.2, egulias/email-validator:4.0.4, symfony/mailer:v7.3.3, symfony/error-handler:v7.3.2, symfony/http-kernel:v7.3.3, symfony/finder:v7.3.2, ramsey/collection:2.1.1, brick/math:0.13.1, ramsey/uuid:4.9.0, psr/simple-cache:3.0.0, nunomaduro/termwind:v2.3.1, symfony/translation-contracts:v3.6.0, symfony/translation:v7.3.3, psr/clock:1.0.0, symfony/clock:v7.3.0, carbonphp/carbon-doctrine-types:3.2.0, nesbot/carbon:3.10.2, monolog/monolog:3.9.0, league/uri-interfaces:7.5.0, league/uri:7.5.1, league/mime-type-detection:1.16.0, league/flysystem-local:3.30.0, league/flysystem:3.30.0, nette/utils:v4.0.8, nette/schema:v1.3.2, dflydev/dot-access-data:v3.0.3, league/config:v1.2.0, league/commonmark:2.7.1, laravel/serializable-closure:v2.0.4, laravel/framework:v12.26.4, laravel/sanctum:v4.2.0, nikic/php-parser:v5.6.1, psy/psysh:v0.12.10, laravel/tinker:v2.10.1, sbiepay/epay-php-sdk:1.0.0
   - Downloading symfony/deprecation-contracts (v3.6.0)
-Using HTTP basic authentication with username "[MASKED]"
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62
   - Downloading psr/http-message (2.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71
   - Downloading psr/http-client (1.0.3)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90
   - Downloading ralouphie/getallheaders (3.0.3)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822
   - Downloading psr/http-factory (1.1.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a
   - Downloading guzzlehttp/psr7 (2.8.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051
   - Downloading guzzlehttp/promises (2.3.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957
   - Downloading guzzlehttp/guzzle (7.10.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4
   - Downloading caseyamcl/guzzle_retry_middleware (v2.13.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60
   - Downloading doctrine/inflector (2.1.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b
   - Downloading doctrine/lexer (3.0.1)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd
   - Downloading symfony/polyfill-ctype (v1.33.0)
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638
   - Downloading webmozart/assert (1.11.0)
   - Downloading dragonmantank/cron-expression (v3.4.0)
   - Downloading symfony/polyfill-php83 (v1.33.0)
@@ -228,316 +227,316 @@ Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-
   - Downloading laravel/tinker (v2.10.1)
   - Downloading sbiepay/epay-php-sdk (1.0.0)
 Reading package-registry/sbiepay-epay-php-sdk.zip
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62
-    Failed to download symfony/deprecation-contracts from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71
-    Failed to download psr/http-message from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62
+    Failed to download symfony/deprecation-contracts from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90
+    Failed to download psr/http-client from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a
+    Failed to download psr/http-factory from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4
+    Failed to download guzzlehttp/guzzle from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd
+    Failed to download doctrine/lexer from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500
+    Failed to download dragonmantank/cron-expression from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957
+    Failed to download guzzlehttp/promises from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b
+    Failed to download doctrine/inflector from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638
+    Failed to download symfony/polyfill-ctype from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493
+    Failed to download symfony/polyfill-mbstring from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b
+    Failed to download fruitcake/php-cors from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608
+    Failed to download symfony/polyfill-php80 from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90
-    Failed to download psr/http-client from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822
-    Failed to download ralouphie/getallheaders from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a
-    Failed to download psr/http-factory from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1
+    Failed to download guzzlehttp/uri-template from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c
+    Failed to download symfony/polyfill-intl-normalizer from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70
+    Failed to download symfony/polyfill-intl-grapheme from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c
+    Failed to download symfony/string from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963
+    Failed to download psr/container from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4
+    Failed to download symfony/service-contracts from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7
+    Failed to download symfony/console from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077
+    Failed to download laravel/prompts from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d
+    Failed to download voku/portable-ascii from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d
+    Failed to download phpoption/phpoption from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945
+    Failed to download graham-campbell/result-type from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af
+    Failed to download vlucas/phpdotenv from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2
+    Failed to download symfony/css-selector from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051
-    Failed to download guzzlehttp/psr7 from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957
-    Failed to download guzzlehttp/promises from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4
-    Failed to download guzzlehttp/guzzle from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd
-    Failed to download doctrine/lexer from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60
-    Failed to download caseyamcl/guzzle_retry_middleware from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b
-    Failed to download doctrine/inflector from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638
-    Failed to download symfony/polyfill-ctype from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991
-    Failed to download webmozart/assert from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500
-    Failed to download dragonmantank/cron-expression from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5
-    Failed to download symfony/polyfill-php83 from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493
-    Failed to download symfony/polyfill-mbstring from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00
-    Failed to download symfony/http-foundation from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608
-    Failed to download symfony/polyfill-php80 from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70
-    Failed to download symfony/polyfill-intl-grapheme from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c
-    Failed to download symfony/polyfill-intl-normalizer from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1
-    Failed to download guzzlehttp/uri-template from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b
-    Failed to download fruitcake/php-cors from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4
-    Failed to download symfony/service-contracts from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963
-    Failed to download psr/container from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c
-    Failed to download symfony/string from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/string/zipball/17a426cce5fd1f0901fefa9b2a490d0038fd3c9c" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077
-    Failed to download laravel/prompts from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/prompts/zipball/86a8b692e8661d0fb308cec64f3d176821323077" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d
-    Failed to download voku/portable-ascii from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d
-    Failed to download phpoption/phpoption from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7
-    Failed to download symfony/console from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/console/zipball/cb0102a1c5ac3807cf3fdf8bea96007df7fdbea7" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945
-    Failed to download graham-campbell/result-type from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af
-    Failed to download vlucas/phpdotenv from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2
-    Failed to download symfony/css-selector from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d
-    Failed to download tijsverkoyen/css-to-inline-styles from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2
-    Failed to download symfony/polyfill-uuid from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f
-    Failed to download symfony/var-dumper from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb
-    Failed to download symfony/uid from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4
-    Failed to download symfony/routing from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1
-    Failed to download symfony/process from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91
-    Failed to download symfony/polyfill-php85 from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191
-    Failed to download symfony/polyfill-php84 from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3
-    Failed to download symfony/polyfill-intl-idn from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1
-    Failed to download symfony/mime from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1" file could not be downloaded (HTTP/1.1 404 )
-    Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0
-    Failed to download psr/event-dispatcher from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d
+    Failed to download tijsverkoyen/css-to-inline-styles from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f
+    Failed to download symfony/var-dumper from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/var-dumper/zipball/34d8d4c4b9597347306d1ec8eb4e1319b1e6986f" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2
+    Failed to download symfony/polyfill-uuid from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb
+    Failed to download symfony/uid from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4
+    Failed to download symfony/routing from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/routing/zipball/7614b8ca5fa89b9cd233e21b627bfc5774f586e4" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1
+    Failed to download symfony/process from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/process/zipball/32241012d521e2e8a9d713adb0812bb773b907f1" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91
+    Failed to download symfony/polyfill-php85 from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191
+    Failed to download symfony/polyfill-php84 from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3
+    Failed to download symfony/polyfill-intl-idn from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1
+    Failed to download symfony/mime from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mime/zipball/e0a0f859148daf1edf6c60b398eb40bfc96697d1" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00
+    Failed to download symfony/http-foundation from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-foundation/zipball/7475561ec27020196c49bb7c4f178d33d7d3dc00" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0
+    Failed to download psr/event-dispatcher from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191
+    Failed to download symfony/event-dispatcher from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3
+    Failed to download psr/log from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586
+    Failed to download symfony/event-dispatcher-contracts from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa
+    Failed to download egulias/email-validator from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991
+    Failed to download webmozart/assert from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991" file could not be downloaded (HTTP/1.1 404 )
+    Source fallback is disabled. Not trying alternative sources.
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3
+    Failed to download symfony/error-handler from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586
-    Failed to download symfony/event-dispatcher-contracts from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b
+    Failed to download symfony/http-kernel from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191
-    Failed to download symfony/event-dispatcher from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe
+    Failed to download symfony/finder from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3
-    Failed to download psr/log from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2
+    Failed to download ramsey/collection from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa
-    Failed to download egulias/email-validator from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04
+    Failed to download brick/math from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575
-    Failed to download symfony/mailer from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575
+    Failed to download symfony/mailer from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/mailer/zipball/a32f3f45f1990db8c4341d5122a7d3a381c7e575" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3
-    Failed to download symfony/error-handler from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/error-handler/zipball/0b31a944fcd8759ae294da4d2808cbc53aebd0c3" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0
+    Failed to download ramsey/uuid from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2
-    Failed to download ramsey/collection from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865
+    Failed to download psr/simple-cache from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b
-    Failed to download symfony/http-kernel from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/http-kernel/zipball/72c304de37e1a1cec6d5d12b81187ebd4850a17b" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123
+    Failed to download nunomaduro/termwind from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe
-    Failed to download symfony/finder from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d
+    Failed to download psr/clock from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0
-    Failed to download ramsey/uuid from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24
+    Failed to download symfony/clock from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04
-    Failed to download brick/math from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d
+    Failed to download carbonphp/carbon-doctrine-types from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865
-    Failed to download psr/simple-cache from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24
+    Failed to download nesbot/carbon from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123
-    Failed to download nunomaduro/termwind from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6
+    Failed to download monolog/monolog from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d
-    Failed to download symfony/translation-contracts from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742
+    Failed to download league/uri-interfaces from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d
-    Failed to download psr/clock from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430
+    Failed to download league/uri from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24
-    Failed to download symfony/clock from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9
+    Failed to download league/mime-type-detection from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d
-    Failed to download symfony/translation from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10
+    Failed to download league/flysystem-local from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d
-    Failed to download carbonphp/carbon-doctrine-types from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon-doctrine-types/zipball/18ba5ddfec8976260ead6e866180bd5d2f71aa1d" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e
+    Failed to download league/flysystem from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24
-    Failed to download nesbot/carbon from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/CarbonPHP/carbon/zipball/76b5c07b8a9d2025ed1610e14cef1f3fd6ad2c24" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede
+    Failed to download nette/utils from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6
-    Failed to download monolog/monolog from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d
+    Failed to download nette/schema from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742
-    Failed to download league/uri-interfaces from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f
+    Failed to download dflydev/dot-access-data from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430
-    Failed to download league/uri from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3
+    Failed to download league/config from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9
-    Failed to download league/mime-type-detection from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca
+    Failed to download league/commonmark from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-Downloading https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10
-    Failed to download league/flysystem-local from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10" file could not be downloaded (HTTP/1.1 404 )
+Downloading https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051
+    Failed to download guzzlehttp/psr7 from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e
-    Failed to download league/flysystem from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60
+    Failed to download caseyamcl/guzzle_retry_middleware from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/caseyamcl/guzzle_retry_middleware/zipball/17c9299cde438b00bbeb099c6480319a81636a60" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede
-    Failed to download nette/utils from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841
+    Failed to download laravel/serializable-closure from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d
-    Failed to download nette/schema from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d
+    Failed to download symfony/translation-contracts from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f
-    Failed to download dflydev/dot-access-data from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677
+    Failed to download laravel/sanctum from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3
-    Failed to download league/config from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09
+    Failed to download laravel/framework from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca
-    Failed to download league/commonmark from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822
+    Failed to download ralouphie/getallheaders from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841
-    Failed to download laravel/serializable-closure from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/serializable-closure/zipball/b352cf0534aa1ae6b4d825d1e762e35d43f8a841" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22
+    Failed to download psy/psysh from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677
-    Failed to download laravel/sanctum from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/sanctum/zipball/fd6df4f79f48a72992e8d29a9c0ee25422a0d677" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d
+    Failed to download symfony/translation from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/translation/zipball/e0837b4cbcef63c754d89a4806575cada743a38d" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2
-    Failed to download nikic/php-parser from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5
+    Failed to download symfony/polyfill-php83 from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22
-    Failed to download psy/psysh from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3
+    Failed to download laravel/tinker from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09
-    Failed to download laravel/framework from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/framework/zipball/085a367a32ba86fcfa647bfc796098ae6f795b09" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2
+    Failed to download nikic/php-parser from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
-[404] https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3
-    Failed to download laravel/tinker from dist: The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-virtual/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3" file could not be downloaded (HTTP/1.1 404 )
+[404] https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71
+    Failed to download psr/http-message from dist: The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtual/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71" file could not be downloaded (HTTP/1.1 404 )
     Source fallback is disabled. Not trying alternative sources.
 In CurlDownloader.php line 679:
                                                                                
   [Composer\Downloader\TransportException (100)]                               
-  The "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-php-vi  
-  rtual/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb  
-  07bbdee937a5b62" file could not be downloaded (HTTP/1.1 404 )                
+  The "https://artifactory.jfrog.sbi/artifactory/itepaypg-sbiepay2-php-virtua  
+  l/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bb  
+  dee937a5b62" file could not be downloaded (HTTP/1.1 404 )                    
                                                                                
 Exception trace:
   at phar:///builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.phar/src/Composer/Util/Http/CurlDownloader.php:679
