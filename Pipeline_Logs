@@ -1,31 +1,304 @@
+Build Output :
 
-I have export the a complete project from old gitlab and import it to our centralized Gitlab, although it imported successfully alomost all the things but 
-i have observed that assignee name of issue has been changed after import from actual owner to the imported owner name even you see for almost all the things like MR as well.
-sharing the details for your information. Actual name should not be change after import.
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-ktjck3d-w-project-1992-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:12
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/.git/
+Created fresh repository.
+Checking out ea4e25f4 as detached HEAD (ref is release/uat)...
+Skipping Git submodules setup
+Restoring cache
+00:01
+Checking cache for merchant_api_simulator_php-composer-release-uat-non_protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+WARNING: Cache file does not exist                 
+Failed to extract cache
+Executing "step_script" stage of the job script
+00:28
+Using docker image sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82@sha256:504c81063ecaf222db5daddeac6560c149a1c329b8ba6f1143c15406578a87b2 ...
+$ git config --global --add safe.directory "${CI_PROJECT_DIR}"
+$ php --version
+PHP 8.2.30 (cli) (built: Dec 16 2025 17:18:12) (NTS gcc x86_64)
+Copyright (c) The PHP Group
+Zend Engine v4.2.30, Copyright (c) Zend Technologies
+    with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+$ set -eo pipefail # collapsed multi-line command
+── Downloading Composer from JFrog ──
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 3403k  100 3403k    0     0  11.1M      0 --:--:-- --:--:-- --:--:-- 11.1M
+Downloaded size: 3485155 bytes
+Composer version 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2.10-dev) 2026-05-13 07:11:06
+PHP version 8.2.30 (/usr/bin/php)
+Run the "diagnose" command to get more detailed diagnostics output.
+$ set -eo pipefail # collapsed multi-line command
+── Configuring Composer ──
+── Composer configured ──
+$ set -eo pipefail # collapsed multi-line command
+===== SYSTEM INFO =====
+               total        used        free      shared  buff/cache   available
+Mem:           125Gi       5.4Gi        68Gi        77Mi        52Gi       120Gi
+Swap:          4.0Gi       497Mi       3.5Gi
+Filesystem                     Size  Used Avail Use% Mounted on
+overlay                        600G  164G  437G  28% /
+tmpfs                           64M     0   64M   0% /dev
+shm                            4.0G     0  4.0G   0% /dev/shm
+/dev/mapper/vg_runner-lv_data  600G  164G  437G  28% /cache
+devtmpfs                       4.0M     0  4.0M   0% /dev/dsa
+===== INSTALLING DEPENDENCIES =====
+Running 2.10-dev+c340b0a85dc3c4502848f2a9699c02b7ab4ad856 (2026-05-13 07:11:06) with PHP 8.2.30 on Linux / 5.14.0-611.47.1.el9_7.x86_64
+Reading ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
+Loading config file /opt/app-root/src/.config/composer/config.json
+Loading config file /opt/app-root/src/.config/composer/auth.json
+Loading config file ./composer.json (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.json)
+Checked CA file /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php.tmp/JF_ARTIFACTORY_CERT: valid
+Executing command (CWD): 'git' '--version'
+Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'branch' '-a' '--no-color' '--no-abbrev' '-v'
+Executing command (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php): 'git' 'describe' '--exact-match' '--tags'
+Failed to initialize global composer: Composer could not find the config file: /opt/app-root/src/.config/composer/composer.json
+Reading /builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/composer/installed.json
+Reading ./composer.lock (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.lock)
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+Reading ./composer.lock (/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/composer.lock)
+Built pool.
+Running filter list pool filter.
+Generating rules
+Resolving dependencies through SAT
+Looking at all rules.
+Dependency resolution completed in 0.000 seconds
+Package operations: 0 installs, 0 updates, 35 removals
+Removals: theseer/tokenizer, symfony/yaml, staabm/side-effects-detector, sebastian/version, sebastian/type, sebastian/recursion-context, sebastian/object-reflector, sebastian/object-enumerator, sebastian/lines-of-code, sebastian/global-state, sebastian/exporter, sebastian/environment, sebastian/diff, sebastian/complexity, sebastian/comparator, sebastian/code-unit-reverse-lookup, sebastian/code-unit, sebastian/cli-parser, phpunit/phpunit, phpunit/php-timer, phpunit/php-text-template, phpunit/php-invoker, phpunit/php-file-iterator, phpunit/php-code-coverage, phar-io/version, phar-io/manifest, nunomaduro/collision, myclabs/deep-copy, mockery/mockery, laravel/sail, laravel/pint, laravel/pail, hamcrest/hamcrest-php, filp/whoops, fakerphp/faker
+  - Removing theseer/tokenizer (1.2.3)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/theseer/tokenizer'
+  - Removing symfony/yaml (v7.3.3)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/symfony/yaml'
+  - Removing staabm/side-effects-detector (1.0.5)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/staabm/side-effects-detector'
+  - Removing sebastian/version (5.0.2)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/version'
+  - Removing sebastian/type (5.1.3)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/type'
+  - Removing sebastian/recursion-context (6.0.3)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/recursion-context'
+  - Removing sebastian/object-reflector (4.0.1)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/object-reflector'
+  - Removing sebastian/object-enumerator (6.0.1)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/object-enumerator'
+  - Removing sebastian/lines-of-code (3.0.1)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/lines-of-code'
+  - Removing sebastian/global-state (7.0.2)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/global-state'
+  - Removing sebastian/exporter (6.3.0)
+  - Removing sebastian/environment (7.2.1)
+  - Removing sebastian/diff (6.0.2)
+  - Removing sebastian/complexity (4.0.1)
+  - Removing sebastian/comparator (6.3.2)
+  - Removing sebastian/code-unit-reverse-lookup (4.0.1)
+  - Removing sebastian/code-unit (3.0.3)
+  - Removing sebastian/cli-parser (3.0.2)
+  - Removing phpunit/phpunit (11.5.35)
+  - Removing phpunit/php-timer (7.0.1)
+  - Removing phpunit/php-text-template (4.0.1)
+  - Removing phpunit/php-invoker (5.0.1)
+  - Removing phpunit/php-file-iterator (5.1.0)
+  - Removing phpunit/php-code-coverage (11.0.11)
+  - Removing phar-io/version (3.2.1)
+  - Removing phar-io/manifest (2.0.4)
+  - Removing nunomaduro/collision (v8.8.2)
+  - Removing myclabs/deep-copy (1.13.4)
+  - Removing mockery/mockery (1.6.12)
+  - Removing laravel/sail (v1.45.0)
+  - Removing laravel/pint (v1.24.0)
+  - Removing laravel/pail (v1.2.3)
+  - Removing hamcrest/hamcrest-php (v2.1.1)
+  - Removing filp/whoops (2.18.4)
+  - Removing fakerphp/faker (v1.24.1)
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/exporter'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/environment'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/diff'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/complexity'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/comparator'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/code-unit-reverse-lookup'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/code-unit'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/sebastian/cli-parser'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/phpunit'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/php-timer'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/php-text-template'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/php-invoker'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/php-file-iterator'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phpunit/php-code-coverage'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phar-io/version'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/phar-io/manifest'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/nunomaduro/collision'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/myclabs/deep-copy'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/mockery/mockery'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/laravel/sail'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/laravel/pint'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/laravel/pail'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/hamcrest/hamcrest-php'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/filp/whoops'
+Executing async command (CWD): 'rm' '-rf' '/builds/itepaypg-sbiepay2/application/merchantsimulator/merchant_api_simulator_php/vendor/fakerphp/faker'
+Generating optimized autoload files
+Class App\Traits\ResponseFormat located in ./app/Http/Controllers/Traits/ResponseFormat.php does not comply with psr-4 autoloading standard (rule: App\ => ./app). Skipping.
+> post-autoload-dump: Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> post-autoload-dump: @php artisan package:discover --ansi
+Executing command (CWD): '/usr/bin/php' -d allow_url_fopen='1' -d disable_functions='' -d memory_limit='1536M' artisan package:discover --ansi
+   INFO  Discovering packages.  
+  laravel/sanctum ....................................................... DONE
+  laravel/tinker ........................................................ DONE
+  nesbot/carbon ......................................................... DONE
+  nunomaduro/termwind ................................................... DONE
+54 packages you are using are looking for funding.
+Use the `composer fund` command to find out more!
+Vendor count: 31
+===== BUILD COMPLETE =====
+Saving cache for successful job
+00:01
+Creating cache merchant_api_simulator_php-composer-release-uat-non_protected...
+.composer-cache/: found 2 matching artifact files and directories 
+No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
+Created cache
+Uploading artifacts for successful job
+00:05
+Uploading artifacts...
+vendor/: found 6719 matching artifact files and directories 
+Uploading artifacts as "archive" to coordinator... 201 Created  id=427647 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:01
+Job succeeded
 
 
-Old Gitlab: 
 
-Release/v1.9.0 Mobikwik Integration
-Open
-PUNAM ANIL RAJPUT
-requested to merge
-release/v1.9.0
-into
-main
-1 day ago
+===================================================  
 
 
-Centralized Gitlab :
+.build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/php-82:1-1778488703
 
-Release/v1.9.0
-Open
-Imported
-Vishnu Gehlot
-requested to merge
-release/v1.9.0
-into
-main
-1 day ago
+  tags:
+    - common_runner
+
+  variables:
+    COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
+    JF_ARTIFACTORY_URL: "https://artifactory.jfrog.sbi/artifactory"
+    PHP_VIRTUAL_REPO: "itepaypg-sbiepay2-php-virtual"
+    COMPOSER_ALLOW_SUPERUSER: "1"
+
+  cache:
+    key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .composer-cache/
+
+  before_script:
+    # ── Git safe directory (required when runner user differs from repo owner) ─
+    - git config --global --add safe.directory "${CI_PROJECT_DIR}"
+    - php --version
+
+    # ── Download Composer PHAR from JFrog virtual repo ────────────────────────
+    - |
+      set -eo pipefail
+
+      echo "── Downloading Composer from JFrog ──"
+
+      curl -f \
+        --cacert "$JF_ARTIFACTORY_CERT" \
+        -u "${JF_USER}:${JF_TOKEN}" \
+        "${JF_ARTIFACTORY_URL}/${PHP_VIRTUAL_REPO}/composer.phar" \
+        -o composer.phar
+
+      SIZE=$(stat -c%s composer.phar)
+      echo "Downloaded size: $SIZE bytes"
+
+      if [ "$SIZE" -lt 1000000 ]; then
+        echo "ERROR: composer.phar too small — download failed"
+        cat composer.phar
+        exit 1
+      fi
+
+      chmod +x composer.phar
+      mv composer.phar composer
+      export PATH="$CI_PROJECT_DIR:$PATH"
+      composer --version
+
+    # ── Configure Composer — Artifactory as sole package source ──────────────
+    - |
+      set -eo pipefail
+
+      export PATH="$CI_PROJECT_DIR:$PATH"
+
+      echo "── Configuring Composer ──"
+
+      # Route all package resolution through JFrog Composer virtual repo
+      composer config --global \
+        repos.packagist composer \
+        ${JF_ARTIFACTORY_URL}/api/composer/${PHP_VIRTUAL_REPO}
+
+      # Artifactory credentials for package downloads
+      composer config --global \
+        http-basic.artifactory.jfrog.sbi "${JF_USER}" "${JF_TOKEN}"
+
+      # Trust SBI internal CA — reads directly from JF_ARTIFACTORY_CERT file variable
+      composer config --global cafile "$JF_ARTIFACTORY_CERT"
+
+      # Disable fallback to public packagist.org — enforce JFrog-only resolution
+      composer config --global repo.packagist false
+
+      echo "── Composer configured ──"
+
+  script:
+    # ── Install dependencies from composer.lock ───────────────────────────────
+    - |
+      set -eo pipefail
+
+      export PATH="$CI_PROJECT_DIR:$PATH"
+
+      echo "===== SYSTEM INFO ====="
+      free -h || true
+      df -h || true
+
+      echo "===== INSTALLING DEPENDENCIES ====="
+
+      composer install \
+        --no-dev \
+        --optimize-autoloader \
+        --no-interaction \
+        --prefer-dist \
+        -vvv
+
+      if [ ! -d "vendor" ]; then
+        echo "ERROR: vendor directory not created"
+        exit 1
+      fi
+
+      echo "Vendor count: $(ls vendor | wc -l)"
+      echo "===== BUILD COMPLETE ====="
+
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 day
 
 
+
+
+want ro know from where it is downloading the complete dependencies as we have give our jfrog artifact for dependencies ......
