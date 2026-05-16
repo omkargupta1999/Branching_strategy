@@ -117,27 +117,21 @@ regenerate-lock:
       base64 -w 0 composer.lock > /tmp/lock_b64.txt
       echo "Base64 size: $(stat -c%s /tmp/lock_b64.txt) bytes"
 
-      # Write the python script to a file first — no inline python in YAML
-      cat > /tmp/build_payload.py << 'PYEOF'
-import json, sys
-branch = sys.argv[1]
-msg = sys.argv[2]
-with open('/tmp/lock_b64.txt', 'r') as f:
-    content = f.read().strip()
-payload = {
-    'branch': branch,
-    'content': content,
-    'encoding': 'base64',
-    'commit_message': msg
-}
-with open('/tmp/api_payload.json', 'w') as f:
-    json.dump(payload, f)
-print('Payload size:', len(json.dumps(payload)), 'bytes')
-PYEOF
-
-      python3 /tmp/build_payload.py \
-        "${CI_COMMIT_REF_NAME}" \
-        "chore: regenerate composer.lock with JFrog dist URLs [skip ci]"
+      # Build JSON payload using PHP — already available in the image
+      # No Python, no heredoc, no YAML quoting issues
+      php -r '
+        $branch  = $argv[1];
+        $msg     = $argv[2];
+        $content = trim(file_get_contents("/tmp/lock_b64.txt"));
+        $payload = json_encode([
+          "branch"         => $branch,
+          "content"        => $content,
+          "encoding"       => "base64",
+          "commit_message" => $msg,
+        ]);
+        file_put_contents("/tmp/api_payload.json", $payload);
+        echo "Payload size: " . strlen($payload) . " bytes\n";
+      ' -- "${CI_COMMIT_REF_NAME}" "chore: regenerate composer.lock with JFrog dist URLs [skip ci]"
 
       echo "Sending payload to GitLab API..."
       HTTP_STATUS=$(curl -s \
