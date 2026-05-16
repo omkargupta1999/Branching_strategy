@@ -7,6 +7,16 @@
     COMPOSER_HOME: "${CI_PROJECT_DIR}/.composer"
     COMPOSER_CACHE_DIR: "${CI_PROJECT_DIR}/.composer-cache"
 
+    COMPOSER_AUTH: >
+      {
+        "http-basic": {
+          "artifactory.jfrog.sbi": {
+            "username": "${JF_USER}",
+            "password": "${JF_TOKEN}"
+          }
+        }
+      }
+
   cache:
     key: "${CI_PROJECT_NAME}-composer-${CI_COMMIT_REF_SLUG}"
     paths:
@@ -43,23 +53,15 @@
       mkdir -p "${COMPOSER_CACHE_DIR}"
 
       #
-      # Disable Packagist
+      # Disable public Packagist
       #
       php composer.phar config -g repo.packagist false
 
       #
-      # JFrog Composer Repository
+      # Use ONLY JFrog Composer Repo
       #
       php composer.phar config -g repositories.jfrog composer \
         "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
-
-      #
-      # Authentication
-      #
-      php composer.phar config -g \
-        http-basic.artifactory.jfrog.sbi \
-        "${JF_USER}" \
-        "${JF_TOKEN}"
 
       #
       # SSL
@@ -68,7 +70,7 @@
       php composer.phar config -g cafile "${JF_ARTIFACTORY_CERT}"
 
       #
-      # Enterprise Controls
+      # Enterprise Settings
       #
       php composer.phar config -g preferred-install dist
       php composer.phar config -g github-protocols https
