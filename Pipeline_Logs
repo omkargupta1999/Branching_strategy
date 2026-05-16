@@ -1,3 +1,36 @@
+
+
+
+*.log
+.DS_Store
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+
+
+
+
+
+===================================
+
 Build Output :
 
 Running with gitlab-runner 17.9.2 (14c5775c)
