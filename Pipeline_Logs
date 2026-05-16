@@ -20,7 +20,6 @@ regenerate-lock:
     - git config --global --add safe.directory "${CI_PROJECT_DIR}"
     - php --version
 
-    # ── Download Composer from JFrog ──────────────────────────────────────────
     - |
       set -eo pipefail
       echo "── Downloading Composer from JFrog ──"
@@ -40,7 +39,6 @@ regenerate-lock:
       export PATH="$CI_PROJECT_DIR:$PATH"
       composer --version
 
-    # ── Configure Composer ────────────────────────────────────────────────────
     - |
       set -eo pipefail
       export PATH="$CI_PROJECT_DIR:$PATH"
@@ -48,41 +46,54 @@ regenerate-lock:
       mkdir -p "$COMPOSER_HOME"
 
       echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<EOF
+      cat > "$COMPOSER_HOME/config.json" <<'CONFIGEOF'
       {
           "config": {
               "use-github-api": false,
               "preferred-install": "dist",
-              "secure-http": true,
-              "cafile": "${JF_ARTIFACTORY_CERT}"
+              "secure-http": true
           },
           "repositories": {
               "packagist": {
                   "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
+                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
               }
           }
       }
-      EOF
+      CONFIGEOF
+
+      # Inject cafile path separately to avoid heredoc variable issues
+      python3 -c "
+import json
+with open('${COMPOSER_HOME}/config.json') as f:
+    cfg = json.load(f)
+cfg['config']['cafile'] = '${JF_ARTIFACTORY_CERT}'
+with open('${COMPOSER_HOME}/config.json', 'w') as f:
+    json.dump(cfg, f, indent=4)
+print('config.json written OK')
+"
 
       echo "── Writing auth.json ──"
-      cat > "$COMPOSER_HOME/auth.json" <<EOF
-      {
-          "http-basic": {
-              "artifactory.jfrog.sbi": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              },
-              "artifactory.jfrog.sbi:443": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              }
-          }
-      }
-      EOF
+      python3 -c "
+import json
+auth = {
+    'http-basic': {
+        'artifactory.jfrog.sbi': {
+            'username': '${JF_USER}',
+            'password': '${JF_TOKEN}'
+        },
+        'artifactory.jfrog.sbi:443': {
+            'username': '${JF_USER}',
+            'password': '${JF_TOKEN}'
+        }
+    }
+}
+with open('${COMPOSER_HOME}/auth.json', 'w') as f:
+    json.dump(auth, f, indent=4)
+print('auth.json written OK')
+"
       echo "── Composer configured ──"
 
-    # ── Regenerate lock file and commit via GitLab API ────────────────────────
     - |
       set -eo pipefail
       export PATH="$CI_PROJECT_DIR:$PATH"
@@ -112,29 +123,36 @@ regenerate-lock:
       echo "Branch     : ${CI_COMMIT_REF_NAME}"
       echo "Host       : ${CI_SERVER_HOST}"
 
-      # Base64 encode to temp file — avoids 'Argument list too long' error
+      # Base64 encode to temp file
       base64 -w 0 composer.lock > /tmp/lock_b64.txt
       echo "Base64 size: $(stat -c%s /tmp/lock_b64.txt) bytes"
 
-      # Build JSON payload as a file using python3
-      python3 -c "
-import json
+      # Write python script to a file to avoid YAML quoting issues
+      cat > /tmp/build_payload.py <<'PYEOF'
+      import json, sys
 
-with open('/tmp/lock_b64.txt', 'r') as f:
-    content = f.read().strip()
+      branch = sys.argv[1]
+      commit_msg = sys.argv[2]
 
-payload = {
-    'branch': '${CI_COMMIT_REF_NAME}',
-    'content': content,
-    'encoding': 'base64',
-    'commit_message': 'chore: regenerate composer.lock with JFrog dist URLs [skip ci]'
-}
+      with open('/tmp/lock_b64.txt', 'r') as f:
+          content = f.read().strip()
 
-with open('/tmp/api_payload.json', 'w') as f:
-    json.dump(payload, f)
+      payload = {
+          'branch': branch,
+          'content': content,
+          'encoding': 'base64',
+          'commit_message': commit_msg
+      }
 
-print('Payload size:', len(json.dumps(payload)), 'bytes')
-"
+      with open('/tmp/api_payload.json', 'w') as f:
+          json.dump(payload, f)
+
+      print('Payload size:', len(json.dumps(payload)), 'bytes')
+      PYEOF
+
+      python3 /tmp/build_payload.py \
+        "${CI_COMMIT_REF_NAME}" \
+        "chore: regenerate composer.lock with JFrog dist URLs [skip ci]"
 
       echo "Sending payload to GitLab API..."
       HTTP_STATUS=$(curl -s \
@@ -159,7 +177,7 @@ print('Payload size:', len(json.dumps(payload)), 'bytes')
       fi
 
   rules:
-    - when: manual   # ← trigger ONCE manually, then DELETE this entire job
+    - when: manual
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -184,7 +202,6 @@ print('Payload size:', len(json.dumps(payload)), 'bytes')
     - git config --global --add safe.directory "${CI_PROJECT_DIR}"
     - php --version
 
-    # ── Download Composer from JFrog ──────────────────────────────────────────
     - |
       set -eo pipefail
       echo "── Downloading Composer from JFrog ──"
@@ -204,7 +221,6 @@ print('Payload size:', len(json.dumps(payload)), 'bytes')
       export PATH="$CI_PROJECT_DIR:$PATH"
       composer --version
 
-    # ── Configure Composer ────────────────────────────────────────────────────
     - |
       set -eo pipefail
       export PATH="$CI_PROJECT_DIR:$PATH"
@@ -212,38 +228,51 @@ print('Payload size:', len(json.dumps(payload)), 'bytes')
       mkdir -p "$COMPOSER_HOME"
 
       echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<EOF
+      cat > "$COMPOSER_HOME/config.json" <<'CONFIGEOF'
       {
           "config": {
               "use-github-api": false,
               "preferred-install": "dist",
-              "secure-http": true,
-              "cafile": "${JF_ARTIFACTORY_CERT}"
+              "secure-http": true
           },
           "repositories": {
               "packagist": {
                   "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
+                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
               }
           }
       }
-      EOF
+      CONFIGEOF
+
+      python3 -c "
+import json
+with open('${COMPOSER_HOME}/config.json') as f:
+    cfg = json.load(f)
+cfg['config']['cafile'] = '${JF_ARTIFACTORY_CERT}'
+with open('${COMPOSER_HOME}/config.json', 'w') as f:
+    json.dump(cfg, f, indent=4)
+print('config.json written OK')
+"
 
       echo "── Writing auth.json ──"
-      cat > "$COMPOSER_HOME/auth.json" <<EOF
-      {
-          "http-basic": {
-              "artifactory.jfrog.sbi": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              },
-              "artifactory.jfrog.sbi:443": {
-                  "username": "${JF_USER}",
-                  "password": "${JF_TOKEN}"
-              }
-          }
-      }
-      EOF
+      python3 -c "
+import json
+auth = {
+    'http-basic': {
+        'artifactory.jfrog.sbi': {
+            'username': '${JF_USER}',
+            'password': '${JF_TOKEN}'
+        },
+        'artifactory.jfrog.sbi:443': {
+            'username': '${JF_USER}',
+            'password': '${JF_TOKEN}'
+        }
+    }
+}
+with open('${COMPOSER_HOME}/auth.json', 'w') as f:
+    json.dump(auth, f, indent=4)
+print('auth.json written OK')
+"
       echo "── Composer configured ──"
 
   script:
