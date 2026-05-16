@@ -46,52 +46,42 @@ regenerate-lock:
       mkdir -p "$COMPOSER_HOME"
 
       echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<'CONFIGEOF'
-      {
-          "config": {
-              "use-github-api": false,
-              "preferred-install": "dist",
-              "secure-http": true
-          },
-          "repositories": {
-              "packagist": {
-                  "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
-              }
-          }
-      }
-      CONFIGEOF
+      CERT_PATH="$JF_ARTIFACTORY_CERT"
+      REPO_URL="https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
 
-      # Inject cafile path separately to avoid heredoc variable issues
-      python3 -c "
-import json
-with open('${COMPOSER_HOME}/config.json') as f:
-    cfg = json.load(f)
-cfg['config']['cafile'] = '${JF_ARTIFACTORY_CERT}'
-with open('${COMPOSER_HOME}/config.json', 'w') as f:
-    json.dump(cfg, f, indent=4)
-print('config.json written OK')
-"
+      printf '{\n' > "$COMPOSER_HOME/config.json"
+      printf '    "config": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "use-github-api": false,\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "preferred-install": "dist",\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "secure-http": true,\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "cafile": "%s"\n' "$CERT_PATH" >> "$COMPOSER_HOME/config.json"
+      printf '    },\n' >> "$COMPOSER_HOME/config.json"
+      printf '    "repositories": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "packagist": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '            "type": "composer",\n' >> "$COMPOSER_HOME/config.json"
+      printf '            "url": "%s"\n' "$REPO_URL" >> "$COMPOSER_HOME/config.json"
+      printf '        }\n' >> "$COMPOSER_HOME/config.json"
+      printf '    }\n' >> "$COMPOSER_HOME/config.json"
+      printf '}\n' >> "$COMPOSER_HOME/config.json"
+
+      echo "── config.json written ──"
+      cat "$COMPOSER_HOME/config.json"
 
       echo "── Writing auth.json ──"
-      python3 -c "
-import json
-auth = {
-    'http-basic': {
-        'artifactory.jfrog.sbi': {
-            'username': '${JF_USER}',
-            'password': '${JF_TOKEN}'
-        },
-        'artifactory.jfrog.sbi:443': {
-            'username': '${JF_USER}',
-            'password': '${JF_TOKEN}'
-        }
-    }
-}
-with open('${COMPOSER_HOME}/auth.json', 'w') as f:
-    json.dump(auth, f, indent=4)
-print('auth.json written OK')
-"
+      printf '{\n' > "$COMPOSER_HOME/auth.json"
+      printf '    "http-basic": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '        "artifactory.jfrog.sbi": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '            "username": "%s",\n' "$JF_USER" >> "$COMPOSER_HOME/auth.json"
+      printf '            "password": "%s"\n' "$JF_TOKEN" >> "$COMPOSER_HOME/auth.json"
+      printf '        },\n' >> "$COMPOSER_HOME/auth.json"
+      printf '        "artifactory.jfrog.sbi:443": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '            "username": "%s",\n' "$JF_USER" >> "$COMPOSER_HOME/auth.json"
+      printf '            "password": "%s"\n' "$JF_TOKEN" >> "$COMPOSER_HOME/auth.json"
+      printf '        }\n' >> "$COMPOSER_HOME/auth.json"
+      printf '    }\n' >> "$COMPOSER_HOME/auth.json"
+      printf '}\n' >> "$COMPOSER_HOME/auth.json"
+
+      echo "── auth.json written ──"
       echo "── Composer configured ──"
 
     - |
@@ -127,28 +117,23 @@ print('auth.json written OK')
       base64 -w 0 composer.lock > /tmp/lock_b64.txt
       echo "Base64 size: $(stat -c%s /tmp/lock_b64.txt) bytes"
 
-      # Write python script to a file to avoid YAML quoting issues
-      cat > /tmp/build_payload.py <<'PYEOF'
-      import json, sys
-
-      branch = sys.argv[1]
-      commit_msg = sys.argv[2]
-
-      with open('/tmp/lock_b64.txt', 'r') as f:
-          content = f.read().strip()
-
-      payload = {
-          'branch': branch,
-          'content': content,
-          'encoding': 'base64',
-          'commit_message': commit_msg
-      }
-
-      with open('/tmp/api_payload.json', 'w') as f:
-          json.dump(payload, f)
-
-      print('Payload size:', len(json.dumps(payload)), 'bytes')
-      PYEOF
+      # Write the python script to a file first — no inline python in YAML
+      cat > /tmp/build_payload.py << 'PYEOF'
+import json, sys
+branch = sys.argv[1]
+msg = sys.argv[2]
+with open('/tmp/lock_b64.txt', 'r') as f:
+    content = f.read().strip()
+payload = {
+    'branch': branch,
+    'content': content,
+    'encoding': 'base64',
+    'commit_message': msg
+}
+with open('/tmp/api_payload.json', 'w') as f:
+    json.dump(payload, f)
+print('Payload size:', len(json.dumps(payload)), 'bytes')
+PYEOF
 
       python3 /tmp/build_payload.py \
         "${CI_COMMIT_REF_NAME}" \
@@ -228,51 +213,38 @@ print('auth.json written OK')
       mkdir -p "$COMPOSER_HOME"
 
       echo "── Writing config.json ──"
-      cat > "$COMPOSER_HOME/config.json" <<'CONFIGEOF'
-      {
-          "config": {
-              "use-github-api": false,
-              "preferred-install": "dist",
-              "secure-http": true
-          },
-          "repositories": {
-              "packagist": {
-                  "type": "composer",
-                  "url": "https://artifactory.jfrog.sbi/artifactory/api/composer/itepaypg-sbiepay2-php-virtual"
-              }
-          }
-      }
-      CONFIGEOF
+      CERT_PATH="$JF_ARTIFACTORY_CERT"
+      REPO_URL="https://artifactory.jfrog.sbi/artifactory/api/composer/${PHP_VIRTUAL_REPO}"
 
-      python3 -c "
-import json
-with open('${COMPOSER_HOME}/config.json') as f:
-    cfg = json.load(f)
-cfg['config']['cafile'] = '${JF_ARTIFACTORY_CERT}'
-with open('${COMPOSER_HOME}/config.json', 'w') as f:
-    json.dump(cfg, f, indent=4)
-print('config.json written OK')
-"
+      printf '{\n' > "$COMPOSER_HOME/config.json"
+      printf '    "config": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "use-github-api": false,\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "preferred-install": "dist",\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "secure-http": true,\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "cafile": "%s"\n' "$CERT_PATH" >> "$COMPOSER_HOME/config.json"
+      printf '    },\n' >> "$COMPOSER_HOME/config.json"
+      printf '    "repositories": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '        "packagist": {\n' >> "$COMPOSER_HOME/config.json"
+      printf '            "type": "composer",\n' >> "$COMPOSER_HOME/config.json"
+      printf '            "url": "%s"\n' "$REPO_URL" >> "$COMPOSER_HOME/config.json"
+      printf '        }\n' >> "$COMPOSER_HOME/config.json"
+      printf '    }\n' >> "$COMPOSER_HOME/config.json"
+      printf '}\n' >> "$COMPOSER_HOME/config.json"
 
       echo "── Writing auth.json ──"
-      python3 -c "
-import json
-auth = {
-    'http-basic': {
-        'artifactory.jfrog.sbi': {
-            'username': '${JF_USER}',
-            'password': '${JF_TOKEN}'
-        },
-        'artifactory.jfrog.sbi:443': {
-            'username': '${JF_USER}',
-            'password': '${JF_TOKEN}'
-        }
-    }
-}
-with open('${COMPOSER_HOME}/auth.json', 'w') as f:
-    json.dump(auth, f, indent=4)
-print('auth.json written OK')
-"
+      printf '{\n' > "$COMPOSER_HOME/auth.json"
+      printf '    "http-basic": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '        "artifactory.jfrog.sbi": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '            "username": "%s",\n' "$JF_USER" >> "$COMPOSER_HOME/auth.json"
+      printf '            "password": "%s"\n' "$JF_TOKEN" >> "$COMPOSER_HOME/auth.json"
+      printf '        },\n' >> "$COMPOSER_HOME/auth.json"
+      printf '        "artifactory.jfrog.sbi:443": {\n' >> "$COMPOSER_HOME/auth.json"
+      printf '            "username": "%s",\n' "$JF_USER" >> "$COMPOSER_HOME/auth.json"
+      printf '            "password": "%s"\n' "$JF_TOKEN" >> "$COMPOSER_HOME/auth.json"
+      printf '        }\n' >> "$COMPOSER_HOME/auth.json"
+      printf '    }\n' >> "$COMPOSER_HOME/auth.json"
+      printf '}\n' >> "$COMPOSER_HOME/auth.json"
+
       echo "── Composer configured ──"
 
   script:
