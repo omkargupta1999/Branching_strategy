@@ -1,225 +1,49 @@
-# ci/build/dotnet.yml  |  Stage: build
-# .NET SDK build — restore → build (multi-TFM) → pack → push to JFrog NuGet
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# custom-ci/dotnet-90 (.NET 9 SDK, dotnet 9.0.109) mirrored to JFrog docker-local.
-# Pulled with if-not-present policy — uses locally cached image on runner.
-#
-# ── SSL / TLS ─────────────────────────────────────────────────────────────────
-# JF_ARTIFACTORY_CERT — file-type CI variable; path injected at job start.
-# SSL_CERT_FILE + CURL_CA_BUNDLE make dotnet (OpenSSL) and curl trust JFrog CA.
-#
-# ── Cache ─────────────────────────────────────────────────────────────────────
-# .nuget/packages/ cached per branch. NuGet reuses cache directly on restore
-# (no implicit clean like npm ci). NUGET_PACKAGES must live in variables: so it
-# survives across before_script → script in the Docker executor.
-#
-# ── Dependency resolution — JFrog NuGet virtual repository (API v3) ──────────
-# Source  : itepaypg-sbiepay2-nuget-virtual
-# Aggregates internal local repo + proxied nuget.org in a single feed.
-# Auth    : JF_USER + JF_TOKEN via packageSourceCredentials in /tmp/nuget.config.
-# Passed  : dotnet restore --configfile /tmp/nuget.config
-#
-# ── Version normalisation ─────────────────────────────────────────────────────
-# Input  : feature-1.0.0-rrs-test-<sha>  →  Output : 1.0.0-<short-sha>
-# X.Y.Z extracted via grep -Eo; short commit SHA appended as pre-release label.
-# AssemblyVersion / FileVersion stamped with plain X.Y.Z (no pre-release suffix).
-# Fallback to 1.0.0 when no semver pattern is found in VERSION.
-#
-# ── Multi-target build ────────────────────────────────────────────────────────
-# Targets : net6.0, net7.0, net8.0, net9.0  (declared in .csproj)
-# dotnet build compiles all TFMs in one pass; dotnet pack bundles them into one .nupkg.
-#
-# ── Artifact publish — JFrog NuGet local repository (API v2) ─────────────────
-# Target  : itepaypg-sbiepay2-nuget-local
-# Auth    : --api-key "$JF_USER:$JF_TOKEN"
-#           JFrog Basic Auth is encoded inside the NuGet api-key field.
-#           Token alone (without username prefix) returns 403 Forbidden.
-# Source  : registered at runtime via dotnet nuget add source before push.
-#           dotnet nuget push (dotnet 9 CLI) does NOT accept --configfile.
-#           --store-password-in-clear-text required — no keychain in Linux Docker.
-# ─────────────────────────────────────────────────────────────────────────────
+Hi [Support Engineer Name],
 
-.build:
-  stage: build
+Thank you for your continued support on our GitLab migration ticket [Ticket ID: XXXXXX].
 
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526
+We are writing to update you on an issue observed following the successful project import from our old standalone GitLab instance to the centralized GitLab platform.
 
-  tags:
-    - common_runner
+---
 
-  variables:
-    # Shared NuGet package cache dir — must be in variables: to persist across blocks
-    NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
-    # Trust JFrog internal CA for dotnet (OpenSSL) and curl
-    SSL_CERT_FILE:  "${JF_ARTIFACTORY_CERT}"
-    CURL_CA_BUNDLE: "${JF_ARTIFACTORY_CERT}"
+ISSUE SUMMARY
 
-  cache:
-    # Branch-scoped cache key — isolates package versions per feature branch
-    key: "${CI_PROJECT_NAME}-nuget-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .nuget/packages/
+Post-import, the author and assignee attribution for all Merge Requests and Issues has been overwritten. Records that originally belonged to individual team members are now showing under the account of the user who performed the import.
 
-  # ── before_script ────────────────────────────────────────────────────────────
-  # Runs before every script block. Sets up cert, NuGet config, and package cache.
-  # ─────────────────────────────────────────────────────────────────────────────
-  before_script:
+---
 
-    # Confirm SDK version in job log for traceability
-    - dotnet --version
+OBSERVED BEHAVIOR
 
-    # Fail fast if the JFrog CA cert variable is missing or not a real file
-    - |
-      echo "===== Validating JF_ARTIFACTORY_CERT ====="
+Before Import (Old GitLab Instance):
+  • MR Title : Release/v1.9.0 Mobikwik Integration
+  • Status   : Open
+  • Author   : PUNAM ANIL RAJPUT
+  • Action   : Requested to merge release/v1.9.0 into main
 
-      if [ -z "$JF_ARTIFACTORY_CERT" ] || [ ! -f "$JF_ARTIFACTORY_CERT" ]; then
-        echo "ERROR: JF_ARTIFACTORY_CERT is missing or not a valid file path"
-        exit 1
-      fi
+After Import (Centralized GitLab):
+  • MR Title : Release/v1.9.0
+  • Status   : Open
+  • Author   : Vishnu Gehlot (import-performing user)
+  • Action   : Requested to merge release/v1.9.0 into main
 
-      echo "JF_ARTIFACTORY_CERT is present: $JF_ARTIFACTORY_CERT"
+This pattern is consistent across all MRs and Issues in the imported project.
 
-    # Write /tmp/nuget.config with both sources and their credentials.
-    # Virtual  → used by dotnet restore   (resolves local + proxied packages).
-    # Local    → used by dotnet nuget push (publish target).
-    # /tmp scope — job-lifetime only, never written to source tree.
-    - |
-      echo "===== Creating NuGet config ====="
+---
 
-      mkdir -p "${NUGET_PACKAGES}"
+IMPACT
 
-      cat > /tmp/nuget.config <<EOF
-      <?xml version="1.0" encoding="utf-8"?>
-      <configuration>
+  • Audit trails and contribution history are inaccurate
+  • Traceability of MR/Issue ownership is broken for compliance purposes
+  • This affects our banking project (SBI E-Pay), where accurate change attribution is critical from a governance standpoint
 
-        <packageSources>
-          <clear />
+---
 
-          <!-- Virtual: aggregates local + proxied packages — restore source -->
-          <add key="JFrog-NuGet-Virtual"
-               value="https://artifactory.jfrog.sbi/artifactory/api/nuget/v3/itepaypg-sbiepay2-nuget-virtual/index.json" />
+We would appreciate your expert analysis on the root cause of this behavior and guidance on the recommended remediation approach. We also have additional projects pending migration, so your advice on preventing this in future imports would be very helpful.
 
-          <!-- Local: publish target — push source -->
-          <add key="JFrog-NuGet-Local"
-               value="https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local" />
-        </packageSources>
+Please advise at your earliest convenience.
 
-        <packageSourceCredentials>
-          <JFrog-NuGet-Virtual>
-            <add key="Username"          value="${JF_USER}" />
-            <add key="ClearTextPassword" value="${JF_TOKEN}" />
-          </JFrog-NuGet-Virtual>
-
-          <JFrog-NuGet-Local>
-            <add key="Username"          value="${JF_USER}" />
-            <add key="ClearTextPassword" value="${JF_TOKEN}" />
-          </JFrog-NuGet-Local>
-        </packageSourceCredentials>
-
-      </configuration>
-      EOF
-
-      echo "nuget.config written to /tmp/nuget.config"
-
-  # ── script ───────────────────────────────────────────────────────────────────
-  # Main job steps: validate → version → restore → build → pack → register → push
-  # ─────────────────────────────────────────────────────────────────────────────
-  script:
-
-    # Sanity-check that JFrog credentials are present before any dotnet calls
-    - |
-      set -eo pipefail
-
-      echo "JF_USER      = $JF_USER"
-      echo "JF_TOKEN len = ${#JF_TOKEN}"
-
-    # Normalise VERSION: strip branch prefix, keep X.Y.Z, append short SHA.
-    # e.g.  feature-1.0.0-rrs-test-1a8e816c  →  1.0.0-1a8e816c
-    - |
-      echo "===== Validating VERSION ====="
-
-      echo "Original VERSION: ${VERSION}"
-
-      SAFE_NUGET_VERSION=$(echo "$VERSION" \
-        | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' \
-        | head -1)
-
-      [ -z "$SAFE_NUGET_VERSION" ] && SAFE_NUGET_VERSION="1.0.0"
-
-      SAFE_NUGET_VERSION="${SAFE_NUGET_VERSION}-${CI_COMMIT_SHORT_SHA}"
-      export VERSION="$SAFE_NUGET_VERSION"
-
-      echo "Fixed VERSION: ${VERSION}"
-
-    # Restore all NuGet dependencies from the JFrog virtual feed
-    - |
-      echo "===== dotnet restore ====="
-
-      dotnet restore \
-        --configfile /tmp/nuget.config \
-        --packages "${NUGET_PACKAGES}"
-
-    # Compile all target frameworks (net6.0 / net7.0 / net8.0 / net9.0).
-    # AssemblyVersion + FileVersion need plain X.Y.Z — no pre-release suffix allowed.
-    - |
-      echo "===== dotnet build ====="
-
-      SAFE_VERSION=$(echo "$VERSION" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
-      [ -z "$SAFE_VERSION" ] && SAFE_VERSION="1.0.0"
-
-      dotnet build \
-        --configuration Release \
-        --no-restore \
-        /p:Version="$VERSION" \
-        /p:AssemblyVersion="$SAFE_VERSION" \
-        /p:FileVersion="$SAFE_VERSION"
-
-    # Bundle all compiled TFMs into a single versioned .nupkg
-    - |
-      echo "===== dotnet pack ====="
-
-      dotnet pack \
-        --configuration Release \
-        --no-build \
-        /p:Version="$VERSION" \
-        -o ./nupkg
-
-      echo "Package(s) created:"
-      ls -lh ./nupkg/
-
-    # Register JFrog-NuGet-Local into ~/.nuget/NuGet/NuGet.Config at runtime.
-    # Required because dotnet nuget push (dotnet 9) does NOT support --configfile.
-    # Remove first to avoid duplicate-source errors on retried jobs.
-    # --store-password-in-clear-text needed — Linux Docker has no system keychain.
-    - |
-      echo "===== Registering NuGet push source ====="
-
-      dotnet nuget remove source "JFrog-NuGet-Local" 2>/dev/null || true
-
-      dotnet nuget add source \
-        "https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local" \
-        --name     "JFrog-NuGet-Local" \
-        --username "$JF_USER" \
-        --password "$JF_TOKEN" \
-        --store-password-in-clear-text
-
-    # Push .nupkg to JFrog local repo.
-    # --api-key must be "username:token" — JFrog encodes Basic Auth in this field.
-    # Token alone causes 403 Forbidden. --skip-duplicate prevents failure on reruns.
-    - |
-      echo "===== dotnet nuget push ====="
-
-      dotnet nuget push ./nupkg/*.nupkg \
-        --source   "JFrog-NuGet-Local" \
-        --api-key  "$JF_USER:$JF_TOKEN" \
-        --skip-duplicate
-
-  # ── artifacts ────────────────────────────────────────────────────────────────
-  # Expose .nupkg files as downloadable pipeline artifacts for 1 day.
-  # Useful for downstream jobs or manual inspection without re-running the build.
-  # ─────────────────────────────────────────────────────────────────────────────
-  artifacts:
-    paths:
-      - nupkg/
-    expire_in: 1 day
+Best regards,
+[Your Name]
+[Your Designation] | SBI E-Pay DevOps Team
+[Your Email] | [Your Contact Number]
+Ticket Reference: [XXXXXX]
