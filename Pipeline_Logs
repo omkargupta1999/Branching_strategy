@@ -1,30 +1,52 @@
 # ci/build/dotnet.yml  |  Stage: build
-# .NET microservice build with dotnet CLI
+# .NET SDK build — restore → build → pack → push to JFrog NuGet
 #
 # ── Dependency resolution — JFrog NuGet virtual repository ───────────────────
-# Repository: https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-virtual/index.json
-# Auth: JF_USER + JF_TOKEN (NuGet packageSourceCredentials in /tmp/nuget.config)
-# SSL: JFrog internal CA trusted via OS cert store — dotnet uses OS cert store
+# Restore source : itepaypg-sbiepay2-nuget-virtual  (NuGet API v3)
+#   Aggregates internal (local) + proxied (nuget.org) packages in one feed.
+#   Auth          : JF_USER + JF_TOKEN via packageSourceCredentials in /tmp/nuget.config
+#   Config passed : dotnet restore --configfile /tmp/nuget.config
+#
+# ── Artifact publish — JFrog NuGet local repository ──────────────────────────
+# Push target    : itepaypg-sbiepay2-nuget-local  (NuGet API v2)
+#   Auth          : --api-key "$JF_USER:$JF_TOKEN"
+#                   JFrog encodes Basic Auth inside the NuGet api-key field.
+#                   Token alone (without username prefix) causes 403 Forbidden.
+#   Source reg.   : dotnet nuget add source --store-password-in-clear-text
+#                   "dotnet nuget push" does NOT support --configfile (dotnet 9 CLI).
+#                   Source + credentials are registered at runtime into
+#                   ~/.nuget/NuGet/NuGet.Config before push.
+#                   --store-password-in-clear-text is required on Linux Docker
+#                   (no system keychain available inside containers).
+#
+# ── Version normalisation ─────────────────────────────────────────────────────
+# Input  : feature-1.0.0-rrs-test-<sha>   (GitLab branch name + commit SHA)
+# Output : 1.0.0-<short-sha>              (valid NuGet semver pre-release)
+#   X.Y.Z extracted with grep -Eo; short SHA appended as pre-release label.
+#   AssemblyVersion / FileVersion use plain X.Y.Z (no pre-release suffix).
+#   Fallback: 1.0.0 if no semver pattern found in VERSION.
+#
+# ── Multi-target build ────────────────────────────────────────────────────────
+# Targets: net6.0, net7.0, net8.0, net9.0  (defined in .csproj)
+# dotnet build compiles all TFMs in a single pass.
+# dotnet pack bundles all TFMs into one .nupkg.
 #
 # ── Cache ─────────────────────────────────────────────────────────────────────
-# .nuget/packages/ CACHED — NuGet does NOT clear package cache before restore
-#                           (unlike npm ci). Cache reused directly by dotnet restore.
-# NUGET_PACKAGES in variables: — persists across before_script + script blocks
-# (export in before_script does NOT persist in Docker executor — use variables:)
+# .nuget/packages/ CACHED per branch — NuGet does NOT clear package cache before
+#                  restore (unlike npm ci). Cache is reused directly by dotnet restore.
+# NUGET_PACKAGES set in variables: — persists across before_script + script
+#   (export in before_script does NOT survive into script in Docker executor;
+#    use variables: instead).
+#
+# ── SSL ───────────────────────────────────────────────────────────────────────
+# JFrog internal CA certificate injected via file-type CI variable JF_ARTIFACTORY_CERT.
+# SSL_CERT_FILE + CURL_CA_BUNDLE point to the cert file so both dotnet (OpenSSL)
+# and curl trust the JFrog TLS certificate without OS-level changes.
 #
 # ── Image ─────────────────────────────────────────────────────────────────────
-# ubi9/dotnet-80 — .NET 8.0 SDK (compiler + dotnet CLI)
-# NOT ubi9/dotnet-80-runtime — runtime only, cannot compile
-# Mirror ubi9/dotnet-80 SDK image to JFrog docker-virtual before first use
-
-
-
-
-
-+++++++++++++++++++++++++++++++++++++++  
-
-Like above Documentation please provide the documentation for below build configuration according to our configuration which is now working file as you suggest above yaml 
-and please remove the unwanted lines and code whihc is not required here now i am sharing the Build Output and Build Configuration let me know if you want to add anything which can imporve our code better.
+# custom-ci/dotnet-90  — .NET 9 SDK (compiler + dotnet CLI, dotnet 9.0.109)
+# Mirrored to JFrog docker-local; pulled via if-not-present policy on runner.
+# ─────────────────────────────────────────────────────────────────────────────
 
 .build:
   stage: build
@@ -35,7 +57,9 @@ and please remove the unwanted lines and code whihc is not required here now i a
     - common_runner
 
   variables:
+    # NuGet package cache — shared between before_script and script blocks
     NUGET_PACKAGES: "${CI_PROJECT_DIR}/.nuget/packages"
+    # Trust JFrog internal CA for HTTPS connections (dotnet + curl)
     SSL_CERT_FILE: "${JF_ARTIFACTORY_CERT}"
     CURL_CA_BUNDLE: "${JF_ARTIFACTORY_CERT}"
 
@@ -45,10 +69,8 @@ and please remove the unwanted lines and code whihc is not required here now i a
       - .nuget/packages/
 
   before_script:
-    # ── Step 1: Confirm dotnet version ────────────────────────────────────────
     - dotnet --version
 
-    # ── Step 2: Validate the JFrog TLS certificate variable ───────────────────
     - |
       echo "===== Validating JF_ARTIFACTORY_CERT ====="
 
@@ -59,14 +81,12 @@ and please remove the unwanted lines and code whihc is not required here now i a
 
       echo "JF_ARTIFACTORY_CERT is present and valid: $JF_ARTIFACTORY_CERT"
 
-    # ── Step 3: Build nuget.config with BOTH virtual (restore) ────────────────
-    #           and local (push) sources, each with credentials              ────
     - |
       echo "===== Creating NuGet config ====="
 
       mkdir -p "${NUGET_PACKAGES}"
-      echo "NUGET_PACKAGES path: $NUGET_PACKAGES"
 
+      # Write config to /tmp — scoped to this job, never committed to source
       cat > /tmp/nuget.config <<EOF
       <?xml version="1.0" encoding="utf-8"?>
       <configuration>
@@ -74,11 +94,11 @@ and please remove the unwanted lines and code whihc is not required here now i a
         <packageSources>
           <clear />
 
-          <!-- Virtual repo  : used for dotnet restore (resolves both local + remote) -->
+          <!-- Virtual repo: aggregates local + proxied packages; used for dotnet restore -->
           <add key="JFrog-NuGet-Virtual"
                value="https://artifactory.jfrog.sbi/artifactory/api/nuget/v3/itepaypg-sbiepay2-nuget-virtual/index.json" />
 
-          <!-- Local repo    : used for dotnet nuget push -->
+          <!-- Local repo: publish target; used for dotnet nuget push -->
           <add key="JFrog-NuGet-Local"
                value="https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local" />
         </packageSources>
@@ -101,37 +121,31 @@ and please remove the unwanted lines and code whihc is not required here now i a
       echo "nuget.config written to /tmp/nuget.config"
 
   script:
-    # ── Step 4: Sanity-check CI variables ─────────────────────────────────────
     - |
       set -eo pipefail
 
-      echo "JF_USER  = $JF_USER"
-      echo "JF_TOKEN length = ${#JF_TOKEN}"
+      echo "JF_USER      = $JF_USER"
+      echo "JF_TOKEN len = ${#JF_TOKEN}"
 
-    # ── Step 5: Normalise the VERSION string into a valid NuGet semver ────────
-    #   Input  : feature-1.0.0-rrs-test-592e292b  (branch + hash suffix)
-    #   Output : 1.0.0-592e292b
     - |
       echo "===== Validating VERSION ====="
 
       echo "Original VERSION: ${VERSION}"
 
-      # Extract the X.Y.Z numeric part
+      # Extract X.Y.Z from branch/tag name (e.g. feature-1.0.0-rrs-test-<sha>)
       SAFE_NUGET_VERSION=$(echo "$VERSION" \
         | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' \
         | head -1)
 
-      # Fallback if no semver was found in the tag/branch name
       [ -z "$SAFE_NUGET_VERSION" ] && SAFE_NUGET_VERSION="1.0.0"
 
-      # Append short commit SHA as pre-release label for traceability
+      # Append short commit SHA as NuGet pre-release label for traceability
       SAFE_NUGET_VERSION="${SAFE_NUGET_VERSION}-${CI_COMMIT_SHORT_SHA}"
 
       export VERSION="$SAFE_NUGET_VERSION"
 
       echo "Fixed VERSION: ${VERSION}"
 
-    # ── Step 6: Restore NuGet dependencies ────────────────────────────────────
     - |
       echo "===== dotnet restore ====="
 
@@ -139,11 +153,10 @@ and please remove the unwanted lines and code whihc is not required here now i a
         --configfile /tmp/nuget.config \
         --packages "${NUGET_PACKAGES}"
 
-    # ── Step 7: Build all target frameworks ───────────────────────────────────
     - |
       echo "===== dotnet build ====="
 
-      # AssemblyVersion / FileVersion must be plain X.Y.Z (no pre-release label)
+      # AssemblyVersion / FileVersion require plain X.Y.Z (no pre-release suffix)
       SAFE_VERSION=$(echo "$VERSION" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
       [ -z "$SAFE_VERSION" ] && SAFE_VERSION="1.0.0"
 
@@ -154,7 +167,6 @@ and please remove the unwanted lines and code whihc is not required here now i a
         /p:AssemblyVersion="$SAFE_VERSION" \
         /p:FileVersion="$SAFE_VERSION"
 
-    # ── Step 8: Pack the NuGet package ────────────────────────────────────────
     - |
       echo "===== dotnet pack ====="
 
@@ -167,25 +179,13 @@ and please remove the unwanted lines and code whihc is not required here now i a
       echo "Package(s) created:"
       ls -lh ./nupkg/
 
-    # ── Step 9: Register the push source with credentials at runtime ─────────
-    #
-    #   WHY: "dotnet nuget push" does NOT support --configfile (dotnet 9 CLI).
-    #        The only supported flags are --source, --api-key, --timeout,
-    #        --skip-duplicate, etc.  See error:
-    #          "error: Unrecognized option '--configfile'"
-    #
-    #   FIX: Use "dotnet nuget add source" to register JFrog-NuGet-Local into
-    #        the user-level NuGet config (~/.nuget/NuGet/NuGet.Config) at
-    #        runtime, embedding credentials there. "dotnet nuget push" will
-    #        then resolve the named source + its credentials automatically.
-    #
-    #   NOTE: --store-password-in-clear-text is required on Linux because the
-    #         dotnet CLI cannot use the system keychain inside a Docker
-    #         container. Credentials exist only for the lifetime of this job.
     - |
       echo "===== Registering NuGet push source ====="
 
-      # Remove stale entry if a previous (failed) job left one behind
+      # "dotnet nuget push" does not support --configfile (dotnet 9 CLI limitation).
+      # Register the push source into ~/.nuget/NuGet/NuGet.Config at runtime so
+      # credentials are available when push resolves the named source.
+      # --store-password-in-clear-text is required on Linux (no keychain in Docker).
       dotnet nuget remove source "JFrog-NuGet-Local" 2>/dev/null || true
 
       dotnet nuget add source \
@@ -195,19 +195,11 @@ and please remove the unwanted lines and code whihc is not required here now i a
         --password "$JF_TOKEN" \
         --store-password-in-clear-text
 
-      echo "Registered sources:"
-      dotnet nuget list source
-
-    # ── Step 10: Push to JFrog Artifactory (local repo) ──────────────────────
-    #
-    #   --api-key "$JF_USER:$JF_TOKEN"  ← JFrog encodes Basic Auth here;
-    #                                      token alone causes 403 Forbidden.
-    #   --source "JFrog-NuGet-Local"    ← named source registered in Step 9;
-    #                                      credentials resolved automatically.
-    #   NO --configfile here            ← flag does not exist on "push".
     - |
       echo "===== dotnet nuget push ====="
 
+      # JFrog requires --api-key in "username:token" format (Basic Auth).
+      # Passing only the token (without username prefix) causes 403 Forbidden.
       dotnet nuget push ./nupkg/*.nupkg \
         --source "JFrog-NuGet-Local" \
         --api-key "$JF_USER:$JF_TOKEN" \
@@ -215,111 +207,5 @@ and please remove the unwanted lines and code whihc is not required here now i a
 
   artifacts:
     paths:
-      - nupkg/        # publish the .nupkg files as pipeline artifacts
+      - nupkg/
     expire_in: 1 day
-
-
-Build Output ========================
-
-
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-1977-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:01
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/.git/
-Created fresh repository.
-Checking out 1a8e816c as detached HEAD (ref is feature/1.0.0-rrs-test)...
-Skipping Git submodules setup
-Restoring cache
-00:00
-Checking cache for epay_transaction_sdk_dotnet-nuget-feature-1-0-0-rrs-test-non_protected...
-No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
-WARNING: Cache file does not exist                 
-Failed to extract cache
-Executing "step_script" stage of the job script
-00:12
-Using docker image sha256:4719a74641558e69cab4f3598774522a7bd43e2a7f37802c7fd78bfadca17e6a for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90:130526 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/dotnet-90@sha256:127f124f7bb7f3579d24cc451028ef3de98f614920645f5921dba0ec1fb13fa5 ...
-$ dotnet --version
-9.0.109
-$ echo "===== Validating JF_ARTIFACTORY_CERT =====" # collapsed multi-line command
-===== Validating JF_ARTIFACTORY_CERT =====
-JF_ARTIFACTORY_CERT is present and valid: /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet.tmp/JF_ARTIFACTORY_CERT
-$ echo "===== Creating NuGet config =====" # collapsed multi-line command
-===== Creating NuGet config =====
-NUGET_PACKAGES path: /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/.nuget/packages
-nuget.config written to /tmp/nuget.config
-$ set -eo pipefail # collapsed multi-line command
-JF_USER  = [MASKED]
-JF_TOKEN length = 64
-$ echo "===== Validating VERSION =====" # collapsed multi-line command
-===== Validating VERSION =====
-Original VERSION: feature-1.0.0-rrs-test-1a8e816c
-Fixed VERSION: 1.0.0-1a8e816c
-$ echo "===== dotnet restore =====" # collapsed multi-line command
-===== dotnet restore =====
-  Determining projects to restore...
-  Restored /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/Epay_Transaction.sdk.csproj (in 2.35 sec).
-$ echo "===== dotnet build =====" # collapsed multi-line command
-===== dotnet build =====
-  Epay_Transaction.sdk -> /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/bin/Release/net6.0/SBIePay.SDK.dll
-  Epay_Transaction.sdk -> /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/bin/Release/net7.0/SBIePay.SDK.dll
-  Epay_Transaction.sdk -> /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/bin/Release/net8.0/SBIePay.SDK.dll
-  Epay_Transaction.sdk -> /builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/bin/Release/net9.0/SBIePay.SDK.dll
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-Time Elapsed 00:00:03.47
-$ echo "===== dotnet pack =====" # collapsed multi-line command
-===== dotnet pack =====
-  The package epay_dotnet_sdk.1.0.0-1a8e816c is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
-  Successfully created package '/builds/itepaypg-sbiepay2/application/sdks/server-sdk/epay_transaction_sdk_dotnet/nupkg/epay_dotnet_sdk.1.0.0-1a8e816c.nupkg'.
-Package(s) created:
-total 80K
--rw-r--r-- 1 default root 80K May 18 10:45 epay_dotnet_sdk.1.0.0-1a8e816c.nupkg
-$ echo "===== Registering NuGet push source =====" # collapsed multi-line command
-===== Registering NuGet push source =====
-error: Unable to find any package source(s) matching name: JFrog-NuGet-Local.
-Package source with Name: JFrog-NuGet-Local added successfully.
-Registered sources:
-Registered Sources:
-  1.  nuget.org [Enabled]
-      https://api.nuget.org/v3/index.json
-  2.  JFrog-NuGet-Local [Enabled]
-      https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local
-$ echo "===== dotnet nuget push =====" # collapsed multi-line command
-===== dotnet nuget push =====
-Pushing epay_dotnet_sdk.1.0.0-1a8e816c.nupkg to 'https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local'...
-  PUT https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local/
-  Created https://artifactory.jfrog.sbi/artifactory/api/nuget/itepaypg-sbiepay2-nuget-local/ 179ms
-Your package was pushed.
-Saving cache for successful job
-00:03
-Creating cache epay_transaction_sdk_dotnet-nuget-feature-1-0-0-rrs-test-non_protected...
-.nuget/packages/: found 1433 matching artifact files and directories 
-No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
-Created cache
-Uploading artifacts for successful job
-00:02
-Uploading artifacts...
-nupkg/: found 2 matching artifact files and directories 
-Uploading artifacts as "archive" to coordinator... 201 Created  id=430678 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:00
-Job succeeded
