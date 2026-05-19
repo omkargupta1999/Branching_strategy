@@ -1,49 +1,6 @@
-Hi [Support Engineer Name],
-
-Thank you for your continued support on our GitLab migration ticket [Ticket ID: XXXXXX].
-
-We are writing to update you on an issue observed following the successful project import from our old standalone GitLab instance to the centralized GitLab platform.
-
----
-
-ISSUE SUMMARY
-
-Post-import, the author and assignee attribution for all Merge Requests and Issues has been overwritten. Records that originally belonged to individual team members are now showing under the account of the user who performed the import.
-
----
-
-OBSERVED BEHAVIOR
-
-Before Import (Old GitLab Instance):
-  • MR Title : Release/v1.9.0 Mobikwik Integration
-  • Status   : Open
-  • Author   : PUNAM ANIL RAJPUT
-  • Action   : Requested to merge release/v1.9.0 into main
-
-After Import (Centralized GitLab):
-  • MR Title : Release/v1.9.0
-  • Status   : Open
-  • Author   : Vishnu Gehlot (import-performing user)
-  • Action   : Requested to merge release/v1.9.0 into main
-
-This pattern is consistent across all MRs and Issues in the imported project.
-
----
-
-IMPACT
-
-  • Audit trails and contribution history are inaccurate
-  • Traceability of MR/Issue ownership is broken for compliance purposes
-  • This affects our banking project (SBI E-Pay), where accurate change attribution is critical from a governance standpoint
-
----
-
-We would appreciate your expert analysis on the root cause of this behavior and guidance on the recommended remediation approach. We also have additional projects pending migration, so your advice on preventing this in future imports would be very helpful.
-
-Please advise at your earliest convenience.
-
-Best regards,
-[Your Name]
-[Your Designation] | SBI E-Pay DevOps Team
-[Your Email] | [Your Contact Number]
-Ticket Reference: [XXXXXX]
+Thanks for contacting GitLab Support.
+ 
+I understand you're seeing some issues regarding user contribution mapping. Can you please share what method you used to perform this import? 
+ 
+Generally you can manage post-migration contribution mapping by following this section of our documentation. The only scenario that matches the behavior you've reported is if you imported directly into your personal namespace. I wanted to verify where you imported the projects to as well.
+ 
