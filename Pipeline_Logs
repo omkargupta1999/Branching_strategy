@@ -4,3 +4,7 @@ I understand you're seeing some issues regarding user contribution mapping. Can 
  
 Generally you can manage post-migration contribution mapping by following this section of our documentation. The only scenario that matches the behavior you've reported is if you imported directly into your personal namespace. I wanted to verify where you imported the projects to as well.
  
+
+https://gitlab.epay.sbi/epay/microservices/epay_transaction_service  -- Exported this service repo from old Gitlab 
+https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service -- and then imported that exported service repo from in New Gitlab 
+
