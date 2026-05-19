@@ -1,44 +1,340 @@
-[osuser@drepayprodbastion ~]$ oc get deploy -A | grep -i prod-dr
-prod-dr-admin                                      admin-adminservice                             0/0     0            0           163d
-prod-dr-frontend                                   merchantfe-merchant-frontend                   0/0     0            0           133d
-prod-dr-frontend                                   transactionfe-transaction-frontend             0/0     0            0           163d
-prod-dr-kms                                        kms-kmsservice                                 0/0     0            0           163d
-prod-dr-merchant                                   merchant-merchantservice                       0/0     0            0           163d
-prod-dr-merchant                                   report-reportservice                           0/0     0            0           229d
-prod-dr-rns                                        ops-operationsservice                          0/0     0            0           200d
-prod-dr-rns                                        refund-refundservice                           0/0     0            0           192d
-prod-dr-simulators                                 demo-merchantsimulator                         0/0     0            0           163d
-prod-dr-simulators                                 javasimulator-javautilityapisimulator          0/0     0            0           163d
-prod-dr-simulators                                 orderhash                                      0/0     0            0           163d
-prod-dr-transaction                                payment-paymentservice                         0/0     0            0           163d
-prod-dr-transaction                                txn-transactionservice                         0/0     0            0           163d
-[osuser@drepayprodbastion ~]$
+# Step 3.1 — Application Group Push Rules: Detailed Explanation with Examples
 
-[osuser@dcepayprodbastion ~]$ oc get deploy -A | grep -i prod-dc
-prod-dc-admin                                      admin-adminservice                             2/2     2            2           139d
-prod-dc-frontend                                   merchantfe-merchant-frontend                   1/1     1            1           139d
-prod-dc-frontend                                   transactionfe-transaction-frontend             4/4     4            4           139d
-prod-dc-kms                                        kms-kmsservice                                 1/1     1            1           139d
-prod-dc-merchant                                   merchant-merchantservice                       1/1     1            1           139d
-prod-dc-merchant                                   report-reportservice                           1/1     1            1           139d
-prod-dc-rns                                        ops-operationsservice                          2/2     2            2           139d
-prod-dc-rns                                        refund-refundservice                           1/1     1            1           139d
-prod-dc-simulators                                 demo-merchantsimulator                         1/1     1            1           139d
-prod-dc-simulators                                 javasimulator-javautilityapisimulator          1/1     1            1           139d
-prod-dc-simulators                                 orderhash                                      0/1     0            0           139d
-prod-dc-transaction                                payment-paymentservice                         6/6     6            6           139d
-prod-dc-transaction                                txn-transactionservice                         4/4     4            4           139d
-[osuser@dcepayprodbastion ~]$
+Let me break down each push rule, explain what it does, why it exists, and show real-world examples of what passes ✅ and fails ❌.
 
+---
 
-.prod_ns_map:
-  variables:
-    NS_MAP: |
-      declare -A NS_DEPLOYMENTS
-      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
-      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
-      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
+## How Inheritance Works
+
+```
+ITEPAYPG-SBIePay2 (Top-level Group)
+└── Application (Subgroup)  ← You set rules HERE (once)
+    ├── repo-payment-service        ┐
+    ├── repo-auth-service           │
+    ├── repo-notification-service   │  All 52 repos inherit
+    ├── repo-settlement-service     │  automatically
+    ├── ... (48 more repos)         ┘
+```
+
+Setting rules at the **Application subgroup level** means every repo inside it inherits without individual configuration. Developers **cannot override** these at repo level — GitLab enforces inheritance strictly.
+
+---
+
+## Rule 1 — Branch Name Regex
+
+```regex
+^(feature|bugfix)\/EPAY-[0-9]+(-[a-z0-9-]+)?$|^(develop|main)$|^release\/[0-9]+\.[0-9]+\.[0-9]+$|^hotfix\/[0-9]+\.[0-9]+\.[0-9]+$
+```
+
+### Pattern Breakdown
+
+| Segment | What it matches | Purpose |
+|---|---|---|
+| `^(feature\|bugfix)\/EPAY-[0-9]+(-[a-z0-9-]+)?$` | `feature/EPAY-1234` or `feature/EPAY-1234-add-upi` | Jira-linked feature/bugfix branches |
+| `^(develop\|main)$` | Exactly `develop` or `main` | Core long-lived branches |
+| `^release\/[0-9]+\.[0-9]+\.[0-9]+$` | `release/1.5.0` | Semver release branches, NO `v` prefix |
+| `^hotfix\/[0-9]+\.[0-9]+\.[0-9]+$` | `hotfix/1.5.1` | Emergency production hotfix branches |
+
+### Real Examples
+
+```bash
+# ✅ ALLOWED — feature branch with ticket
+git checkout -b feature/EPAY-1042
+
+# ✅ ALLOWED — feature branch with ticket + descriptor
+git checkout -b feature/EPAY-1042-add-upi-deeplink
+
+# ✅ ALLOWED — bugfix with ticket
+git checkout -b bugfix/EPAY-899
+
+# ✅ ALLOWED — bugfix with descriptor
+git checkout -b bugfix/EPAY-899-fix-timeout-handling
+
+# ✅ ALLOWED — core branches
+git checkout -b develop
+git checkout -b main
+
+# ✅ ALLOWED — release (NO v prefix)
+git checkout -b release/2.1.0
+
+# ✅ ALLOWED — hotfix
+git checkout -b hotfix/2.1.1
+
+# ❌ BLOCKED — no Jira ticket
+git checkout -b feature/add-new-payment
+
+# ❌ BLOCKED — wrong prefix
+git checkout -b feat/EPAY-1042
+
+# ❌ BLOCKED — uppercase in descriptor
+git checkout -b feature/EPAY-1042-Add-UPI
+
+# ❌ BLOCKED — "v" prefix on release (CRITICAL)
+git checkout -b release/v2.1.0
+
+# ❌ BLOCKED — personal/temp branches
+git checkout -b dev-john-testing
+git checkout -b temp/fix
+
+# ❌ BLOCKED — missing ticket number
+git checkout -b feature/EPAY-
+```
+
+---
+
+## Rule 2 — Commit Message Regex
+
+```regex
+^(feat|fix|docs|style|refactor|perf|test|chore|hotfix|ci)(\(EPAY-[0-9]+\))?: .{5,150}$|^\[CI\] .+$|^\[ArgoCD\] .+$
+```
+
+### Pattern Breakdown
+
+| Segment | What it matches | Purpose |
+|---|---|---|
+| `^(feat\|fix\|docs\|...)` | Conventional commit type | Enforces Conventional Commits standard |
+| `(\(EPAY-[0-9]+\))?` | Optional `(EPAY-1234)` scope | Links commit to Jira ticket |
+| `?: .{5,150}$` | Description 5–150 chars | Prevents empty or essay-length messages |
+| `^\[CI\] .+$` | `[CI] anything` | CI/CD pipeline automation commits |
+| `^\[ArgoCD\] .+$` | `[ArgoCD] anything` | ArgoCD GitOps sync commits |
+
+### Allowed Commit Types
+
+```
+feat     → New feature
+fix      → Bug fix
+docs     → Documentation only
+style    → Formatting, no logic change
+refactor → Code restructure, no feature/fix
+perf     → Performance improvement
+test     → Adding or fixing tests
+chore    → Build process, dependencies
+hotfix   → Emergency production fix
+ci       → CI/CD configuration changes
+```
+
+### Real Examples
+
+```bash
+# ✅ ALLOWED — feat with Jira ticket
+git commit -m "feat(EPAY-1042): add UPI deeplink support for SBI Pay"
+
+# ✅ ALLOWED — fix with Jira ticket
+git commit -m "fix(EPAY-899): resolve payment timeout on slow networks"
+
+# ✅ ALLOWED — no ticket (docs/chore/style acceptable without ticket)
+git commit -m "docs: update README with deployment steps"
+git commit -m "chore: upgrade spring-boot to 3.2.1"
+git commit -m "style: reformat code per checkstyle rules"
+
+# ✅ ALLOWED — CI automation commit
+git commit -m "[CI] bump image tag to 2.1.0-rc3"
+
+# ✅ ALLOWED — ArgoCD GitOps sync
+git commit -m "[ArgoCD] sync deployment manifest for preprod"
+
+# ✅ ALLOWED — refactor with ticket
+git commit -m "refactor(EPAY-1100): extract payment gateway interface"
+
+# ❌ BLOCKED — no type prefix
+git commit -m "added new UPI feature"
+
+# ❌ BLOCKED — wrong type (not in allowed list)
+git commit -m "update(EPAY-1042): changed config"
+
+# ❌ BLOCKED — description too short (less than 5 chars)
+git commit -m "fix: oops"
+
+# ❌ BLOCKED — description too long (over 150 chars)
+git commit -m "feat: this is an extremely long commit message that goes on and on describing everything in excessive detail which exceeds the 150 character limit"
+
+# ❌ BLOCKED — missing space after colon
+git commit -m "feat(EPAY-1042):add UPI support"
+#                             ^ space required here
+
+# ❌ BLOCKED — Jira ticket wrong format
+git commit -m "feat(epay-1042): lowercase ticket"
+git commit -m "feat(1042): missing EPAY prefix"
+```
+
+---
+
+## Rule 3 — Author Email Regex
+
+```regex
+^[a-zA-Z0-9._%+-]+@(sbi\.co\.in|sbiepay\.in|contractor\.sbi\.co\.in|vendor\.sbiepay\.in)$
+```
+
+### Pattern Breakdown
+
+| Segment | What it matches | User Type |
+|---|---|---|
+| `@sbi\.co\.in` | `john@sbi.co.in` | SBI permanent employees |
+| `@sbiepay\.in` | `jane@sbiepay.in` | SBIePay core team |
+| `@contractor\.sbi\.co\.in` | `raj@contractor.sbi.co.in` | SBI contractors |
+| `@vendor\.sbiepay\.in` | `xyz@vendor.sbiepay.in` | Approved vendors |
+
+### Real Examples
+
+```bash
+# ✅ ALLOWED — SBI employee
+git config user.email "ramesh.kumar@sbi.co.in"
+
+# ✅ ALLOWED — SBIePay team member
+git config user.email "priya.sharma@sbiepay.in"
+
+# ✅ ALLOWED — contractor
+git config user.email "amit.patel@contractor.sbi.co.in"
+
+# ✅ ALLOWED — vendor
+git config user.email "dev.lead@vendor.sbiepay.in"
+
+# ❌ BLOCKED — personal Gmail (most common mistake)
+git config user.email "ramesh.kumar@gmail.com"
+
+# ❌ BLOCKED — external consultant
+git config user.email "consultant@infosys.com"
+
+# ❌ BLOCKED — wrong domain variation
+git config user.email "dev@sbiepay.co.in"
+git config user.email "dev@sbipay.in"
+
+# ❌ BLOCKED — missing subdomain for contractor
+git config user.email "raj@sbi.co.in"  # Should be contractor.sbi.co.in
+```
+
+> **DevOps Tip:** For new joiners, first thing to check:
+> ```bash
+> git config user.email          # Check current setting
+> git config --global user.email "yourname@sbi.co.in"  # Fix if wrong
+> ```
+
+---
+
+## Rule 4 — Prohibited File Names Regex
+
+```regex
+(\.pem|\.key|\.pfx|\.p12|id_rsa|id_dsa|\.env\.local|secrets\.yml|credentials\.json|aws_credentials|\.aws\/credentials|application-prod\.yml|application-preprod\.yml)$
+```
+
+### What Each Pattern Blocks
+
+| Pattern | File Example | Why Blocked |
+|---|---|---|
+| `\.pem` | `server.pem`, `cert.pem` | SSL/TLS certificates |
+| `\.key` | `private.key`, `server.key` | Private key files |
+| `\.pfx` | `keystore.pfx` | PKCS#12 certificate bundle |
+| `\.p12` | `client.p12` | PKCS#12 (alternate extension) |
+| `id_rsa` | `id_rsa`, `id_rsa.pub` | SSH private keys |
+| `id_dsa` | `id_dsa` | Legacy SSH DSA keys |
+| `\.env\.local` | `.env.local` | Local env with secrets |
+| `secrets\.yml` | `secrets.yml` | Plaintext secrets file |
+| `credentials\.json` | `credentials.json` | GCP/service account keys |
+| `aws_credentials` | `aws_credentials` | AWS key files |
+| `\.aws\/credentials` | `.aws/credentials` | AWS CLI credentials |
+| `application-prod\.yml` | `application-prod.yml` | Production Spring config |
+| `application-preprod\.yml` | `application-preprod.yml` | Pre-prod Spring config |
+
+### Real Examples
+
+```bash
+# ❌ BLOCKED — committing SSL cert
+git add certs/server.pem
+
+# ❌ BLOCKED — SSH key accidentally in repo
+git add deploy/id_rsa
+
+# ❌ BLOCKED — developer's local env file
+git add .env.local
+
+# ❌ BLOCKED — production Spring Boot config
+git add src/main/resources/application-prod.yml
+
+# ❌ BLOCKED — AWS credentials
+git add config/.aws/credentials
+
+# ✅ ALLOWED — template/example files (rename pattern)
+git add application-prod.yml.example    # example template is fine
+git add application-prod.yml.template   # template is fine
+
+# ✅ ALLOWED — non-prod config
+git add src/main/resources/application-dev.yml
+git add src/main/resources/application-sit.yml
+git add src/main/resources/application-uat.yml
+```
+
+> **Best Practice:** Store prod/preprod configs in:
+> - GitLab CI/CD Variables (masked + protected)
+> - HashiCorp Vault
+> - Kubernetes Secrets
+> - **Never** in the repository
+
+---
+
+## Will This Work for All 52 Repos? — Yes, Here's How
+
+```
+Application Subgroup (Rules set here)
+│
+│  Push Rules set at this level:
+│  ✓ Branch name regex
+│  ✓ Commit message regex
+│  ✓ Author email regex
+│  ✓ Prohibited file names
+│
+├── payment-service/       → Inherits all 4 rules ✓
+├── auth-service/          → Inherits all 4 rules ✓
+├── notification-service/  → Inherits all 4 rules ✓
+├── settlement-service/    → Inherits all 4 rules ✓
+├── reconciliation-service/→ Inherits all 4 rules ✓
+└── ... 47 more repos      → Inherits all 4 rules ✓
+```
+
+### Inheritance Guarantees
+
+| Scenario | Behaviour |
+|---|---|
+| New repo added to Application subgroup | Automatically gets all rules — zero config needed |
+| Dev tries to disable rule at repo level | GitLab blocks it — subgroup rules cannot be overridden downward |
+| Rule updated at subgroup level | Propagates to all 52 repos **instantly** |
+| Repo moved OUT of Application subgroup | Loses inherited rules — handle with care |
+
+### One-Time Verification Command (After Setup)
+
+After setting the rules, verify inheritance is working on a sample repo:
+
+```
+Navigation:
+Any repo under Application → Settings → Repository → Push rules
+
+You should see all 4 rules displayed as "Inherited from group"
+```
+
+---
+
+## Quick Reference Card
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              PUSH RULES — DEVELOPER CHEAT SHEET             │
+├──────────────────┬──────────────────────────────────────────┤
+│ BRANCHES         │ feature/EPAY-123-short-desc              │
+│                  │ bugfix/EPAY-456                          │
+│                  │ develop  /  main                         │
+│                  │ release/1.0.0  (NO "v")                  │
+│                  │ hotfix/1.0.1                             │
+├──────────────────┼──────────────────────────────────────────┤
+│ COMMITS          │ feat(EPAY-123): add payment flow         │
+│                  │ fix(EPAY-456): resolve NPE on timeout    │
+│                  │ chore: upgrade dependencies              │
+│                  │ [CI] bump image tag                      │
+├──────────────────┼──────────────────────────────────────────┤
+│ EMAIL            │ name@sbi.co.in                           │
+│                  │ name@sbiepay.in                          │
+│                  │ name@contractor.sbi.co.in                │
+├──────────────────┼──────────────────────────────────────────┤
+│ NEVER COMMIT     │ *.pem *.key *.pfx id_rsa                 │
+│                  │ .env.local secrets.yml                   │
+│                  │ application-prod.yml                     │
+└──────────────────┴──────────────────────────────────────────┘
+```
