@@ -1,223 +1,48 @@
+[osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod
+pre-prod-admin                                     admin-adminservice                             1/1     1            1           169d
+pre-prod-frontend                                  merchant-merchantsimulaterfe                   1/1     1            1           264d
+pre-prod-frontend                                  merchantfe-merchant-frontend                   1/1     1            1           169d
+pre-prod-frontend                                  transactionfe-transaction-frontend             1/1     1            1           46d
+pre-prod-kms                                       kms-kmsservice                                 1/1     1            1           150d
+pre-prod-merchant                                  merchant-merchantservice                       1/1     1            1           169d
+pre-prod-merchant                                  report-reportservice                           1/1     1            1           169d
+pre-prod-rns                                       ops-operationsservice                          1/1     1            1           169d
+pre-prod-rns                                       refund-refundservice                           1/1     1            1           150d
+pre-prod-simulators                                demo-merchantsimulator                         1/1     1            1           101d
+pre-prod-simulators                                javasimulator-javautilityapisimulator          1/1     1            1           169d
+pre-prod-simulators                                orderhash                                      0/1     0            0           169d
+pre-prod-transaction                               payment-paymentservice                         1/1     1            1           169d
+pre-prod-transaction                               txn-transactionservice                         1/1     1            1           138d
 
-<!DOCTYPE html>
-<html>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);color:var(--color-text-primary);background:transparent;padding:0 0 24px}
-h2{font-size:15px;font-weight:500;margin:20px 0 8px;color:var(--color-text-primary)}
-.scope-label{font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px}
-.scope-group{margin:0 0 6px;border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden}
-.scope-header{padding:10px 14px 8px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
-.scope-title{font-size:13px;font-weight:500;color:var(--color-text-primary)}
-.scope-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
-.item{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:0.5px solid var(--color-border-tertiary);cursor:pointer;transition:background .15s}
-.item:last-child{border-bottom:none}
-.item:hover{background:var(--color-background-secondary)}
-.item.done .item-title{text-decoration:line-through;color:var(--color-text-tertiary)}
-.item.done .item-desc{color:var(--color-text-tertiary)}
-.cb{width:16px;height:16px;border:1.5px solid var(--color-border-secondary);border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.item.done .cb{background:var(--color-background-success);border-color:var(--color-border-success)}
-.check-icon{display:none;width:10px;height:10px}
-.item.done .check-icon{display:block;color:var(--color-text-success)}
-.item-body{flex:1}
-.item-title{font-size:13px;font-weight:500;line-height:1.4}
-.item-desc{font-size:12px;color:var(--color-text-secondary);margin-top:2px;line-height:1.5}
-.tag{font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle;font-weight:500}
-.tag-nav{background:var(--color-background-info);color:var(--color-text-info)}
-.tag-skip{background:var(--color-background-warning);color:var(--color-text-warning)}
-.tag-once{background:var(--color-background-success);color:var(--color-text-success)}
-.progress-bar-wrap{background:var(--color-border-tertiary);border-radius:4px;height:6px;margin:4px 0 2px}
-.progress-bar{height:6px;border-radius:4px;background:var(--color-text-success);transition:width .3s}
-.progress-label{font-size:11px;color:var(--color-text-secondary)}
-.section-divider{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-tertiary);padding:14px 0 4px}
-.reset-btn{font-size:12px;color:var(--color-text-secondary);background:none;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:4px 10px;cursor:pointer;float:right;margin-top:16px}
-.reset-btn:hover{background:var(--color-background-secondary)}
-</style>
+====================
 
-<div id="app"></div>
 
-<script>
-const SECTIONS = [
-  {
-    id:"ldap",
-    title:"Step 1 — LDAP Group Links",
-    nav:"Top-level Group + both Subgroups › Members › LDAP Group Links",
-    sub:"Must be done before any MR approval rules — approval rules reference these LDAP group names",
-    color:"teal",
-    items:[
-      {id:"ldap1",title:"Link 3 global groups at top-level",desc:"epay-gitlab-reporter → Reporter | epay-gitlab-planner → Planner | epay-gitlab-vendor-pm → Reporter  (all repos inherit read access)"},
-      {id:"ldap2",title:"Link 4 groups at Infra › DevOps subgroup",desc:"epay-gitlab-bank-infra-owner → Owner | epay-gitlab-bank-infra-maintainer → Maintainer | epay-gitlab-vendor-infra-maintainer → Maintainer | epay-gitlab-vendor-infra-developer → Developer"},
-      {id:"ldap3",title:"Link 6 groups at Application subgroup",desc:"epay-gitlab-bank-app-owner → Owner | epay-gitlab-bank-app-maintainer → Maintainer | epay-gitlab-vendor-app-maintainer → Maintainer | epay-gitlab-vendor-release-manager → Developer | epay-gitlab-vendor-app-lead → Developer | epay-gitlab-vendor-app-developer → Developer"},
-    ]
-  },
-  {
-    id:"push",
-    title:"Step 2 — Push Rules",
-    nav:"Subgroup › Settings › Repository › Push rules",
-    sub:"Set once per subgroup — inherited by all repos underneath",
-    color:"purple",
-    items:[
-      {id:"push1",title:"Application subgroup — all 4 push rules",desc:"Branch name | Commit message | Author email | Prohibited files  →  covers all 55 repos"},
-      {id:"push2",title:"Infra › DevOps subgroup — all 4 push rules",desc:"Branch name (INFRA- prefix, feature/* + main only) | Commit message | Author email | Prohibited files + .tfstate/.tfvars/kubeconfig"},
-    ]
-  },
-  {
-    id:"branches",
-    title:"Step 3 — Protected Branch Rules",
-    nav:"Repo/Subgroup › Settings › Repository › Protected branches",
-    sub:"Can be set at subgroup level to inherit, or per-repo. Doc §3.7 defines per repo-type.",
-    color:"blue",
-    items:[
-      {id:"br1",title:"Application repos — protect main",desc:"Allowed to push: No one | Allowed to merge: epay-gitlab-bank-app-maintainer + epay-gitlab-bank-app-owner | Unprotect: nobody"},
-      {id:"br2",title:"Application repos — protect develop",desc:"Allowed to push: No one | Allowed to merge: epay-gitlab-vendor-app-lead"},
-      {id:"br3",title:"Application repos — protect release/*  (wildcard)",desc:"Allowed to push: No one | Allowed to merge: epay-gitlab-vendor-app-maintainer"},
-      {id:"br4",title:"Application repos — hotfix/*, bugfix/*, feature/* left UNPROTECTED",desc:"Developers push freely. Governance is enforced at the target branch via MR approval rules only."},
-      {id:"br5",title:"DevOps repos — protect main",desc:"Allowed to push: No one | Allowed to merge: epay-gitlab-bank-infra-maintainer + epay-gitlab-bank-infra-owner"},
-      {id:"br6",title:"DevOps repos — feature/* left UNPROTECTED",desc:"No develop/release/hotfix branches exist for DevOps repos — feature/* and main only (§3.1)"},
-    ]
-  },
-  {
-    id:"mr_app",
-    title:"Step 4 — MR Approval Rules (Application repos)",
-    nav:"Application subgroup › Settings › Merge requests › Approval rules  (set once — all 55 repos inherit)",
-    sub:"Each rule targets a single LDAP group. All rules are separate — no combined counts.",
-    color:"coral",
-    items:[
-      {id:"mr_app1",title:"Flow 1 & 4.3a: feature/* or bugfix/* → develop",desc:"Rule: 'Lead Approval' | Target: develop | Group: epay-gitlab-vendor-app-lead | Required: 1"},
-      {id:"mr_app2",title:"Flow 2 & 4.3b: develop or bugfix/* → release/*",desc:"Rule A: 'Release Gate – Lead' | Group: epay-gitlab-vendor-app-lead | Required: 1\nRule B: 'Release Gate – Architect' | Group: epay-gitlab-vendor-app-maintainer | Required: 1"},
-      {id:"mr_app3",title:"Flow 4: release/* → main  (Production)",desc:"Rule 1: Vendor Architect Sign-off → epay-gitlab-vendor-app-maintainer | 1\nRule 2: Vendor PM Approval (CAB gate) → epay-gitlab-vendor-pm | 1\nRule 3: Bank Maintainer Approval → epay-gitlab-bank-app-maintainer | 1\nRule 4: Bank PM Final Gate → epay-gitlab-bank-app-owner | 1"},
-      {id:"mr_app4",title:"Flow 5: hotfix/* → main  (same 4 rules as Flow 4)",desc:"Same 4 rules as release→main. Lead NOT required (SLA < 1hr). Hotfix branch created from prod tag, not develop."},
-      {id:"mr_app5",title:"Enable: Pipelines must succeed before merge",desc:"Settings › Merge requests → 'Pipelines must succeed' ✅  Group-level setting — broken code cannot enter any protected branch (§5 best practices)"},
-      {id:"mr_app6",title:"Enable: Delete source branch when merged",desc:"Settings › Merge requests → 'Delete source branch option by default' ✅  Auto-deletes feature/*, bugfix/*, hotfix/* on merge (§3.10)"},
-    ]
-  },
-  {
-    id:"mr_infra",
-    title:"Step 5 — MR Approval Rules (DevOps repos)",
-    nav:"Infra › DevOps subgroup › Settings › Merge requests › Approval rules",
-    sub:"Flow 7 (§4.7). Only flow: feature/* → main. Same 4-rule structure as App prod flow.",
-    color:"amber",
-    items:[
-      {id:"mr_infra1",title:"Flow 7: feature/* → main (DevOps repos) — 4 rules",desc:"Rule 1: DevOps Architect Sign-off → epay-gitlab-vendor-infra-maintainer | 1\nRule 2: Vendor PM Approval (CAB gate) → epay-gitlab-vendor-pm | 1\nRule 3: Bank Infra Maintainer → epay-gitlab-bank-infra-maintainer | 1\nRule 4: Bank PM (Infra) Final Gate → epay-gitlab-bank-infra-owner | 1"},
-      {id:"mr_infra2",title:"Enable: Pipelines must succeed before merge",desc:"Same setting as Application — CI must be green before any merge to main"},
-      {id:"mr_infra3",title:"Enable: Delete source branch when merged",desc:"feature/* auto-deleted on merge to main"},
-    ]
-  },
-  {
-    id:"protected_tags",
-    title:"Step 6 — Protected Tags",
-    nav:"Application repos › Settings › Repository › Protected tags",
-    sub:"Tags are created automatically by CI pipeline — no manual trigger. Must be protected to prevent manual overwrite. (§3.9)",
-    color:"pink",
-    items:[
-      {id:"tag1",title:"Protect tag pattern  v*  on Application repos",desc:"Allowed to create: No one (CI pipeline creates tags automatically via API). Prevents developers manually creating or overwriting v1.5.0, v1.5.0-rc.1 etc."},
-      {id:"tag2",title:"CI/CD Variables — image tag automation",desc:"CI uses SHORT_SHA, MR_IID, version variables. Ensure CI_REGISTRY_IMAGE and related vars are set at group level so all repos inherit without per-repo config."},
-    ]
-  },
-  {
-    id:"environments",
-    title:"Step 7 — Protected Environments",
-    nav:"Repo › Settings › CI/CD › Environments — set per environment tier",
-    sub:"Deployment approvers are separate from MR approvers. Vendor PM (Reporter role) approves deployments as CAB gate. (§2.1, §3.3)",
-    color:"teal",
-    items:[
-      {id:"env1",title:"prod-dc and prod-dr — Bank-only deploy approval",desc:"Required approvers: epay-gitlab-bank-app-maintainer + epay-gitlab-bank-app-owner | Vendor PM as deployment approver (CAB gate) | No vendor developer can trigger prod deploy"},
-      {id:"env2",title:"preprod-dc and preprod-dr — restricted deploy",desc:"Required approvers for deployment: Release Manager can trigger | Hotfix smoke test deploys here pre-merge (mr-{MR_IID}-{SHA} image)"},
-      {id:"env3",title:"SIT / UAT / INT / Perf — Release Manager manual trigger",desc:"All manual trigger. No auto-deploy. Release Manager promotes RC image to chosen environment independently per env (§3.12 events 6)"},
-      {id:"env4",title:"dev — auto-deploy on develop merge",desc:"Auto-deploys when feature/bugfix MR merges to develop. No approval gate required for DEV environment."},
-    ]
-  },
-  {
-    id:"cicd_vars",
-    title:"Step 8 — CI/CD Variables",
-    nav:"Group/Subgroup › Settings › CI/CD › Variables",
-    sub:"Set at group level so all repos inherit. Never store secrets in repo files — blocked by push rules anyway.",
-    color:"purple",
-    items:[
-      {id:"var1",title:"Container registry credentials (group level)",desc:"CI_REGISTRY_USER and CI_REGISTRY_PASSWORD or equivalent. Set as masked + protected at Application and Infra subgroup level."},
-      {id:"var2",title:"Environment-specific deploy tokens / kubeconfig (protected)",desc:"Per-environment variables masked+protected. Only available to pipelines on protected branches (main, release/*, develop). Not available on feature/* branches."},
-      {id:"var3",title:"Vault/secrets integration tokens",desc:"If using HashiCorp Vault — VAULT_ADDR, VAULT_ROLE_ID, VAULT_SECRET_ID set at group level, masked+protected."},
-    ]
-  },
-  {
-    id:"pipeline",
-    title:"Step 9 — CI Pipeline Template (ci-templates repo)",
-    nav:"Infra › DevOps › ci-templates repo",
-    sub:"All application repos include this template via include pointer + 2 variables only. Vendor DevOps has zero need for Application subgroup access. (§5.1)",
-    color:"blue",
-    items:[
-      {id:"pipe1",title:"Define all pipeline stages in ci-templates",desc:"Stages: build · test · sast · fortify · dockerbuild · deploy-dev · create-rc-tag · deploy-{env} · deploy-hotfix-preprod-smoke · create-prod-tag · retag-image · back-merge · promote-image · deploy-prod-{env}"},
-      {id:"pipe2",title:"Auto-trigger rules per branch type",desc:"feature/bugfix push → build+test+sast+fortify (auto) | develop merge → +dockerbuild+deploy-dev (auto) | release merge → +create-rc-tag (auto) | main merge → create-prod-tag+retag+back-merge (auto)"},
-      {id:"pipe3",title:"Manual-only deploy jobs for non-DEV environments",desc:"deploy-sit / deploy-uat / deploy-int / deploy-perf / deploy-preprod-* → when: manual, only Release Manager role can trigger"},
-      {id:"pipe4",title:"Back-merge job using GitLab MR API",desc:"Triggered post-merge on main. Creates MR: hotfix→all active release/* + develop. Uses merge_when_pipeline_succeeds=true. Direct git push NOT used (develop/release have push=No one)."},
-      {id:"pipe5",title:"Short-lived branch enforcement",desc:"CI warns on day 2, blocks on day 3 for feature/* and bugfix/*. Implemented as a pipeline check on branch age (§3.2)."},
-      {id:"pipe6",title:"validate-env-isolation job (Config repos)",desc:"CI lint job that blocks any MR mixing prod and non-prod folders in a single MR. Skipped if Config repos deferred."},
-    ]
-  },
-  {
-    id:"app_repo",
-    title:"Step 10 — Per Application Repo Settings",
-    nav:"Each repo › Settings › General / Merge requests",
-    sub:"These are repo-level settings that cannot be set at subgroup level in GitLab.",
-    color:"gray",
-    items:[
-      {id:"repo1",title:"Enable: Merge commit (not squash) for audit trail",desc:"Settings › Merge requests → Merge method: 'Merge commit'. Required for RBI/PCI-DSS/SOX audit — every MR must produce a named merge commit with approver timestamps (§3.2)."},
-      {id:"repo2",title:"Disable: Allow force push on all protected branches",desc:"Verify that force push is OFF for main, develop, release/* — this is the default when a branch is protected but worth explicitly confirming during setup."},
-      {id:"repo3",title:"MR description template — hotfix repos",desc:"Hotfix MRs must contain JIRA incident ticket ID for banking audit (§4.5). Add a .gitlab/merge_request_templates/hotfix.md template to each repo (or a shared template in ci-templates)."},
-    ]
-  },
-];
+[osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod-dc
+pre-prod-dc-admin                                  admin-adminservice                             0/0     0            0           133d
+pre-prod-dc-frontend                               merchantfe-merchant-frontend                   0/0     0            0           174d
+pre-prod-dc-frontend                               pre-prod-dc-transaction-frontend               0/0     0            0           42d
+pre-prod-dc-frontend                               transactionfe-transaction-frontend             0/0     0            0           172d
+pre-prod-dc-kms                                    kms-kmsservice                                 0/0     0            0           213d
+pre-prod-dc-merchant                               merchant-merchantservice                       0/0     0            0           138d
+pre-prod-dc-merchant                               report-reportservice                           0/1     1            0           138d
+pre-prod-dc-rns                                    ops-operationsservice                          0/0     0            0           181d
+pre-prod-dc-rns                                    refund-refundservice                           0/0     0            0           138d
+pre-prod-dc-simulators                             demo-merchantsimulaterfe                       0/0     0            0           172d
+pre-prod-dc-simulators                             javasimulator-javautilityapisimulator          0/0     0            0           181d
+pre-prod-dc-simulators                             orderhash                                      0/0     0            0           172d
+pre-prod-dc-transaction                            payment-paymentservice                         0/0     0            0           187d
+pre-prod-dc-transaction                            txn-transactionservice                         0/0     0            0           138d
 
-const STATE_KEY = 'epay_checklist_v1';
-let state = {};
-try { state = JSON.parse(localStorage.getItem(STATE_KEY)||'{}'); } catch(e){}
 
-function save(){ try{localStorage.setItem(STATE_KEY,JSON.stringify(state));}catch(e){} }
-
-function totalItems(){return SECTIONS.reduce((a,s)=>a+s.items.length,0);}
-function doneItems(){return Object.values(state).filter(Boolean).length;}
-
-function render(){
-  const total=totalItems(), done=doneItems();
-  let html=`<div style="padding:16px 0 0">
-  <div style="display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:15px;font-weight:500">EPay GitLab Configuration Checklist</div>
-    <button class="reset-btn" onclick="resetAll()">Reset all</button>
-  </div>
-  <div style="margin-top:10px">
-    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-      <span class="progress-label">${done} of ${total} items complete</span>
-      <span class="progress-label">${Math.round(done/total*100)}%</span>
-    </div>
-    <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.round(done/total*100)}%"></div></div>
-  </div></div>`;
-
-  SECTIONS.forEach(sec=>{
-    const secDone=sec.items.filter(i=>state[i.id]).length;
-    html+=`<div class="scope-group">
-      <div class="scope-header">
-        <div class="scope-title">${sec.title} <span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">(${secDone}/${sec.items.length})</span></div>
-        <div class="scope-sub" style="margin-top:3px">📍 ${sec.nav}</div>
-        <div class="scope-sub">${sec.sub}</div>
-      </div>`;
-    sec.items.forEach(item=>{
-      const done=!!state[item.id];
-      html+=`<div class="item${done?' done':''}" onclick="toggle('${item.id}')">
-        <div class="cb">${done?`<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>`:''}</div>
-        <div class="item-body">
-          <div class="item-title">${item.title}</div>
-          <div class="item-desc">${item.desc.replace(/\n/g,'<br>')}</div>
-        </div>
-      </div>`;
-    });
-    html+=`</div>`;
-  });
-
-  document.getElementById('app').innerHTML=html;
-}
-
-function toggle(id){state[id]=!state[id];save();render();}
-function resetAll(){state={};save();render();}
-render();
-</script>
-</html>
+.preprod_ns_map:
+  variables:
+    NS_MAP: |
+      declare -A NS_DEPLOYMENTS
+      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
+      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
+      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
+      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
