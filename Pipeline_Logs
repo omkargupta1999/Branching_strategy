@@ -1,10 +1,40 @@
-Thanks for contacting GitLab Support.
- 
-I understand you're seeing some issues regarding user contribution mapping. Can you please share what method you used to perform this import? 
- 
-Generally you can manage post-migration contribution mapping by following this section of our documentation. The only scenario that matches the behavior you've reported is if you imported directly into your personal namespace. I wanted to verify where you imported the projects to as well.
- 
+Hi [Support Engineer Name],
 
-https://gitlab.epay.sbi/epay/microservices/epay_transaction_service  -- Exported this service repo from old Gitlab 
-https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service -- and then imported that exported service repo from in New Gitlab 
+Thank you for your response and for sharing the documentation reference.
 
+Please find the requested details below:
+
+---
+
+IMPORT METHOD
+
+We used the native GitLab Export/Import method:
+  1. Exported the project via Project → Settings → Export Project
+  2. Imported the downloaded export archive via the GitLab UI (New Project → Import Project → GitLab Export)
+
+The import was performed using an Administrator account.
+
+---
+
+SOURCE & DESTINATION NAMESPACE
+
+  • Exported From : https://gitlab.epay.sbi/epay/microservices/epay_transaction_service
+                    (Old standalone GitLab instance)
+
+  • Imported To   : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
+                    (Centralized GitLab instance — Group namespace, not a personal namespace)
+
+As you can see, the project was imported into a Group/Subgroup namespace (itepaypg-sbiepay2/application/backend), not into a personal namespace. So we believe the personal namespace scenario mentioned in your previous response may not apply to our case.
+
+---
+
+We also reviewed the contribution mapping documentation you shared. However, since the users from the old GitLab instance do not exist on the centralized GitLab instance, we are unsure whether the contribution reassignment can be performed retroactively.
+
+Could you please advise on the correct remediation approach given our setup?
+
+Looking forward to your guidance.
+
+Best regards,
+[Your Name]
+[Your Designation] | SBI E-Pay DevOps Team
+Ticket Reference: [XXXXXX]
