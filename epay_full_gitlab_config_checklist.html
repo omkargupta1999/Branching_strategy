@@ -1,39 +1,37 @@
-[osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod
-pre-prod-admin                                     admin-adminservice                             1/1     1            1           169d
-pre-prod-frontend                                  merchantfe-merchant-frontend                   1/1     1            1           169d
-pre-prod-frontend                                  transactionfe-transaction-frontend             1/1     1            1           46d
-pre-prod-kms                                       kms-kmsservice                                 1/1     1            1           150d
-pre-prod-merchant                                  merchant-merchantservice                       1/1     1            1           169d
-pre-prod-merchant                                  report-reportservice                           1/1     1            1           169d
-pre-prod-rns                                       ops-operationsservice                          1/1     1            1           169d
-pre-prod-rns                                       refund-refundservice                           1/1     1            1           150d
-pre-prod-simulators                                demo-merchantsimulator                         1/1     1            1           101d
-pre-prod-simulators                                javasimulator-javautilityapisimulator          1/1     1            1           169d
-pre-prod-simulators                                orderhash                                      0/1     0            0           169d
-pre-prod-transaction                               payment-paymentservice                         1/1     1            1           169d
-pre-prod-transaction                               txn-transactionservice                         1/1     1            1           138d
+[osuser@drepayprodbastion ~]$ oc get deploy -A | grep -i prod-dr
+prod-dr-admin                                      admin-adminservice                             0/0     0            0           163d
+prod-dr-frontend                                   merchantfe-merchant-frontend                   0/0     0            0           133d
+prod-dr-frontend                                   transactionfe-transaction-frontend             0/0     0            0           163d
+prod-dr-kms                                        kms-kmsservice                                 0/0     0            0           163d
+prod-dr-merchant                                   merchant-merchantservice                       0/0     0            0           163d
+prod-dr-merchant                                   report-reportservice                           0/0     0            0           229d
+prod-dr-rns                                        ops-operationsservice                          0/0     0            0           200d
+prod-dr-rns                                        refund-refundservice                           0/0     0            0           192d
+prod-dr-simulators                                 demo-merchantsimulator                         0/0     0            0           163d
+prod-dr-simulators                                 javasimulator-javautilityapisimulator          0/0     0            0           163d
+prod-dr-simulators                                 orderhash                                      0/0     0            0           163d
+prod-dr-transaction                                payment-paymentservice                         0/0     0            0           163d
+prod-dr-transaction                                txn-transactionservice                         0/0     0            0           163d
+[osuser@drepayprodbastion ~]$
 
-====================
-
-
-[osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod-dc
-pre-prod-dc-admin                                  admin-adminservice                             0/0     0            0           133d
-pre-prod-dc-frontend                               merchantfe-merchant-frontend                   0/0     0            0           174d
-pre-prod-dc-frontend                               transactionfe-transaction-frontend             0/0     0            0           172d
-pre-prod-dc-kms                                    kms-kmsservice                                 0/0     0            0           213d
-pre-prod-dc-merchant                               merchant-merchantservice                       0/0     0            0           138d
-pre-prod-dc-merchant                               report-reportservice                           0/1     1            0           138d
-pre-prod-dc-rns                                    ops-operationsservice                          0/0     0            0           181d
-pre-prod-dc-rns                                    refund-refundservice                           0/0     0            0           138d
-pre-prod-dc-simulators                             demo-merchantsimulater                         0/0     0            0           172d
-pre-prod-dc-simulators                             javasimulator-javautilityapisimulator          0/0     0            0           181d
-pre-prod-dc-simulators                             orderhash                                      0/0     0            0           172d
-pre-prod-dc-transaction                            payment-paymentservice                         0/0     0            0           187d
-pre-prod-dc-transaction                            txn-transactionservice                         0/0     0            0           138d
-
+[osuser@dcepayprodbastion ~]$ oc get deploy -A | grep -i prod-dc
+prod-dc-admin                                      admin-adminservice                             2/2     2            2           139d
+prod-dc-frontend                                   merchantfe-merchant-frontend                   1/1     1            1           139d
+prod-dc-frontend                                   transactionfe-transaction-frontend             4/4     4            4           139d
+prod-dc-kms                                        kms-kmsservice                                 1/1     1            1           139d
+prod-dc-merchant                                   merchant-merchantservice                       1/1     1            1           139d
+prod-dc-merchant                                   report-reportservice                           1/1     1            1           139d
+prod-dc-rns                                        ops-operationsservice                          2/2     2            2           139d
+prod-dc-rns                                        refund-refundservice                           1/1     1            1           139d
+prod-dc-simulators                                 demo-merchantsimulator                         1/1     1            1           139d
+prod-dc-simulators                                 javasimulator-javautilityapisimulator          1/1     1            1           139d
+prod-dc-simulators                                 orderhash                                      0/1     0            0           139d
+prod-dc-transaction                                payment-paymentservice                         6/6     6            6           139d
+prod-dc-transaction                                txn-transactionservice                         4/4     4            4           139d
+[osuser@dcepayprodbastion ~]$
 
 
-.preprod_ns_map:
+.prod_ns_map:
   variables:
     NS_MAP: |
       declare -A NS_DEPLOYMENTS
@@ -44,4 +42,3 @@ pre-prod-dc-transaction                            txn-transactionservice       
       NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
       NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
       NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
-      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
