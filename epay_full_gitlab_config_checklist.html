@@ -1,6 +1,5 @@
 [osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod
 pre-prod-admin                                     admin-adminservice                             1/1     1            1           169d
-pre-prod-frontend                                  merchant-merchantsimulaterfe                   1/1     1            1           264d
 pre-prod-frontend                                  merchantfe-merchant-frontend                   1/1     1            1           169d
 pre-prod-frontend                                  transactionfe-transaction-frontend             1/1     1            1           46d
 pre-prod-kms                                       kms-kmsservice                                 1/1     1            1           150d
@@ -20,18 +19,18 @@ pre-prod-transaction                               txn-transactionservice       
 [osuser@bastion ~]$ oc get deploy -A | grep -i pre-prod-dc
 pre-prod-dc-admin                                  admin-adminservice                             0/0     0            0           133d
 pre-prod-dc-frontend                               merchantfe-merchant-frontend                   0/0     0            0           174d
-pre-prod-dc-frontend                               pre-prod-dc-transaction-frontend               0/0     0            0           42d
 pre-prod-dc-frontend                               transactionfe-transaction-frontend             0/0     0            0           172d
 pre-prod-dc-kms                                    kms-kmsservice                                 0/0     0            0           213d
 pre-prod-dc-merchant                               merchant-merchantservice                       0/0     0            0           138d
 pre-prod-dc-merchant                               report-reportservice                           0/1     1            0           138d
 pre-prod-dc-rns                                    ops-operationsservice                          0/0     0            0           181d
 pre-prod-dc-rns                                    refund-refundservice                           0/0     0            0           138d
-pre-prod-dc-simulators                             demo-merchantsimulaterfe                       0/0     0            0           172d
+pre-prod-dc-simulators                             demo-merchantsimulater                         0/0     0            0           172d
 pre-prod-dc-simulators                             javasimulator-javautilityapisimulator          0/0     0            0           181d
 pre-prod-dc-simulators                             orderhash                                      0/0     0            0           172d
 pre-prod-dc-transaction                            payment-paymentservice                         0/0     0            0           187d
 pre-prod-dc-transaction                            txn-transactionservice                         0/0     0            0           138d
+
 
 
 .preprod_ns_map:
