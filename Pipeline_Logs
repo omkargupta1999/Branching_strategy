@@ -1,40 +1,258 @@
-Hi [Support Engineer Name],
+We are performing the below maintenance activity in our pre-prod and pre-prod-dc environments and basically it is making changes in maintenance helm charts of both the env values.yaml and it is triggering a single deployment pipeline instead it should trigger both the deployment pipeline.
 
-Thank you for your response and for sharing the documentation reference.
+So i want you to please help me troubleshoot and resolved the issue. I have shared you the  helm.deploy.yml file for your reference.
 
-Please find the requested details below:
 
----
 
-IMPORT METHOD
 
-We used the native GitLab Export/Import method:
-  1. Exported the project via Project → Settings → Export Project
-  2. Imported the downloaded export archive via the GitLab UI (New Project → Import Project → GitLab Export)
 
-The import was performed using an Administrator account.
+# ops/drill/drill.maintenance.yml
+# Maintenance page ON/OFF — GitOps approach
+# Clones deployment repo → updates epay_maintenance_fe/values.yaml → git push → ArgoCD syncs
+#
+# Called by: templates/cd/deploy.drill.yml
+# Trigger:   DRILL_TIER variable set at pipeline run time
+#
+# What it changes:
+#   replicaCount:       1 (ON) or 0 (OFF)
+#   maintenance.enabled: true (ON) or false (OFF)
+#
+# ENV_LIST drives which environments are updated:
+#   preprod: pre-prod-dc pre-prod
 
----
 
-SOURCE & DESTINATION NAMESPACE
+.drill_git_setup:
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - common_runner
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
 
-  • Exported From : https://gitlab.epay.sbi/epay/microservices/epay_transaction_service
-                    (Old standalone GitLab instance)
+# ── Shared script — reused by all maintenance jobs via YAML anchor ────────────
+.maintenance_script: &maintenance_script
+  - |
+    set -eo pipefail
 
-  • Imported To   : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
-                    (Centralized GitLab instance — Group namespace, not a personal namespace)
+    git clone "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git" deployment
+    cd deployment
+    #git checkout "$DEPLOYMENT_BRANCH"
+    git checkout "$DEPLOYMENT_BRANCH"
 
-As you can see, the project was imported into a Group/Subgroup namespace (itepaypg-sbiepay2/application/backend), not into a personal namespace. So we believe the personal namespace scenario mentioned in your previous response may not apply to our case.
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
 
----
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
 
-We also reviewed the contribution mapping documentation you shared. However, since the users from the old GitLab instance do not exist on the centralized GitLab instance, we are unsure whether the contribution reassignment can be performed retroactively.
+      git add "$FILE"
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} " \
+        || echo "No changes for ${TARGET_ENV}"
+    done
 
-Could you please advise on the correct remediation approach given our setup?
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
 
-Looking forward to your guidance.
+# ── Preprod ───────────────────────────────────────────────────────────────────
+PreProd_Maintenance_ON:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "pre-prod-dc pre-prod"
+    REPLICA_COUNT:       "1"
+    MAINTENANCE_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *maintenance_script
 
-Best regards,
-[Your Name]
-[Your Designation] | SBI E-Pay DevOps Team
-Ticket Reference: [XXXXXX]
+PreProd_Maintenance_OFF:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "pre-prod-dc pre-prod"
+    REPLICA_COUNT:       "0"
+    MAINTENANCE_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *maintenance_script
+
+
+
+
+
+
+
+
+
+
+
+helm.deploy.yml --------------
+
+# cd/helm/helm.deploy.yml
+# Stage: validate + deploy + verify
+# Single-service Helm upgrade to OCP cluster
+# Runs in DEPLOYMENT REPO pipeline
+
+include:
+  - local: 'config/services.yaml'
+
+stages:
+  - publish
+  - validate
+  - deploy
+  - verify
+
+
+variables:
+  DEV_CLUSTER:        "https://api.dev.sbiepay.sbi:6443"
+  PREPROD_CLUSTER:    "https://api.preprod.epay.sbi:6443"
+  PREPROD_DC_CLUSTER: "https://api.dcpreprod.epay.sbi:6443"
+  PROD_DR_CLUSTER:    "https://api.dr.prod.epay.sbi:6443"
+  PROD_DC_CLUSTER:    "https://api.dc.prod.epay.sbi:6443"
+  # SERVICE_NAME:       ""
+  # ENV:                ""
+  HELM_HISTORY_MAX:   "10"
+  DEPLOYMENT_TIMEOUT: "15m"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+
+.validate_inputs:
+  before_script:
+    - |
+      set -eo pipefail
+      if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+        echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+      fi
+      if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+        echo "ERROR: Invalid ENV '$ENV'"; exit 1
+      fi
+      echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+
+validate_service:
+  stage: validate
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  # extends: .validate_inputs
+  script:
+    - |
+      set -eo pipefail
+      echo "$SERVICES_CONFIG" > /tmp/services.yml
+
+      if [ -z "$SERVICE_NAME" ]; then
+        CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep charts | head -1 || true)
+        
+        if [ -z "$CHANGED_FILE" ]; then
+          CHANGED_FILE=$(git ls-files | grep charts | head -1 || true)
+        fi
+
+        if [ -z "$CHANGED_FILE" ]; then
+          echo "No chart changes found"
+          exit 1
+        fi
+
+        ENV=$(echo "$CHANGED_FILE" | cut -d'/' -f1)
+        SERVICE_NAME=$(echo "$CHANGED_FILE" | cut -d'/' -f3)
+
+        echo "Detected SERVICE_NAME=$SERVICE_NAME"
+        echo "Detected ENV=$ENV"
+      fi
+
+      # RELEASE_NAME extract from services.yaml
+      RELEASE_NAME=$(awk -v svc="$SERVICE_NAME" '
+        $0 ~ "name: "svc {found=1}
+        found && /release:/ {print $2; exit}
+      ' /tmp/services.yml)
+
+      RELEASE_NAME=${RELEASE_NAME:-$(echo "$SERVICE_NAME" | tr '_' '-')}
+
+      NAMESPACE=$(awk -v svc="$SERVICE_NAME" '
+        /namespace:/ {ns=$3}
+        $0 ~ "name: "svc {print ns; exit}
+      ' /tmp/services.yml)
+
+      NAMESPACE="${ENV}-${NAMESPACE}"
+
+      echo "RAW NAMESPACE=$NAMESPACE"
+      echo "FINAL VALUES:"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "NAMESPACE=$NAMESPACE"
+       
+      [ -d "${ENV}/charts/${SERVICE_NAME}" ] || { echo "Chart not found"; exit 1; }
+
+      # Helm validation
+      helm lint ${ENV}/charts/${SERVICE_NAME}/
+
+      helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
+        --set image.tag=${VERSION} \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+
+      echo "✅ Validation passed"
+
+      # Export for next stages
+      echo "SERVICE_NAME=$SERVICE_NAME" >> build.env
+      echo "ENV=$ENV" >> build.env
+      echo "RELEASE_NAME=$RELEASE_NAME" >> build.env
+      echo "NAMESPACE=$NAMESPACE" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+
+helm:deploy:
+  stage: deploy
+  dependencies:
+    - validate_service
+  needs:
+    - job: validate_service
+      artifacts: true
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  extends: .validate_inputs
+  script:
+    - |
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      
+      case "$ENV" in
+        dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;        TOKEN=$OCP_TOKEN_DEV_CLUSTER ;;
+        pre-prod)              CLUSTER=$PREPROD_CLUSTER;    TOKEN=$OCP_TOKEN_PREPROD_DR ;;
+        pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER; TOKEN=$OCP_TOKEN_PREPROD_DC ;;
+        prod-dr)               CLUSTER=$PROD_DR_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DR ;;
+        prod-dc)               CLUSTER=$PROD_DC_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DC ;;
+      esac
+      oc login "$CLUSTER" --token="$TOKEN" --insecure-skip-tls-verify
+      helm upgrade --install ${RELEASE_NAME} \
+        ${ENV}/charts/${SERVICE_NAME} \
+        -n ${NAMESPACE} \
+        --create-namespace \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+        --set image.tag=${VERSION} \
+        --history-max=${HELM_HISTORY_MAX}
+      echo "✅ Deployed $SERVICE_NAME:$VERSION to $ENV"
+
