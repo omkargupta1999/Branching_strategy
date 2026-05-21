@@ -1,21 +1,1220 @@
-Project `itepaypg-sbiepay2/infra/devops/cicd-templates` not found or access denied! Make sure any includes in the pipeline configuration are correctly defined.
+---
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  variables:
+    GIT_DEPTH: '0'
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  script:
+  - |
+    set -eo pipefail
+    git fetch --tags
 
+    # ── Helper: clean branch name for use in VERSION string ───────────────
+    # Replaces special chars with dash, lowercases, collapses dashes, max 40 chars
+    # Ensures VERSION is safe for Docker image tag (128 char limit)
+    clean_branch() {
+      echo "$1"                        \
+        | sed 's/[^a-zA-Z0-9._-]/-/g' \
+        | tr '[:upper:]' '[:lower:]'   \
+        | sed 's/--*/-/g'              \
+        | sed 's/^-//; s/-$//'         \
+        | cut -c1-40
+    }
 
+    # ── MR pipeline ────────────────────────────────────────────────────────
+    if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+      # All MR types use same pattern — source + target embedded for traceability
+      # CI_MERGE_REQUEST_SOURCE_BRANCH_NAME and TARGET available in MR pipelines
+      SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+      TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+      VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
 
+    # ── feature/*, bugfix/*, hotfix/* push ────────────────────────────────
+    # No image build on these branches — JAR only (build, test, sast, security)
+    # One condition covers all three — same version pattern: <branch>-<sha>
+    elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix)\/ ]]; then
+      BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
+      VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
 
+    # ── develop push ───────────────────────────────────────────────────────
+    # Post-merge integration build — image pushed to DEV registry
+    elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+      VERSION="dev-${CI_COMMIT_SHORT_SHA}"
 
-^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
+    # ── release/* push ─────────────────────────────────────────────────────
+    # Post-merge RC build — auto-increments RC counter for this release version
+    # RC tag format: 1.0.0-rc.1  (NO v prefix — directly usable as image tag)
+    # RC count: searches tags WITHOUT v prefix (not v${RELEASE_VERSION}-rc.*)
+    elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+      RELEASE_VERSION="${BASH_REMATCH[1]}"
+      RC_COUNT=$(git tag -l "${RELEASE_VERSION}-rc.*" | wc -l | tr -d ' ')
+      NEW_RC=$((RC_COUNT + 1))
+      VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
 
-^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
+    # ── main push ──────────────────────────────────────────────────────────
+    # Post-merge to main from release/* or hotfix/*
+    # CI_COMMIT_TITLE = GitLab predefined variable = merge commit subject line
+    # GitLab format: "Merge branch 'release/1.1.0' into 'main'"
+    #                "Merge branch 'hotfix/1.0.1' into 'main'"
+    # Source branch name always in title for standard merge commits.
+    # Squash/rebase not permitted on Protected 'main' (bank policy + GitLab setting).
+    # If title format not matched → version job fails → entire pipeline fails.
+    elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+      echo "Merge commit title: $CI_COMMIT_TITLE"
 
-# Branch name (Application subgroup level)
-^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
+      if echo "$CI_COMMIT_TITLE" | grep -qE "(release|hotfix)/[0-9]+\.[0-9]+\.[0-9]+"; then
+        VERSION=$(echo "$CI_COMMIT_TITLE"                               \
+                  | grep -oE "(release|hotfix)/[0-9]+\.[0-9]+\.[0-9]+" \
+                  | grep -oE "[0-9]+\.[0-9]+\.[0-9]+"                  \
+                  | head -1)
+      else
+        # Source branch not found in commit title.
+        # Squash or rebase merge was used — NOT permitted on Protected main branch.
+        # RC tag fallback NOT attempted — multiple active release branches make
+        # tag lookup ambiguous. Fail the version job → pipeline fails entirely.
+        echo "❌ ERROR: Cannot determine release version from merge commit title."
+        echo "   Title was  : $CI_COMMIT_TITLE"
+        echo "   Expected   : \"Merge branch 'release/X.Y.Z' into 'main'\""
+        echo "   OR         : \"Merge branch 'hotfix/X.Y.Z' into 'main'\""
+        echo ""
+        echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
+        echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
+        echo "                Merge method → select 'Merge commit'"
+        echo "                Re-raise the MR and merge again."
+        exit 1
+      fi
 
-# Commit message (Application subgroup level)
-^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
+    # ── Unknown branch ─────────────────────────────────────────────────────
+    # Should not occur in normal flow — all configured branches handled above.
+    # Catches manual pipeline run on unrecognised branch.
+    else
+      echo "⚠️  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
+      VERSION="${CI_COMMIT_SHORT_SHA}"
+    fi
 
-# Branch name (Infra/DevOps subgroup — simpler model)
-^(main|feature\/EPAY-[0-9]+-[a-z0-9-]+)$
+    # ── Write dotenv ────────────────────────────────────────────────────────
+    # BRANCH_USED: use source branch for MR pipeline (CI_COMMIT_BRANCH is empty in MR)
+    if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+      echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
+    else
+      echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
+    fi
+    echo "VERSION=$VERSION"                           >> version.env
+    echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
 
-# Commit message (same across both)
-^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
+    # ── Summary ─────────────────────────────────────────────────────────────
+    echo "──────────────────────────────────────────────────────"
+    echo "Source  : ${CI_PIPELINE_SOURCE}"
+    if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+      echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+    else
+      echo "Branch  : ${CI_COMMIT_BRANCH}"
+    fi
+    echo "VERSION : ${VERSION}"
+    echo "──────────────────────────────────────────────────────"
+  artifacts:
+    reports:
+      dotenv:
+      - version.env
+    expire_in: 1 day
+  rules:
+  - when: on_success
+".base_setup_java_gradle":
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+  - common_runner
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  before_script:
+  - java -version
+  - gradle --version
+  - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+  - |
+    cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+    // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+    // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+    // Centralised Artifactory resolution config for all SBIePay 2.0 services
+    // Credentials resolved from environment at runtime — never stored in file
+    // ─────────────────────────────────────────────────────────────────────────
+
+    settingsEvaluated { settings ->
+
+        // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+        // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+        // Artifactory virtual repo aggregates:
+        //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+        //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+        //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+            }
+        }
+
+        // ── Dependency Resolution (Configuration Phase — repositories) ────────
+        // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+        // All repos resolve dependencies exclusively through Artifactory virtual repo.
+        // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+        // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+        settings.dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+                flatDir {
+                  dirs "libs"
+                }
+            }
+        }
+    }
+    EOF
+  - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+  - chmod 644 "$CACERT_PATH"
+  - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+    -file "$JF_ARTIFACTORY_CERT" -noprompt
+  - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+    -Djavax.net.ssl.trustStorePassword=changeit"
+  - keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+".build":
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+  - common_runner
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  before_script:
+  - java -version
+  - gradle --version
+  - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+  - |
+    cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+    // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+    // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+    // Centralised Artifactory resolution config for all SBIePay 2.0 services
+    // Credentials resolved from environment at runtime — never stored in file
+    // ─────────────────────────────────────────────────────────────────────────
+
+    settingsEvaluated { settings ->
+
+        // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+        // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+        // Artifactory virtual repo aggregates:
+        //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+        //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+        //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+            }
+        }
+
+        // ── Dependency Resolution (Configuration Phase — repositories) ────────
+        // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+        // All repos resolve dependencies exclusively through Artifactory virtual repo.
+        // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+        // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+        settings.dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+                flatDir {
+                  dirs "libs"
+                }
+            }
+        }
+    }
+    EOF
+  - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+  - chmod 644 "$CACERT_PATH"
+  - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+    -file "$JF_ARTIFACTORY_CERT" -noprompt
+  - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+    -Djavax.net.ssl.trustStorePassword=changeit"
+  - keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+  extends: ".base_setup_java_gradle"
+  script:
+  - |
+    set -eo pipefail
+
+    # ── Validate VERSION ──────────────────────────────────────────────────
+    if [ -z "$VERSION" ]; then
+      echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+      echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+      exit 1
+    fi
+    echo "Building VERSION: ${VERSION}"
+
+    # ── Gradle build ──────────────────────────────────────────────────────
+    # Dependencies resolved from JFrog via settings.gradle in app repo
+    # -x test: unit tests run separately in test stage (java.unit.yml)
+    # -Pversion: sets project version used in bootJar archiveFileName
+    gradle build -x test -Pversion="${VERSION}"
+
+    # ── Verify output ─────────────────────────────────────────────────────
+    echo "Build output:"
+    ls -lh build/libs/
+
+    if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+      echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+      exit 1
+    fi
+
+    # ── Build metadata for downstream stages ────────────────────────────────
+    # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+    # BUILD_TIME: consumed by image-build stage for OCI image labels
+    JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+    echo "✅ JAR: ${JAR_FILE}"
+    echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+    echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+  artifacts:
+    paths:
+    - build/libs/
+    - build/classes/
+    - build/resources/
+    - build/tmp/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
+".test":
+  stage: test
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+  - common_runner
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  before_script:
+  - java -version
+  - gradle --version
+  - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+  - |
+    cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+    // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+    // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+    // Centralised Artifactory resolution config for all SBIePay 2.0 services
+    // Credentials resolved from environment at runtime — never stored in file
+    // ─────────────────────────────────────────────────────────────────────────
+
+    settingsEvaluated { settings ->
+
+        // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+        // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+        // Artifactory virtual repo aggregates:
+        //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+        //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+        //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+            }
+        }
+
+        // ── Dependency Resolution (Configuration Phase — repositories) ────────
+        // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+        // All repos resolve dependencies exclusively through Artifactory virtual repo.
+        // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+        // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+        settings.dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+                flatDir {
+                  dirs "libs"
+                }
+            }
+        }
+    }
+    EOF
+  - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+  - chmod 644 "$CACERT_PATH"
+  - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+    -file "$JF_ARTIFACTORY_CERT" -noprompt
+  - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+    -Djavax.net.ssl.trustStorePassword=changeit"
+  - keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+  extends: ".base_setup_java_gradle"
+  script:
+  - |
+    set -eo pipefail
+
+    # ── Gradle test ──────────────────────────────────────────────────────────
+    # Compiled classes present from build stage artifacts:
+    #   compileJava          → SKIPPED (build/classes/java/main/ exists)
+    #   compileTestJava      → SKIPPED (build/classes/java/test/ exists)
+    #   processResources     → SKIPPED (build/resources/main/ exists)
+    #   processTestResources → SKIPPED (build/resources/test/ exists)
+    #   test                 → RUNS
+    # Dependency resolution still occurs (Initialization + Configuration phases)
+    # — init script required for Artifactory access.
+    gradle test
+
+    # ── Test summary ─────────────────────────────────────────────────────────
+    echo "Test results:"
+    ls -lh build/test-results/test/ 2>/dev/null || echo "⚠️  No test results found"
+    ls -lh build/reports/tests/test/ 2>/dev/null || echo "⚠️  No test report found"
+  artifacts:
+    paths:
+    - build/reports/tests/test/
+    reports:
+      junit: build/test-results/test/TEST-*.xml
+    when: always
+    expire_in: 1 day
+variables:
+  JF_SERVER_ID: epay-server
+  CI_TEMPLATE_REGISTRY_HOST: artifactory.jfrog.sbi:443
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD: epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR: epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC: proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi
+  GIT_STRATEGY: clone
+  RELEASE_NAME: admin
+  CHART_NAME: adminservice
+  IMAGE_NAME: itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}
+  BASE_IMAGE_DEV_ENV: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907
+  BASE_IMAGE_HIGHER_ENV: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031
+".image_podman_setup":
+- mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+- cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+- cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+- update-ca-trust extract
+- podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+- "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n  --user=\"$JF_USER\"
+  \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false \"$JF_SERVER_ID\"     \n"
+- jf config use "$JF_SERVER_ID"
+".image_base":
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+".image_build":
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  extends: ".image_base"
+  stage: image-build
+  allow_failure: false
+  script:
+  - |
+    echo "VERSION=$VERSION"
+
+    # CHANGE: support both backend + frontend
+    if [ -d "build/libs" ]; then
+      echo "Backend build detected"
+      ls -l build/libs
+    elif [ -d "dist" ]; then
+      echo "Frontend build detected"
+      ls -l dist
+    elif [ -f "app.py" ]; then
+      echo "Python app detected"
+      ls -l app.py
+    elif [ -d "vendor" ]; then
+      echo "PHP build detected"
+      echo "Vendor packages: $(ls vendor | wc -l)"
+    else
+      echo "No build output found"
+      exit 1
+    fi
+
+    TAG="$VERSION"
+    echo "Generated Tag.. ${TAG}"
+    COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+    echo "Image: $COMPUTED_IMAGE_TAG"
+    echo "TAG=${TAG}" >> image.env
+    echo "VERSION=$VERSION" >> image.env
+    echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+    echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+    echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV" >> image.env
+
+    podman build \
+      -t "$COMPUTED_IMAGE_TAG" \
+      -f Dockerfile \
+      --build-arg ENV=$ENV \
+      --build-arg VERSION=$TAG \
+      --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
+      --tls-verify=false
+    TAR_NAME="$CI_PROJECT_NAME.tar"
+    podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+    echo "Image built and saved to $TAR_NAME"
+    echo "TAR_NAME=$TAR_NAME" >> image.env
+  artifacts:
+    paths:
+    - "*.tar"
+    reports:
+      dotenv: image.env
+    expire_in: 1 day
+image:build:
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  extends:
+  - ".image_build"
+  - ".rules"
+  stage: image-build
+  allow_failure: false
+  script:
+  - |
+    echo "VERSION=$VERSION"
+
+    # CHANGE: support both backend + frontend
+    if [ -d "build/libs" ]; then
+      echo "Backend build detected"
+      ls -l build/libs
+    elif [ -d "dist" ]; then
+      echo "Frontend build detected"
+      ls -l dist
+    elif [ -f "app.py" ]; then
+      echo "Python app detected"
+      ls -l app.py
+    elif [ -d "vendor" ]; then
+      echo "PHP build detected"
+      echo "Vendor packages: $(ls vendor | wc -l)"
+    else
+      echo "No build output found"
+      exit 1
+    fi
+
+    TAG="$VERSION"
+    echo "Generated Tag.. ${TAG}"
+    COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+    echo "Image: $COMPUTED_IMAGE_TAG"
+    echo "TAG=${TAG}" >> image.env
+    echo "VERSION=$VERSION" >> image.env
+    echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+    echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+    echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV" >> image.env
+
+    podman build \
+      -t "$COMPUTED_IMAGE_TAG" \
+      -f Dockerfile \
+      --build-arg ENV=$ENV \
+      --build-arg VERSION=$TAG \
+      --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
+      --tls-verify=false
+    TAR_NAME="$CI_PROJECT_NAME.tar"
+    podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+    echo "Image built and saved to $TAR_NAME"
+    echo "TAR_NAME=$TAR_NAME" >> image.env
+  artifacts:
+    paths:
+    - "*.tar"
+    reports:
+      dotenv:
+      - image.env
+    expire_in: 1 day
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
+  - when: never
+".image_push":
+  stage: image-push
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  script:
+  - |
+    IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+    echo "Loading TAR..."
+    podman load -i "$TAR_NAME"
+    echo "Pushing: $IMAGE_REF"
+    podman push "$IMAGE_REF" --tls-verify=false
+    echo "PUSHED_IMAGE=$IMAGE_REF" >> push.env
+    echo "✅ Pushed: $IMAGE_REF"
+  artifacts:
+    reports:
+      dotenv: push.env
+    expire_in: 1 week
+image:push:
+  stage: image-push
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+  - common_runner
+  before_script:
+  - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+  - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+  - cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+  - update-ca-trust extract
+  - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  - "jf config add \\\n  --url=\"$JF_URL\" \\\n  --xray-url=\"$JF_XRAY_URL\" \\\n
+    \ --user=\"$JF_USER\" \\\n  --access-token=\"$JF_TOKEN\" \\\n  --interactive=false
+    \"$JF_SERVER_ID\"     \n"
+  - jf config use "$JF_SERVER_ID"
+  script:
+  - |
+    IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+    echo "Loading TAR..."
+    podman load -i "$TAR_NAME"
+    echo "Pushing: $IMAGE_REF"
+    podman push "$IMAGE_REF" --tls-verify=false
+    echo "PUSHED_IMAGE=$IMAGE_REF" >> push.env
+    echo "✅ Pushed: $IMAGE_REF"
+  artifacts:
+    reports:
+      dotenv:
+      - push.env
+    expire_in: 1 week
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
+  - when: never
+  extends:
+  - ".image_push"
+  - ".rules"
+".git_tag_base":
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+create-rc-tag:
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+  extends: ".git_tag_base"
+  script:
+  - |
+    RELEASE_VERSION=$(echo "$CI_COMMIT_BRANCH" | sed 's|release/||')
+    RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+    NEW_RC=$((RC_COUNT + 1))
+    RC_TAG="${RELEASE_VERSION}-rc.${NEW_RC}"
+    echo "Creating RC tag: $RC_TAG"
+    git tag -a "$RC_TAG" -m "RC ${NEW_RC} — auto on merge to $CI_COMMIT_BRANCH"
+    git push origin "$RC_TAG"
+    echo "RC_TAG=$RC_TAG" >> rc.env
+    echo "✅ RC tag created: $RC_TAG"
+  artifacts:
+    reports:
+      dotenv:
+      - rc.env
+    expire_in: 1 week
+  rules:
+  - if: $CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - when: never
+create-prod-tag:
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+  - common_runner
+  before_script:
+  - git config --global http.sslVerify false
+  - git config --global --add safe.directory '*'
+  - git config --global user.name "ci"
+  - git config --global user.email "ci.cedge@sbi.co.in"
+  - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  - git fetch --tags
+  extends: ".git_tag_base"
+  script:
+  - |
+    PROD_TAG="v${VERSION}"
+    echo "Creating production tag: $PROD_TAG"
+    if git tag -l "$PROD_TAG" | grep -q "$PROD_TAG"; then
+      echo "Tag $PROD_TAG already exists — skipping"
+    else
+      git tag -a "$PROD_TAG" -m "Production ${VERSION} — merged to main [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+      git push origin "$PROD_TAG"
+      echo "✅ Production tag created: $PROD_TAG"
+    fi
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - when: never
+".trigger_cd":
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "${CI_PROJECT_NAME}"
+    VERSION: "${VERSION}"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+deploy-dev:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: dev
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  rules:
+  - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - if: $CI_COMMIT_BRANCH == "feature/deploy-cicd" && $CI_PIPELINE_SOURCE == "push"
+    when: on_success
+  - when: never
+deploy-sit:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: sit
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^release\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-uat:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: uat
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^release\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-int:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: int
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-perf:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: perf
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-preprod-dc:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: pre-prod-dc
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  when: manual
+  allow_failure: true
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-preprod-dr:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: pre-prod
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  when: manual
+  allow_failure: true
+  rules:
+  - if: "$CI_COMMIT_BRANCH =~ /^release\\/[0-9]+\\.[0-9]+\\.[0-9]+$/"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-hotfix-preprod-smoke:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: pre-prod
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  when: manual
+  allow_failure: true
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-prod-dc:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: prod-dc
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  when: manual
+  allow_failure: true
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+    allow_failure: true
+  - when: never
+deploy-prod-dr:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: feature/deploy-cicd
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    VERSION: "${VERSION}"
+    ENV: prod-dr
+    CHART_NAME: "$CHART_NAME"
+  trigger:
+    project: itepaypg-sbiepay2/infra/devops/deployment
+    branch: "$DEPLOYMENT_BRANCH"
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+  extends: ".trigger_cd"
+  when: manual
+  allow_failure: true
+  rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+    allow_failure: true
+  - when: never
+default:
+  tags:
+  - common_runner
+stages:
+- ".pre"
+- version
+- build
+- test
+- sast
+- security
+- image-build
+- image-scan
+- image-push
+- release
+- deploy
+- ".post"
+".rules":
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
+  - when: never
+build:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+  - common_runner
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  before_script:
+  - java -version
+  - gradle --version
+  - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+  - |
+    cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+    // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+    // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+    // Centralised Artifactory resolution config for all SBIePay 2.0 services
+    // Credentials resolved from environment at runtime — never stored in file
+    // ─────────────────────────────────────────────────────────────────────────
+
+    settingsEvaluated { settings ->
+
+        // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+        // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+        // Artifactory virtual repo aggregates:
+        //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+        //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+        //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+            }
+        }
+
+        // ── Dependency Resolution (Configuration Phase — repositories) ────────
+        // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+        // All repos resolve dependencies exclusively through Artifactory virtual repo.
+        // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+        // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+        settings.dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+                flatDir {
+                  dirs "libs"
+                }
+            }
+        }
+    }
+    EOF
+  - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+  - chmod 644 "$CACERT_PATH"
+  - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+    -file "$JF_ARTIFACTORY_CERT" -noprompt
+  - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+    -Djavax.net.ssl.trustStorePassword=changeit"
+  - keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+  extends:
+  - ".build"
+  - ".rules"
+  script:
+  - |
+    set -eo pipefail
+
+    # ── Validate VERSION ──────────────────────────────────────────────────
+    if [ -z "$VERSION" ]; then
+      echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+      echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+      exit 1
+    fi
+    echo "Building VERSION: ${VERSION}"
+
+    # ── Gradle build ──────────────────────────────────────────────────────
+    # Dependencies resolved from JFrog via settings.gradle in app repo
+    # -x test: unit tests run separately in test stage (java.unit.yml)
+    # -Pversion: sets project version used in bootJar archiveFileName
+    gradle build -x test -Pversion="${VERSION}"
+
+    # ── Verify output ─────────────────────────────────────────────────────
+    echo "Build output:"
+    ls -lh build/libs/
+
+    if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+      echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+      exit 1
+    fi
+
+    # ── Build metadata for downstream stages ────────────────────────────────
+    # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+    # BUILD_TIME: consumed by image-build stage for OCI image labels
+    JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+    echo "✅ JAR: ${JAR_FILE}"
+    echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+    echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+  artifacts:
+    paths:
+    - build/libs/
+    - build/classes/
+    - build/resources/
+    - build/tmp/
+    reports:
+      dotenv:
+      - build.env
+    when: on_success
+    expire_in: 1 day
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
+  - when: never
+test:
+  stage: test
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+  - common_runner
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  before_script:
+  - java -version
+  - gradle --version
+  - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+  - |
+    cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+    // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+    // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+    // Centralised Artifactory resolution config for all SBIePay 2.0 services
+    // Credentials resolved from environment at runtime — never stored in file
+    // ─────────────────────────────────────────────────────────────────────────
+
+    settingsEvaluated { settings ->
+
+        // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+        // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+        // Artifactory virtual repo aggregates:
+        //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+        //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+        //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+            }
+        }
+
+        // ── Dependency Resolution (Configuration Phase — repositories) ────────
+        // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+        // All repos resolve dependencies exclusively through Artifactory virtual repo.
+        // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+        // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+        settings.dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                maven {
+                    url System.getenv("JFROG_GRADLE_REPO")
+                    credentials {
+                        username = System.getenv("JF_USER")
+                        password = System.getenv("JF_TOKEN")
+                    }
+                }
+                flatDir {
+                  dirs "libs"
+                }
+            }
+        }
+    }
+    EOF
+  - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+  - chmod 644 "$CACERT_PATH"
+  - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+    -file "$JF_ARTIFACTORY_CERT" -noprompt
+  - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+    -Djavax.net.ssl.trustStorePassword=changeit"
+  - keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+  extends:
+  - ".test"
+  - ".rules"
+  script:
+  - |
+    set -eo pipefail
+
+    # ── Gradle test ──────────────────────────────────────────────────────────
+    # Compiled classes present from build stage artifacts:
+    #   compileJava          → SKIPPED (build/classes/java/main/ exists)
+    #   compileTestJava      → SKIPPED (build/classes/java/test/ exists)
+    #   processResources     → SKIPPED (build/resources/main/ exists)
+    #   processTestResources → SKIPPED (build/resources/test/ exists)
+    #   test                 → RUNS
+    # Dependency resolution still occurs (Initialization + Configuration phases)
+    # — init script required for Artifactory access.
+    gradle test
+
+    # ── Test summary ─────────────────────────────────────────────────────────
+    echo "Test results:"
+    ls -lh build/test-results/test/ 2>/dev/null || echo "⚠️  No test results found"
+    ls -lh build/reports/tests/test/ 2>/dev/null || echo "⚠️  No test report found"
+  artifacts:
+    paths:
+    - build/reports/tests/test/
+    reports:
+      junit:
+      - build/test-results/test/TEST-*.xml
+    when: always
+    expire_in: 1 day
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      =~ /^(main|develop|release)(\/.*)*$/
+  - if: "$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\\/.*)*$/"
+  - when: never
