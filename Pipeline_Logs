@@ -1,16 +1,4 @@
-Hi Vishnu,
- 
-Thanks for confirming all the details!
- 
-It seems you missed one point:
- 
-Have the top-level group owner (not just a project maintainer) perform the export, so all member data is included. In this case, perform the export as owner of https://gitlab.epay.sbi/epay.
- 
-Could you please ensure that the project was exported as an Owner of the group https://gitlab.epay.sbi/epay in the source instance? If an administrator account or a member account with any other roles was used to create the export, then the exported file would miss inherited member emails. You can extract the .tar.gz export, manually and check the file tree/project/project_members.ndjson to confirm this. If the public_email field is set to "" (null) for members, that means either the users do not have public emails set or the export was done by a non-Owner user. Please also share this file with us - it does not contain any data other than member emails and membership mapping.
- 
-If the above appears to be the case, please re-import the project as an owner of https://gitlab.epay.sbi/epay and import again.
- 
-Let's check the above possibility first and get on a call if the case is difefrent.
+Project `itepaypg-sbiepay2/infra/devops/cicd-templates` not found or access denied! Make sure any includes in the pipeline configuration are correctly defined.
 
 
 
