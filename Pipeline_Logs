@@ -1,3 +1,39 @@
+Hello Vishnu,
+ 
+My name is Priyan. Your ticket has been transferred to my region in order to align better with your timezone, and I have taken assignment of your ticket.
+ 
+I have reviewed your ticket and what you observed is a well-known behavior of GitLab's file-based Export/Import method. Here's a clear breakdown of the root cause and how to prevent it.
+ 
+GitLab's file export/import maps users between instances by matching public email addresses. When a user on the source instance cannot be matched to a user on the destination instance, GitLab falls back to assigning all contributions to the user who performed the import (in your case, Vishnu Gehlot). This is by design.
+ 
+The matching fails when any of these conditions are not met:
+ 
+Users don't exist on the destination instance - The original authors (e.g., PUNAM ANIL RAJPUT) must have accounts on gitlab.sbi.
+Public email not set on the source instance - Each user on gitlab.epay.sbi must have a public email set in their profile (Profile → Edit Profile → Public email). This is different from their login/primary email.
+Email mismatch - The public email on the source instance must exactly match the primary email on the destination instance.
+Export performed by a non-group-owner - Only the top-level group owner exports all members (direct + inherited). A project maintainer/owner only exports direct project members, so inherited members are missing from the export file. In this case, the owner of the group https://gitlab.epay.sbi/epay must perform the export. Also, see Manual Workaround below.
+ 
+How to Prevent This (for future imports using file-based transfer):
+ 
+Follow these prerequisites before exporting:
+ 
+On the source instance (gitlab.epay.sbi):
+ 
+Have every contributing user set their public email in their profile to match their primary email on the destination instance.
+Have the top-level group owner (not just a project maintainer) perform the export, so all member data is included. In this case, perform the export as owner of https://gitlab.epay.sbi/epay.
+ 
+On the destination instance (gitlab.sbi):
+ 
+Ensure all users already have accounts created.
+Emails must match exactly between source public email and destination primary email.
+An administrator must perform the import.
+ 
+With all the above pre-requisites met, you can perform a re-import of the same project to fix the issue.
+
+
+
+
+
 ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
 
 ^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
