@@ -1,22 +1,16 @@
-Hi Priyan,
-
-Thank you for the detailed explanation and for taking ownership of our ticket. We appreciate the thorough breakdown of the root cause and the prerequisites for correct user mapping.
-
-We have carefully reviewed your guidance and made the following changes before attempting the re-import:
-
-  1. Verified that all contributing users have accounts on the destination instance (gitlab.sbi)
-  2. Ensured that the Public Email is explicitly set on all user profiles on the source instance (gitlab.epay.sbi) — Profile → Edit Profile → Public Email
-  3. Confirmed that the public email on the source instance matches the primary email on the destination instance exactly
-
-However, even after ensuring all the above prerequisites were met, we are still observing the same issue — all MR and Issue authors are being mapped to the import-performing user (Vishnu Gehlot) instead of the original authors and also import was performed using an Administrator/owner account on the destination instance.
-
-Since this is a recurring issue affecting all our pending project migrations and the troubleshooting is becoming complex over email, we would like to request a brief screen-sharing call or Microsoft Teams meeting with you to investigate this together in real time.
-
-We are flexible on timing and can accommodate your availability. Please let us know a suitable slot and we will arrange accordingly.
-
-Best regards,
-SBI Team
-
+Hi Vishnu,
+ 
+Thanks for confirming all the details!
+ 
+It seems you missed one point:
+ 
+Have the top-level group owner (not just a project maintainer) perform the export, so all member data is included. In this case, perform the export as owner of https://gitlab.epay.sbi/epay.
+ 
+Could you please ensure that the project was exported as an Owner of the group https://gitlab.epay.sbi/epay in the source instance? If an administrator account or a member account with any other roles was used to create the export, then the exported file would miss inherited member emails. You can extract the .tar.gz export, manually and check the file tree/project/project_members.ndjson to confirm this. If the public_email field is set to "" (null) for members, that means either the users do not have public emails set or the export was done by a non-Owner user. Please also share this file with us - it does not contain any data other than member emails and membership mapping.
+ 
+If the above appears to be the case, please re-import the project as an owner of https://gitlab.epay.sbi/epay and import again.
+ 
+Let's check the above possibility first and get on a call if the case is difefrent.
 
 
 
