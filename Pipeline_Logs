@@ -1,43 +1,47 @@
-IT-EPAY-PG-SBIePay2 > Group members:
+LDAP Groups not visible in MR approvals
 
-The members of this group are managed with LDAP. You cannot add or remove members directly from the member list. Instead, you must use LDAP sync to update the group member list from your LDAP server. It can take up to 1 hour for the member list to display the following changes:
-People in cn: epay-gitlab-vendor-release-manager
-are given Developer access.
-People in cn: epay-gitlab-reporter
-are given Reporter access.
-People in cn: epay-gitlab-planner
-are given Planner access.
+vishnu.gehlot1
+15 hours ago
+Hi Team,
 
+We are currently implementing centralized Gitlab governance and merge request approval workflows for repositories integrated with LDAP based access management.
 
+We have already configured LDAP synchronization for our Gitlab groups or subgroups. The LDAP groups are correctly syncing users.
 
-IT-EPAY-PG-SBIePay2 > Application > Group members:
+Current issue:
 
-The members of this group are managed with LDAP. You cannot add or remove members directly from the member list. Instead, you must use LDAP sync to update the group member list from your LDAP server. It can take up to 1 hour for the member list to display the following changes:
-People in cn: epay-gitlab-bank-app-owner
-are given Owner access.
-People in cn: epay-gitlab-bank-app-maintainer
-are given Maintainer access.
-People in cn: epay-gitlab-vendor-app-maintainer
-are given Maintainer access.
-People in cn: epay-gitlab-vendor-app-lead
-are given Developer access.
-People in cn: epay-gitlab-vendor-app-developer
-are given Developer access.
-People in cn: epay-gitlab-vendor-infra-developer
-are given Developer access.
+The LDAP synchronized groups are successfully providing repository access permissions and users are visible under subgroup membership, however these groups are NOT visible while configuring:
+Specifically, while created MR approval rules:
+project - Settings - Merge requests - Approval rules.
 
-IT-EPAY-PG-SBIePay2 > Infra > Group members:
+Because of this , we are unable to configure MR approval rules using LDAP managed groups.
 
-The members of this group are managed with LDAP. You cannot add or remove members directly from the member list. Instead, you must use LDAP sync to update the group member list from your LDAP server. It can take up to 1 hour for the member list to display the following changes:
-People in cn: epay-gitlab-bank-infra-owner
-are given Owner access.
-People in cn: epay-gitlab-bank-infra-maintainer
-are given Maintainer access.
-People in cn: epay-gitlab-vendor-infra-maintainer
-are given Maintainer access.
-People in cn: epay-gitlab-vendor-infra-developer
-are given Developer access.
+Requirement: These LDAP based groups should be selectable while creating Merge Request approval rules so that approval governance to our branching and release strategy.
 
+Please assist us with the recommended enterprise implementation approach for enabling LDAP based groups in Merge Request approval workflows.
 
-These all the LDAP has already beed created in our Centralized Gitlab , Now please let me know how to implement and add this all in our Merge Approval rules.
+Thanks & regards
 
+SBI team
+
+ 
+
+Screenshot.jpg
+200 KB Download
+
+Thomas Loughlin
+13 hours ago
+Hi Vishnu,
+ 
+Thanks for contacting GitLab Support.
+ 
+I understand that you are facing a problem where LDAP synced groups are not appearing in the dropdown when selecting a group as an approver for a merge request approval rule.
+ 
+I had a look into this, and this is not the expected behaviour. The API call used by the UI for this search queries against all groups on the instance when All groups is selected. I have just tested this on 17.8.0 with LDAP sync, and for me, it is working as expected.
+ 
+I think the next best steps to troubleshoot this is to get on a video call. Can you please share your availability (and timezone) for a few slots tomorrow so we can jump on a 30-minute session to troubleshoot this live on Zoom (or your preferred video conferencing platform).
+ 
+Regards,
+Thomas Loughlin
+Support Engineer
+GitLab Support
