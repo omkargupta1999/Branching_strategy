@@ -1,47 +1,11 @@
-LDAP Groups not visible in MR approvals
+Hi Thomas,
 
-vishnu.gehlot1
-15 hours ago
-Hi Team,
+Thank you for your response and for validating the expected behavior from your end.
 
-We are currently implementing centralized Gitlab governance and merge request approval workflows for repositories integrated with LDAP based access management.
+We are available tomorrow and can connect for a troubleshooting call at 01:00 PM IST. Please let us know if this time works for you. We can schedule a Teams meeting (or Zoom as preferred) accordingly.
 
-We have already configured LDAP synchronization for our Gitlab groups or subgroups. The LDAP groups are correctly syncing users.
+Looking forward to connecting with you.
 
-Current issue:
-
-The LDAP synchronized groups are successfully providing repository access permissions and users are visible under subgroup membership, however these groups are NOT visible while configuring:
-Specifically, while created MR approval rules:
-project - Settings - Merge requests - Approval rules.
-
-Because of this , we are unable to configure MR approval rules using LDAP managed groups.
-
-Requirement: These LDAP based groups should be selectable while creating Merge Request approval rules so that approval governance to our branching and release strategy.
-
-Please assist us with the recommended enterprise implementation approach for enabling LDAP based groups in Merge Request approval workflows.
-
-Thanks & regards
-
-SBI team
-
- 
-
-Screenshot.jpg
-200 KB Download
-
-Thomas Loughlin
-13 hours ago
-Hi Vishnu,
- 
-Thanks for contacting GitLab Support.
- 
-I understand that you are facing a problem where LDAP synced groups are not appearing in the dropdown when selecting a group as an approver for a merge request approval rule.
- 
-I had a look into this, and this is not the expected behaviour. The API call used by the UI for this search queries against all groups on the instance when All groups is selected. I have just tested this on 17.8.0 with LDAP sync, and for me, it is working as expected.
- 
-I think the next best steps to troubleshoot this is to get on a video call. Can you please share your availability (and timezone) for a few slots tomorrow so we can jump on a 30-minute session to troubleshoot this live on Zoom (or your preferred video conferencing platform).
- 
-Regards,
-Thomas Loughlin
-Support Engineer
-GitLab Support
+Thanks & Regards,
+Vishnu Gehlot
+SBI Team
