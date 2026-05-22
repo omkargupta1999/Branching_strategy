@@ -102,3 +102,12 @@ The approval rules on `main` use four separate GitLab rules, not one rule with c
 For `release/*` — same logic: two separate rules (Lead + Architect) prevent two leads from satisfying the Architect gate.
 
 Push rule branch name regex at subgroup level will block any branch not matching your naming convention on push — devs get an immediate rejection with the regex shown if they try to push `fix-login-bug` instead of `bugfix/EPAY-123-fix-login-bug`.
+ 
+
+
+
+rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: on_success
