@@ -1,367 +1,104 @@
-java.yml ---
+Let me read the doc thoroughly and give you the complete setup.Here's the complete setup — broken into three parts: branch protection, push rules, and MR approval rules. All scoped to Application repos (Backend + Frontend + SDKs + all sub-subgroups under Application subgroup).
 
-# templates/ci/backend/java.yml
-# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
-# For library/utility repos (produce JARs → JFrog), use java.library.yml
-#
-# App repo .gitlab-ci.yml:
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: txn
-#     CHART_NAME:   transactionservice
+---
 
-default:
-  tags:
-    - common_runner
+## Part 1 — Branch protection rules
 
-include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  # - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/security/iac/iac.scan.yml'
-  # - local: 'ci/security/license/license.scan.yml'
-  # - local: 'ci/security/sbom/sbom.generate.yml'
-  - local: 'ci/image/image.build.yml'
-  # - local: 'ci/image/image.scan.trivy.yml'
-  # - local: 'ci/image/image.scan.xray.yml'
-  # - local: 'ci/image/image.scan.rhacs.yml'
-  # - local: 'ci/image/image.sign.yml'
-  # - local: 'ci/image/image.sbom.attest.yml'
-  - local: 'ci/image/image.push.yml'
-  - local: 'ci/release/tag.yml'
-  # - local: 'ci/release/back-merge.yml'
-  - local: 'ci/deploy/trigger.cd.yml'
-  - local: 'ci/deploy/deploy.jobs.yml'
+Configure these on every Application repo (or inherit via Application subgroup settings in GitLab):
 
-stages:
-  - version       # version generation
-  - build         # gradle compile
-  - test          # unit + integration
-  - sast          # gitlab sast + fortify
-  - security      # sca + secrets + iac + license + sbom
-  - image-build   # podman build (local only — no push)
-  - image-scan    # trivy + xray + rhacs (gate before sign)
-  # - image-attest  # cosign sign + sbom attestation
-  - image-push    # push to JFrog (only after scan + sign)
-  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
-  - deploy        # trigger buttons → deployment repo CD pipeline
+| Branch | Protected | Allowed to push | Allowed to merge | Allow force push | Delete |
+|---|---|---|---|---|---|
+| `main` | Yes | No one | `epay-gitlab-bank-app-maintainer` + `epay-gitlab-bank-app-owner` | No | No |
+| `develop` | Yes | No one | `epay-gitlab-vendor-app-lead` | No | No |
+| `release/*` | Yes | No one | `epay-gitlab-vendor-app-maintainer` | No | No |
+| `feature/*` | No | Developer+ | — | — | Auto-delete on merge |
+| `bugfix/*` | No | Developer+ | — | — | Auto-delete on merge |
+| `hotfix/*` | No | Developer+ | — | — | Auto-delete on merge |
 
-variables:
-  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
-  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
-  GIT_STRATEGY: clone
-  RELEASE_NAME: ""
-  CHART_NAME:   ""
-  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
-  BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907"
-  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+> On `main` and `develop` — "No one" on push means even Owners can't push directly. All changes must go through an approved MR. Set this explicitly in GitLab's branch protection UI.
 
-# Branch + MR filter — applied to all jobs via extends
-.rules:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
+---
 
-# ── Stage: version ─────────────────────────────────────────────────────────────
-# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
+## Part 2 — Push rules (Repository → Push Rules)
 
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
+Set these at the Application subgroup level so they inherit across all repos:
 
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
+| Rule | Value |
+|---|---|
+| Branch name regex | `^(main\|develop\|release\/[0-9]+\.[0-9]+\.[0-9]+\|feature\/EPAY-[0-9]+-[a-z0-9-]+\|bugfix\/EPAY-[0-9]+-[a-z0-9-]+\|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$` |
+| Commit message regex | `^(feat\|fix\|docs\|style\|refactor\|perf\|test\|chore)\(.+\): .+ EPAY-[0-9]+$` |
+| Reject unsigned commits | Based on your bank's compliance stance |
+| Do not allow users to remove git tags | Yes |
+| Reject commits that change files that should not be changed | Not applicable here |
+| Check whether commit author is a GitLab user | Yes |
 
-# ── Stage: sast ────────────────────────────────────────────────────────────────
-# sast:gitlab:
-#   extends: [.sast, .rules]
+> The branch name regex will reject any push to a branch that doesn't match the naming convention — preventing ad-hoc branches like `fix-bug` or `om-test`.
 
-# sast:fortify:
-#   extends: [.sast_fortify, .rules]
+---
 
-# # ── Stage: security ────────────────────────────────────────────────────────────
-# sca:xray:
-#   extends: [.sca, .rules]
+## Part 3 — MR Approval Rules
 
-# # GitLab template jobs — override stage and apply rules
-# secret_detection:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+This is the most critical part. Set these at the Application subgroup level. They auto-inherit to all repos under it.
 
-# kics-iac-sast:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+### On `develop` branch
 
-# license_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+| Rule # | Rule name | Approver group | Required count |
+|---|---|---|---|
+| 1 | Lead approval | `epay-gitlab-vendor-app-lead` | 1 |
 
-# dependency_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
+Applies to: `feature/* → develop` and `bugfix/* → develop`
 
-# # ── Stage: image-build ─────────────────────────────────────────────────────────
-image:build:
-  extends: [.image_build, .rules]
+---
 
-# # ── Stage: image-scan ──────────────────────────────────────────────────────────
-# Trivy (GitLab template job) — override stage and rules
-# container_scanning:
-#   stage: image-scan
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-# image:scan:xray:
-#   extends: [.image_scan_xray, .rules]
+### On `release/*` branch
 
-# image:scan:rhacs:
-#   extends: [.image_scan_rhacs, .rules]
+| Rule # | Rule name | Approver group | Required count |
+|---|---|---|---|
+| 1 | Release gate — lead | `epay-gitlab-vendor-app-lead` | 1 |
+| 2 | Release gate — architect | `epay-gitlab-vendor-app-maintainer` | 1 |
 
-# # ── Stage: image-attest ────────────────────────────────────────────────────────
-# image:sign:
-#   extends: [.image_sign, .rules]
+Both rules must be satisfied independently — GitLab enforces them separately so two leads cannot satisfy rule 2.
 
-# image:sbom:attest:
-#   extends: [.sbom_attest, .rules]
+Applies to: `develop → release/*` and `bugfix/* → release/*`
 
-# # ── Stage: image-push ──────────────────────────────────────────────────────────
-image:push:
-  extends: [.image_push, .rules]
+---
 
-  
+### On `main` branch
 
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+| Rule # | Rule name | Approver group | Required count |
+|---|---|---|---|
+| 1 | Vendor architect sign-off | `epay-gitlab-vendor-app-maintainer` | 1 |
+| 2 | Vendor PM approval — CAB gate | `epay-gitlab-vendor-pm` | 1 |
+| 3 | Bank maintainer approval | `epay-gitlab-bank-app-maintainer` | 1 |
+| 4 | Bank PM — final gate | `epay-gitlab-bank-app-owner` | 1 |
 
-# ── Stage: deploy ─────────────────────────────────────────────────────────────
-# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
-# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
-# deploy-prod-dc/dr: manual — Bank Only
+All 4 rules mandatory. GitLab enforces each independently. Applies to both `release/* → main` and `hotfix/* → main`.
 
+> Rule 2 (Vendor PM) must be approved before Bank rules become relevant — the PM is the CAB gate. GitLab doesn't enforce ordering between rules natively, but the process enforces it: PM approves before raising to Bank.
 
+---
 
-=============trigger.cd.yml
+## Part 4 — Additional MR settings (per repo or subgroup)
 
-# ci/deploy/trigger.cd.yml
-# Single hidden template for CI → CD pipeline trigger.
-# All deploy jobs in deploy.jobs.yml extend this one template.
-# Job-specific behaviour (manual_confirmation, variables) stays in each job.
+Set these under GitLab → Settings → Merge Requests:
 
-.trigger_cd:
-  stage: deploy
-  variables:
-    DEPLOYMENT_BRANCH: "feature/deploy-cicd"
-    # DEPLOYMENT_BRANCH: "deploy_cicd"
-    SERVICE_NAME: "${CI_PROJECT_NAME}"
-    VERSION: "${VERSION}"
-  trigger:
-    project: "itepaypg-sbiepay2/infra/devops/deployment"
-    branch:  "$DEPLOYMENT_BRANCH"
-    strategy: depend            # CI pipeline waits for CD result — pass/fail shown inline
-    forward:
-      pipeline_variables: true  # forwards VERSION, ENV, SERVICE_NAME, CHART_NAME etc.
-      yaml_variables: true
+| Setting | Value |
+|---|---|
+| Merge method | Merge commit |
+| Squash commits | Allowed (not required) |
+| Pipelines must succeed before merge | Yes |
+| All threads must be resolved before merge | Yes |
+| Delete source branch on merge | Yes (for `feature/*`, `bugfix/*`, `hotfix/*`) |
+| Require MR approvals to be reset when new commits are pushed | Yes |
+| Prevent approval by MR author | Yes |
+| Prevent approvals by users who add commits | Yes |
 
+---Key implementation notes:
 
-================ deploy.jobs.yml
+Set everything at the Application subgroup level — all 15 backend repos, 8 frontend repos, SDKs, utilities, simulators inherit automatically. No need to configure per-repo.
 
+The approval rules on `main` use four separate GitLab rules, not one rule with count 4. This matters because GitLab's combined count allows any 4 people from any group to satisfy it — separate rules force each specific group to approve.
 
-# ci/deploy/deploy.jobs.yml
-# All deploy trigger jobs — tech-stack agnostic.
-# Included by EVERY CI orchestrator template (java, nodejs, python, php, dotnet, react).
-#
-# All jobs extend .trigger_cd (single base template in trigger.cd.yml).
-# Job-specific behaviour sits here: rules, manual_confirmation, variables.
-#
-# ── CHART_NAME ────────────────────────────────────────────────────────────────
-# Defined in each APP REPO's .gitlab-ci.yml, not in orchestrators.
-#
-#   # epay_transaction_service/.gitlab-ci.yml
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
-#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+For `release/*` — same logic: two separate rules (Lead + Architect) prevent two leads from satisfying the Architect gate.
 
-# ── DEV — auto on develop push ────────────────────────────────────────────────
-deploy-dev:
-  extends: .trigger_cd
-  variables:
-    ENV:          dev
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - if: '$CI_COMMIT_BRANCH == "feature/deploy-cicd" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - when: never
-
-# ── SIT — manual, Release Manager ─────────────────────────────────────────────
-deploy-sit:
-  extends: .trigger_cd
-  variables:
-    ENV:          sit
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── UAT — manual, Release Manager ─────────────────────────────────────────────
-deploy-uat:
-  extends: .trigger_cd
-  variables:
-    ENV:          uat
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── INT — manual, Release Manager ─────────────────────────────────────────────
-deploy-int:
-  extends: .trigger_cd
-  variables:
-    ENV:          int
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Performance Testing — manual, Release Manager ─────────────────────────────
-deploy-perf:
-  extends: .trigger_cd
-  variables:
-    ENV:          perf
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DC — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dc:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DR — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dr:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          pre-prod       # was "pre-prod" (missing -dr) — fixed
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Hotfix preprod smoke — manual, RM on hotfix MR pipeline only ──────────────
-# Triggered on MR from hotfix/* → main (before merge)
-# Allows smoke test on preprod before hotfix merges to main
-deploy-hotfix-preprod-smoke:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    # ENV:          pre-prod-dc  ## changing pre-prod-dc to pre-prod
-    ENV: pre-prod
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DC — manual, Bank team only (Protected Environment enforces gate) ─────
-deploy-prod-dc:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
-deploy-prod-dr:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          prod-dr
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-
-
-===============================
-Application repo branch name : "feature/EPAY-252-nbbl-paymodes"  from where are do commits 
+Push rule branch name regex at subgroup level will block any branch not matching your naming convention on push — devs get an immediate rejection with the regex shown if they try to push `fix-login-bug` instead of `bugfix/EPAY-123-fix-login-bug`.
