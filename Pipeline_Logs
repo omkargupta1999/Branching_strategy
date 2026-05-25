@@ -1,57 +1,46 @@
-.trigger_cd:
-  stage: deploy
-  variables:
-    DEPLOYMENT_BRANCH: "feature/deploy-cicd"
-    SERVICE_NAME: "${CI_PROJECT_NAME}"
-    VERSION: "${VERSION}"
-  script:
-    - echo "=== Triggering Deployment Pipeline ==="
-    - |
-      RESPONSE=$(curl --silent \
-        --insecure \
-        --request POST \
-        --form token="${DEPLOY_TRIGGER_TOKEN}" \
-        --form ref="${DEPLOYMENT_BRANCH}" \
-        --form "variables[SERVICE_NAME]=${SERVICE_NAME}" \
-        --form "variables[VERSION]=${VERSION}" \
-        --form "variables[ENV]=${ENV}" \
-        --form "variables[CHART_NAME]=${CHART_NAME}" \
-        "${CI_API_V4_URL}/projects/2594/trigger/pipeline")
-
-      echo "API Response: $RESPONSE"
-
-      PIPELINE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
-      PIPELINE_URL=$(echo "$RESPONSE" | grep -o '"web_url":"[^"]*"' | head -1 | cut -d'"' -f4)
-
-      echo "✅ Downstream Pipeline ID  : $PIPELINE_ID"
-      echo "🔗 Downstream Pipeline URL : $PIPELINE_URL"
-
-    - echo "=== Polling Pipeline Status ==="
-    - |
-      MAX_WAIT=300   # 5 min timeout
-      INTERVAL=15
-      ELAPSED=0
-
-      while [ $ELAPSED -lt $MAX_WAIT ]; do
-        STATUS=$(curl --silent --insecure \
-          --header "PRIVATE-TOKEN: ${DEPLOY_TRIGGER_TOKEN}" \
-          "${CI_API_V4_URL}/projects/2594/pipelines/${PIPELINE_ID}" \
-          | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
-
-        echo "⏳ [$ELAPSED s] Status: $STATUS"
-
-        if [ "$STATUS" = "success" ]; then
-          echo "✅ Downstream pipeline succeeded!"
-          exit 0
-        elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
-          echo "❌ Downstream pipeline $STATUS!"
-          echo "🔗 Check: $PIPELINE_URL"
-          exit 1
-        fi
-
-        sleep $INTERVAL
-        ELAPSED=$((ELAPSED + INTERVAL))
-      done
-
-      echo "⚠️ Timeout after ${MAX_WAIT}s — check manually: $PIPELINE_URL"
-      exit 1
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:f870f1645e13e94b09e946dd2bf52c9e7a1a39b5c85b245ad8e1927e82fb313a for artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 with digest artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9@sha256:26834e2b7839f7d5d440948c8d561124b44bd5305be9669b455ccff74eade7ed ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-2600-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:05
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out 9049465e as detached HEAD (ref is develop)...
+Skipping Git submodules setup
+Downloading artifacts
+00:13
+Downloading artifacts for build (587748)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=587748 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for image:build (587750)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=587750 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:05
+Using docker image sha256:f870f1645e13e94b09e946dd2bf52c9e7a1a39b5c85b245ad8e1927e82fb313a for artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 with digest artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9@sha256:26834e2b7839f7d5d440948c8d561124b44bd5305be9669b455ccff74eade7ed ...
+$ echo "=== Triggering Deployment Pipeline ==="
+=== Triggering Deployment Pipeline ===
+$ RESPONSE=$(curl --silent \ # collapsed multi-line command
+API Response: {"id":118071,"iid":30279,"project_id":2594,"sha":"e42a3c9363bd9abfed1bc9171661e80507c784ed","ref":"feature/deploy-cicd","status":"created","source":"trigger","created_at":"2026-05-25T13:54:12.373+05:30","updated_at":"2026-05-25T13:54:12.373+05:30","web_url":"https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment/-/pipelines/118071","before_sha":"0000000000000000000000000000000000000000","tag":false,"yaml_errors":null,"user":{"id":600,"username":"VCE2479","public_email":null,"name":"Ghanshyam  Baboo","state":"active","locked":false,"avatar_url":null,"web_url":"https://gitlab.sbi/VCE2479"},"started_at":null,"finished_at":null,"committed_at":null,"duration":null,"queued_duration":null,"coverage":null,"detailed_status":{"icon":"status_created","text":"Created","label":"created","group":"created","tooltip":"created","has_details":false,"details_path":"/itepaypg-sbiepay2/infra/devops/deployment/-/pipelines/118071","illustration":null,"favicon":"/assets/ci_favicons/favicon_status_created-4b975aa976d24e5a3ea7cd9a5713e6ce2cd9afd08b910415e96675de35f64955.png"}}
+✅ Downstream Pipeline ID  : 118071
+🔗 Downstream Pipeline URL : https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment/-/pipelines/118071
+$ echo "=== Polling Pipeline Status ==="
+=== Polling Pipeline Status ===
+$ MAX_WAIT=300   # 5 min timeout # collapsed multi-line command
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
