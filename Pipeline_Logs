@@ -78,5 +78,84 @@ From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
 Current branch feature/deploy-cicd is up to date.
 Push failed after retries
 Cleaning up project directory and file based variables
+
+
+
+=========================
+
+
+# cd/publish/values.update.yml
+# Stage: publish
+# Updates image tag in deployment repo values.yaml — git commit + push
+# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
+# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
+.update_tag:
+  stage: publish
+  tags:
+    - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+    - |
+      set -eo pipefail
+      echo "========== DEBUG =========="
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "VERSION=$VERSION"
+      echo "CHART_NAME=$CHART_NAME"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "==========================="
+
+      if [ -z "$SERVICE_NAME" ] || \
+         [ -z "$ENV" ] || \
+         [ -z "$VERSION" ]; then
+        echo "ERROR: Required variables missing"
+        exit 1
+      fi
+
+      
+      TAG=$VERSION
+      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
+      echo "SERVICE_PATH=$SERVICE_PATH"
+      ls -ltrh $SERVICE_PATH
+      git fetch origin ##
+      git checkout $CI_COMMIT_BRANCH ##
+      # retry rebase
+      for i in 1 2 3; do
+        git pull --rebase origin $CI_COMMIT_BRANCH && break 
+        echo "Rebase failed...retrying ($i)"
+        sleep 2
+        if [ $i -eq 3 ]; then
+        echo "Rebase failed after retries"
+        exit 1
+        fi
+      done
+      #git fetch
+      #git checkout $CI_COMMIT_BRANCH
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+      git add $SERVICE_PATH/values.yaml
+      if [[ $(git status --porcelain) ]]; then
+        git commit -m "chore: update image tag to $TAG [skip ci]"
+        for i in 1 2 3; do
+          git push origin $CI_COMMIT_BRANCH && break
+          echo "Push failed...retrying ($i)"
+          sleep 2
+          git pull --rebase origin $CI_COMMIT_BRANCH
+          if [ $i -eq 3 ]; then
+            echo "Push failed after retries"
+            exit 1
+          fi
+        done
+        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
+      else
+        echo "No changes — image tag already $TAG"
+      fi
+      cat $SERVICE_PATH/values.yaml
 00:00
 ERROR: Job failed: exit code 1
