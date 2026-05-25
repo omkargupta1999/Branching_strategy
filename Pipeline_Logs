@@ -1,3 +1,60 @@
+============================ Getting this error while triggering the deploy pipeline below sharing the  .trigger_cd.yml as well for yout reference.
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:00
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-jdk17-jf:1.1 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:56404d4fa85fc99c8b2268f5f51da8efae9f4f8b1c6f65d012d00913320a3861 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-jdk17-jf:1.1 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-jdk17-jf@sha256:5abcfac2111fe3ff50cb2f3089ab37b8e7b57e1b4513916fd9aa8d9392942861 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2600-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:01
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out df6c3feb as detached HEAD (ref is develop)...
+Skipping Git submodules setup
+Downloading artifacts
+00:07
+Downloading artifacts for build (582127)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=582127 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for image:build (582129)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=582129 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:56404d4fa85fc99c8b2268f5f51da8efae9f4f8b1c6f65d012d00913320a3861 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-jdk17-jf:1.1 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-jdk17-jf@sha256:5abcfac2111fe3ff50cb2f3089ab37b8e7b57e1b4513916fd9aa8d9392942861 ...
+$ curl --fail --request POST --form token="$DEPLOY_TRIGGER_TOKEN" --form ref="$DEPLOYMENT_BRANCH" --form "variables[SERVICE_NAME]=$SERVICE_NAME" --form "variables[VERSION]=$VERSION" --form "variables[ENV]=$ENV" --form "variables[CHART_NAME]=$CHART_NAME" "${CI_API_V4_URL}/projects/2594/trigger/pipeline"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
+
+
+
+
+
+
+=====================
+
 .trigger_cd:
   stage: deploy
   variables:
@@ -13,4 +70,4 @@
       --form "variables[VERSION]=$VERSION"
       --form "variables[ENV]=$ENV"
       --form "variables[CHART_NAME]=$CHART_NAME"
-      "${CI_API_V4_URL}/projects/<deployment_project_id>/trigger/pipeline"
+      "${CI_API_V4_URL}/projects/2594/trigger/pipeline"
