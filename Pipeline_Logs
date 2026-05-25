@@ -1,161 +1,210 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-2594-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:10
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out 807f2913 as detached HEAD (ref is feature/deploy-cicd)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:22
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global --add safe.directory '*'
-$ git config --global user.name "ci"
-$ git config --global user.email "ci.cedge@sbi.co.in"
-$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-$ set -eo pipefail # collapsed multi-line command
-========== DEBUG ==========
-SERVICE_NAME=epay_admin_service
-ENV=prod-dc
-VERSION=1.5.3
-CHART_NAME=$CHART_NAME
-RELEASE_NAME=admin
-===========================
-Updating prod-dc/charts/epay_admin_service/values.yaml → image tag: 1.5.3
-SERVICE_PATH=prod-dc/charts/epay_admin_service
-total 8.0K
--rw-rw-rw- 1 root root 1.2K May 25 11:33 Chart.yaml
--rw-rw-rw- 1 root root 3.1K May 25 11:33 values.yaml
-drwxrwxrwx 3 root root  167 May 25 11:33 templates
-Switched to a new branch 'feature/deploy-cicd'
-branch 'feature/deploy-cicd' set up to track 'origin/feature/deploy-cicd'.
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Already up to date.
-[feature/deploy-cicd 73df3e546] chore: update image tag to 1.5.3 [skip ci]
- 1 file changed, 2 insertions(+), 2 deletions(-)
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push failed...retrying (1)
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push failed...retrying (2)
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push failed...retrying (3)
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-Push failed after retries
-Cleaning up project directory and file based variables
+Issue Summary
 
+We are facing an issue with multi-project downstream pipeline deployments in GitLab.
 
+A user having Maintainer access on the application repository is unable to trigger deployment pipelines successfully, whereas the Owner user is able to deploy successfully using the same pipeline configuration.
 
-=========================
+The downstream pipeline gets created but no jobs are generated, and the pipeline fails without logs/output.
 
+Architecture Overview
 
-# cd/publish/values.update.yml
-# Stage: publish
-# Updates image tag in deployment repo values.yaml — git commit + push
-# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
-# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
-.update_tag:
-  stage: publish
-  tags:
-    - deploy_runner
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-  script:
-    - |
-      set -eo pipefail
-      echo "========== DEBUG =========="
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      echo "VERSION=$VERSION"
-      echo "CHART_NAME=$CHART_NAME"
-      echo "RELEASE_NAME=$RELEASE_NAME"
-      echo "==========================="
+We are using centralized CI/CD architecture with separate repositories:
 
-      if [ -z "$SERVICE_NAME" ] || \
-         [ -z "$ENV" ] || \
-         [ -z "$VERSION" ]; then
-        echo "ERROR: Required variables missing"
-        exit 1
-      fi
+1. Application Repository
+2. Shared CI/CD Templates Repository
+3. Centralized Deployment Repository
 
-      
-      TAG=$VERSION
-      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
-      echo "SERVICE_PATH=$SERVICE_PATH"
-      ls -ltrh $SERVICE_PATH
-      git fetch origin ##
-      git checkout $CI_COMMIT_BRANCH ##
-      # retry rebase
-      for i in 1 2 3; do
-        git pull --rebase origin $CI_COMMIT_BRANCH && break 
-        echo "Rebase failed...retrying ($i)"
-        sleep 2
-        if [ $i -eq 3 ]; then
-        echo "Rebase failed after retries"
-        exit 1
-        fi
-      done
-      #git fetch
-      #git checkout $CI_COMMIT_BRANCH
-      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-      git add $SERVICE_PATH/values.yaml
-      if [[ $(git status --porcelain) ]]; then
-        git commit -m "chore: update image tag to $TAG [skip ci]"
-        for i in 1 2 3; do
-          git push origin $CI_COMMIT_BRANCH && break
-          echo "Push failed...retrying ($i)"
-          sleep 2
-          git pull --rebase origin $CI_COMMIT_BRANCH
-          if [ $i -eq 3 ]; then
-            echo "Push failed after retries"
-            exit 1
-          fi
-        done
-        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
-      else
-        echo "No changes — image tag already $TAG"
-      fi
-      cat $SERVICE_PATH/values.yaml
-00:00
-ERROR: Job failed: exit code 1
+Flow:
+
+Application Repo
+↓
+Shared CI/CD Templates Include
+↓
+CI Pipeline
+↓
+Downstream Trigger to Deployment Repo
+↓
+Deployment Execution
+
+ 
+
+ 
+
+Current Configuration
+
+Application Repository `.gitlab-ci.yml`
+
+```yaml
+include:
+ - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+   ref: feature/cicd
+   file: 'templates/ci/backend/java.yml'
+```
+
+ 
+
+ 
+
+ 
+
+Deployment trigger configuration:
+
+```yaml
+.trigger_cd:
+ stage: deploy
+ variables:
+   DEPLOYMENT_BRANCH: "feature/deploy-cicd"
+   SERVICE_NAME: "${CI_PROJECT_NAME}"
+   VERSION: "${VERSION}"
+
+ trigger:
+   project: "itepaypg-sbiepay2/infra/devops/deployment"
+   branch: "$DEPLOYMENT_BRANCH"
+   strategy: depend
+
+   forward:
+     pipeline_variables: true
+     yaml_variables: true
+```
+
+ 
+
+ 
+
+Deployment job:
+
+```yaml
+deploy-dev:
+ extends: .trigger_cd
+
+ variables:
+   ENV: dev
+   SERVICE_NAME: "$CI_PROJECT_NAME"
+   CHART_NAME: "$CHART_NAME"
+
+ rules:
+   - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+     when: on_success
+
+   - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+     when: on_success
+
+   - when: never
+```
+
+Observed Behaviour
+
+Scenario 1 – Owner User
+
+* Owner has access to:
+
+ * Application repo
+ * CI/CD templates repo
+ * Deployment repo
+
+Result:
+
+* Pipeline works successfully
+* Downstream deployment pipeline executes successfully
+
+Scenario 2 – Maintainer User
+
+* Maintainer has access only to:
+
+ * Application repo
+
+Result:
+
+* Upstream pipeline starts
+* Downstream deployment pipeline gets created
+* No jobs appear in downstream pipeline
+* Downstream pipeline fails without logs/output
+
+Error Previously Observed
+
+Initially we were getting:
+
+```text
+Project `itepaypg-sbiepay2/infra/devops/cicd-templates` not found or access denied!
+```
+
+To address this:
+
+* CI/CD template repository visibility was changed to Internal
+* Deployment repository visibility was changed to Internal
+* CI_JOB_TOKEN allow list configured
+
+After this change:
+
+* Template include issue was resolved
+* Pipeline creation succeeds
+
+However downstream deployment pipeline issue still persists.
+
+=========Changes Already Performed============
+
+Repository Visibility
+
+Changed below repositories to Internal:
+
+* `itepaypg-sbiepay2/infra/devops/cicd-templates`
+* `itepaypg-sbiepay2/infra/devops/deployment`
+
+ 
+
+ 
+
+CI Job Token Permissions
+
+Added application repository in:
+
+Settings → CI/CD → Job Token Permissions
+
+for deployment repository.
+
+* Deployment branch is protected
+
+Strategy Depend in deployment downstream pipeline
+
+ 
+
+Current Problem
+
+The downstream pipeline is created successfully, but:
+
+* no jobs are generated
+* no logs are visible
+* pipeline fails immediately
+
+This issue occurs only for users who do not have access to deployment repository.
+
+Questions
+
+1. Does GitLab multi-project pipeline trigger still validate downstream protected branch permissions using the triggering user identity even when:
+
+  * project visibility is Internal
+  * CI_JOB_TOKEN allowlist is configured?
+
+2. Is Reporter access on deployment repository mandatory for downstream pipeline execution when using:
+
+  * `trigger: project`
+  * protected branches?
+
+3. Is there any recommended enterprise approach for allowing:
+
+  * application team deployment triggering
+  * without giving repository access to deployment repositories?
+
+Expected Behaviour
+
+We expect:
+
+* Application repo Maintainers should be able to trigger deployment pipelines
+* without requiring direct access to deployment repository
+* while deployment repository branches remain protected
+
+using:
+
+* Internal visibility
+* CI_JOB_TOKEN allowlist
+* multi-project downstream pipelines
