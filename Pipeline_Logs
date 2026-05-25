@@ -1,3 +1,74 @@
+Pipeline Output :
+
+
+Search visible log output
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:f870f1645e13e94b09e946dd2bf52c9e7a1a39b5c85b245ad8e1927e82fb313a for artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 with digest artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9@sha256:26834e2b7839f7d5d440948c8d561124b44bd5305be9669b455ccff74eade7ed ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2600-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:02
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_service/.git/
+Created fresh repository.
+Checking out 097d4685 as detached HEAD (ref is develop)...
+Skipping Git submodules setup
+Downloading artifacts
+00:08
+Downloading artifacts for image:build (582296)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=582296 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for build (582287)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=582287 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:f870f1645e13e94b09e946dd2bf52c9e7a1a39b5c85b245ad8e1927e82fb313a for artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9:0.0.1 with digest artifactory.jfrog.sbi:443/dso-base-image/java-maven-images/rhel-jdk-21-maven3.8.9@sha256:26834e2b7839f7d5d440948c8d561124b44bd5305be9669b455ccff74eade7ed ...
+$ cp "${JF_ARTIFACTORY_CERT}" /etc/pki/ca-trust/source/anchors/gitlab-sbi.crt
+$ update-ca-trust extract
+$ echo "=== Debug Info ==="
+=== Debug Info ===
+$ echo "DEPLOYMENT_BRANCH = ${DEPLOYMENT_BRANCH}"
+DEPLOYMENT_BRANCH = feature/deploy-cicd
+$ echo "SERVICE_NAME = ${SERVICE_NAME}"
+SERVICE_NAME = epay_admin_service
+$ echo "VERSION = ${VERSION}"
+VERSION = dev-097d4685
+$ echo "ENV = ${ENV}"
+ENV = dev
+$ echo "CHART_NAME = ${CHART_NAME}"
+CHART_NAME = $CHART_NAME
+$ echo "API URL = ${CI_API_V4_URL}/projects/2594/trigger/pipeline"
+API URL = https://gitlab.sbi/api/v4/projects/2594/trigger/pipeline
+$ echo "=================="
+==================
+$ curl --fail \ # collapsed multi-line command
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+
+================================================================
 .trigger_cd:
   stage: deploy
   variables:
@@ -26,3 +97,22 @@
         --form "variables[ENV]=${ENV}" \
         --form "variables[CHART_NAME]=${CHART_NAME}" \
         "${CI_API_V4_URL}/projects/2594/trigger/pipeline"
+
+====================================================================================================
+
+# ── DEV — auto on develop push ────────────────────────────────────────────────
+deploy-dev:
+  extends: .trigger_cd
+  variables:
+    ENV:          dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    # - if: '$CI_COMMIT_BRANCH == "feature/deploy-cicd" && $CI_PIPELINE_SOURCE == "push"'
+    #   when: on_success
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: on_success
+    - when: never
+=======================================================
