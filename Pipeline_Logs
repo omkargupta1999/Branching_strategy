@@ -1,3 +1,22 @@
+# ci/publish/gradle.artifactory.yml  |  Stage: publish
+# Publishes JAR artifacts to JFrog Artifactory Gradle repository
+# Used by: java.library.yml orchestrator ONLY (utility/library repos)
+# NOT used by microservice repos (they produce container images, not JARs)
+#
+# JFrog repo: itepaypg-sbiepay2-gradle-local
+# Consumers resolve from: itepaypg-sbiepay2-gradle-virtual (virtual = local + remote)
+
+.publish:
+  stage: publish
+  image: 
+    name:  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031  
+  script:
+    - echo "Publishing"
+    - gradle publish
+
+
+===========================================
+
 Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
