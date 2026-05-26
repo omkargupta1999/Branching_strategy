@@ -1,126 +1,10 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-2654-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:04
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
-Created fresh repository.
-Checking out e09251f3 as detached HEAD (ref is develop)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:09
-Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
-$ echo ">>> Service $SERVICE"
->>> Service encryption-decryption-service
-$ cd "$MONO_REPO_ROOT/$SERVICE"
-$ set -eo pipefail # collapsed multi-line command
-Building VERSION: dev-e09251f3
-Welcome to Gradle 9.4.1!
-Here are the highlights of this release:
- - Java 26 support
- - Non-class-based JVM tests
- - Enhanced console progress bar
-For more details see https://docs.gradle.org/9.4.1/release-notes.html
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build/reports/problems/problems-report.html
-FAILURE: Build failed with an exception.
-* Where:
-Build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle' line: 22
-* What went wrong:
-Could not compile build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle'.
-> startup failed:
-  build file '/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/encryption-decryption-service/build.gradle': 22: Unexpected input: '{' @ line 22, column 12.
-     publishing {
-                ^
-  
-  1 error
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights from a Build Scan (powered by Develocity).
-> Get more help at https://help.gradle.org.
-BUILD FAILED in 8s
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-================== .gitlab-ci.yaml ============
-
-
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
-
-variables:
-  MONO_REPO_ROOT: "."
-
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
-
-.service-matrix:
-  parallel:
-    matrix:
-      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      - SERVICE: ["encryption-decryption-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix]
-
-test:
-  extends: [.test, .set-workdir, .service-matrix]
-
-publish:
-  extends: [.publish, .set-workdir, .service-matrix]
-
-
-============================  build.gradle ==============
-
- plugins {
+plugins {
     id 'java'
     id 'maven-publish'
 }
+
 group = 'com.sbi.epay'
 version = '1.0.1'
-
-// repositories {
-//     mavenCentral()
-//     maven {
-//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-//         credentials(PasswordCredentials) {
-//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
-//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
-//         }
-//         authentication {
-//             basic(BasicAuthentication)
-//         }
-//     }
-// }
 
 publishing {
     publications {
@@ -139,7 +23,8 @@ publishing {
                 basic(BasicAuthentication)
             }
         }
-}
+    }               // closes repositories {}
+}                   // closes publishing {}
 
 dependencies {
 
