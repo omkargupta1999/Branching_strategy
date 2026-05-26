@@ -1,3 +1,155 @@
+# ci/common/base-setup-gradle-before-script.yml 
+# Shared hidden job — extended by build/test/publish stages 
+#
+# ── Purpose ───────────────────────────────────────────────────────────────────
+# Centralises image, variables, and before_script common to all Gradle jobs.
+# Extending job inherits image + variables + before_script automatically.
+# Single maintenance point — change once, applies to build and test stages.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Used by both build and test stages — same toolchain required for both.
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+#
+# ── JVM TLS — JFrog Internal CA ───────────────────────────────────────────────
+# Image: ubi9/openjdk-21 (non-root) — $JAVA_HOME/lib/security/cacerts is read-only.
+# Approach:
+#   1. Copy cacerts to $CI_PROJECT_DIR (writable workspace)
+#   2. chmod 644 — keytool requires write access to update the keystore
+#   3. Import JFrog internal CA cert via keytool
+#   4. Export JAVA_TOOL_OPTIONS to point JVM at custom truststore
+# $ARTIFACTORY_CERT — file-type CI/CD variable injected by GitLab (PEM certificate)
+# Error - Gradle Core Plugins (plugin is not in 'org.gradle' namespace) but actually SSL Issue 
+# https://jfrog.com/help/r/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate
+#
+# ── Init Script ───────────────────────────────────────────────────────────────
+# epay-artifactory.init.gradle injected inline via heredoc.
+# Gradle runs Initialization + Configuration phases on every invocation
+# (even gradle test with pre-compiled classes) — init script always required.
+# Covers: pluginManagement, dependencyResolutionManagement
+#
+# ── App Repo Requirements ─────────────────────────────────────────────────────
+# settings.gradle : NOT required for single-module repos.
+#                   Only needed for multi-module repos (include() only).
+#                   Must NOT contain pluginManagement {} or repositories {}.
+# build.gradle    : plugins {} and dependencies {} only.
+#                   Must NOT contain repositories {} — FAIL_ON_PROJECT_REPOS enforced.
+# ─────────────────────────────────────────────────────────────────────────────
+
+.base_setup_java_gradle:
+  stage: build
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  tags:
+    - common_runner
+
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO : "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
+    GRADLE_OPTS:      "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+    # GRADLE_USER_HOME: keeps Gradle metadata inside project dir (predictable path)
+    # init.d/ under this path is auto-scanned by Gradle on every build invocation
+    # Not cached — JFrog Artifactory on LAN is fast enough for air-gapped environment
+
+  before_script:
+    # ── Verify toolchain versions ─────────────────────────────────────────────
+    - java -version
+    - gradle --version
+
+    # ── Inject centralised Gradle init script ─────────────────────────────────
+    # Written inline via heredoc — single source of truth in cicd-templates repo.
+    # No app repo file needed. No CI/CD variable overhead.
+    # Gradle auto-loads all *.gradle files under $GRADLE_USER_HOME/init.d/
+    #
+    # pluginManagement:
+    #   Routes plugins {} DSL (Initialization Phase) through Artifactory.
+    #   Takes precedence over app repo settings.gradle pluginManagement if present.
+    #
+    # dependencyResolutionManagement:
+    #   FAIL_ON_PROJECT_REPOS — app repo build.gradle must NOT define repositories {}.
+    #   All 59 repos resolve exclusively through Artifactory virtual repo.
+    #   Internal SBI JARs must be published to itepaypg-sbiepay2-gradle-local —
+    #   flatDir libs/ is not used in CI (local desktop workaround only).
+    - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+    - |
+      cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+      // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+      // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+      // Centralised Artifactory resolution config for all SBIePay 2.0 services
+      // Credentials resolved from environment at runtime — never stored in file
+      // ─────────────────────────────────────────────────────────────────────────
+
+      settingsEvaluated { settings ->
+
+          // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+          // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+          // Artifactory virtual repo aggregates:
+          //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+          //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+          //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+          settings.pluginManagement {
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+              }
+          }
+
+          // ── Dependency Resolution (Configuration Phase — repositories) ────────
+          // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+          // All repos resolve dependencies exclusively through Artifactory virtual repo.
+          // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+          // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+          settings.dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+                  flatDir {
+                    dirs "libs"
+                  }
+              }
+          }
+      }
+      EOF
+
+    # ── Trust JFrog internal CA ───────────────────────────────────────────────
+    # ubi9/openjdk-21 runs as non-root — $JAVA_HOME/lib/security/cacerts is read-only
+    # Copy to writable project dir, fix permissions, import cert, point JVM at copy
+    # The cp copies $JAVA_HOME/lib/security/cacerts but preserves the source file's read-only permissions (JVM cacerts is typically 444 or r--r--r--). 
+    # Keytool parses and imports in memory successfully, but can't write the modified keystore back to disk — hence the misleading "added" message followed by the error.
+    # Hence permission need to change from 444 to 644
+    - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+    - chmod 644 "$CACERT_PATH"
+    - keytool -importcert
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
+        -file "$JF_ARTIFACTORY_CERT"
+        -noprompt
+    - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+                                -Djavax.net.ssl.trustStorePassword=changeit"
+
+    # ── Verify cert import ────────────────────────────────────────────────────
+    - keytool -list
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
+    
+
+
+
+
 java.gradle.yml =========================
 
 # ci/build/java.gradle.yml  |  Stage: build
