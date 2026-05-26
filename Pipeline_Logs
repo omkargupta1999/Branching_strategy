@@ -143,3 +143,82 @@ include(
     'logging-service',
     'notification-service'
 )
+
+
+
+
+=============== java.gradle.yml ===================== this is the stages which is failing ===========================
+
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/*.jar consumed by image-build stage
+
+# ── Extends ───────────────────────────────────────────────────────────────────
+# Inherits from .base_setup_java_gradle (ci/common/base-setup.java.gradle.yml):
+#   image, tags, variables, before_script
+# No image or before_script defined here — single source of truth in common file.
+#
+# ── Artifacts Passed to Test Stage ───────────────────────────────────────────
+# build/classes/   — compiled application + test classes (skips recompile in test)
+# build/resources/ — processed resources
+# build/tmp/       — annotation processor outputs (Lombok, MapStruct)
+# build/libs/      — JAR consumed by image-build stage
+# Gradle incremental build detects these on next invocation — skips compileJava.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+
+include:
+  - local: 'ci/common/base-setup.java.gradle.yml'
+
+.build:
+  extends: .base_setup_java_gradle
+  stage: build
+
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Gradle build ──────────────────────────────────────────────────────
+      # Dependencies resolved from JFrog via settings.gradle in app repo
+      # -x test: unit tests run separately in test stage (java.unit.yml)
+      # -Pversion: sets project version used in bootJar archiveFileName
+      gradle build -x test -Pversion="${VERSION}"
+
+      # ── Verify output ─────────────────────────────────────────────────────
+      echo "Build output:"
+      ls -lh build/libs/
+
+      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+        exit 1
+      fi
+
+      # ── Build metadata for downstream stages ────────────────────────────────
+      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+      # BUILD_TIME: consumed by image-build stage for OCI image labels
+      JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+      echo "✅ JAR: ${JAR_FILE}"
+      echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+
+  artifacts:
+    paths:
+      - build/libs/
+      - build/classes/
+      - build/resources/
+      - build/tmp/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
+
