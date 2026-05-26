@@ -1,36 +1,36 @@
 Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
-00:03
+00:01
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
+Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
 Preparing environment
 00:01
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2654-concurrent-0 via PE3DSOPGRUNNERS6...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2654-concurrent-0 via PE3DSOPGrunners3...
 Getting source from Git repository
-00:05
+00:01
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
 Created fresh repository.
-Checking out 76c125f1 as detached HEAD (ref is develop)...
+Checking out 76a72a86 as detached HEAD (ref is develop)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:20
-Using docker image sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
+00:11
+Using docker image sha256:388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle@sha256:dc0868734113da7beffde7b6f2dbbb14696a3fc39200e1a308b370c0b3bf72de ...
 $ echo ">>> Service $SERVICE"
 >>> Service logging-service
 $ cd "$MONO_REPO_ROOT/$SERVICE"
 $ set -eo pipefail # collapsed multi-line command
-Building VERSION: dev-76c125f1
+Building VERSION: dev-76a72a86
 Welcome to Gradle 9.4.1!
 Here are the highlights of this release:
  - Java 26 support
@@ -49,63 +49,86 @@ FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Could not resolve all files for configuration ':compileClasspath'.
-   > Cannot resolve external dependency ch.qos.logback:logback-classic:1.5.22 because no repositories are defined.
+   > Could not resolve ch.qos.logback:logback-classic:1.5.22.
      Required by:
          root project 'logging-service'
-   > Cannot resolve external dependency net.logstash.logback:logstash-logback-encoder:9.0 because no repositories are defined.
+      > Could not resolve ch.qos.logback:logback-classic:1.5.22.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/ch/qos/logback/logback-classic/1.5.22/logback-classic-1.5.22.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/ch/qos/logback/logback-classic/1.5.22/logback-classic-1.5.22.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+   > Could not resolve net.logstash.logback:logstash-logback-encoder:9.0.
      Required by:
          root project 'logging-service'
+      > Could not resolve net.logstash.logback:logstash-logback-encoder:9.0.
+         > Could not get resource 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/logstash/logback/logstash-logback-encoder/9.0/logstash-logback-encoder-9.0.pom'.
+            > Could not GET 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/net/logstash/logback/logstash-logback-encoder/9.0/logstash-logback-encoder-9.0.pom'.
+               > Got SSL handshake exception during request. It might be caused by SSL misconfiguration
+                  > (certificate_unknown) PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
 * Try:
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 > Get more help at https://help.gradle.org.
-BUILD FAILED in 17s
+BUILD FAILED in 9s
 Uploading artifacts for failed job
 00:00
 Uploading artifacts...
 WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities) 
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
-00:01
+00:00
 ERROR: Job failed: exit code 1
 
-======================================== .gitlab-ci.yml ==================
 
 
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
 
-variables:
-  MONO_REPO_ROOT: "."
-
-.set-workdir:
-  before_script:
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
-
-.service-matrix:
-  parallel:
-    matrix:
-      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
-      - SERVICE: ["logging-service"]
-build:
-  extends: [.build, .set-workdir, .service-matrix]
-
-test:
-  extends: [.test, .set-workdir, .service-matrix]
-
-publish:
-  extends: [.publish, .set-workdir, .service-matrix]
+=============================== build.gradle  for logging-services -----------------
 
 
-===========================================
+plugins {
+	id 'java'
+	id 'maven-publish'
+}
+group = 'com.sbi.epay'
+version = '1.0.0'
+ext.versions = [ logback : '1.5.22', logback_encoder: '9.0' ]
 
-settings.gradle:
+// repositories {
+// 	mavenCentral()
+// }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+            credentials(PasswordCredentials) {
+                username = System.getenv("JF_USER")
+                password = System.getenv("JF_TOKEN")
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }               
+}
 
 
+dependencies {
+	implementation "ch.qos.logback:logback-classic:${versions.logback}"
+	implementation "net.logstash.logback:logstash-logback-encoder:${versions.logback_encoder}"
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+======================================== settings.gradle at root level =============
 
 pluginManagement {
     repositories {
@@ -143,82 +166,3 @@ include(
     'logging-service',
     'notification-service'
 )
-
-
-
-
-=============== java.gradle.yml ===================== this is the stages which is failing ===========================
-
-# ci/build/java.gradle.yml  |  Stage: build
-# Gradle compile — produces build/libs/*.jar consumed by image-build stage
-
-# ── Extends ───────────────────────────────────────────────────────────────────
-# Inherits from .base_setup_java_gradle (ci/common/base-setup.java.gradle.yml):
-#   image, tags, variables, before_script
-# No image or before_script defined here — single source of truth in common file.
-#
-# ── Artifacts Passed to Test Stage ───────────────────────────────────────────
-# build/classes/   — compiled application + test classes (skips recompile in test)
-# build/resources/ — processed resources
-# build/tmp/       — annotation processor outputs (Lombok, MapStruct)
-# build/libs/      — JAR consumed by image-build stage
-# Gradle incremental build detects these on next invocation — skips compileJava.
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
-# Built on bastion, pushed to JFrog docker-local repo.
-# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
-
-include:
-  - local: 'ci/common/base-setup.java.gradle.yml'
-
-.build:
-  extends: .base_setup_java_gradle
-  stage: build
-
-  script:
-    - |
-      set -eo pipefail
-
-      # ── Validate VERSION ──────────────────────────────────────────────────
-      if [ -z "$VERSION" ]; then
-        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
-        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
-        exit 1
-      fi
-      echo "Building VERSION: ${VERSION}"
-
-      # ── Gradle build ──────────────────────────────────────────────────────
-      # Dependencies resolved from JFrog via settings.gradle in app repo
-      # -x test: unit tests run separately in test stage (java.unit.yml)
-      # -Pversion: sets project version used in bootJar archiveFileName
-      gradle build -x test -Pversion="${VERSION}"
-
-      # ── Verify output ─────────────────────────────────────────────────────
-      echo "Build output:"
-      ls -lh build/libs/
-
-      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
-        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
-        exit 1
-      fi
-
-      # ── Build metadata for downstream stages ────────────────────────────────
-      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
-      # BUILD_TIME: consumed by image-build stage for OCI image labels
-      JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
-      echo "✅ JAR: ${JAR_FILE}"
-      echo "JAR_FILE=${JAR_FILE}"                         >> build.env
-      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
-
-  artifacts:
-    paths:
-      - build/libs/
-      - build/classes/
-      - build/resources/
-      - build/tmp/
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
-
