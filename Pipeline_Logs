@@ -1,3 +1,13 @@
+    - export CACERT_PATH="${CI_PROJECT_DIR}/cacerts-custom"
+
+
+
+
+
+
+
+
+
 # ci/publish/gradle.artifactory.yml  |  Stage: publish
 # Publishes JAR artifacts to JFrog Artifactory Gradle repository
 # Used by: java.library.yml orchestrator ONLY (utility/library repos)
