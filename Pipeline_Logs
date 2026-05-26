@@ -65,3 +65,99 @@ ERROR: No files to upload
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 1
+
+
+
+================== .gitlab-ci.yaml ============
+
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/ci/backend/java.library.yml'
+
+variables:
+  MONO_REPO_ROOT: "."
+
+.set-workdir:
+  before_script:
+    - echo ">>> Service $SERVICE"
+    - cd "$MONO_REPO_ROOT/$SERVICE"
+
+.service-matrix:
+  parallel:
+    matrix:
+      #- SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+      - SERVICE: ["encryption-decryption-service"]
+build:
+  extends: [.build, .set-workdir, .service-matrix]
+
+test:
+  extends: [.test, .set-workdir, .service-matrix]
+
+publish:
+  extends: [.publish, .set-workdir, .service-matrix]
+
+
+============================  build.gradle ==============
+
+ plugins {
+    id 'java'
+    id 'maven-publish'
+}
+group = 'com.sbi.epay'
+version = '1.0.1'
+
+// repositories {
+//     mavenCentral()
+//     maven {
+//         url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
+//         credentials(PasswordCredentials) {
+//             username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
+//             password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
+//         }
+//         authentication {
+//             basic(BasicAuthentication)
+//         }
+//     }
+// }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url 'https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-maven-local/'
+            credentials(PasswordCredentials) {
+                username = System.getenv("JF_USER")
+                password = System.getenv("JF_TOKEN")
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+}
+
+dependencies {
+
+    implementation 'com.sbi.epay:logging-service:1.0.0'
+
+    implementation 'javax.servlet:javax.servlet-api:3.1.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.junit.vintage:junit-vintage-engine:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.0'
+}
+
+test {
+    useJUnitPlatform()
+}
