@@ -1,88 +1,218 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-2654-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:01
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/.git/
-Created fresh repository.
-Checking out e6d53a6e as detached HEAD (ref is develop)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:14
-Using docker image sha256:9fc7d7dc51abfcc562373f4635e7f93c66bb6ac1a017fd13368baa174acfa210 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21@sha256:ad324e3a5e21fb2d9c8bc8fadd36644a8131b3759cc28fae7e209a361955bf2b ...
-$ export CACERT_PATH="${CI_PROJECT_DIR}/cacerts-custom"
-$ java -version
-openjdk version "21.0.10" 2026-01-20 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.10.0.7-1) (build 21.0.10+7-LTS, mixed mode, sharing)
-$ gradle --version
-Welcome to Gradle 9.3.0!
-Here are the highlights of this release:
- - Test reporting improvements
- - Error and warning improvements
- - Build authoring improvements
-For more details see https://docs.gradle.org/9.3.0/release-notes.html
-------------------------------------------------------------
-Gradle 9.3.0
-------------------------------------------------------------
-Build time:    2026-01-16 11:14:22 UTC
-Revision:      701205ed2f78811508466c8e1952304c2ea869f5
-Kotlin:        2.2.21
-Groovy:        4.0.29
-Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
-Launcher JVM:  21.0.10 (Red Hat, Inc. 21.0.10+7-LTS)
-Daemon JVM:    /usr/lib/jvm/java-21-openjdk-21.0.10.0.7-1.el9.x86_64 (no Daemon JVM specified, using current Java home)
-OS:            Linux 4.18.0-553.120.1.el8_10.x86_64 amd64
-$ mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
-$ cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF' # collapsed multi-line command
-$ cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
-$ chmod 644 "$CACERT_PATH"
-$ keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal -file "$JF_ARTIFACTORY_CERT" -noprompt
-Certificate was added to keystore
-$ export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit"
-$ keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-jfrog-internal, May 26, 2026, trustedCertEntry, 
-Certificate fingerprint (SHA-256): 95:A7:28:EE:11:00:19:F7:94:F4:B5:F7:98:0A:D5:C6:17:5D:8A:6B:F6:97:46:8E:00:CC:CB:D2:56:35:5E:66
-$ echo ">>> Service $SERVICE"
->>> Service logging-service
-$ cd "$MONO_REPO_ROOT/$SERVICE"
-$ echo "Publishing"
-Publishing
-$ gradle publish
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-> Task :compileJava
-> Task :processResources
-> Task :classes
-> Task :jar
-> Task :generateMetadataFileForMavenJavaPublication
-> Task :generatePomFileForMavenJavaPublication
-> Task :publishMavenJavaPublicationToMavenRepository
-> Task :publish
-[Incubating] Problems report is available at: file:///builds/itepaypg-sbiepay2/application/utilities/epay_java_utilities/logging-service/build/reports/problems/problems-report.html
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-BUILD SUCCESSFUL in 11s
-6 actionable tasks: 6 executed
-Cleaning up project directory and file based variables
-00:00
-Job succeeded
+Hi Vishnu,
+ 
+I've reviewed the YAML file with my colleague  and we've identified the root cause of why the pipeline trigger token approach produced an empty downstream pipeline.
+ 
+Reason:
+ 
+The curl API call succeeded (HTTP 200) and created a pipeline in the deployment project. However, pipeline trigger tokens set CI_PIPELINE_SOURCE == "trigger", but your downstream workflow:rules in deploy.single.yml only allow these sources:
+ 
+pipeline (from trigger: project)
+merge_request_event
+push on feature/deploy-cicd
+$CI_COMMIT_TAG
+
+ 
+
+Since trigger isn't in this list, the pipeline was created but immediately filtered out by the final - when: never rule, resulting in no jobs or logs.
+
+Kindly consider the following option:
+
+Retain the pipeline trigger token approach and update the downstream rules:
+ 
+Two changes are required in the deployment repository:
+ 
+In deploy-single.yml, add the following rule to workflow:rules (placed before the final - when: never):
+
+- if: '$CI_PIPELINE_SOURCE == "trigger"'
+when: always
+ 
+
+In each job rule currently restricted to "pipeline" (the update-tag job, and any other job extending .update_tag or using the same condition), broaden the condition as follows:
+ 
+rules:
+	- if: '$CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "trigger"'
+
+Kindly also verify the following while applying Option 2:
+ 
+$DEPLOY_TRIGGER_TOKENmust be a pipeline trigger token created in the deployment project under Settings → CI/CD → Pipeline trigger tokens. Personal access tokens, project or group access tokens, and$CI_JOB_TOKENare not accepted by this API endpoint and would return a 404 or 400 response.
+ 
+If the curl call passes parameters of the form variables[...], please ensure the deployment project's Pipeline variables minimum override role setting permits this for the trigger token's effective user, otherwise the API will return a 400 response.
+
+ 
+Note : For Option 2,  strategy: depend no longer applies (the upstream job completes as soon as curl receives HTTP 200, not when the downstream pipeline finishes), and the downstream pipeline will not appear in the upstream pipeline graph. 
+ 
+This gap is tracked in the open issue gitlab-org/gitlab#334413, which you may wish to subscribe to. If your team requires visibility on the deployment outcome, an out-of-band notification (for example, a Slack message or an MR comment posted from the curl job) would be the recommended approach.
+
+Hope the explanation helps. Please try implementing the changes and let me know if it works for you.
+
+
+
+======================================== deploy.single.yml =======================
+
+
+# templates/cd/deploy.single.yml
+# CD orchestrator — single service deploy
+# Used by deployment repo when SERVICE_NAME + ENV known at trigger time
+
+workflow:
+  rules:
+
+    # #--------------------------------------------------------------------#
+    # # Block branch creation pipelines
+    # #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000" && $CI_PIPELINE_SOURCE == "push"'
+    #   when: never
+
+    #--------------------------------------------------------------------#
+    # ALWAYS allow downstream pipelines
+    # (microservice repo → deployment repo)
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+      when: always
+
+
+    #--------------------------------------------------------------------#
+    # BLOCK MR pipelines targeting MAIN
+    # Prevents deployment before approval
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: never
+
+
+    #--------------------------------------------------------------------#
+    # Allow MR pipelines for NON-main branches
+    # (release → develop etc.)
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+
+
+    #--------------------------------------------------------------------#
+    # Deploy AFTER merge (push to main)
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+
+
+    #--------------------------------------------------------------------#
+    # Allow release branches deployment
+    #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BRANCH =~ /^release\/.*$/ && $CI_PIPELINE_SOURCE == "push"'
+    #   when: always
+
+
+    #--------------------------------------------------------------------#
+    # Allow develop branches deployment
+    #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BRANCH =~ /^develop\/.*$/ && $CI_PIPELINE_SOURCE == "push"'
+    #   when: always
+
+
+    #--------------------------------------------------------------------#
+    # Block branch creation pipelines
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000" && $CI_PIPELINE_SOURCE == "push"'
+      when: never
+
+
+    #--------------------------------------------------------------------#
+    # Skip CI bot commits
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_AUTHOR == "ci" && $CI_COMMIT_AUTHOR_EMAIL == "ci.cedge@sbi.co.in"'
+      when: never
+
+
+    #--------------------------------------------------------------------#
+    # Allow tags (production releases)
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_TAG'
+      when: always
+
+
+    #--------------------------------------------------------------------#
+    # Block everything else
+    #--------------------------------------------------------------------#
+    - when: never
+
+stages:
+  - publish     # update image tag in values.yaml
+  - validate    # helm dry-run + service config check
+  - deploy      # helm upgrade to OCP cluster
+  # - verify      # rollout status + health check
+  # - notify      # slack + jira
+
+include:
+  - local: 'cd/publish/values.update.yml'
+  - local: 'cd/helm/helm.deploy.yml'
+  # - local: 'cd/verify/verify.rollout.yml'
+  # - local: 'cd/verify/verify.health.yml'
+  # - local: 'cd/notify/notify.slack.yml'
+  # - local: 'cd/notify/notify.jira.yml'
+
+update-tag:
+  extends:
+    - .update_tag
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+
+
+=======================================   trigger_cd.yml =================
+
+
+.trigger_cd:
+  stage: deploy
+  variables:
+    DEPLOYMENT_BRANCH: "feature/deploy-cicd"
+    SERVICE_NAME: "${CI_PROJECT_NAME}"
+    VERSION: "${VERSION}"
+  script:
+    - echo "=== Triggering Deployment Pipeline ==="
+    - |
+      RESPONSE=$(curl --silent \
+        --insecure \
+        --request POST \
+        --form token="${DEPLOY_TRIGGER_TOKEN}" \
+        --form ref="${DEPLOYMENT_BRANCH}" \
+        --form "variables[SERVICE_NAME]=${SERVICE_NAME}" \
+        --form "variables[VERSION]=${VERSION}" \
+        --form "variables[ENV]=${ENV}" \
+        --form "variables[CHART_NAME]=${CHART_NAME}" \
+        "${CI_API_V4_URL}/projects/2594/trigger/pipeline")
+
+      echo "API Response: $RESPONSE"
+
+      PIPELINE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+      PIPELINE_URL=$(echo "$RESPONSE" | grep -o '"web_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+      echo "✅ Downstream Pipeline ID  : $PIPELINE_ID"
+      echo "🔗 Downstream Pipeline URL : $PIPELINE_URL"
+
+    - echo "=== Polling Pipeline Status ==="
+    - |
+      MAX_WAIT=300   # 5 min timeout
+      INTERVAL=15
+      ELAPSED=0
+
+      while [ $ELAPSED -lt $MAX_WAIT ]; do
+        STATUS=$(curl --silent --insecure \
+          --header "PRIVATE-TOKEN: ${DEPLOY_TRIGGER_TOKEN}" \
+          "${CI_API_V4_URL}/projects/2594/pipelines/${PIPELINE_ID}" \
+          | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+        echo "⏳ [$ELAPSED s] Status: $STATUS"
+
+        if [ "$STATUS" = "success" ]; then
+          echo "✅ Downstream pipeline succeeded!"
+          exit 0
+        elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+          echo "❌ Downstream pipeline $STATUS!"
+          echo "🔗 Check: $PIPELINE_URL"
+          exit 1
+        fi
+
+        sleep $INTERVAL
+        ELAPSED=$((ELAPSED + INTERVAL))
+      done
+
+      echo "⚠️ Timeout after ${MAX_WAIT}s — check manually: $PIPELINE_URL"
+      exit 1
