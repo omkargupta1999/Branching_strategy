@@ -7,3 +7,16 @@ Auto-trigger rules per branch type
 feature/bugfix push → build+test+sast+fortify (auto) | develop merge → +dockerbuild+deploy-dev (auto) | release merge → +create-rc-tag (auto) | main merge → create-prod-tag+retag+back-merge (auto)
 Manual-only deploy jobs for non-DEV environments
 deploy-sit / deploy-uat / deploy-int / deploy-perf / deploy-preprod-* → when: manual, only Release Manager role can trigger
+
+
+================ 
+
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/cicd
+    file: 'templates/ci/backend/java.yml'
+
+
+variables:
+  RELEASE_NAME: admin
+  CHART_NAME: adminservice
