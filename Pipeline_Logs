@@ -1,91 +1,20 @@
-ot@drlogging1 scripts]#
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]# pwd
-/root/Node1_Loki/loki-node1/loki-node1/scripts
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]# sudo ./preload-images.sh save
-sudo: ./preload-images.sh: command not found
-[root@drlogging1 scripts]# sudo ./preload-images.sh save
-sudo: ./preload-images.sh: command not found
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]# sudo ./preload-images.sh
-sudo: ./preload-images.sh: command not found
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]#
-[root@drlogging1 scripts]# cd ..
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# sh deploy-loki.sh
-[deploy] Deploying node1 (INSTANCE_IP=10.177.139.191, peer=10.177.139.192)
-[deploy] Local data filesystem type: xfs (OK)
-[deploy] Creating local data dirs under /var/lib/loki/node1 ...
-[deploy] Installing config to /opt/loki/node1 ...
-[deploy] Opening inter-node ports to peer 10.177.139.192 ...
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=udp accept
-Warning: ALREADY_ENABLED: 3100:tcp
-Warning: ALREADY_ENABLED: 3101:tcp
-Warning: ALREADY_ENABLED: 3104:tcp
-Warning: ALREADY_ENABLED: 3108:tcp
-Warning: ALREADY_ENABLED: 3109:tcp
-[deploy] Firewall rules applied.
-[deploy] Starting Loki stack ...
-[warn]  pull skipped (air-gapped — ensure images preloaded)
-[+] Running 3/3
- ! memcached-results     Interrupted                                                                                                                                                                                                    0.0s
- ! memcached-chunks      Interrupted                                                                                                                                                                                                    0.0s
- ✘ memcached-index Error Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io on [::1]:53: dial udp [::1]:53: connect: network is unreachable                                                                  0.0s
-Error response from daemon: Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io on [::1]:53: dial udp [::1]:53: connect: network is unreachable
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# ll
-total 40
--rw-r----- 1 root root  6147 May 30 17:34 deploy-loki.sh
--rw-r----- 1 root root 11619 May 30 17:34 docker-compose.yml
--rw-r----- 1 root root  6387 May 30 17:34 INSTRUCTIONS.md
--rw-r----- 1 root root  9697 May 30 17:34 loki-config.yaml
-drwxr-x--- 2 root root    31 May 30 17:34 scripts
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker images
+REPOSITORY                                                                              TAG       IMAGE ID       CREATED         SIZE
+grafana/grafana                                                                         12.3.3    40df8365e157   3 months ago    747MB
+grafana/loki                                                                            3.6.5     edcf864b0506   3 months ago    131MB
+mysql/mysql-80                                                                          9.6       e922fb8d4971   8 months ago    541MB
+registry.redhat.io/rhel9/mysql-80                                                       9.6       e922fb8d4971   8 months ago    541MB
+grafana/loki                                                                            3.5.5     fd1a879e62ca   8 months ago    123MB
+minio/minio                                                                             latest    69b2ec208575   8 months ago    175MB
+redis/redis-7                                                                           9.6       23570ca2709f   8 months ago    294MB
+registry.redhat.io/rhel9/redis-7                                                        9.6       23570ca2709f   8 months ago    294MB
+prom/prometheus                                                                         v3.5.0    a3bc50fcb50f   10 months ago   313MB
+grafana/loki                                                                            3.5.2     9db2b58a3445   10 months ago   123MB
+grafana/promtail                                                                        3.5.2     fe96eb67c7a6   10 months ago   198MB
+grafana/grafana                                                                         latest    008307cdce1d   12 months ago   680MB
+prom/node-exporter                                                                      latest    255ec253085f   14 months ago   25MB
+busybox                                                                                 v1        6d3e4188a38a   20 months ago   4.28MB
+epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi/microservices/busybox   v1        6d3e4188a38a   20 months ago   4.28MB
+containrrr/watchtower                                                                   latest    e7dd50d07b86   2 years ago     14.7MB
+prom/alertmanager                                                                       v0.25.0   c8568f914cd2   3 years ago     65.1MB
+google/cadvisor                                                                         latest    eb1210707573   7 years ago     69.6MB
