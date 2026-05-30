@@ -1,46 +1,91 @@
-[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
-[osuser@registry ~]$
-[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep JAVA_TOOL_OPTIONS
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep JAVA_TOOL_OPTIONS
-[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
--XX:+AlwaysPreTouch
--XX:MaxRAMPercentage=80.000000
--XX:+UseG1GC
-[osuser@registry ~]$ ^C
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
--XX:+AlwaysPreTouch
--XX:MaxRAMPercentage=80.000000
--XX:+UseG1GC
-[osuser@registry ~]$ oc exec payment-paymentservice-86db696745-rmdw7   -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
--XX:+AlwaysPreTouch
--XX:MaxRAMPercentage=80.000000
--XX:+UseG1GC
-[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-   size_t MaxHeapSize                              = 4294967296                                {product} {ergonomic}
-   size_t SoftMaxHeapSize                          = 4294967296                             {manageable} {ergonomic}
-openjdk version "21.0.3" 2024-04-16 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.3.0.9-1) (build 21.0.3+9-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.3.0.9-1) (build 21.0.3+9-LTS, mixed mode, sharing)
-[osuser@registry ~]$
-[osuser@registry ~]$ oc exec payment-paymentservice-86db696745-rmdw7   -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-   size_t MaxHeapSize                              = 3437232128                                {product} {ergonomic}
-   size_t SoftMaxHeapSize                          = 3437232128                             {manageable} {ergonomic}
-openjdk version "21.0.7" 2025-04-15 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.7.0.6-1) (build 21.0.7+6-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.7.0.6-1) (build 21.0.7+6-LTS, mixed mode, sharing)
-[osuser@registry ~]$
+ot@drlogging1 scripts]#
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]# pwd
+/root/Node1_Loki/loki-node1/loki-node1/scripts
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]# sudo ./preload-images.sh save
+sudo: ./preload-images.sh: command not found
+[root@drlogging1 scripts]# sudo ./preload-images.sh save
+sudo: ./preload-images.sh: command not found
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]# sudo ./preload-images.sh
+sudo: ./preload-images.sh: command not found
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]#
+[root@drlogging1 scripts]# cd ..
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# sh deploy-loki.sh
+[deploy] Deploying node1 (INSTANCE_IP=10.177.139.191, peer=10.177.139.192)
+[deploy] Local data filesystem type: xfs (OK)
+[deploy] Creating local data dirs under /var/lib/loki/node1 ...
+[deploy] Installing config to /opt/loki/node1 ...
+[deploy] Opening inter-node ports to peer 10.177.139.192 ...
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=udp accept
+Warning: ALREADY_ENABLED: 3100:tcp
+Warning: ALREADY_ENABLED: 3101:tcp
+Warning: ALREADY_ENABLED: 3104:tcp
+Warning: ALREADY_ENABLED: 3108:tcp
+Warning: ALREADY_ENABLED: 3109:tcp
+[deploy] Firewall rules applied.
+[deploy] Starting Loki stack ...
+[warn]  pull skipped (air-gapped — ensure images preloaded)
+[+] Running 3/3
+ ! memcached-results     Interrupted                                                                                                                                                                                                    0.0s
+ ! memcached-chunks      Interrupted                                                                                                                                                                                                    0.0s
+ ✘ memcached-index Error Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io on [::1]:53: dial udp [::1]:53: connect: network is unreachable                                                                  0.0s
+Error response from daemon: Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io on [::1]:53: dial udp [::1]:53: connect: network is unreachable
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# ll
+total 40
+-rw-r----- 1 root root  6147 May 30 17:34 deploy-loki.sh
+-rw-r----- 1 root root 11619 May 30 17:34 docker-compose.yml
+-rw-r----- 1 root root  6387 May 30 17:34 INSTRUCTIONS.md
+-rw-r----- 1 root root  9697 May 30 17:34 loki-config.yaml
+drwxr-x--- 2 root root    31 May 30 17:34 scripts
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
