@@ -1,159 +1,178 @@
-Madam/Sir,
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2655-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:09
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 2914ad94 as detached HEAD (ref is feature/deploy-cicd)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+$ set -eo pipefail # collapsed multi-line command
+========== DEBUG ==========
+PROJECT=itepaypg-sbiepay2/infra/devops/deployment
+BRANCH=feature/deploy-cicd
+SERVICE_NAME=epay_admin_service
+ENV=dev
+VERSION=mr-feature-epay-2003-paypal-dev-develop-359-41b834e1
+===========================
+===== GIT REMOTE =====
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+===== GIT STATUS =====
+HEAD detached at 2914ad942
+nothing to commit, working tree clean
+===== TEST FETCH =====
+===== TEST LS-REMOTE =====
+e8161dd08eb9f4f3868ab6dc65e0ce9b499f9a53	HEAD
+33c66797d6f9b5356176620d97922ef8ef1a5076	refs/environments/dev/deployments/100
+c9fae6255e12f6ab252a0391e35c79a109c19307	refs/environments/dev/deployments/101
+dec46cb8ec7dddf9c08c8ed148e743b3c654651f	refs/environments/dev/deployments/105
+fde3b9d24d8e75db40f8988fb8cca97746303cf2	refs/environments/dev/deployments/51
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+=============================================================================================================  values.update.yml 
 
-with reference to trailing mail, Please advise the status of all pending activities by TODAY EOD.
+# cd/publish/values.update.yml
+# Stage: publish
+# Updates image tag in deployment repo values.yaml — git commit + push
+# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
+# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
+.update_tag:
+  stage: publish
+  tags:
+    - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+    - |
+      set -eo pipefail
+      echo "========== DEBUG =========="
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "VERSION=$VERSION"
+      echo "CHART_NAME=$CHART_NAME"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "==========================="
 
-----------------------------------Issues---------------------------------
-Import /export issues with proper names 
-"Deployment" Pipeline trigger issues -Deploy trigger permission issue
-"cicd-template" made "internal" is it required or we have to use "Gitalb CICD Catalogues" as allowlist not worked , or Give report access ?
-validate RBAC mapped in gitlab, —release manager ldap need to at application,
-in Protected Branch ---> Push /Merge @epay groups not coming 
-Review LDAP structure , whether need to map in LDAP sync by Centrailized Team or we can map map using invite groups mainatained using "LDAP-membership"
-subgroup "Frontends" to correct with "Frontend"
-base setup in ci/common for all technologies and image.base.setup ci/image
+      if [ -z "$SERVICE_NAME" ] || \
+         [ -z "$ENV" ] || \
+         [ -z "$VERSION" ]; then
+        echo "ERROR: Required variables missing"
+        exit 1
+      fi
 
----------------------gitlab-config repo-----------------
-GitLab configuration as code repository design using python script
+      
+      TAG=$VERSION
+      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
+      echo "SERVICE_PATH=$SERVICE_PATH"
+      ls -ltrh $SERVICE_PATH
+      git fetch origin ##
+      git checkout $CI_COMMIT_BRANCH ##
+      # retry rebase
+      for i in 1 2 3; do
+        git pull --rebase origin $CI_COMMIT_BRANCH && break 
+        echo "Rebase failed...retrying ($i)"
+        sleep 2
+        if [ $i -eq 3 ]; then
+        echo "Rebase failed after retries"
+        exit 1
+        fi
+      done
+      #git fetch
+      #git checkout $CI_COMMIT_BRANCH
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+      git add $SERVICE_PATH/values.yaml
+      if [[ $(git status --porcelain) ]]; then
+        git commit -m "chore: update image tag to $TAG [skip ci]"
+        for i in 1 2 3; do
+          git push origin $CI_COMMIT_BRANCH && break
+          echo "Push failed...retrying ($i)"
+          sleep 2
+          git pull --rebase origin $CI_COMMIT_BRANCH
+          if [ $i -eq 3 ]; then
+            echo "Push failed after retries"
+            exit 1
+          fi
+        done
+        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
+      else
+        echo "No changes — image tag already $TAG"
+      fi
+      cat $SERVICE_PATH/values.yaml
+# values:update:
+#   extends: .update_tag
 
 
--------------------------------customci ---------------------------------------
-Finialize the images for Custom CI in GitLab
-
-epay-build-java-gradle ---> base : OpenJDK 21 then gradle
-epay-ci-misc-tools ---> kubelinter, yamllint , shellcheker ,
-epay-deploy-tools --> oc +helm + git
-epay-jf:1.0.0 ------------>base : ubi minimal then jf cli
-epay-fortify
-podman
-cosign
-roxctl
-
--------app docker files improvements --------
-Java
-React
-Node
-.NET
-PHP
-Python
-
-
---------------------------security-------------------
-run Fortify sast for all type of files, other than java also
-Gitlab security scan images ?
-Gitlab security features ?
 
 
 
------review and finalize the ci/templates -------------------------
---claude-chat -"GitLab CI/CD templates code review and optimization"
-update services.yaml fully
-allow feature branch to deploy in dev
-all gap analysis
-Filialize CI pipeline stages for each
+
+# .update_tag:
+#   tags:
+#     - deploy_runner
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global --add safe.directory '*'
+#     - git config --global user.name "ci"
+#     - git config --global user.email "ci.cedge@sbi.co.in"    
+#     - git remote set-url origin https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git
+#   script:
+#     - TAG=$VERSION
+#     - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+#     - ls -ltrh $SERVICE_PATH
+#     - cat $SERVICE_PATH/values.yaml
+#     - echo "Tag is $TAG"
+#     - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+#     - git fetch 
+#     - git status
+#     - git branch -a  
+#     - git checkout $CI_COMMIT_BRANCH
+#     - git add $SERVICE_PATH/values.yaml
+#     - git status --porcelain
+#     - |
+#       if [[ `git status --porcelain` ]]; then
+#         # Changes
+#         git commit -m "Update image tag to $TAG"
+#         git push origin $CI_COMMIT_BRANCH
+#       else
+#         # No changes
+#         echo "No changes in git"
+#       fi
+#     - cat $SERVICE_PATH/values.yaml
+# values:update:
+#   extends: .update_tag
 
 
------------ci/common/setup-------------------------
-java.gradle.setup.yml
-dotnet.nuget.setup.yml
-jfrog.setup.yml
-why sdk separate build?
-why react separate build if require npm only  
 
----------image related ci jobs ------------
-image push in jfrog to be corrected app/frontend , app/backend , app/sdk etc.
-setup common "image.podman.setup.yml"(keep in ci/common or ci/image) and use in image build, push ,retag etc.
-retag not used currently , how to utilise the same
-sbom attest break into 2 parts , getting sbom( jf image) + sign sbom ( cosign image)
-any other improvements in ci/image jobs
-
--------------Gitlab Variables naming conventions-------------------------------
-Best practices
---> "CI_" prefix for Gitlab internal variables
---> "GICI_" prefix for variables in Gitlab CICD variables
---> "TPL_" prefix for variables in Gitab CI/CD templates
---> "JOB_" prefix for variables in inline jobs
--->Upstream --?
-
--------update doc--------------------
-update all docs in cicd-templates repo and in epay_master_architecture doc
-update ranu feedback in master doc
-
-------------------------Branching strategy Issues-----------------------------------------
-release version issues :
-
-dev  fork -----------> release/1.1.0 on 10-05-26
-dev fork------------> release/1.2.0  on 15-05-26
-
-later 1.2.0 is ready to merge with main but not 1.1.0, then tags created as 1.2.0 in production then alter if we merge 1.1.0 then production version will be 1.1.0
-which is wrong , the version should be incremental and automated. How to resolve this. or mandatorily release in sequential order only.
-can release creation from dev automated.
-we cannot promote the 1.2.0 first if completed as contains code
-
---->release branch creation automation ci/release/create-release-branch.yml
-
--->Annotated Tag on develop--scope-lock
-
--->Problem 1 — Release Contamination
--->Problem 2 - Dev Environment Instability
--->Ephemeral Preview Environments (per feature branch)
-----------------------------------------------------------------------------------------------------------
-
-
-
-
-Activity
-Migration to Centralized DevSecOps - Activity
-Status
-Remarks
-1
-docker images ( proper clean and documented docker files)
-custom-ci images - Gradle, npm, oc+helm+git
-Done
-gitlab security images
-WIP
-SAST, HP-Fotyfy, 
-application docker file - variable base image ( multiple variables for non-prod and prod)
-Done
-Generic base image for all backend repo
-jfrog docker registry (no base images required , red hat registry configured)
-Pending
-2
-cicd-templates" the new repo with proper documentation and clean code 
-all functionality of "ci-templates"
-WIP
-HotFix - Done
-CodeOwners - Done
-Reverse Sync - Done
-BugFix - WIP
-Note: All POC done in Current GitLab Setup
-package registry for Java utility
-Done
-Pipeline done
-all security scanning
-WIP
-Review Pending
-follow the architecture doc
-WIP
-Backend ci end to end Pipeline
-Done
-Tested in Dev
-frontend ci end to end PipeLine
-Done
-Tested in Dev
-configmap separation and in config folder with codeowners
-WIP
-POC done Pending in Centrelize GitLab Server
-reverse sync
-Done
-POC Done with Testing in Current GitLab
-DC-DR drill scripts 
-any other POC related to CI part - Deployement Repo CI-GitLab.YAML is cleaned
-Done
-3
-Utilising the jfrog artifactory  in developer desktops/IDE for local build ( avoid proxy) for all technologies( Java, .NET, React, Node.js,Python, PHP, Android, Flutter, iOS, React.native etc.)
-WIP
-4
-Gitlab UI config using py script ( separate repo "gitlab-config")
-5
-Gitlab data Migration (issues, MRs, epics etc.)
-Pending
