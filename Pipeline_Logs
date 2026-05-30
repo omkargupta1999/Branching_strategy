@@ -1,83 +1,8 @@
-Gettings below error for our values.update.yml stages of our pipeline ....Sharing the configuration as well.
-
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-2655-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:09
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out 2914ad94 as detached HEAD (ref is feature/deploy-cicd)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:02
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global --add safe.directory '*'
-$ git config --global user.name "ci"
-$ git config --global user.email "ci.cedge@sbi.co.in"
-$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-$ set -eo pipefail # collapsed multi-line command
-========== DEBUG ==========
-PROJECT=itepaypg-sbiepay2/infra/devops/deployment
-BRANCH=feature/deploy-cicd
-SERVICE_NAME=epay_admin_service
-ENV=dev
-VERSION=mr-feature-epay-2003-paypal-dev-develop-359-41b834e1
-===========================
-===== GIT REMOTE =====
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
-===== GIT STATUS =====
-HEAD detached at 2914ad942
-nothing to commit, working tree clean
-===== TEST FETCH =====
-===== TEST LS-REMOTE =====
-e8161dd08eb9f4f3868ab6dc65e0ce9b499f9a53	HEAD
-33c66797d6f9b5356176620d97922ef8ef1a5076	refs/environments/dev/deployments/100
-c9fae6255e12f6ab252a0391e35c79a109c19307	refs/environments/dev/deployments/101
-dec46cb8ec7dddf9c08c8ed148e743b3c654651f	refs/environments/dev/deployments/105
-fde3b9d24d8e75db40f8988fb8cca97746303cf2	refs/environments/dev/deployments/51
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
-=============================================================================================================  values.update.yml 
-
-# cd/publish/values.update.yml
-# Stage: publish
-# Updates image tag in deployment repo values.yaml — git commit + push
-# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
-# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
-.update_tag:
-  stage: publish
-  tags:
-    - deploy_runner
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-  script:
+script:
     - |
       set -eo pipefail
+      set -x                    # ← prints every command before executing
+
       echo "========== DEBUG =========="
       echo "SERVICE_NAME=$SERVICE_NAME"
       echo "ENV=$ENV"
@@ -93,28 +18,40 @@ ERROR: Job failed: exit code 1
         exit 1
       fi
 
-      
       TAG=$VERSION
       SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
-      echo "SERVICE_PATH=$SERVICE_PATH"
-      ls -ltrh $SERVICE_PATH
-      git fetch origin ##
-      git checkout $CI_COMMIT_BRANCH ##
-      # retry rebase
+
+      echo "=== Listing ${ENV}/charts/ ==="
+      ls -ltrh "${ENV}/charts/"
+      echo "=== Listing $SERVICE_PATH ==="
+      ls -ltrh "$SERVICE_PATH"
+
+      echo "=== Git fetch ==="
+      git fetch origin
+
+      echo "=== Git checkout ==="
+      git checkout $CI_COMMIT_BRANCH
+
+      echo "=== Git pull rebase ==="
       for i in 1 2 3; do
-        git pull --rebase origin $CI_COMMIT_BRANCH && break 
+        git pull --rebase origin $CI_COMMIT_BRANCH && break
         echo "Rebase failed...retrying ($i)"
         sleep 2
         if [ $i -eq 3 ]; then
-        echo "Rebase failed after retries"
-        exit 1
+          echo "Rebase failed after retries"
+          exit 1
         fi
       done
-      #git fetch
-      #git checkout $CI_COMMIT_BRANCH
+
+      echo "=== sed update ==="
       sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+
+      echo "=== git add ==="
       git add $SERVICE_PATH/values.yaml
+
+      echo "=== git status ==="
+      git status --porcelain
+
       if [[ $(git status --porcelain) ]]; then
         git commit -m "chore: update image tag to $TAG [skip ci]"
         for i in 1 2 3; do
@@ -131,50 +68,5 @@ ERROR: Job failed: exit code 1
       else
         echo "No changes — image tag already $TAG"
       fi
+
       cat $SERVICE_PATH/values.yaml
-# values:update:
-#   extends: .update_tag
-
-
-
-
-
-
-# .update_tag:
-#   tags:
-#     - deploy_runner
-#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-#   before_script:
-#     - git config --global http.sslVerify false
-#     - git config --global --add safe.directory '*'
-#     - git config --global user.name "ci"
-#     - git config --global user.email "ci.cedge@sbi.co.in"    
-#     - git remote set-url origin https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git
-#   script:
-#     - TAG=$VERSION
-#     - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-#     - ls -ltrh $SERVICE_PATH
-#     - cat $SERVICE_PATH/values.yaml
-#     - echo "Tag is $TAG"
-#     - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-#     - git fetch 
-#     - git status
-#     - git branch -a  
-#     - git checkout $CI_COMMIT_BRANCH
-#     - git add $SERVICE_PATH/values.yaml
-#     - git status --porcelain
-#     - |
-#       if [[ `git status --porcelain` ]]; then
-#         # Changes
-#         git commit -m "Update image tag to $TAG"
-#         git push origin $CI_COMMIT_BRANCH
-#       else
-#         # No changes
-#         echo "No changes in git"
-#       fi
-#     - cat $SERVICE_PATH/values.yaml
-# values:update:
-#   extends: .update_tag
-
-
-
