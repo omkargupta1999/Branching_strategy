@@ -1,72 +1,149 @@
-script:
+# cd/publish/values.update.yml
+# Stage: publish
+# Updates image tag in deployment repo values.yaml — git commit + push
+# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
+
+.update_tag:
+  stage: publish
+  tags:
+    - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
+  script:
     - |
       set -eo pipefail
-      set -x                    # ← prints every command before executing
+      set -x
 
+      # ── Validate required variables ─────────────────────────────────────
       echo "========== DEBUG =========="
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      echo "VERSION=$VERSION"
-      echo "CHART_NAME=$CHART_NAME"
-      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "PROJECT   = ${CI_PROJECT_PATH}"
+      echo "BRANCH    = ${CI_COMMIT_BRANCH}"
+      echo "SERVICE   = ${SERVICE_NAME}"
+      echo "ENV       = ${ENV}"
+      echo "VERSION   = ${VERSION}"
+      echo "CHART     = ${CHART_NAME}"
+      echo "RELEASE   = ${RELEASE_NAME}"
       echo "==========================="
 
-      if [ -z "$SERVICE_NAME" ] || \
-         [ -z "$ENV" ] || \
-         [ -z "$VERSION" ]; then
-        echo "ERROR: Required variables missing"
+      if [ -z "${SERVICE_NAME}" ]; then
+        echo "❌ ERROR: SERVICE_NAME is empty"
+        exit 1
+      fi
+      if [ -z "${ENV}" ]; then
+        echo "❌ ERROR: ENV is empty"
+        exit 1
+      fi
+      if [ -z "${VERSION}" ]; then
+        echo "❌ ERROR: VERSION is empty"
+        exit 1
+      fi
+      if [ -z "${GITLAB_CI_DEPLOY_TOKEN}" ]; then
+        echo "❌ ERROR: GITLAB_CI_DEPLOY_TOKEN is empty"
         exit 1
       fi
 
-      TAG=$VERSION
+      # ── Build paths ─────────────────────────────────────────────────────
+      TAG="${VERSION}"
       SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      VALUES_FILE="${SERVICE_PATH}/values.yaml"
 
-      echo "=== Listing ${ENV}/charts/ ==="
-      ls -ltrh "${ENV}/charts/"
-      echo "=== Listing $SERVICE_PATH ==="
-      ls -ltrh "$SERVICE_PATH"
+      echo "SERVICE_PATH = ${SERVICE_PATH}"
+      echo "VALUES_FILE  = ${VALUES_FILE}"
 
-      echo "=== Git fetch ==="
-      git fetch origin
+      # ── Verify directory exists ─────────────────────────────────────────
+      echo "=== Available charts in ${ENV}/charts/ ==="
+      ls -ltrh "${ENV}/charts/" || {
+        echo "❌ ERROR: ${ENV}/charts/ directory not found in deployment repo"
+        exit 1
+      }
 
-      echo "=== Git checkout ==="
-      git checkout $CI_COMMIT_BRANCH
-
-      echo "=== Git pull rebase ==="
-      for i in 1 2 3; do
-        git pull --rebase origin $CI_COMMIT_BRANCH && break
-        echo "Rebase failed...retrying ($i)"
-        sleep 2
-        if [ $i -eq 3 ]; then
-          echo "Rebase failed after retries"
-          exit 1
-        fi
-      done
-
-      echo "=== sed update ==="
-      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-
-      echo "=== git add ==="
-      git add $SERVICE_PATH/values.yaml
-
-      echo "=== git status ==="
-      git status --porcelain
-
-      if [[ $(git status --porcelain) ]]; then
-        git commit -m "chore: update image tag to $TAG [skip ci]"
-        for i in 1 2 3; do
-          git push origin $CI_COMMIT_BRANCH && break
-          echo "Push failed...retrying ($i)"
-          sleep 2
-          git pull --rebase origin $CI_COMMIT_BRANCH
-          if [ $i -eq 3 ]; then
-            echo "Push failed after retries"
-            exit 1
-          fi
-        done
-        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
-      else
-        echo "No changes — image tag already $TAG"
+      if [ ! -d "${SERVICE_PATH}" ]; then
+        echo "❌ ERROR: Service directory not found: ${SERVICE_PATH}"
+        echo "Available chart directories:"
+        ls "${ENV}/charts/"
+        exit 1
       fi
 
-      cat $SERVICE_PATH/values.yaml
+      if [ ! -f "${VALUES_FILE}" ]; then
+        echo "❌ ERROR: values.yaml not found at: ${VALUES_FILE}"
+        ls -ltrh "${SERVICE_PATH}/"
+        exit 1
+      fi
+
+      echo "✅ Found: ${VALUES_FILE}"
+      echo "=== Current values.yaml content ==="
+      cat "${VALUES_FILE}"
+      echo "==================================="
+
+      # ── Git fetch and checkout ──────────────────────────────────────────
+      git fetch origin
+
+      git checkout "${CI_COMMIT_BRANCH}" || {
+        echo "❌ ERROR: Failed to checkout branch ${CI_COMMIT_BRANCH}"
+        exit 1
+      }
+
+      # ── Rebase with retry ───────────────────────────────────────────────
+      REBASE_SUCCESS=false
+      for i in 1 2 3; do
+        if git pull --rebase origin "${CI_COMMIT_BRANCH}"; then
+          REBASE_SUCCESS=true
+          break
+        fi
+        echo "⚠️  Rebase attempt $i failed — retrying in 2s..."
+        sleep 2
+        git rebase --abort 2>/dev/null || true
+      done
+
+      if [ "$REBASE_SUCCESS" = "false" ]; then
+        echo "❌ ERROR: Rebase failed after 3 attempts"
+        exit 1
+      fi
+
+      # ── Update image tag in values.yaml ────────────────────────────────
+      echo "=== Updating image tag to: ${TAG} ==="
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" "${VALUES_FILE}"
+
+      echo "=== Updated values.yaml content ==="
+      cat "${VALUES_FILE}"
+      echo "==================================="
+
+      # ── Git commit and push ─────────────────────────────────────────────
+      git add "${VALUES_FILE}"
+
+      if [[ $(git status --porcelain) ]]; then
+        git commit -m "chore: update ${SERVICE_NAME} image tag to ${TAG} for ${ENV} [skip ci]"
+
+        PUSH_SUCCESS=false
+        for i in 1 2 3; do
+          if git push origin "${CI_COMMIT_BRANCH}"; then
+            PUSH_SUCCESS=true
+            break
+          fi
+          echo "⚠️  Push attempt $i failed — pulling rebase and retrying..."
+          sleep 2
+          git pull --rebase origin "${CI_COMMIT_BRANCH}" || true
+        done
+
+        if [ "$PUSH_SUCCESS" = "false" ]; then
+          echo "❌ ERROR: Push failed after 3 attempts"
+          exit 1
+        fi
+
+        echo "✅ values.yaml updated: ${SERVICE_PATH} → ${TAG}"
+      else
+        echo "ℹ️  No changes — image tag already ${TAG}"
+      fi
+
+      echo "=== Final values.yaml ==="
+      cat "${VALUES_FILE}"
+
+values:update:
+  extends: .update_tag
+  rules:
+    - when: on_success
