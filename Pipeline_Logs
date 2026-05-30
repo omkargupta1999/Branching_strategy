@@ -1,20 +1,98 @@
-[root@drlogging1 loki-node1]# docker images
-REPOSITORY                                                                              TAG       IMAGE ID       CREATED         SIZE
-grafana/grafana                                                                         12.3.3    40df8365e157   3 months ago    747MB
-grafana/loki                                                                            3.6.5     edcf864b0506   3 months ago    131MB
-mysql/mysql-80                                                                          9.6       e922fb8d4971   8 months ago    541MB
-registry.redhat.io/rhel9/mysql-80                                                       9.6       e922fb8d4971   8 months ago    541MB
-grafana/loki                                                                            3.5.5     fd1a879e62ca   8 months ago    123MB
-minio/minio                                                                             latest    69b2ec208575   8 months ago    175MB
-redis/redis-7                                                                           9.6       23570ca2709f   8 months ago    294MB
-registry.redhat.io/rhel9/redis-7                                                        9.6       23570ca2709f   8 months ago    294MB
-prom/prometheus                                                                         v3.5.0    a3bc50fcb50f   10 months ago   313MB
-grafana/loki                                                                            3.5.2     9db2b58a3445   10 months ago   123MB
-grafana/promtail                                                                        3.5.2     fe96eb67c7a6   10 months ago   198MB
-grafana/grafana                                                                         latest    008307cdce1d   12 months ago   680MB
-prom/node-exporter                                                                      latest    255ec253085f   14 months ago   25MB
-busybox                                                                                 v1        6d3e4188a38a   20 months ago   4.28MB
-epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi/microservices/busybox   v1        6d3e4188a38a   20 months ago   4.28MB
-containrrr/watchtower                                                                   latest    e7dd50d07b86   2 years ago     14.7MB
-prom/alertmanager                                                                       v0.25.0   c8568f914cd2   3 years ago     65.1MB
-google/cadvisor                                                                         latest    eb1210707573   7 years ago     69.6MB
+[root@drlogging1 loki-node1]# cd loki-node1/
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# ll
+total 40
+-rw-r----- 1 root root  6453 May 30 17:54 deploy-loki.sh
+-rw-r----- 1 root root 10780 May 30 17:54 docker-compose.yml
+-rw-r----- 1 root root  6387 May 30 17:54 INSTRUCTIONS.md
+-rw-r----- 1 root root  9584 May 30 17:54 loki-config.yaml
+drwxr-x--- 2 root root    31 May 30 17:48 scripts
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# chmod +x deploy-loki.sh scripts/preload-images.sh
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# sh deploy-loki.sh
+[deploy] Deploying node1 (INSTANCE_IP=10.177.139.191, peer=10.177.139.192)
+[deploy] Local data filesystem type: xfs (OK)
+[deploy] Creating local data dirs under /var/lib/loki/node1 ...
+[deploy] Installing config to /opt/loki/node1 ...
+[deploy] Opening inter-node ports to peer 10.177.139.192 ...
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=udp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=tcp accept
+Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=udp accept
+Warning: ALREADY_ENABLED: 3100:tcp
+Warning: ALREADY_ENABLED: 3101:tcp
+Warning: ALREADY_ENABLED: 3104:tcp
+Warning: ALREADY_ENABLED: 3108:tcp
+Warning: ALREADY_ENABLED: 3109:tcp
+[deploy] Firewall rules applied.
+[deploy] Starting Loki stack ...
+[deploy] Image grafana/loki:3.5.5 present locally — starting without registry pull.
+[+] Running 10/10
+ ✔ Container loki-index-gateway-node1    Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-query-scheduler-node1  Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-query-frontend-node1   Started                                                                                                                                                                                        0.3s
+ ✔ Container loki-ingester-1-node1       Started                                                                                                                                                                                        0.3s
+ ✔ Container loki-distributor-1-node1    Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-compactor-node1        Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-ingester-2-node1       Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-distributor-2-node1    Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-querier-1-node1        Started                                                                                                                                                                                        0.4s
+ ✔ Container loki-querier-2-node1        Started                                                                                                                                                                                        0.4s
+[deploy] Waiting 30s for ring to form ...
+----------------------------------------------------------------
+[deploy] Ingester ring state (this node):
+[warn]  ring not answering yet — check 'docker compose logs ingester-1'
+----------------------------------------------------------------
+[deploy] Compactor ring — across the WHOLE cluster there must be exactly ONE active.
+[deploy] Check after BOTH nodes are up:
+    curl -s http://127.0.0.1:3107/compactor/ring | grep -c ACTIVE
+----------------------------------------------------------------
+[deploy] DONE for node1. Run the peer node's zip the same way.
+[deploy] Local push test (tenant must match CLF):
+    curl -s -H 'X-Scope-OrgID: <your-tenant>' -XPOST \
+      http://127.0.0.1:3100/loki/api/v1/push \
+      -H 'Content-Type: application/json' \
+      --data '{"streams":[{"stream":{"job":"test"},"values":[["'$(date +%s)000000000'","hello"]]}]}'
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
