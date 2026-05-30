@@ -1,7 +1,28 @@
-[osuser@registry ~]$ oc exec -it txn-transactionservice-7965b65db-h7ql9    -n perf-transaction  -- env | grep JAVA_TOOL_OPTIONS
-JAVA_TOOL_OPTIONS=-XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-[osuser@registry ~]$
-[osuser@registry ~]$
-[osuser@registry ~]$ oc exec -it payment-paymentservice-86db696745-pdzqg    -n perf-transaction  -- env | grep JAVA_TOOL_OPTIONS
-JAVA_TOOL_OPTIONS=-XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-[osuser@registry ~]$
+Both pods show the env var set correctly with your exact flag string, on both the transaction and payment services. Step 1 of the verification passes.
+
+That confirms the env var is *present*, but not yet that the JVM actually *ingested* it. Run the step 2 check next — the JVM prints a confirmation line to stderr at startup when it reads the var:
+
+```bash
+oc logs txn-transactionservice-7965b65db-h7ql9 -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
+```
+
+Expected:
+```
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+```
+
+If you see that line, you have hard proof the JVM applied the flags. If the log has rotated and you don't see it (long-running pod), confirm directly against the live JVM instead:
+
+```bash
+oc exec txn-transactionservice-7965b65db-h7ql9 -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
+```
+
+And to confirm the heap actually resolved to 80% of the pod's memory limit:
+
+```bash
+oc exec txn-transactionservice-7965b65db-h7ql9 -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
+```
+
+Cross-check `MaxHeapSize` against 80% of the Deployment's `resources.limits.memory`. If it doesn't line up, the memory limit likely isn't set and the percentage is resolving against node RAM instead.
+
+The env var being identical across both services also tells you the Helm change is consistent across your charts, which is what you want.
