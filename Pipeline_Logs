@@ -1,28 +1,46 @@
-Both pods show the env var set correctly with your exact flag string, on both the transaction and payment services. Step 1 of the verification passes.
-
-That confirms the env var is *present*, but not yet that the JVM actually *ingested* it. Run the step 2 check next — the JVM prints a confirmation line to stderr at startup when it reads the var:
-
-```bash
-oc logs txn-transactionservice-7965b65db-h7ql9 -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
-```
-
-Expected:
-```
+[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep "Picked up JAVA_TOOL_OPTIONS"
+[osuser@registry ~]$
+[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep JAVA_TOOL_OPTIONS
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$ oc logs txn-transactionservice-7965b65db-bjtkn  -n perf-transaction | grep JAVA_TOOL_OPTIONS
+[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
 Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-```
-
-If you see that line, you have hard proof the JVM applied the flags. If the log has rotated and you don't see it (long-running pod), confirm directly against the live JVM instead:
-
-```bash
-oc exec txn-transactionservice-7965b65db-h7ql9 -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
-```
-
-And to confirm the heap actually resolved to 80% of the pod's memory limit:
-
-```bash
-oc exec txn-transactionservice-7965b65db-h7ql9 -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
-```
-
-Cross-check `MaxHeapSize` against 80% of the Deployment's `resources.limits.memory`. If it doesn't line up, the memory limit likely isn't set and the percentage is resolving against node RAM instead.
-
-The env var being identical across both services also tells you the Helm change is consistent across your charts, which is what you want.
+-XX:+AlwaysPreTouch
+-XX:MaxRAMPercentage=80.000000
+-XX:+UseG1GC
+[osuser@registry ~]$ ^C
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$
+[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+-XX:+AlwaysPreTouch
+-XX:MaxRAMPercentage=80.000000
+-XX:+UseG1GC
+[osuser@registry ~]$ oc exec payment-paymentservice-86db696745-rmdw7   -n perf-transaction -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+-XX:+AlwaysPreTouch
+-XX:MaxRAMPercentage=80.000000
+-XX:+UseG1GC
+[osuser@registry ~]$ oc exec txn-transactionservice-7965b65db-jl642  -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+   size_t MaxHeapSize                              = 4294967296                                {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 4294967296                             {manageable} {ergonomic}
+openjdk version "21.0.3" 2024-04-16 LTS
+OpenJDK Runtime Environment (Red_Hat-21.0.3.0.9-1) (build 21.0.3+9-LTS)
+OpenJDK 64-Bit Server VM (Red_Hat-21.0.3.0.9-1) (build 21.0.3+9-LTS, mixed mode, sharing)
+[osuser@registry ~]$
+[osuser@registry ~]$ oc exec payment-paymentservice-86db696745-rmdw7   -n perf-transaction -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+   size_t MaxHeapSize                              = 3437232128                                {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 3437232128                             {manageable} {ergonomic}
+openjdk version "21.0.7" 2025-04-15 LTS
+OpenJDK Runtime Environment (Red_Hat-21.0.7.0.6-1) (build 21.0.7+6-LTS)
+OpenJDK 64-Bit Server VM (Red_Hat-21.0.7.0.6-1) (build 21.0.7+6-LTS, mixed mode, sharing)
+[osuser@registry ~]$
