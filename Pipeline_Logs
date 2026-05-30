@@ -1,71 +1,106 @@
-## Root Cause
+still the same issue we are getting .......
 
-The error is clear and consistent across all attempts:
 
-```
-failed to start daemon: Error initializing network controller:
-error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-```
+[root@drlogging1 ~]#   firewall-cmd --zone=docker --remove-interface=docker0 --permanent
+The interface is under control of NetworkManager, setting zone to default.
+success
+[root@drlogging1 ~]# firewall-cmd --zone=docker --remove-interface=br-21bbb9f9e719 --permanent
+The interface is under control of NetworkManager and already bound to the default zone
+The interface is under control of NetworkManager, setting zone to default.
+success
+[root@drlogging1 ~]# firewall-cmd --reload
+success
+[root@drlogging1 ~]# firewall-cmd --zone=docker --list-interfaces
 
-Firewalld already has `docker0` and `br-21bbb9f9e719` registered in a zone from a previous Docker run. When Docker tries to re-initialize its bridge networks on startup, firewalld rejects it because those interfaces are already claimed — causing the daemon to abort.
+[root@drlogging1 ~]# systemctl start docker
+Job for docker.service failed because the control process exited with error code.
+See "systemctl status docker.service" and "journalctl -xe" for details.
+[root@drlogging1 ~]# systemctl status docker
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)
+   Active: activating (auto-restart) (Result: exit-code) since Sat 2026-05-30 13:01:04 IST; 1s ago
+     Docs: https://docs.docker.com
+  Process: 25097 ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock (code=exited, status=1/FAILURE)
+ Main PID: 25097 (code=exited, status=1/FAILURE)
+[root@drlogging1 ~]#
+[root@drlogging1 ~]#
+[root@drlogging1 ~]# firewall-cmd --get-active-zones
+public
+  interfaces: docker0 br-21bbb9f9e719 ens192
+[root@drlogging1 ~]# firewall-cmd --zone=public --remove-interface=docker0 --permanent
+The interface is under control of NetworkManager and already bound to the default zone
+The interface is under control of NetworkManager, setting zone to default.
+success
+[root@drlogging1 ~]# firewall-cmd --get-active-zones
+public
+  interfaces: docker0 br-21bbb9f9e719 ens192
+[root@drlogging1 ~]# firewall-cmd --reload
+success
+[root@drlogging1 ~]# systemctl start docker
+Job for docker.service failed because the control process exited with error code.
+See "systemctl status docker.service" and "journalctl -xe" for details.
+[root@drlogging1 ~]#
+[root@drlogging1 ~]# journalctl -xe
+-- Automatic restarting of the unit docker.service has been scheduled, as the result for
+-- the configured Restart= setting for the unit.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
+-- Subject: Unit docker.service has finished shutting down
+-- Defined-By: systemd
+-- Support: https://access.redhat.com/support
+--
+-- Unit docker.service has finished shutting down.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi systemd[1]: Starting Docker Application Container Engine...
+-- Subject: Unit docker.service has begun start-up
+-- Defined-By: systemd
+-- Support: https://access.redhat.com/support
+--
+-- Unit docker.service has begun starting up.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.309128618+05:30" level=info msg="Starting up"
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.309905867+05:30" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.309974794+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.309993699+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.317433783+05:30" level=info msg="Creating a containerd client" address=/run/containerd/containerd.sock timeout=1m0s
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi systemd[1]: var-lib-docker-overlay2-metacopy\x2dcheck2147511796-merged.mount: Succeeded.
+-- Subject: Unit succeeded
+-- Defined-By: systemd
+-- Support: https://access.redhat.com/support
+--
+-- The unit var-lib-docker-overlay2-metacopy\x2dcheck2147511796-merged.mount has successfully entered the 'dead' state.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.400662990+05:30" level=info msg="[graphdriver] using prior storage driver: overlay2"
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.409163430+05:30" level=info msg="Loading containers: start."
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.436593602+05:30" level=info msg="Firewalld: docker zone already exists, returning"
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: ERROR: NAME_CONFLICT: new_policy_object(): 'docker-forwarding'
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER' failed: iptables: Bad rule (does a matching rule exist in that ch>
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t nat -D PREROUTING' failed: iptables: Bad rule (does a matching rule exist in that chain?).
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t nat -D OUTPUT' failed: iptables: Bad rule (does a matching rule exist in that chain?).
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t filter -X DOCKER-FORWARD' failed: iptables v1.8.5 (nf_tables):  CHAIN_USER_DEL failed (Device or resource busy): chain >
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t filter -F DOCKER-ISOLATION' failed: iptables: No chain/target/match by that name.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t filter -X DOCKER-ISOLATION' failed: iptables: No chain/target/match by that name.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER' failed: ip6tables: Bad rule (does a matching rule exist in that >
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D PREROUTING' failed: ip6tables: Bad rule (does a matching rule exist in that chain?).
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D OUTPUT' failed: ip6tables: Bad rule (does a matching rule exist in that chain?).
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -X DOCKER-FORWARD' failed: ip6tables v1.8.5 (nf_tables):  CHAIN_USER_DEL failed (Device or resource busy): chai>
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -F DOCKER-ISOLATION' failed: ip6tables: No chain/target/match by that name.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -X DOCKER-ISOLATION' failed: ip6tables: No chain/target/match by that name.
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi firewalld[1266]: ERROR: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone
+May 30 13:04:26 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:26.950120605+05:30" level=warning msg="could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge >
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi firewalld[1266]: ERROR: ZONE_CONFLICT: 'docker0' already bound to a zone
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:27.074053645+05:30" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi dockerd[26073]: failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi dockerd[26073]: time="2026-05-30T13:04:27.074257707+05:30" level=info msg="stopping event stream following graceful shutdown" error="context canceled" module=libcontainerd namespace=plugins>
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
+-- Subject: Unit failed
+-- Defined-By: systemd
+-- Support: https://access.redhat.com/support
+--
+-- The unit docker.service has entered the 'failed' state with result 'exit-code'.
+May 30 13:04:27 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
+-- Subject: Unit docker.service has failed
+-- Defined-By: systemd
+-- Support: https://access.redhat.com/support
+--
+-- Unit docker.service has failed.
+--
+-- The result is failed.
 
----
-
-## Fix — Step by Step
-
-**Step 1: Remove the conflicting interfaces from firewalld zones**
-
-```bash
-firewall-cmd --zone=docker --remove-interface=docker0 --permanent
-firewall-cmd --zone=docker --remove-interface=br-21bbb9f9e719 --permanent
-firewall-cmd --reload
-```
-
-**Step 2: Verify they're gone**
-
-```bash
-firewall-cmd --zone=docker --list-interfaces
-```
-
-Output should be empty or not contain `docker0` / `br-21bbb9f9e719`.
-
-**Step 3: Start Docker**
-
-```bash
-systemctl start docker
-systemctl status docker
-```
-
----
-
-## If Step 1 Alone Doesn't Work
-
-Sometimes the interfaces are in a non-docker zone (e.g., `public`). Check all zones:
-
-```bash
-firewall-cmd --get-active-zones
-```
-
-If `docker0` appears under a different zone, remove it from there:
-
-```bash
-firewall-cmd --zone=public --remove-interface=docker0 --permanent
-firewall-cmd --reload
-```
-
----
-
-## Root Cause & Prevention
-
-This typically happens when:
-- Docker was stopped ungracefully (kill/crash/hard reboot)
-- firewalld retained the zone bindings but Docker's cleanup didn't run
-
-To prevent recurrence, ensure Docker is stopped gracefully before any firewalld reload or system reboot:
-
-```bash
-systemctl stop docker
-systemctl reload firewalld   # safe to do after Docker is stopped
-```
-
-You can also add a firewalld reload hook in `/etc/systemd/system/docker.service.d/override.conf` if this is a recurring issue on this DR logging node.
