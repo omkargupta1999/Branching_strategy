@@ -1,98 +1,119 @@
-[root@drlogging1 loki-node1]# cd loki-node1/
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# ll
-total 40
--rw-r----- 1 root root  6453 May 30 17:54 deploy-loki.sh
--rw-r----- 1 root root 10780 May 30 17:54 docker-compose.yml
--rw-r----- 1 root root  6387 May 30 17:54 INSTRUCTIONS.md
--rw-r----- 1 root root  9584 May 30 17:54 loki-config.yaml
 drwxr-x--- 2 root root    31 May 30 17:48 scripts
+[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1-node1
+no such service: loki-ingester-1-node1
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1-node1
+no such service: loki-ingester-1-node1
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1
+no such service: loki-ingester-1
+[root@drlogging1 loki-node1]# docker compose logs ingester-1
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker compose logs ingester-2
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker ps -a
+CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS                          PORTS     NAMES
+93cecee25d75   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-querier-2-node1
+beca59f29b1a   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-distributor-2-node1
+8559a8ecd620   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-ingester-1-node1
+02120ec7d38c   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-querier-1-node1
+607b741bc30e   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-ingester-2-node1
+acdb94ba18eb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-query-frontend-node1
+0fb9546328a4   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-compactor-node1
+0cdc8762f16d   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-query-scheduler-node1
+85f91bc5d9d7   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-distributor-1-node1
+cddc51454efb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-index-gateway-node1
+a7d34fc97686   grafana/grafana:12.3.3   "/run.sh"                7 weeks ago     Up 5 hours                                grafana
 [root@drlogging1 loki-node1]#
 [root@drlogging1 loki-node1]#
 [root@drlogging1 loki-node1]#
 [root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# chmod +x deploy-loki.sh scripts/preload-images.sh
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# sh deploy-loki.sh
-[deploy] Deploying node1 (INSTANCE_IP=10.177.139.191, peer=10.177.139.192)
-[deploy] Local data filesystem type: xfs (OK)
-[deploy] Creating local data dirs under /var/lib/loki/node1 ...
-[deploy] Installing config to /opt/loki/node1 ...
-[deploy] Opening inter-node ports to peer 10.177.139.192 ...
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7946 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7947 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7948 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7949 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7950 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7951 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7952 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7953 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7954 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=7955 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9095 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9096 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9097 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9098 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9099 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9100 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9101 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9102 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9103 protocol=udp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=tcp accept
-Warning: ALREADY_ENABLED: rule family=ipv4 source address=10.177.139.192/32 port port=9104 protocol=udp accept
-Warning: ALREADY_ENABLED: 3100:tcp
-Warning: ALREADY_ENABLED: 3101:tcp
-Warning: ALREADY_ENABLED: 3104:tcp
-Warning: ALREADY_ENABLED: 3108:tcp
-Warning: ALREADY_ENABLED: 3109:tcp
-[deploy] Firewall rules applied.
-[deploy] Starting Loki stack ...
-[deploy] Image grafana/loki:3.5.5 present locally — starting without registry pull.
-[+] Running 10/10
- ✔ Container loki-index-gateway-node1    Started                                                                                                                                                                                        0.4s
- ✔ Container loki-query-scheduler-node1  Started                                                                                                                                                                                        0.4s
- ✔ Container loki-query-frontend-node1   Started                                                                                                                                                                                        0.3s
- ✔ Container loki-ingester-1-node1       Started                                                                                                                                                                                        0.3s
- ✔ Container loki-distributor-1-node1    Started                                                                                                                                                                                        0.4s
- ✔ Container loki-compactor-node1        Started                                                                                                                                                                                        0.4s
- ✔ Container loki-ingester-2-node1       Started                                                                                                                                                                                        0.4s
- ✔ Container loki-distributor-2-node1    Started                                                                                                                                                                                        0.4s
- ✔ Container loki-querier-1-node1        Started                                                                                                                                                                                        0.4s
- ✔ Container loki-querier-2-node1        Started                                                                                                                                                                                        0.4s
-[deploy] Waiting 30s for ring to form ...
-----------------------------------------------------------------
-[deploy] Ingester ring state (this node):
-[warn]  ring not answering yet — check 'docker compose logs ingester-1'
-----------------------------------------------------------------
-[deploy] Compactor ring — across the WHOLE cluster there must be exactly ONE active.
-[deploy] Check after BOTH nodes are up:
-    curl -s http://127.0.0.1:3107/compactor/ring | grep -c ACTIVE
-----------------------------------------------------------------
-[deploy] DONE for node1. Run the peer node's zip the same way.
-[deploy] Local push test (tenant must match CLF):
-    curl -s -H 'X-Scope-OrgID: <your-tenant>' -XPOST \
-      http://127.0.0.1:3100/loki/api/v1/push \
-      -H 'Content-Type: application/json' \
-      --data '{"streams":[{"stream":{"job":"test"},"values":[["'$(date +%s)000000000'","hello"]]}]}'
 [root@drlogging1 loki-node1]#
 [root@drlogging1 loki-node1]#
+[root@drlogging1 loki-node1]# docker logs 02120ec7d38c
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+[root@drlogging1 loki-node1]# docker logs -f 02120ec7d38c
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+[root@drlogging1 loki-node1]# ^C
+[root@drlogging1 loki-node1]# docker logs --since 5m 02120ec7d38c
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
+  line 67: field index_gateway_client not found in type storage.Config
+[root@drlogging1 loki-node1]# ^C
 [root@drlogging1 loki-node1]#
