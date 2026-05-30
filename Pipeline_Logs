@@ -1,384 +1,71 @@
-[root@drlogging1 ~]# systemctl status docker.service
-● docker.service - Docker Application Container Engine
-   Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)
-   Active: failed (Result: exit-code) since Sat 2026-05-30 12:49:54 IST; 53s ago
-     Docs: https://docs.docker.com
-  Process: 22520 ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock (code=exited, status=1/FAILURE)
- Main PID: 22520 (code=exited, status=1/FAILURE)
+## Root Cause
 
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Service RestartSec=2s expired, scheduling restart.
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Scheduled restart job, restart counter is at 3.
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Start request repeated too quickly.
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:49:54 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-May 30 12:50:35 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Start request repeated too quickly.
-May 30 12:50:35 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:50:35 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-[root@drlogging1 ~]#
-[root@drlogging1 ~]#
-[root@drlogging1 ~]# systemctl start  docker.service
-Job for docker.service failed because the control process exited with error code.
-See "systemctl status docker.service" and "journalctl -xe" for details.
-[root@drlogging1 ~]#
-[root@drlogging1 ~]#
-[root@drlogging1 ~]# journalctl -xe
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/iptables -w10 -t filter -X DOCKER-ISOLATION' failed: iptables: No chain/target/match by that name.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER' failed: ip6tables: Bad rule (does a matching rule exist in that >
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D PREROUTING' failed: ip6tables: Bad rule (does a matching rule exist in that chain?).
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t nat -D OUTPUT' failed: ip6tables: Bad rule (does a matching rule exist in that chain?).
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -X DOCKER-FORWARD' failed: ip6tables v1.8.5 (nf_tables):  CHAIN_USER_DEL failed (Device or resource busy): chai>
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -F DOCKER-ISOLATION' failed: ip6tables: No chain/target/match by that name.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: WARNING: COMMAND_FAILED: '/usr/sbin/ip6tables -w10 -t filter -X DOCKER-ISOLATION' failed: ip6tables: No chain/target/match by that name.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: ERROR: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.648599009+05:30" level=warning msg="could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge >
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi firewalld[1266]: ERROR: ZONE_CONFLICT: 'docker0' already bound to a zone
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.774591741+05:30" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
--- Subject: Unit failed
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- The unit docker.service has entered the 'failed' state with result 'exit-code'.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
--- Subject: Unit docker.service has failed
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- Unit docker.service has failed.
---
--- The result is failed.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Service RestartSec=2s expired, scheduling restart.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Scheduled restart job, restart counter is at 3.
--- Subject: Automatic restarting of a unit has been scheduled
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- Automatic restarting of the unit docker.service has been scheduled, as the result for
--- the configured Restart= setting for the unit.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
--- Subject: Unit docker.service has finished shutting down
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- Unit docker.service has finished shutting down.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Start request repeated too quickly.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
--- Subject: Unit failed
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- The unit docker.service has entered the 'failed' state with result 'exit-code'.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
--- Subject: Unit docker.service has failed
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- Unit docker.service has failed.
---
--- The result is failed.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.socket: Failed with result 'service-start-limit-hit'.
--- Subject: Unit failed
--- Defined-By: systemd
--- Support: https://access.redhat.com/support
---
--- The unit docker.socket has entered the 'failed' state with result 'service-start-limit-hit'.
+The error is clear and consistent across all attempts:
 
-[root@drlogging1 ~]#
-[root@drlogging1 ~]#
-[root@drlogging1 ~]# dockerd --debug
-INFO[2026-05-30T12:52:08.651409391+05:30] Starting up
-DEBU[2026-05-30T12:52:08.652255878+05:30] Listener created for HTTP on unix (/var/run/docker.sock)
-INFO[2026-05-30T12:52:08.653133438+05:30] OTEL tracing is not configured, using no-op tracer provider
-INFO[2026-05-30T12:52:08.653330881+05:30] CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory  dir=/var/run/cdi
-INFO[2026-05-30T12:52:08.653344905+05:30] CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory  dir=/etc/cdi
-DEBU[2026-05-30T12:52:08.660646825+05:30] Golang's threads limit set to 459540
-INFO[2026-05-30T12:52:08.660945555+05:30] Creating a containerd client                  address=/run/containerd/containerd.sock timeout=1m0s
-DEBU[2026-05-30T12:52:08.661015166+05:30] metrics API listening on /var/run/docker/metrics.sock
-DEBU[2026-05-30T12:52:08.663328474+05:30] Using default logging driver json-file
-DEBU[2026-05-30T12:52:08.663390471+05:30] processing event stream                       module=libcontainerd namespace=plugins.moby
-DEBU[2026-05-30T12:52:08.663539315+05:30] No quota support for local volumes in /var/lib/docker/volumes: Filesystem does not support, or has not enabled quotas
-DEBU[2026-05-30T12:52:08.669514392+05:30] [graphdriver] priority list: [overlay2 fuse-overlayfs btrfs zfs vfs]
-DEBU[2026-05-30T12:52:08.686305455+05:30] successfully detected metacopy status         storage-driver=overlay2 usingMetacopy=false
-DEBU[2026-05-30T12:52:08.744846257+05:30] backingFs=xfs, projectQuotaSupported=false, usingMetacopy=false, indexOff="index=off,", userxattr=""  storage-driver=overlay2
-INFO[2026-05-30T12:52:08.744864876+05:30] [graphdriver] using prior storage driver: overlay2
-DEBU[2026-05-30T12:52:08.744870464+05:30] Initialized graph driver overlay2
-DEBU[2026-05-30T12:52:08.753138985+05:30] Max Concurrent Downloads: 3
-DEBU[2026-05-30T12:52:08.753156150+05:30] Max Concurrent Uploads: 5
-DEBU[2026-05-30T12:52:08.753159417+05:30] Max Download Attempts: 5
-INFO[2026-05-30T12:52:08.753171304+05:30] Loading containers: start.
-DEBU[2026-05-30T12:52:08.753480778+05:30] processing event stream                       module=libcontainerd namespace=moby
-DEBU[2026-05-30T12:52:08.758651313+05:30] loaded container                              container=a7d34fc976862ba964598d77e6446b3e3797a8d6c920bab3dd26f2f0a5e4ae23 paused=false running=false
-DEBU[2026-05-30T12:52:08.758668166+05:30] loaded container                              container=99faa3b127103e6136505ed935834e36683714e0839c6c6295499086b0debc73 paused=false running=false
-DEBU[2026-05-30T12:52:08.758668996+05:30] loaded container                              container=5561716bcdd2a94170807cee4ddd9d6573926933b6cbd3c8cd60c6c6c38dea87 paused=false running=false
-DEBU[2026-05-30T12:52:08.758730801+05:30] loaded container                              container=aa0e5aa572696b72db75e7552b9f526a64d98a29f502e590ee8a7129a17fb642 paused=false running=false
-DEBU[2026-05-30T12:52:08.758793659+05:30] loaded container                              container=9d270ab92cf68630105d515764a61dc75bd60be0bb328becb7698f05d093df83 paused=false running=false
-DEBU[2026-05-30T12:52:08.758955511+05:30] loaded container                              container=5bec13eb8275931eab889773783c06e4b4cc75d627970093e1fa5f39a65b7e61 paused=false running=false
-DEBU[2026-05-30T12:52:08.759005945+05:30] loaded container                              container=bc32062df8a35b161ad97a0ac47f23cf954d9f4f2c48c3f4d81e8b81688cb42e paused=false running=false
-DEBU[2026-05-30T12:52:08.759073938+05:30] loaded container                              container=83a9cca5bdf9f0451880bea2e6b4d8e85d8143ff5bdc8adac0230fbd7fa4753a paused=false running=false
-DEBU[2026-05-30T12:52:08.759166713+05:30] loaded container                              container=76f544de60940e768b2a4ab25ac80c95bff05a9a2b3d20788e392ebcc9b508ea paused=false running=false
-DEBU[2026-05-30T12:52:08.759190538+05:30] loaded container                              container=9a4bfcfba1ec268826a2cf6ab6885a1eda1a891353778d190dbef56eca267352 paused=false running=false
-DEBU[2026-05-30T12:52:08.775827976+05:30] restoring container                           container=9d270ab92cf68630105d515764a61dc75bd60be0bb328becb7698f05d093df83 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775846946+05:30] restoring container                           container=a7d34fc976862ba964598d77e6446b3e3797a8d6c920bab3dd26f2f0a5e4ae23 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775890655+05:30] restoring container                           container=5bec13eb8275931eab889773783c06e4b4cc75d627970093e1fa5f39a65b7e61 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775918201+05:30] restoring container                           container=76f544de60940e768b2a4ab25ac80c95bff05a9a2b3d20788e392ebcc9b508ea paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775961348+05:30] restoring container                           container=5561716bcdd2a94170807cee4ddd9d6573926933b6cbd3c8cd60c6c6c38dea87 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775997823+05:30] restoring container                           container=83a9cca5bdf9f0451880bea2e6b4d8e85d8143ff5bdc8adac0230fbd7fa4753a paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775988205+05:30] restoring container                           container=aa0e5aa572696b72db75e7552b9f526a64d98a29f502e590ee8a7129a17fb642 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776062602+05:30] restoring container                           container=bc32062df8a35b161ad97a0ac47f23cf954d9f4f2c48c3f4d81e8b81688cb42e paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.775992765+05:30] restoring container                           container=9a4bfcfba1ec268826a2cf6ab6885a1eda1a891353778d190dbef56eca267352 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776262592+05:30] restoring container                           container=99faa3b127103e6136505ed935834e36683714e0839c6c6295499086b0debc73 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776587380+05:30] done restoring container                      container=83a9cca5bdf9f0451880bea2e6b4d8e85d8143ff5bdc8adac0230fbd7fa4753a paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776589945+05:30] done restoring container                      container=99faa3b127103e6136505ed935834e36683714e0839c6c6295499086b0debc73 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776610467+05:30] done restoring container                      container=76f544de60940e768b2a4ab25ac80c95bff05a9a2b3d20788e392ebcc9b508ea paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776614946+05:30] done restoring container                      container=5561716bcdd2a94170807cee4ddd9d6573926933b6cbd3c8cd60c6c6c38dea87 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776623196+05:30] done restoring container                      container=9d270ab92cf68630105d515764a61dc75bd60be0bb328becb7698f05d093df83 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776632833+05:30] done restoring container                      container=a7d34fc976862ba964598d77e6446b3e3797a8d6c920bab3dd26f2f0a5e4ae23 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776612365+05:30] done restoring container                      container=5bec13eb8275931eab889773783c06e4b4cc75d627970093e1fa5f39a65b7e61 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776590895+05:30] done restoring container                      container=bc32062df8a35b161ad97a0ac47f23cf954d9f4f2c48c3f4d81e8b81688cb42e paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776590669+05:30] done restoring container                      container=aa0e5aa572696b72db75e7552b9f526a64d98a29f502e590ee8a7129a17fb642 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776604730+05:30] done restoring container                      container=9a4bfcfba1ec268826a2cf6ab6885a1eda1a891353778d190dbef56eca267352 paused=false restarting=false running=false
-DEBU[2026-05-30T12:52:08.776711624+05:30] Option DefaultDriver: bridge
-DEBU[2026-05-30T12:52:08.776735651+05:30] Option DefaultNetwork: bridge
-DEBU[2026-05-30T12:52:08.776740172+05:30] Network Control Plane MTU: 1500
-DEBU[2026-05-30T12:52:08.776854852+05:30] Modules already loaded                        modules="[nf_conntrack nf_conntrack_netlink]"
-INFO[2026-05-30T12:52:08.780772181+05:30] Firewalld: docker zone already exists, returning
-DEBU[2026-05-30T12:52:08.782249695+05:30] Firewalld: docker-forwarding policy already exists
-DEBU[2026-05-30T12:52:08.782291854+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -j DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:08.786772104+05:30] Firewalld passthrough: ipv4, [-t nat -D PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:08.791127141+05:30] Firewalld passthrough: ipv4, [-t nat -D OUTPUT -m addrtype --dst-type LOCAL ! --dst 127.0.0.0/8 -j DOCKER]
-DEBU[2026-05-30T12:52:08.795052851+05:30] Firewalld passthrough: ipv4, [-t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:08.799113248+05:30] Firewalld passthrough: ipv4, [-t nat -D PREROUTING]
-DEBU[2026-05-30T12:52:08.803291003+05:30] Firewalld passthrough: ipv4, [-t nat -D OUTPUT]
-DEBU[2026-05-30T12:52:08.807308037+05:30] Firewalld passthrough: ipv4, [-t nat -F DOCKER]
-DEBU[2026-05-30T12:52:08.811182690+05:30] Firewalld passthrough: ipv4, [-t nat -X DOCKER]
-DEBU[2026-05-30T12:52:08.814964737+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER]
-DEBU[2026-05-30T12:52:08.818585258+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER]
-DEBU[2026-05-30T12:52:08.822358096+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.826211586+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.840589445+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.844508404+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.848261054+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-CT]
-DEBU[2026-05-30T12:52:08.851985702+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-CT]
-DEBU[2026-05-30T12:52:08.855703561+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.859356297+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.863041509+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:08.866711765+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:08.870337900+05:30] Firewalld passthrough: ipv4, [-t filter -F DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:08.874003009+05:30] Firewalld passthrough: ipv4, [-t filter -X DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:08.877790230+05:30] Firewalld passthrough: ipv4, [-t nat -n -L DOCKER]
-DEBU[2026-05-30T12:52:08.881797371+05:30] Firewalld passthrough: ipv4, [-t nat -N DOCKER]
-DEBU[2026-05-30T12:52:08.885660766+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER]
-DEBU[2026-05-30T12:52:08.889454096+05:30] Firewalld passthrough: ipv4, [-t filter -N DOCKER]
-DEBU[2026-05-30T12:52:08.893198531+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.896860733+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.900549535+05:30] Firewalld passthrough: ipv4, [-t filter -N DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.904449693+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-CT]
-DEBU[2026-05-30T12:52:08.908282311+05:30] Firewalld passthrough: ipv4, [-t filter -N DOCKER-CT]
-DEBU[2026-05-30T12:52:08.912055366+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.915830522+05:30] Firewalld passthrough: ipv4, [-t filter -N DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.919476839+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:08.923231316+05:30] Firewalld passthrough: ipv4, [-t filter -N DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:08.927028459+05:30] Firewalld passthrough: ipv4, [-t nat -C PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:08.930756788+05:30] Firewalld passthrough: ipv4, [-t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:08.934587490+05:30] Firewalld passthrough: ipv4, [-t nat -C OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst 127.0.0.0/8]
-DEBU[2026-05-30T12:52:08.938343058+05:30] Firewalld passthrough: ipv4, [-t nat -A OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst 127.0.0.0/8]
-DEBU[2026-05-30T12:52:08.942167771+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.945823937+05:30] Firewalld passthrough: ipv4, [-D FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.949566365+05:30] Firewalld passthrough: ipv4, [-I FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:08.953298000+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -j DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.956998098+05:30] Firewalld passthrough: ipv4, [-I DOCKER-FORWARD -j DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:08.960670048+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.964282789+05:30] Firewalld passthrough: ipv4, [-I DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.967955951+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -j DOCKER-CT]
-DEBU[2026-05-30T12:52:08.971756658+05:30] Firewalld passthrough: ipv4, [-I DOCKER-FORWARD -j DOCKER-CT]
-DEBU[2026-05-30T12:52:08.975614996+05:30] Firewalld passthrough: ipv4, [-t nat -C DOCKER -i loopback0 -d 127.0.0.0/8 -j RETURN]
-DEBU[2026-05-30T12:52:08.979529257+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -m set --match-set docker-ext-bridges-v4 dst -j DOCKER]
-DEBU[2026-05-30T12:52:08.983211785+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:08.986986331+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -m set --match-set docker-ext-bridges-v4 dst -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]
-DEBU[2026-05-30T12:52:08.990680206+05:30] Firewalld passthrough: ipv6, [-t filter -n -L FORWARD]
-DEBU[2026-05-30T12:52:08.994312274+05:30] Modules already loaded                        modules="[ip6_tables]"
-DEBU[2026-05-30T12:52:08.994326252+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -j DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:08.998084714+05:30] Firewalld passthrough: ipv6, [-t nat -D PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:09.001901361+05:30] Firewalld passthrough: ipv6, [-t nat -D OUTPUT -m addrtype --dst-type LOCAL ! --dst ::1/128 -j DOCKER]
-DEBU[2026-05-30T12:52:09.005708100+05:30] Firewalld passthrough: ipv6, [-t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:09.009569112+05:30] Firewalld passthrough: ipv6, [-t nat -D PREROUTING]
-DEBU[2026-05-30T12:52:09.013538300+05:30] Firewalld passthrough: ipv6, [-t nat -D OUTPUT]
-DEBU[2026-05-30T12:52:09.017519742+05:30] Firewalld passthrough: ipv6, [-t nat -F DOCKER]
-DEBU[2026-05-30T12:52:09.021628598+05:30] Firewalld passthrough: ipv6, [-t nat -X DOCKER]
-DEBU[2026-05-30T12:52:09.025388430+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER]
-DEBU[2026-05-30T12:52:09.029038119+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER]
-DEBU[2026-05-30T12:52:09.032782710+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.036676409+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.050568121+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.054364263+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.058011606+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-CT]
-DEBU[2026-05-30T12:52:09.061620372+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-CT]
-DEBU[2026-05-30T12:52:09.065397633+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.069123239+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.072698849+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:09.076416801+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:09.080103940+05:30] Firewalld passthrough: ipv6, [-t filter -F DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:09.083970770+05:30] Firewalld passthrough: ipv6, [-t filter -X DOCKER-ISOLATION]
-DEBU[2026-05-30T12:52:09.087819804+05:30] Firewalld passthrough: ipv6, [-t nat -n -L DOCKER]
-DEBU[2026-05-30T12:52:09.091565831+05:30] Firewalld passthrough: ipv6, [-t nat -N DOCKER]
-DEBU[2026-05-30T12:52:09.095289393+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER]
-DEBU[2026-05-30T12:52:09.098882583+05:30] Firewalld passthrough: ipv6, [-t filter -N DOCKER]
-DEBU[2026-05-30T12:52:09.102547757+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.106365563+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.110072288+05:30] Firewalld passthrough: ipv6, [-t filter -N DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.113864013+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-CT]
-DEBU[2026-05-30T12:52:09.117575808+05:30] Firewalld passthrough: ipv6, [-t filter -N DOCKER-CT]
-DEBU[2026-05-30T12:52:09.121308819+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.125043981+05:30] Firewalld passthrough: ipv6, [-t filter -N DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.128688821+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:09.132475477+05:30] Firewalld passthrough: ipv6, [-t filter -N DOCKER-ISOLATION-STAGE-2]
-DEBU[2026-05-30T12:52:09.136246422+05:30] Firewalld passthrough: ipv6, [-t nat -C PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:09.140107588+05:30] Firewalld passthrough: ipv6, [-t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]
-DEBU[2026-05-30T12:52:09.143825149+05:30] Firewalld passthrough: ipv6, [-t nat -C OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst ::1/128]
-DEBU[2026-05-30T12:52:09.147579811+05:30] Firewalld passthrough: ipv6, [-t nat -A OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst ::1/128]
-DEBU[2026-05-30T12:52:09.151352808+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.155165603+05:30] Firewalld passthrough: ipv6, [-D FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.158991002+05:30] Firewalld passthrough: ipv6, [-I FORWARD -j DOCKER-FORWARD]
-DEBU[2026-05-30T12:52:09.162697538+05:30] Firewalld passthrough: ipv6, [-t filter -C DOCKER-FORWARD -j DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.166778404+05:30] Firewalld passthrough: ipv6, [-I DOCKER-FORWARD -j DOCKER-BRIDGE]
-DEBU[2026-05-30T12:52:09.170568652+05:30] Firewalld passthrough: ipv6, [-t filter -C DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.174472473+05:30] Firewalld passthrough: ipv6, [-I DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.178337095+05:30] Firewalld passthrough: ipv6, [-t filter -C DOCKER-FORWARD -j DOCKER-CT]
-DEBU[2026-05-30T12:52:09.182157716+05:30] Firewalld passthrough: ipv6, [-I DOCKER-FORWARD -j DOCKER-CT]
-DEBU[2026-05-30T12:52:09.186057332+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -m set --match-set docker-ext-bridges-v6 dst -j DOCKER]
-DEBU[2026-05-30T12:52:09.189933430+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -j DOCKER-ISOLATION-STAGE-1]
-DEBU[2026-05-30T12:52:09.193799437+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -m set --match-set docker-ext-bridges-v6 dst -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]
-DEBU[2026-05-30T12:52:09.198123655+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -s 172.18.0.0/16 ! -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.201940382+05:30] Firewalld passthrough: ipv4, [-t nat -I POSTROUTING -s 172.18.0.0/16 ! -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.205809976+05:30] Firewalld passthrough: ipv4, [-t nat -C DOCKER -i br-21bbb9f9e719 -j RETURN]
-DEBU[2026-05-30T12:52:09.209551358+05:30] Firewalld passthrough: ipv4, [-t nat -I DOCKER -i br-21bbb9f9e719 -j RETURN]
-DEBU[2026-05-30T12:52:09.213327415+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -m addrtype --src-type LOCAL -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.217345771+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.221265892+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j DROP]
-DEBU[2026-05-30T12:52:09.225090132+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.229065079+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j DROP]
-DEBU[2026-05-30T12:52:09.232994109+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i br-21bbb9f9e719 ! -o br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.237413412+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.241302484+05:30] Firewalld passthrough: ipv4, [-t filter -A DOCKER-FORWARD -i br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.244991498+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.249886012+05:30] Firewalld: adding br-21bbb9f9e719 interface to docker zone
-DEBU[2026-05-30T12:52:09.251228582+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -s 172.18.0.0/16 ! -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.255097141+05:30] Firewalld passthrough: ipv4, [-t nat -D POSTROUTING -s 172.18.0.0/16 ! -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.259052075+05:30] Firewalld passthrough: ipv4, [-t nat -C DOCKER -i br-21bbb9f9e719 -j RETURN]
-DEBU[2026-05-30T12:52:09.262861335+05:30] Firewalld passthrough: ipv4, [-t nat -D DOCKER -i br-21bbb9f9e719 -j RETURN]
-DEBU[2026-05-30T12:52:09.266731040+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -m addrtype --src-type LOCAL -o br-21bbb9f9e719 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.270776785+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.274603248+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -o br-21bbb9f9e719 -j DROP]
-DEBU[2026-05-30T12:52:09.278485085+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i br-21bbb9f9e719 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.282227617+05:30] Firewalld passthrough: ipv4, [-t filter -D DOCKER-FORWARD -i br-21bbb9f9e719 -j ACCEPT]
-WARN[2026-05-30T12:52:09.285994343+05:30] could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge name br-21bbb9f9e719 while booting up from persistent state: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone
-DEBU[2026-05-30T12:52:09.286006862+05:30] Network (21bbb9f) restored
-DEBU[2026-05-30T12:52:09.286175503+05:30] Allocating IPv4 pools for network loki (21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c)
-DEBU[2026-05-30T12:52:09.286325369+05:30] RequestPool: {AddressSpace:LocalDefault Pool:172.18.0.0/16 SubPool: Options:map[] Exclude:[10.176.126.200/32 10.177.136.0/21 10.189.53.150/32 172.17.0.0/16 172.18.0.0/16 192.168.122.0/24] V6:false}
-DEBU[2026-05-30T12:52:09.286344759+05:30] RequestAddress(LocalDefault/172.18.0.0/16, 172.18.0.1, map[RequestAddressType:com.docker.network.gateway])
-DEBU[2026-05-30T12:52:09.286363824+05:30] Request address PoolID:172.18.0.0/16 Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0 Serial:false PrefAddress:172.18.0.1
-DEBU[2026-05-30T12:52:09.286461884+05:30] Firewalld passthrough: ipv4, [-t filter -n -L DOCKER-USER]
-DEBU[2026-05-30T12:52:09.290087078+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.293627504+05:30] Firewalld passthrough: ipv4, [-D FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.297309481+05:30] Firewalld passthrough: ipv4, [-I FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.301049679+05:30] Firewalld passthrough: ipv6, [-t filter -n -L DOCKER-USER]
-DEBU[2026-05-30T12:52:09.304878423+05:30] Firewalld passthrough: ipv6, [-t filter -C FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.308550126+05:30] Firewalld passthrough: ipv6, [-D FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.312369829+05:30] Firewalld passthrough: ipv6, [-I FORWARD -j DOCKER-USER]
-DEBU[2026-05-30T12:52:09.316380690+05:30] Allocating IPv4 pools for network bridge (88b985530c9384b33c2f4634a9caa31fdfa831a7137050e520b1311fe10608df)
-DEBU[2026-05-30T12:52:09.316502814+05:30] RequestPool: {AddressSpace:LocalDefault Pool:172.17.0.0/16 SubPool: Options:map[] Exclude:[10.176.126.200/32 10.177.136.0/21 10.189.53.150/32 172.17.0.0/16 172.18.0.0/16 192.168.122.0/24] V6:false}
-DEBU[2026-05-30T12:52:09.316520349+05:30] RequestAddress(LocalDefault/172.17.0.0/16, 172.17.0.1, map[RequestAddressType:com.docker.network.gateway])
-DEBU[2026-05-30T12:52:09.316536565+05:30] Request address PoolID:172.17.0.0/16 Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0 Serial:false PrefAddress:172.17.0.1
-DEBU[2026-05-30T12:52:09.316780399+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.320526594+05:30] Firewalld passthrough: ipv4, [-t nat -I POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.328514282+05:30] Firewalld passthrough: ipv4, [-t nat -C DOCKER -i docker0 -j RETURN]
-DEBU[2026-05-30T12:52:09.332492499+05:30] Firewalld passthrough: ipv4, [-t nat -I DOCKER -i docker0 -j RETURN]
-DEBU[2026-05-30T12:52:09.336349333+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -m addrtype --src-type LOCAL -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.340299160+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.344076693+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j DROP]
-DEBU[2026-05-30T12:52:09.347973195+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i docker0 -o docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.352145701+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i docker0 -o docker0 -j DROP]
-DEBU[2026-05-30T12:52:09.356034212+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i docker0 ! -o docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.359925938+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.363839048+05:30] Firewalld passthrough: ipv4, [-t filter -A DOCKER-FORWARD -i docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.367846920+05:30] Firewalld passthrough: ipv4, [-t filter -C FORWARD -i docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.372925691+05:30] Firewalld: adding docker0 interface to docker zone
-DEBU[2026-05-30T12:52:09.374447260+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.378244599+05:30] Firewalld passthrough: ipv4, [-t nat -D POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.382078491+05:30] Firewalld passthrough: ipv4, [-t nat -C DOCKER -i docker0 -j RETURN]
-DEBU[2026-05-30T12:52:09.385891340+05:30] Firewalld passthrough: ipv4, [-t nat -D DOCKER -i docker0 -j RETURN]
-DEBU[2026-05-30T12:52:09.389776614+05:30] Firewalld passthrough: ipv4, [-t nat -C POSTROUTING -m addrtype --src-type LOCAL -o docker0 -j MASQUERADE]
-DEBU[2026-05-30T12:52:09.393578005+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.397350407+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j DROP]
-DEBU[2026-05-30T12:52:09.401164160+05:30] Firewalld passthrough: ipv4, [-t filter -C DOCKER-FORWARD -i docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.405154629+05:30] Firewalld passthrough: ipv4, [-t filter -D DOCKER-FORWARD -i docker0 -j ACCEPT]
-DEBU[2026-05-30T12:52:09.409080155+05:30] releasing IPv4 pools from network bridge (88b985530c9384b33c2f4634a9caa31fdfa831a7137050e520b1311fe10608df)
-DEBU[2026-05-30T12:52:09.409102226+05:30] ReleaseAddress(LocalDefault/172.17.0.0/16, 172.17.0.1)
-DEBU[2026-05-30T12:52:09.409116441+05:30] Released address Address:172.17.0.1 Sequence:Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0
-DEBU[2026-05-30T12:52:09.409124017+05:30] ReleasePool(LocalDefault/172.17.0.0/16)
-DEBU[2026-05-30T12:52:09.409135366+05:30] daemon configured with a 15 seconds minimum shutdown timeout
-DEBU[2026-05-30T12:52:09.409142828+05:30] start clean shutdown of all containers with a 15 seconds timeout...
-DEBU[2026-05-30T12:52:09.409836456+05:30] Unix socket /var/run/docker/libnetwork/5b2e200167bb.sock was closed. The external key listener will stop.
-INFO[2026-05-30T12:52:09.410282862+05:30] stopping event stream following graceful shutdown  error="<nil>" module=libcontainerd namespace=moby
-DEBU[2026-05-30T12:52:09.410315973+05:30] Cleaning up old mountid : start.
-DEBU[2026-05-30T12:52:09.410443626+05:30] Cleaning up old mountid : done.
-failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-[root@drlogging1 ~]#
-[root@drlogging1 ~]#
-[root@drlogging1 ~]# journalctl -u docker.service -n 50 --no-pager
--- Logs begin at Sat 2026-05-30 10:52:57 IST, end at Sat 2026-05-30 16:22:57 IST. --
-May 30 12:50:51 drlogging1.preprod.sbiepay.sbi dockerd[22813]: time="2026-05-30T12:50:51.576248836+05:30" level=info msg="Loading containers: start."
-May 30 12:50:51 drlogging1.preprod.sbiepay.sbi dockerd[22813]: time="2026-05-30T12:50:51.603690559+05:30" level=info msg="Firewalld: docker zone already exists, returning"
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi dockerd[22813]: time="2026-05-30T12:50:52.105431242+05:30" level=warning msg="could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge name br-21bbb9f9e719 while booting up from persistent state: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone"
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi dockerd[22813]: time="2026-05-30T12:50:52.230480696+05:30" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi dockerd[22813]: failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:50:52 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Service RestartSec=2s expired, scheduling restart.
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Scheduled restart job, restart counter is at 1.
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi systemd[1]: Starting Docker Application Container Engine...
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.308217799+05:30" level=info msg="Starting up"
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.308866112+05:30" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.308920793+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.308933423+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.316075333+05:30" level=info msg="Creating a containerd client" address=/run/containerd/containerd.sock timeout=1m0s
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.352434819+05:30" level=info msg="[graphdriver] using prior storage driver: overlay2"
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.361314713+05:30" level=info msg="Loading containers: start."
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.389501672+05:30" level=info msg="Firewalld: docker zone already exists, returning"
-May 30 12:50:54 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:54.900397023+05:30" level=warning msg="could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge name br-21bbb9f9e719 while booting up from persistent state: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone"
-May 30 12:50:55 drlogging1.preprod.sbiepay.sbi dockerd[23082]: time="2026-05-30T12:50:55.023496748+05:30" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
-May 30 12:50:55 drlogging1.preprod.sbiepay.sbi dockerd[23082]: failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-May 30 12:50:55 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
-May 30 12:50:55 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:50:55 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Service RestartSec=2s expired, scheduling restart.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Scheduled restart job, restart counter is at 2.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: Starting Docker Application Container Engine...
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.057004869+05:30" level=info msg="Starting up"
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.057995458+05:30" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.058058160+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.058069661+05:30" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.064645233+05:30" level=info msg="Creating a containerd client" address=/run/containerd/containerd.sock timeout=1m0s
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.103655615+05:30" level=info msg="[graphdriver] using prior storage driver: overlay2"
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.111839882+05:30" level=info msg="Loading containers: start."
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.140586482+05:30" level=info msg="Firewalld: docker zone already exists, returning"
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.648599009+05:30" level=warning msg="could not create bridge network for id 21bbb9f9e719dd65270a1d2cf7b633685afd9105553d501d689a761ca0d9e94c bridge name br-21bbb9f9e719 while booting up from persistent state: ZONE_CONFLICT: 'br-21bbb9f9e719' already bound to a zone"
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: time="2026-05-30T12:50:57.774591741+05:30" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi dockerd[23311]: failed to start daemon: Error initializing network controller: error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:50:57 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Service RestartSec=2s expired, scheduling restart.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Scheduled restart job, restart counter is at 3.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: Stopped Docker Application Container Engine.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Start request repeated too quickly.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: docker.service: Failed with result 'exit-code'.
-May 30 12:50:59 drlogging1.preprod.sbiepay.sbi systemd[1]: Failed to start Docker Application Container Engine.
-[root@drlogging1 ~]#
-[root@drlogging1 ~]#
+```
+failed to start daemon: Error initializing network controller:
+error creating default "bridge" network: ZONE_CONFLICT: 'docker0' already bound to a zone
+```
+
+Firewalld already has `docker0` and `br-21bbb9f9e719` registered in a zone from a previous Docker run. When Docker tries to re-initialize its bridge networks on startup, firewalld rejects it because those interfaces are already claimed — causing the daemon to abort.
+
+---
+
+## Fix — Step by Step
+
+**Step 1: Remove the conflicting interfaces from firewalld zones**
+
+```bash
+firewall-cmd --zone=docker --remove-interface=docker0 --permanent
+firewall-cmd --zone=docker --remove-interface=br-21bbb9f9e719 --permanent
+firewall-cmd --reload
+```
+
+**Step 2: Verify they're gone**
+
+```bash
+firewall-cmd --zone=docker --list-interfaces
+```
+
+Output should be empty or not contain `docker0` / `br-21bbb9f9e719`.
+
+**Step 3: Start Docker**
+
+```bash
+systemctl start docker
+systemctl status docker
+```
+
+---
+
+## If Step 1 Alone Doesn't Work
+
+Sometimes the interfaces are in a non-docker zone (e.g., `public`). Check all zones:
+
+```bash
+firewall-cmd --get-active-zones
+```
+
+If `docker0` appears under a different zone, remove it from there:
+
+```bash
+firewall-cmd --zone=public --remove-interface=docker0 --permanent
+firewall-cmd --reload
+```
+
+---
+
+## Root Cause & Prevention
+
+This typically happens when:
+- Docker was stopped ungracefully (kill/crash/hard reboot)
+- firewalld retained the zone bindings but Docker's cleanup didn't run
+
+To prevent recurrence, ensure Docker is stopped gracefully before any firewalld reload or system reboot:
+
+```bash
+systemctl stop docker
+systemctl reload firewalld   # safe to do after Docker is stopped
+```
+
+You can also add a firewalld reload hook in `/etc/systemd/system/docker.service.d/override.conf` if this is a recurring issue on this DR logging node.
