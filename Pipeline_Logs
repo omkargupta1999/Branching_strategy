@@ -1,14 +1,15 @@
+Here's the updated Dockerfile with the GC flags removed (entrypoint stays generic; the JVM auto-reads `JAVA_TOOL_OPTIONS`):
+
+```dockerfile
 FROM registry.dev.sbiepay.sbi:8443/openjdk:03
 ARG ENV
 ARG VERSION
-
 ENV ENV=$ENV
 ENV VERSION=$VERSION
-
 COPY /build/libs/epay_transaction_service-${VERSION}.jar .
-#ENTRYPOINT sh -c 'java -jar "epay_transaction_service-$VERSION.jar"'
-#ENTRYPOINT sh -c 'java -XX:+UseZGC -XX:+ZGenerational -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=75.0 -jar "epay_transaction_service-$VERSION.jar"'
-ENTRYPOINT sh -c 'java -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0 -jar "epay_transaction_service-$VERSION.jar"'
+
+ENTRYPOINT ["sh", "-c", "java -jar epay_transaction_service-$VERSION.jar"]
+
 USER 0
 COPY ./eissiuat.crt /etc/pki/tls/certs/
 COPY ./SBI-PROD-RCA.crt /etc/pki/ca-trust/source/anchors/
@@ -17,5 +18,86 @@ RUN chmod 644 /etc/pki/ca-trust/source/anchors/SBI-PROD-RCA.crt
 RUN update-ca-trust enable
 RUN update-ca-trust extract
 RUN update-ca-trust
+```
 
+One thing to flag: your `USER 0` and cert `COPY`/`RUN` steps come *after* `ENTRYPOINT`. `ENTRYPOINT` placement doesn't affect build order (it's just metadata, the RUN steps still execute at build), but it's cleaner to put `ENTRYPOINT` last. Also, the cert `RUN` steps need to run as root — if your base image's default user isn't root, move `USER 0` *above* the COPY/RUN block. Functionally it builds fine as-is, just worth tidying:
 
+```dockerfile
+FROM registry.dev.sbiepay.sbi:8443/openjdk:03
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+
+USER 0
+COPY /build/libs/epay_transaction_service-${VERSION}.jar .
+COPY ./eissiuat.crt /etc/pki/tls/certs/
+COPY ./SBI-PROD-RCA.crt /etc/pki/ca-trust/source/anchors/
+RUN chown root:root /etc/pki/ca-trust/source/anchors/SBI-PROD-RCA.crt
+RUN chmod 644 /etc/pki/ca-trust/source/anchors/SBI-PROD-RCA.crt
+RUN update-ca-trust enable && update-ca-trust extract && update-ca-trust
+
+ENTRYPOINT ["sh", "-c", "java -jar epay_transaction_service-$VERSION.jar"]
+```
+
+And the Deployment env block (`templates/deployment.yaml`):
+
+```yaml
+        env:
+          - name: JAVA_TOOL_OPTIONS
+            value: {{ .Values.jvm.opts | quote }}
+```
+
+```yaml
+# values.yaml
+jvm:
+  opts: "-XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0"
+```
+
+## How to verify it passed correctly
+
+**1. Confirm the env var is set on the pod**
+
+```bash
+kubectl exec <pod-name> -- env | grep JAVA_TOOL_OPTIONS
+```
+
+You should see your flag string.
+
+**2. Check the startup log line** — the JVM prints this to stderr automatically when it reads the var:
+
+```bash
+kubectl logs <pod-name> | grep "Picked up JAVA_TOOL_OPTIONS"
+```
+
+Expected output:
+```
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+```
+
+This single line is the strongest confirmation — it means the JVM actually ingested the flags, not just that the env var exists.
+
+**3. Verify the flags are live in the running JVM** — query the actual VM flags from inside the container:
+
+```bash
+# find the java PID (usually 1)
+kubectl exec <pod-name> -- jcmd 1 VM.flags
+```
+
+Look for `UseG1GC`, `AlwaysPreTouch`, and `MaxRAMPercentage` in the output. To check the GC specifically:
+
+```bash
+kubectl exec <pod-name> -- jcmd 1 VM.flags | tr ' ' '\n' | grep -E "G1GC|AlwaysPreTouch|MaxRAMPercentage"
+```
+
+If `jcmd` isn't in the image (some slim JREs drop it), the `Picked up JAVA_TOOL_OPTIONS` log line from step 2 is sufficient proof.
+
+**4. Confirm the resolved heap size** — since `MaxRAMPercentage` depends on the container memory limit:
+
+```bash
+kubectl exec <pod-name> -- java -XX:+PrintFlagsFinal -version | grep -i maxheapsize
+```
+
+Cross-check that `MaxHeapSize` ≈ 80% of your Deployment's `resources.limits.memory`. If it doesn't line up, your memory limit probably isn't set — the percentage then resolves against host RAM, which is a common gotcha.
+
+Steps 1 and 2 are your quick smoke test; 3 and 4 are for when you want hard proof the GC and heap sizing are what you intended.
