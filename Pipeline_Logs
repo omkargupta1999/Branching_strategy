@@ -1,22 +1,159 @@
-Step 9 — CI Pipeline Template (ci-templates repo) (0/6)
-📍 Infra › DevOps › ci-templates repo
-All application repos include this template via include pointer + 2 variables only. Vendor DevOps has zero need for Application subgroup access. (§5.1)
-Define all pipeline stages in ci-templates
-Stages: build · test · sast · fortify · dockerbuild · deploy-dev · create-rc-tag · deploy-{env} · deploy-hotfix-preprod-smoke · create-prod-tag · retag-image · back-merge · promote-image · deploy-prod-{env}
-Auto-trigger rules per branch type
-feature/bugfix push → build+test+sast+fortify (auto) | develop merge → +dockerbuild+deploy-dev (auto) | release merge → +create-rc-tag (auto) | main merge → create-prod-tag+retag+back-merge (auto)
-Manual-only deploy jobs for non-DEV environments
-deploy-sit / deploy-uat / deploy-int / deploy-perf / deploy-preprod-* → when: manual, only Release Manager role can trigger
+Madam/Sir,
+
+with reference to trailing mail, Please advise the status of all pending activities by TODAY EOD.
+
+----------------------------------Issues---------------------------------
+Import /export issues with proper names 
+"Deployment" Pipeline trigger issues -Deploy trigger permission issue
+"cicd-template" made "internal" is it required or we have to use "Gitalb CICD Catalogues" as allowlist not worked , or Give report access ?
+validate RBAC mapped in gitlab, —release manager ldap need to at application,
+in Protected Branch ---> Push /Merge @epay groups not coming 
+Review LDAP structure , whether need to map in LDAP sync by Centrailized Team or we can map map using invite groups mainatained using "LDAP-membership"
+subgroup "Frontends" to correct with "Frontend"
+base setup in ci/common for all technologies and image.base.setup ci/image
+
+---------------------gitlab-config repo-----------------
+GitLab configuration as code repository design using python script
 
 
-================ 
+-------------------------------customci ---------------------------------------
+Finialize the images for Custom CI in GitLab
 
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/cicd
-    file: 'templates/ci/backend/java.yml'
+epay-build-java-gradle ---> base : OpenJDK 21 then gradle
+epay-ci-misc-tools ---> kubelinter, yamllint , shellcheker ,
+epay-deploy-tools --> oc +helm + git
+epay-jf:1.0.0 ------------>base : ubi minimal then jf cli
+epay-fortify
+podman
+cosign
+roxctl
+
+-------app docker files improvements --------
+Java
+React
+Node
+.NET
+PHP
+Python
 
 
-variables:
-  RELEASE_NAME: admin
-  CHART_NAME: adminservice
+--------------------------security-------------------
+run Fortify sast for all type of files, other than java also
+Gitlab security scan images ?
+Gitlab security features ?
+
+
+
+-----review and finalize the ci/templates -------------------------
+--claude-chat -"GitLab CI/CD templates code review and optimization"
+update services.yaml fully
+allow feature branch to deploy in dev
+all gap analysis
+Filialize CI pipeline stages for each
+
+
+-----------ci/common/setup-------------------------
+java.gradle.setup.yml
+dotnet.nuget.setup.yml
+jfrog.setup.yml
+why sdk separate build?
+why react separate build if require npm only  
+
+---------image related ci jobs ------------
+image push in jfrog to be corrected app/frontend , app/backend , app/sdk etc.
+setup common "image.podman.setup.yml"(keep in ci/common or ci/image) and use in image build, push ,retag etc.
+retag not used currently , how to utilise the same
+sbom attest break into 2 parts , getting sbom( jf image) + sign sbom ( cosign image)
+any other improvements in ci/image jobs
+
+-------------Gitlab Variables naming conventions-------------------------------
+Best practices
+--> "CI_" prefix for Gitlab internal variables
+--> "GICI_" prefix for variables in Gitlab CICD variables
+--> "TPL_" prefix for variables in Gitab CI/CD templates
+--> "JOB_" prefix for variables in inline jobs
+-->Upstream --?
+
+-------update doc--------------------
+update all docs in cicd-templates repo and in epay_master_architecture doc
+update ranu feedback in master doc
+
+------------------------Branching strategy Issues-----------------------------------------
+release version issues :
+
+dev  fork -----------> release/1.1.0 on 10-05-26
+dev fork------------> release/1.2.0  on 15-05-26
+
+later 1.2.0 is ready to merge with main but not 1.1.0, then tags created as 1.2.0 in production then alter if we merge 1.1.0 then production version will be 1.1.0
+which is wrong , the version should be incremental and automated. How to resolve this. or mandatorily release in sequential order only.
+can release creation from dev automated.
+we cannot promote the 1.2.0 first if completed as contains code
+
+--->release branch creation automation ci/release/create-release-branch.yml
+
+-->Annotated Tag on develop--scope-lock
+
+-->Problem 1 — Release Contamination
+-->Problem 2 - Dev Environment Instability
+-->Ephemeral Preview Environments (per feature branch)
+----------------------------------------------------------------------------------------------------------
+
+
+
+
+Activity
+Migration to Centralized DevSecOps - Activity
+Status
+Remarks
+1
+docker images ( proper clean and documented docker files)
+custom-ci images - Gradle, npm, oc+helm+git
+Done
+gitlab security images
+WIP
+SAST, HP-Fotyfy, 
+application docker file - variable base image ( multiple variables for non-prod and prod)
+Done
+Generic base image for all backend repo
+jfrog docker registry (no base images required , red hat registry configured)
+Pending
+2
+cicd-templates" the new repo with proper documentation and clean code 
+all functionality of "ci-templates"
+WIP
+HotFix - Done
+CodeOwners - Done
+Reverse Sync - Done
+BugFix - WIP
+Note: All POC done in Current GitLab Setup
+package registry for Java utility
+Done
+Pipeline done
+all security scanning
+WIP
+Review Pending
+follow the architecture doc
+WIP
+Backend ci end to end Pipeline
+Done
+Tested in Dev
+frontend ci end to end PipeLine
+Done
+Tested in Dev
+configmap separation and in config folder with codeowners
+WIP
+POC done Pending in Centrelize GitLab Server
+reverse sync
+Done
+POC Done with Testing in Current GitLab
+DC-DR drill scripts 
+any other POC related to CI part - Deployement Repo CI-GitLab.YAML is cleaned
+Done
+3
+Utilising the jfrog artifactory  in developer desktops/IDE for local build ( avoid proxy) for all technologies( Java, .NET, React, Node.js,Python, PHP, Android, Flutter, iOS, React.native etc.)
+WIP
+4
+Gitlab UI config using py script ( separate repo "gitlab-config")
+5
+Gitlab data Migration (issues, MRs, epics etc.)
+Pending
