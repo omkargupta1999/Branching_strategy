@@ -1,119 +1,90 @@
-drwxr-x--- 2 root root    31 May 30 17:48 scripts
-[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1-node1
-no such service: loki-ingester-1-node1
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1-node1
-no such service: loki-ingester-1-node1
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# docker compose logs loki-ingester-1
-no such service: loki-ingester-1
-[root@drlogging1 loki-node1]# docker compose logs ingester-1
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# docker compose logs ingester-2
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# docker ps -a
-CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS                          PORTS     NAMES
-93cecee25d75   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-querier-2-node1
-beca59f29b1a   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-distributor-2-node1
-8559a8ecd620   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-ingester-1-node1
-02120ec7d38c   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-querier-1-node1
-607b741bc30e   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-ingester-2-node1
-acdb94ba18eb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-query-frontend-node1
-0fb9546328a4   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-compactor-node1
-0cdc8762f16d   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-query-scheduler-node1
-85f91bc5d9d7   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-distributor-1-node1
-cddc51454efb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Restarting (1) 15 seconds ago             loki-index-gateway-node1
-a7d34fc97686   grafana/grafana:12.3.3   "/run.sh"                7 weeks ago     Up 5 hours                                grafana
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]#
-[root@drlogging1 loki-node1]# docker logs 02120ec7d38c
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-[root@drlogging1 loki-node1]# docker logs -f 02120ec7d38c
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-[root@drlogging1 loki-node1]# ^C
-[root@drlogging1 loki-node1]# docker logs --since 5m 02120ec7d38c
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-failed parsing config: /etc/loki/loki-config.yaml: yaml: unmarshal errors:
-  line 67: field index_gateway_client not found in type storage.Config
-[root@drlogging1 loki-node1]# ^C
-[root@drlogging1 loki-node1]#
+[osuser@dcepayprodbastion ~]$ oc get ns | grep -i prod-dc
+prod-dc-admin                                      Active   152d
+prod-dc-epay-common                                Active   152d
+prod-dc-frontend                                   Active   152d
+prod-dc-gemfire                                    Active   282d
+prod-dc-gemfire-operator                           Active   282d
+prod-dc-gitlab-cicd                                Active   152d
+prod-dc-istio-system                               Active   152d
+prod-dc-kafka                                      Active   152d
+prod-dc-kafka-cdc                                  Active   152d
+prod-dc-kafka-console                              Active   152d
+prod-dc-kiali                                      Active   152d
+prod-dc-kms                                        Active   152d
+prod-dc-merchant                                   Active   152d
+prod-dc-notification                               Active   152d
+prod-dc-rns                                        Active   152d
+prod-dc-simulators                                 Active   152d
+prod-dc-tempo                                      Active   152d
+prod-dc-transaction                                Active   152d
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ oc get no
+NAME                        STATUS   ROLES                  AGE    VERSION
+gemfire1.dc.prod.epay.sbi   Ready    worker                 255d   v1.32.9
+gemfire2.dc.prod.epay.sbi   Ready    worker                 255d   v1.32.9
+gemfire3.dc.prod.epay.sbi   Ready    worker                 135d   v1.32.9
+gemfire4.dc.prod.epay.sbi   Ready    worker                 135d   v1.32.9
+gemfire5.dc.prod.epay.sbi   Ready    worker                 135d   v1.32.9
+infra1.dc.prod.epay.sbi     Ready    infra,worker           304d   v1.32.9
+infra2.dc.prod.epay.sbi     Ready    infra,worker           304d   v1.32.9
+infra3.dc.prod.epay.sbi     Ready    infra,worker           304d   v1.32.9
+infra4.dc.prod.epay.sbi     Ready    infra,worker           304d   v1.32.9
+infra5.dc.prod.epay.sbi     Ready    infra,worker           304d   v1.32.9
+kafka1.dc.prod.epay.sbi     Ready    kafka,worker           152d   v1.32.9
+kafka2.dc.prod.epay.sbi     Ready    kafka,worker           152d   v1.32.9
+kafka3.dc.prod.epay.sbi     Ready    kafka,worker           152d   v1.32.9
+master1.dc.prod.epay.sbi    Ready    control-plane,master   304d   v1.32.9
+master2.dc.prod.epay.sbi    Ready    control-plane,master   304d   v1.32.9
+master3.dc.prod.epay.sbi    Ready    control-plane,master   304d   v1.32.9
+worker1.dc.prod.epay.sbi    Ready    worker                 304d   v1.32.9
+worker2.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+worker3.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+worker4.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+worker5.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+worker6.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+worker7.dc.prod.epay.sbi    Ready    worker                 303d   v1.32.9
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ oc get hpa  | grep -i prod-dc
+No resources found in prod-dc-kafka namespace.
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ oc get hpa -A  | grep -i prod-dc
+prod-dc-admin          admin-adminservice-hpa                   Deployment/admin-adminservice                   cpu: 0%/70%, memory: 27%/80%                2         10        2          152d
+prod-dc-frontend       maintenancefe-hpa                        Deployment/maintenancefe                        cpu: <unknown>/70%, memory: <unknown>/80%   1         4         0          120d
+prod-dc-frontend       transactionfe-transaction-frontend-hpa   Deployment/transactionfe-transaction-frontend   cpu: 0%/70%, memory: 98%/80%                2         4         4          152d
+prod-dc-istio-system   istio-gateway-hpa                        Deployment/prod-dc-istio-gateway                cpu: 2%/70%, memory: 75%/80%                2         6         3          152d
+prod-dc-istio-system   istiod-hpa                               Deployment/istiod                               cpu: <unknown>/70%, memory: <unknown>/80%   2         5         0          152d
+prod-dc-istio-system   istiod-prod-dc-istio                     Deployment/istiod-prod-dc-istio                 cpu: 0%/80%                                 1         5         1          152d
+prod-dc-kms            kms-kmsservice-hpa                       Deployment/kms-kmsservice                       cpu: 0%/70%, memory: 25%/80%                2         6         2          9h
+prod-dc-merchant       merchant-merchantservice-hpa             Deployment/merchant-merchantservice             cpu: 1%/70%, memory: 39%/80%                2         10        2          152d
+prod-dc-notification   notify-notificationservice-hpa           Deployment/notify-notificationservice           cpu: <unknown>/70%, memory: <unknown>/80%   2         6         0          152d
+prod-dc-simulators     demo-merchantsimulator-hpa               Deployment/demo-merchantsimulator               cpu: 0%/70%, memory: 23%/80%                1         4         1          152d
+prod-dc-transaction    payment-paymentservice-hpa               Deployment/payment-paymentservice               cpu: 0%/60%, memory: 29%/60%                6         15        6          152d
+prod-dc-transaction    txn-transactionservice-hpa               Deployment/txn-transactionservice               cpu: 1%/70%, memory: 34%/80%                8         20        8          152d
+[osuser@dcepayprodbastion ~]$
+
+[osuser@dcepayprodbastion ~]$ oc adm top node
+NAME                        CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+gemfire1.dc.prod.epay.sbi   440m         2%       13343Mi         13%
+gemfire2.dc.prod.epay.sbi   352m         2%       14941Mi         15%
+gemfire3.dc.prod.epay.sbi   628m         4%       14209Mi         14%
+gemfire4.dc.prod.epay.sbi   236m         1%       8912Mi          9%
+gemfire5.dc.prod.epay.sbi   397m         2%       9336Mi          9%
+infra1.dc.prod.epay.sbi     2115m        13%      7359Mi          7%
+infra2.dc.prod.epay.sbi     2061m        13%      19717Mi         20%
+infra3.dc.prod.epay.sbi     2442m        15%      6616Mi          6%
+infra4.dc.prod.epay.sbi     1441m        9%       19749Mi         20%
+infra5.dc.prod.epay.sbi     118m         0%       5158Mi          5%
+kafka1.dc.prod.epay.sbi     778m         5%       62250Mi         65%
+kafka2.dc.prod.epay.sbi     201m         1%       6269Mi          6%
+kafka3.dc.prod.epay.sbi     248m         1%       8587Mi          8%
+master1.dc.prod.epay.sbi    1015m        6%       17927Mi         28%
+master2.dc.prod.epay.sbi    884m         5%       17143Mi         27%
+master3.dc.prod.epay.sbi    736m         4%       16341Mi         25%
+worker1.dc.prod.epay.sbi    448m         2%       16593Mi         17%
+worker2.dc.prod.epay.sbi    305m         1%       9694Mi          10%
+worker3.dc.prod.epay.sbi    305m         1%       11473Mi         12%
+worker4.dc.prod.epay.sbi    774m         4%       14308Mi         14%
+worker5.dc.prod.epay.sbi    409m         2%       13510Mi         14%
+worker6.dc.prod.epay.sbi    467m         3%       15974Mi         16%
+worker7.dc.prod.epay.sbi    368m         2%       16484Mi         17%
