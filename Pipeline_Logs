@@ -1,84 +1,43 @@
-[osuser@dcepayprodbastion GC_Script]$ oc get po payment-paymentservice-5d48d47b6-7pk6z  -n prod-dc-transaction -o jsonpath='{.spec.containers[*].name}'
-paymentservice istio-proxy[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ oc get po txn-transactionservice-65cc564dd5-jxqzr   -n prod-dc-transaction -o jsonpath='{.spec.containers[*].name}'
-transactionservice istio-proxy[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
+Useful output. Two findings, one about the script and one about the actual fleet health.
 
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -p payment-paymentservice-5d48d47b6-cr6lx
-==================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:35:11
-==================================================================================================
-POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
---------------------------------------------------------------------------------------------------
-payment-paymentservice-5d48d47b6-cr6lx     unreachable (check -c container / jstat present?)
+**Why the payment pod is still "unreachable" even with the right container.** The container name is `paymentservice` (default/first, same position as `transactionservice`), so `-c` placement isn't the issue. Since the txn pods read fine with the identical layout, the most likely cause is that **jstat isn't available in the payment container** — a different/slimmer base image, or the JDK tools aren't on PATH there. Quick way to confirm:
 
-Container memory (oc adm top pod):
-  payment-paymentservice-5d48d47b6-5ffwd     cpu=96m      mem=1036Mi
-  payment-paymentservice-5d48d47b6-7pk6z     cpu=18m      mem=1046Mi
-  payment-paymentservice-5d48d47b6-cr6lx     cpu=42m      mem=1031Mi
-  payment-paymentservice-5d48d47b6-mjh82     cpu=207m     mem=1021Mi
-  payment-paymentservice-5d48d47b6-v5psm     cpu=54m      mem=1037Mi
-  payment-paymentservice-5d48d47b6-vhdn7     cpu=42m      mem=1022Mi
-  txn-transactionservice-65cc564dd5-4gds8    cpu=30m      mem=947Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=29m      mem=1054Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=23m      mem=1318Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=31m      mem=1040Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=36m      mem=1390Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=42m      mem=1454Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=35m      mem=1059Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=88m      mem=1067Mi
+```bash
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- which jstat
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- java -version
+```
 
-Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
-        YGC/FGC = young/full GC count (t = cumulative seconds).
-        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -s 'txn'
-==================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:35:34
-==================================================================================================
-POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
---------------------------------------------------------------------------------------------------
-txn-transactionservice-65cc564dd5-4gds8        195M     226M      31M    86%    1510   5.569s     0   0.000s      191M  WATCH
-txn-transactionservice-65cc564dd5-4tqnm        255M     328M      73M    78%    2591   6.973s     0   0.000s      189M  WATCH
-txn-transactionservice-65cc564dd5-jxqzr        380M     544M     164M    70%    3230  12.079s     0   0.000s      192M  OK
-txn-transactionservice-65cc564dd5-ll7t4        283M     310M      27M    91%    1708   4.973s     0   0.000s      190M  HIGH
-txn-transactionservice-65cc564dd5-lm9q8        414M     620M     206M    67%    3253  13.878s     0   0.000s      197M  OK
-txn-transactionservice-65cc564dd5-mf9dd        572M     648M      76M    88%    3486  12.847s     0   0.000s      197M  WATCH
-txn-transactionservice-65cc564dd5-s7c5d        124M     328M     204M    38%    1587   5.436s     0   0.000s      193M  OK
-txn-transactionservice-65cc564dd5-xxx7j        248M     324M      76M    76%    2516   8.113s     0   0.000s      192M  WATCH
+If `which jstat` comes back empty, the payment image ships a JRE without the diagnostic tools (txn likely ships a full JDK). In that case, for payment pods use `jcmd` if present, or fall back to `GC.heap_info`:
 
-Container memory (oc adm top pod):
-  txn-transactionservice-65cc564dd5-4gds8    cpu=821m     mem=948Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=884m     mem=1054Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=1292m    mem=1318Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=854m     mem=1041Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=1239m    mem=1391Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=1247m    mem=1455Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=909m     mem=1059Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=1065m    mem=1068Mi
+```bash
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- jcmd 1 GC.heap_info
+```
 
-Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
-        YGC/FGC = young/full GC count (t = cumulative seconds).
-        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ oc get po -n prod-dc-transaction
-NAME                                      READY   STATUS    RESTARTS   AGE
-payment-paymentservice-5d48d47b6-5ffwd    2/2     Running   0          2d15h
-payment-paymentservice-5d48d47b6-7pk6z    2/2     Running   0          2d15h
-payment-paymentservice-5d48d47b6-cr6lx    2/2     Running   0          2d15h
-payment-paymentservice-5d48d47b6-mjh82    2/2     Running   0          2d15h
-payment-paymentservice-5d48d47b6-v5psm    2/2     Running   0          2d15h
-payment-paymentservice-5d48d47b6-vhdn7    2/2     Running   0          2d15h
-txn-transactionservice-65cc564dd5-4gds8   2/2     Running   0          24h
-txn-transactionservice-65cc564dd5-4tqnm   2/2     Running   0          35h
-txn-transactionservice-65cc564dd5-jxqzr   2/2     Running   0          2d15h
-txn-transactionservice-65cc564dd5-ll7t4   2/2     Running   0          24h
-txn-transactionservice-65cc564dd5-lm9q8   2/2     Running   0          2d15h
-txn-transactionservice-65cc564dd5-mf9dd   2/2     Running   0          2d15h
-txn-transactionservice-65cc564dd5-s7c5d   2/2     Running   0          24h
-txn-transactionservice-65cc564dd5-xxx7j   2/2     Running   0          35h
+If neither jstat nor jcmd exists, the payment image simply has no in-container GC tooling and `oc adm top pod` (which already works) is your only option there without rebuilding the image. That's the air-gapped trade-off — worth flagging to whoever owns the payment image if you want heap-level visibility on it.
+
+**The txn fleet is running hotter than the first snapshot — this is the part to actually act on.** Compare the two runs a few minutes apart:
+
+- `ll7t4` — went 74% → **91% HIGH**, only 27M free
+- `4gds8` — 74% → **86%**, 31M free
+- `mf9dd` — was 93%, now 88%, still tight at 76M free
+- `4tqnm`, `xxx7j` — both climbed into WATCH
+
+And the CPU column tells the real story: the second run shows txn pods at **820m–1290m CPU**, versus ~30–50m in the earlier snapshot. So load ramped up significantly between the two runs, and heap usage rose with it. Still no full GCs anywhere (`FGC 0` across the board), so G1 is keeping pace — but several pods are now sitting with very little headroom under active load.
+
+**The core issue is the uneven heap sizing I flagged before, and now it matters more.** The MAX values are all over the place for the same service: 226M, 310M, 324M, 328M, 544M, 620M, 648M. The small-heap pods (`4gds8` at 226M, `ll7t4` at 310M) are exactly the ones hitting HIGH first, because they have the least room to absorb the load spike. The big-heap pods (`mf9dd` 648M, `lm9q8` 620M) stay calmer. That's a sign the heaps aren't pinned to a consistent limit.
+
+Check what the deployment actually requests vs limits:
+
+```bash
+oc get deployment txn-transactionservice -n prod-dc-transaction -o jsonpath='{range .spec.template.spec.containers[*]}{.name}{": "}{.resources}{"\n"}{end}'
+```
+
+If `limits.memory` is unset or differs from `requests.memory`, that explains it — with `MaxRAMPercentage`, an unset or burstable limit lets each pod size its heap against whatever it can see on its node, so pods on busier nodes get smaller heaps. Pinning `requests.memory == limits.memory` (Guaranteed QoS) would give every pod an identical, predictable heap and remove the small-heap outliers that hit HIGH first.
+
+For right now: nothing is failing — no OOM kills, no restarts, no full GCs. But `ll7t4`, `4gds8`, and `mf9dd` are worth a live watch during this load period:
+
+```bash
+./gc_monitor.sh -n prod-dc-transaction -s 'txn' -w 10
+```
+
+If any of them flips to `FGC!`, that's when G1 has stopped keeping up and you'd expect latency on that pod — the trigger to either bump the memory limit or scale out. The fix path, in order of preference: pin consistent memory limits first (fixes the unevenness), then if pods are legitimately memory-constrained under peak load, raise the limit or add replicas.
