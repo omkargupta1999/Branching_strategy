@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 #
-# gc-monitor.sh — Human-readable JVM heap & GC monitor for OpenShift pods
+# gc-monitor.sh - Human-readable JVM heap & GC monitor for OpenShift pods
 #
-# Prints a clean table per pod: heap used / max / free / use%, GC counts &
-# time, and container memory vs limit, with a health flag for quick scanning.
+# Prints a clean per-pod table: heap used / max / free / use%, GC counts &
+# time, metaspace, plus container memory vs limit, with a health flag.
 #
 # Usage:
-#   ./gc-monitor.sh                              # defaults below
-#   ./gc-monitor.sh -n prod-dc-transaction       # set namespace
-#   ./gc-monitor.sh -n prod-dc-transaction -s 'payment|txn'   # filter pods
-#   ./gc-monitor.sh -n prod-dc-transaction -c app -w 5        # app container, watch every 5s
-#   ./gc-monitor.sh -n prod-dc-transaction -p txn-transactionservice-65cc564dd5-jxqzr  # one pod
+#   ./gc-monitor.sh -n prod-dc-transaction
+#   ./gc-monitor.sh -n prod-dc-transaction -s 'payment|txn'
+#   ./gc-monitor.sh -n prod-dc-transaction -c <appcontainer> -w 5
+#   ./gc-monitor.sh -n prod-dc-transaction -p <single-pod-name>
 #
 # Flags:
-#   -n  namespace            (default: prod-dc-transaction)
-#   -s  pod name regex       (default: 'payment|txn')
-#   -c  container name        (default: auto = first container in pod)
-#   -p  single pod name       (overrides -s)
-#   -w  watch interval secs   (default: 0 = run once)
+#   -n  namespace          (default: prod-dc-transaction)
+#   -s  pod name regex     (default: 'payment|txn')
+#   -c  container name     (default: pod's default container)
+#   -p  single pod name    (overrides -s)
+#   -w  watch interval sec (default: 0 = run once)
 #   -h  help
 #
-# Requirements: oc CLI + JDK tools (jcmd/jstat) present in the target container.
+# Requires: oc CLI logged in + JDK tools (jstat) in the target container.
+# Read-only: only runs `oc exec ... jstat` and `oc adm top`. Changes nothing.
 # ----------------------------------------------------------------------------
 
 set -uo pipefail
@@ -32,17 +32,17 @@ CONTAINER=""
 SINGLE_POD=""
 WATCH=0
 
-# ---------- colors (disabled if not a TTY) ----------
+# ---------- colors (auto-off when not a terminal) ----------
 if [ -t 1 ]; then
-  R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; B=$'\e[1m'; C=$'\e[36m'; X=$'\e[0m'
+  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[1m'; C=$'\033[36m'; X=$'\033[0m'
 else
   R=""; G=""; Y=""; B=""; C=""; X=""
 fi
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -28; exit 0; }
+usage() { grep '^#' "$0" | sed 's/^#\{1,\} \{0,1\}//'; exit 0; }
 
 while getopts "n:s:c:p:w:h" opt; do
-  case $opt in
+  case "$opt" in
     n) NS="$OPTARG" ;;
     s) SELECTOR="$OPTARG" ;;
     c) CONTAINER="$OPTARG" ;;
@@ -53,78 +53,81 @@ while getopts "n:s:c:p:w:h" opt; do
   esac
 done
 
-# ---------- helpers ----------
-human() {  # bytes -> human readable (MiB / GiB)
-  local b=$1
-  if [ -z "$b" ] || [ "$b" -eq 0 ] 2>/dev/null; then echo "0"; return; fi
+# ---------- guards ----------
+command -v oc >/dev/null 2>&1 || { echo "ERROR: 'oc' CLI not found in PATH." >&2; exit 1; }
+case "$WATCH" in
+  ''|*[!0-9]*) echo "ERROR: -w must be a whole number of seconds." >&2; exit 1 ;;
+esac
+
+# is the value a non-negative integer?
+is_int() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
+
+# bytes -> human (MiB/GiB)
+human() {
+  local b="$1"
+  is_int "$b" || { echo "-"; return; }
+  [ "$b" -eq 0 ] && { echo "0"; return; }
   awk -v b="$b" 'BEGIN{
     if (b >= 1073741824) printf "%.2fG", b/1073741824;
     else                 printf "%.0fM", b/1048576;
   }'
 }
 
-# container arg for oc exec
-cflag() { [ -n "$CONTAINER" ] && echo "-c $CONTAINER"; }
-
-# ---------- gather pod list ----------
+# ---------- pod list ----------
 get_pods() {
   if [ -n "$SINGLE_POD" ]; then
-    echo "$SINGLE_POD"
+    printf '%s\n' "$SINGLE_POD"
   else
-    oc get po -n "$NS" --no-headers 2>/dev/null \
-      | awk '{print $1}' | grep -E "$SELECTOR"
+    oc get po -n "$NS" --no-headers 2>/dev/null | awk '{print $1}' | grep -E "$SELECTOR"
   fi
 }
 
-# ---------- per-pod heap + GC via jcmd ----------
-# Uses GC.heap_info (human totals) + jstat -gc (GC counters).
+# ---------- per-pod collection ----------
 collect_pod() {
   local pod="$1"
-  local cf; cf=$(cflag)
 
-  # jstat -gc : capacities & GC counts (KB). Columns (JDK17+/21):
-  # S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
+  # Build container flag as an array (safe whether empty or set).
+  local cf=()
+  [ -n "$CONTAINER" ] && cf=(-c "$CONTAINER")
+
   local gc
-  gc=$(oc exec "$pod" -n "$NS" $cf -- jstat -gc 1 2>/dev/null | tail -1)
+  gc=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gc 1 2>/dev/null | tail -1)
 
-  if [ -z "$gc" ]; then
-    printf "%-42s ${R}%s${X}\n" "$pod" "unreachable (no jstat / wrong container?)"
+  # No data, or header echoed instead of numbers -> mark unreachable.
+  if [ -z "$gc" ] || printf '%s' "$gc" | grep -qi 'S0C'; then
+    printf "%-42s ${R}%s${X}\n" "$pod" "unreachable (check -c container / jstat present?)"
     return
   fi
 
+  # jstat -gc columns (JDK 17/21):
+  # S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
+  local S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
+  # shellcheck disable=SC2034  # read consumes all 19 columns positionally; some intentionally unused
   read -r S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT <<<"$gc"
 
-  # Heap used/capacity in KB -> bytes. Heap = survivors + eden + old (exclude metaspace MC/MU).
-  local used_kb cap_kb
-  used_kb=$(awk -v a="$S0U" -v b="$S1U" -v e="$EU" -v o="$OU" 'BEGIN{print a+b+e+o}')
-  cap_kb=$(awk -v a="$S0C" -v b="$S1C" -v e="$EC" -v o="$OC"  'BEGIN{print a+b+e+o}')
-  local used_b cap_b free_b pct
-  used_b=$(awk -v k="$used_kb" 'BEGIN{printf "%.0f", k*1024}')
-  cap_b=$(awk -v k="$cap_kb"  'BEGIN{printf "%.0f", k*1024}')
+  # Heap used/capacity (KB, may be decimals) -> bytes. Heap = survivors+eden+old.
+  local used_b cap_b free_b pct meta_b
+  used_b=$(awk -v a="$S0U" -v b="$S1U" -v e="$EU" -v o="$OU" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
+  cap_b=$(awk  -v a="$S0C" -v b="$S1C" -v e="$EC" -v o="$OC" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
   free_b=$(awk -v c="$cap_b" -v u="$used_b" 'BEGIN{printf "%.0f", c-u}')
-  pct=$(awk -v u="$used_b" -v c="$cap_b" 'BEGIN{if(c>0) printf "%.0f", u*100/c; else print 0}')
-
-  # Metaspace used
-  local meta_b
+  pct=$(awk    -v u="$used_b" -v c="$cap_b" 'BEGIN{if(c>0) printf "%.0f", u*100/c; else print 0}')
   meta_b=$(awk -v m="$MU" 'BEGIN{printf "%.0f", m*1024}')
 
-  # Health flag based on heap use% and full GC count
-  local flag
+  # Full-GC count as integer (strip any decimal).
+  local fgc_i="${FGC%%.*}"
+  is_int "$fgc_i" || fgc_i=0
+
+  # Health flag (pct is always an integer from awk above).
+  local flag="${G}OK${X}"
   if   [ "$pct" -ge 90 ]; then flag="${R}HIGH${X}"
   elif [ "$pct" -ge 75 ]; then flag="${Y}WATCH${X}"
-  else                          flag="${G}OK${X}"
   fi
-  # escalate if full GCs are happening
-  if [ "${FGC%.*}" -gt 0 ] 2>/dev/null && [ "$pct" -ge 75 ]; then flag="${R}FGC!${X}"; fi
+  if [ "$pct" -ge 75 ] && [ "$fgc_i" -gt 0 ]; then flag="${R}FGC!${X}"; fi
 
-  printf "%-42s %8s %8s %8s %5s%%  %5s %8s %5s %8s  %8s  %b\n" \
+  printf "%-42s %8s %8s %8s %5s%%  %6s %8s %5s %8s  %8s  %b\n" \
     "$pod" \
-    "$(human "$used_b")" \
-    "$(human "$cap_b")" \
-    "$(human "$free_b")" \
-    "$pct" \
-    "$YGC" "${YGCT}s" \
-    "$FGC" "${FGCT}s" \
+    "$(human "$used_b")" "$(human "$cap_b")" "$(human "$free_b")" "$pct" \
+    "$YGC" "${YGCT}s" "$FGC" "${FGCT}s" \
     "$(human "$meta_b")" \
     "$flag"
 }
@@ -132,29 +135,33 @@ collect_pod() {
 # ---------- container memory vs limit ----------
 print_container_mem() {
   echo
-  echo "${B}Container memory (oc adm top):${X}"
-  oc adm top pod -n "$NS" --no-headers 2>/dev/null \
-    | grep -E "$SELECTOR" \
-    | awk '{printf "  %-42s cpu=%-8s mem=%s\n", $1, $2, $3}' \
-    || echo "  (metrics-server unavailable)"
+  echo "${B}Container memory (oc adm top pod):${X}"
+  local out
+  out=$(oc adm top pod -n "$NS" --no-headers 2>/dev/null | grep -E "$SELECTOR")
+  if [ -z "$out" ]; then
+    echo "  (metrics unavailable - metrics-server may be down)"
+  else
+    printf '%s\n' "$out" | awk '{printf "  %-42s cpu=%-8s mem=%s\n", $1, $2, $3}'
+  fi
 }
 
-# ---------- main render ----------
+# ---------- render ----------
 render() {
-  echo "${B}============================================================================================${X}"
-  echo "${B} JVM Heap & GC report  |  ns=${C}$NS${X}${B}  |  $(date '+%Y-%m-%d %H:%M:%S')${X}"
-  echo "${B}============================================================================================${X}"
-  printf "${B}%-42s %8s %8s %8s %6s  %5s %8s %5s %8s  %8s  %s${X}\n" \
+  echo "${B}==================================================================================================${X}"
+  echo "${B} JVM Heap & GC report  |  ns=${C}${NS}${X}${B}  |  $(date '+%Y-%m-%d %H:%M:%S')${X}"
+  echo "${B}==================================================================================================${X}"
+  printf "${B}%-42s %8s %8s %8s %6s  %6s %8s %5s %8s  %8s  %s${X}\n" \
     "POD" "USED" "MAX" "FREE" "USE%" "YGC" "YGCt" "FGC" "FGCt" "META" "HEALTH"
-  echo "--------------------------------------------------------------------------------------------"
+  echo "--------------------------------------------------------------------------------------------------"
 
-  local pods; pods=$(get_pods)
+  local pods
+  pods=$(get_pods)
   if [ -z "$pods" ]; then
-    echo "${R}No pods matched ns=$NS selector='$SELECTOR'${X}"
+    echo "${R}No pods matched (ns=$NS selector='$SELECTOR').${X}"
     return 1
   fi
 
-  while read -r pod; do
+  while IFS= read -r pod; do
     [ -z "$pod" ] && continue
     collect_pod "$pod"
   done <<< "$pods"
@@ -163,16 +170,17 @@ render() {
 
   echo
   echo "Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used."
-  echo "        YGC/FGC = young/full GC count, t = cumulative time.  HEALTH: OK<75% WATCH>=75% HIGH>=90% FGC!=full-GC under pressure."
+  echo "        YGC/FGC = young/full GC count (t = cumulative seconds)."
+  echo "        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure."
 }
 
 # ---------- run once or watch ----------
-if [ "$WATCH" -gt 0 ] 2>/dev/null; then
+if [ "$WATCH" -gt 0 ]; then
   while true; do
     clear
     render
     echo
-    echo "(refreshing every ${WATCH}s — Ctrl-C to stop)"
+    echo "(refreshing every ${WATCH}s - Ctrl-C to stop)"
     sleep "$WATCH"
   done
 else
