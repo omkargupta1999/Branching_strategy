@@ -9,3 +9,47 @@ Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercenta
 
 
 https://sbiepay.sbi.bank.in/api/transaction/v1/token/txn/6u4AbburFv7Slba2A1ClAA4XOEIbqH1KH4ME7IywPmu49KRLuTdCw9xlhd7Mt7hj1Ey6Sf88ec1ftCfKXccw 
+
+Useful output. Two findings, one about the script and one about the actual fleet health.
+
+**Why the payment pod is still "unreachable" even with the right container.** The container name is `paymentservice` (default/first, same position as `transactionservice`), so `-c` placement isn't the issue. Since the txn pods read fine with the identical layout, the most likely cause is that **jstat isn't available in the payment container** — a different/slimmer base image, or the JDK tools aren't on PATH there. Quick way to confirm:
+
+```bash
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- which jstat
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- java -version
+```
+
+If `which jstat` comes back empty, the payment image ships a JRE without the diagnostic tools (txn likely ships a full JDK). In that case, for payment pods use `jcmd` if present, or fall back to `GC.heap_info`:
+
+```bash
+oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- jcmd 1 GC.heap_info
+```
+
+If neither jstat nor jcmd exists, the payment image simply has no in-container GC tooling and `oc adm top pod` (which already works) is your only option there without rebuilding the image. That's the air-gapped trade-off — worth flagging to whoever owns the payment image if you want heap-level visibility on it.
+
+**The txn fleet is running hotter than the first snapshot — this is the part to actually act on.** Compare the two runs a few minutes apart:
+
+- `ll7t4` — went 74% → **91% HIGH**, only 27M free
+- `4gds8` — 74% → **86%**, 31M free
+- `mf9dd` — was 93%, now 88%, still tight at 76M free
+- `4tqnm`, `xxx7j` — both climbed into WATCH
+
+And the CPU column tells the real story: the second run shows txn pods at **820m–1290m CPU**, versus ~30–50m in the earlier snapshot. So load ramped up significantly between the two runs, and heap usage rose with it. Still no full GCs anywhere (`FGC 0` across the board), so G1 is keeping pace — but several pods are now sitting with very little headroom under active load.
+
+**The core issue is the uneven heap sizing I flagged before, and now it matters more.** The MAX values are all over the place for the same service: 226M, 310M, 324M, 328M, 544M, 620M, 648M. The small-heap pods (`4gds8` at 226M, `ll7t4` at 310M) are exactly the ones hitting HIGH first, because they have the least room to absorb the load spike. The big-heap pods (`mf9dd` 648M, `lm9q8` 620M) stay calmer. That's a sign the heaps aren't pinned to a consistent limit.
+
+Check what the deployment actually requests vs limits:
+
+```bash
+oc get deployment txn-transactionservice -n prod-dc-transaction -o jsonpath='{range .spec.template.spec.containers[*]}{.name}{": "}{.resources}{"\n"}{end}'
+```
+
+If `limits.memory` is unset or differs from `requests.memory`, that explains it — with `MaxRAMPercentage`, an unset or burstable limit lets each pod size its heap against whatever it can see on its node, so pods on busier nodes get smaller heaps. Pinning `requests.memory == limits.memory` (Guaranteed QoS) would give every pod an identical, predictable heap and remove the small-heap outliers that hit HIGH first.
+
+For right now: nothing is failing — no OOM kills, no restarts, no full GCs. But `ll7t4`, `4gds8`, and `mf9dd` are worth a live watch during this load period:
+
+```bash
+./gc_monitor.sh -n prod-dc-transaction -s 'txn' -w 10
+```
+
+If any of them flips to `FGC!`, that's when G1 has stopped keeping up and you'd expect latency on that pod — the trigger to either bump the memory limit or scale out. The fix path, in order of preference: pin consistent memory limits first (fixes the unevenness), then if pods are legitimately memory-constrained under peak load, raise the limit or add replicas.
