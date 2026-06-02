@@ -1,262 +1,83 @@
-#!/usr/bin/env bash
-#
-# gc-monitor.sh - Human-readable JVM heap & GC monitor for OpenShift pods
-#
-# Prints a clean per-pod table: heap used / max / free / use%, GC counts &
-# time, metaspace, plus container memory vs limit, with a health flag.
-#
-# Usage:
-#   ./gc-monitor.sh -n prod-dc-transaction
-#   ./gc-monitor.sh -n prod-dc-transaction -s 'payment|txn'
-#   ./gc-monitor.sh -n prod-dc-transaction -c <appcontainer> -w 5
-#   ./gc-monitor.sh -n prod-dc-transaction -p <single-pod-name>
-#
-# Flags:
-#   -n  namespace          (default: prod-dc-transaction)
-#   -s  pod name regex     (default: 'payment|txn')
-#   -c  container name     (default: pod's default container)
-#   -p  single pod name    (overrides -s)
-#   -w  watch interval sec (default: 0 = run once)
-#   -h  help
-#
-# Requires: oc CLI logged in + JDK tools (jstat) in the target container.
-# Read-only: only runs `oc exec ... jstat` and `oc adm top`. Changes nothing.
-# ----------------------------------------------------------------------------
+: "78 lines displayed"
+Total bytes processed: "9.37  GB"
+Common labels: {"detected_level":"error","k8s_container_name":"istio-proxy","k8s_namespace_name":"prod-dc-transaction","kubernetes_annotations_dynakube_dynatrace_com_injected":"true","kubernetes_annotations_istio_io_rev":"prod-dc-istio","kubernetes_annotations_k8s_v1_cni_cncf_io_networks":"default/istio-cni","kubernetes_annotations_metadata_dynatrace_com":"{}","kubernetes_annotations_metadata_dynatrace_com_k8s_workload_kind":"deployment","kubernetes_annotations_metadata_enrichment_dynatrace_com_injected":"true","kubernetes_annotations_oneagent_dynatrace_com_injected":"true","kubernetes_annotations_openshift_io_scc":"restricted-v2","kubernetes_annotations_prometheus_io_path":"/stats/prometheus","kubernetes_annotations_prometheus_io_port":"15020","kubernetes_annotations_prometheus_io_scrape":"true","kubernetes_annotations_seccomp_security_alpha_kubernetes_io_pod":"runtime/default","kubernetes_annotations_sidecar_istio_io_interceptionMode":"REDIRECT","kubernetes_annotations_sidecar_istio_io_status":"{\"initContainers\":[\"istio-validation\"],\"containers\":[\"istio-proxy\"],\"volumes\":[\"workload-socket\",\"credential-socket\",\"workload-certs\",\"istio-envoy\",\"istio-data\",\"istio-podinfo\",\"istio-token\",\"istiod-ca-cert\"],\"imagePullSecrets\":null,\"revision\":\"prod-dc-istio\"}","kubernetes_annotations_traffic_sidecar_istio_io_excludeInboundPorts":"15020","kubernetes_annotations_traffic_sidecar_istio_io_includeInboundPorts":"*","kubernetes_annotations_traffic_sidecar_istio_io_includeOutboundIPRanges":"*","kubernetes_container_image":"registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662","kubernetes_container_iostream":"stdout","kubernetes_container_name":"istio-proxy","kubernetes_container_name_extracted":"istio-proxy","kubernetes_labels_security_istio_io_tlsMode":"istio","kubernetes_labels_service_istio_io_canonical_revision":"latest","kubernetes_namespace_id":"591ad4e0-c8a8-43de-b766-698e760846bd","kubernetes_namespace_labels_dynakube_internal_dynatrace_com_instance":"sbiepay2prod","kubernetes_namespace_labels_dynatrace_com_inject":"true","kubernetes_namespace_labels_eip":"prod-dc-cluster","kubernetes_namespace_labels_istio_discovery":"prod-dc-istio","kubernetes_namespace_labels_istio_io_rev":"prod-dc-istio","kubernetes_namespace_labels_kubernetes_io_metadata_name":"prod-dc-transaction","kubernetes_namespace_labels_pod_security_kubernetes_io_audit":"restricted","kubernetes_namespace_labels_pod_security_kubernetes_io_audit_version":"latest","kubernetes_namespace_labels_pod_security_kubernetes_io_warn":"restricted","kubernetes_namespace_labels_pod_security_kubernetes_io_warn_version":"latest","kubernetes_namespace_name":"prod-dc-transaction","kubernetes_namespace_name_extracted":"prod-dc-transaction","level":"error","log_source":"container","log_type":"application","log_type_extracted":"application","openshift_cluster_id":"bef06590-4148-41a4-a57e-1bf2811b4cf6","openshift_log_type":"application","service_name":"istio-proxy"}
 
-set -uo pipefail
 
-# ---------- defaults ----------
-NS="prod-dc-transaction"
-SELECTOR='payment|txn'
-CONTAINER=""
-SINGLE_POD=""
-WATCH=0
-
-# ---------- colors (auto-off when not a terminal) ----------
-if [ -t 1 ]; then
-  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[1m'; C=$'\033[36m'; X=$'\033[0m'
-else
-  R=""; G=""; Y=""; B=""; C=""; X=""
-fi
-
-usage() { grep '^#' "$0" | sed 's/^#\{1,\} \{0,1\}//'; exit 0; }
-
-while getopts "n:s:c:p:w:h" opt; do
-  case "$opt" in
-    n) NS="$OPTARG" ;;
-    s) SELECTOR="$OPTARG" ;;
-    c) CONTAINER="$OPTARG" ;;
-    p) SINGLE_POD="$OPTARG" ;;
-    w) WATCH="$OPTARG" ;;
-    h) usage ;;
-    *) usage ;;
-  esac
-done
-
-# ---------- guards ----------
-command -v oc >/dev/null 2>&1 || { echo "ERROR: 'oc' CLI not found in PATH." >&2; exit 1; }
-case "$WATCH" in
-  ''|*[!0-9]*) echo "ERROR: -w must be a whole number of seconds." >&2; exit 1 ;;
-esac
-
-# is the value a non-negative integer?
-is_int() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
-
-# bytes -> human (MiB/GiB)
-human() {
-  local b="$1"
-  is_int "$b" || { echo "-"; return; }
-  [ "$b" -eq 0 ] && { echo "0"; return; }
-  awk -v b="$b" 'BEGIN{
-    if (b >= 1073741824) printf "%.2fG", b/1073741824;
-    else                 printf "%.0fM", b/1048576;
-  }'
-}
-
-# ---------- pod list ----------
-get_pods() {
-  if [ -n "$SINGLE_POD" ]; then
-    printf '%s\n' "$SINGLE_POD"
-  else
-    oc get po -n "$NS" --no-headers 2>/dev/null | awk '{print $1}' | grep -E "$SELECTOR"
-  fi
-}
-
-# ---------- emit one formatted row ----------
-# args: pod used_b commit_b max_b meta_b ygc ygct fgc fgct  (ygc.. & max_b may be "n/a")
-# USE% and health are computed against the TRUE configured max heap (max_b),
-# not the currently committed heap (commit_b). FREE = max_b - used_b.
-emit_row() {
-  local pod="$1" used_b="$2" commit_b="$3" max_b="$4" meta_b="$5" ygc="$6" ygct="$7" fgc="$8" fgct="$9"
-  local free_b pct flag fgc_i base_b
-
-  # If we couldn't read the true max, fall back to committed for the math
-  # (and the MAX column will show "-").
-  if is_int "$max_b" && [ "$max_b" -gt 0 ]; then base_b="$max_b"; else base_b="$commit_b"; fi
-
-  free_b=$(awk -v c="$base_b" -v u="$used_b" 'BEGIN{printf "%.0f", c-u}')
-  pct=$(awk    -v u="$used_b" -v c="$base_b" 'BEGIN{if(c>0) printf "%.0f", u*100/c; else print 0}')
-
-  flag="${G}OK${X}"
-  if   [ "$pct" -ge 90 ]; then flag="${R}HIGH${X}"
-  elif [ "$pct" -ge 75 ]; then flag="${Y}WATCH${X}"
-  fi
-  fgc_i="${fgc%%.*}"
-  is_int "$fgc_i" || fgc_i=0
-  if [ "$pct" -ge 75 ] && [ "$fgc_i" -gt 0 ]; then flag="${R}FGC!${X}"; fi
-
-  # append 's' to GC times only when numeric
-  local ygct_d="$ygct" fgct_d="$fgct"
-  [ "$ygct" != "n/a" ] && ygct_d="${ygct}s"
-  [ "$fgct" != "n/a" ] && fgct_d="${fgct}s"
-
-  # MAX column shows "-" if we couldn't determine the true ceiling
-  local max_disp
-  if is_int "$max_b" && [ "$max_b" -gt 0 ]; then max_disp="$(human "$max_b")"; else max_disp="-"; fi
-
-  printf "%-42s %8s %8s %8s %8s %5s%%  %6s %8s %5s %8s  %8s  %b\n" \
-    "$pod" \
-    "$(human "$used_b")" "$(human "$commit_b")" "$max_disp" "$(human "$free_b")" "$pct" \
-    "$ygc" "$ygct_d" "$fgc" "$fgct_d" \
-    "$(human "$meta_b")" \
-    "$flag"
-}
-
-# ---------- per-pod collection ----------
-collect_pod() {
-  local pod="$1"
-
-  # Build container flag as an array (safe whether empty or set).
-  local cf=()
-  [ -n "$CONTAINER" ] && cf=(-c "$CONTAINER")
-
-  # --- Attempt 1: jstat -gc (full JDK image; gives GC counts too) ---
-  local gc
-  gc=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gc 1 2>/dev/null | tail -1)
-
-  if [ -n "$gc" ] && ! printf '%s' "$gc" | grep -qi 'S0C'; then
-    # jstat -gc columns (JDK 17/21):
-    # S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
-    local S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
-    # shellcheck disable=SC2034  # read consumes all 19 columns positionally; some intentionally unused
-    read -r S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT <<<"$gc"
-    local used_b commit_b meta_b
-    used_b=$(awk   -v a="$S0U" -v b="$S1U" -v e="$EU" -v o="$OU" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
-    commit_b=$(awk -v a="$S0C" -v b="$S1C" -v e="$EC" -v o="$OC" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
-    meta_b=$(awk   -v m="$MU" 'BEGIN{printf "%.0f", m*1024}')
-
-    # True configured max heap.
-    # PRIMARY: jcmd VM.flags -> MaxHeapSize=<bytes>. This is the real -Xmx ceiling
-    # and is accurate for G1 (unlike summing jstat -gccapacity NGCMX+OGCMX, which
-    # double-counts because G1 young/old maxes each approximate the whole heap).
-    local max_b="n/a" vmflags mhs
-    vmflags=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 VM.flags 2>/dev/null)
-    mhs=$(printf '%s' "$vmflags" | grep -o 'MaxHeapSize=[0-9]*' | head -1 | cut -d= -f2)
-    if is_int "$mhs" && [ "$mhs" -gt 0 ]; then
-      max_b="$mhs"
-    else
-      # FALLBACK: jstat -gccapacity. For G1 take the LARGER of NGCMX/OGCMX (each
-      # approximates the full heap) rather than their sum, to avoid double-counting.
-      # gccapacity cols: NGCMN NGCMX NGC S0C S1C EC OGCMN OGCMX OGC OC ...
-      local capline NGCMX OGCMX
-      capline=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gccapacity 1 2>/dev/null | tail -1)
-      if [ -n "$capline" ] && ! printf '%s' "$capline" | grep -qi 'NGCMN'; then
-        NGCMX=$(printf '%s' "$capline" | awk '{print $2}')
-        OGCMX=$(printf '%s' "$capline" | awk '{print $8}')
-        if printf '%s' "$NGCMX" | grep -qE '^[0-9.]+$' && printf '%s' "$OGCMX" | grep -qE '^[0-9.]+$'; then
-          max_b=$(awk -v n="$NGCMX" -v o="$OGCMX" 'BEGIN{m=(n>o)?n:o; printf "%.0f", m*1024}')
-        fi
-      fi
-    fi
-
-    emit_row "$pod" "$used_b" "$commit_b" "$max_b" "$meta_b" "$YGC" "$YGCT" "$FGC" "$FGCT"
-    return
-  fi
-
-  # --- Attempt 2: jcmd GC.heap_info (slim image; heap sizes only, no GC counts) ---
-  local ji
-  ji=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 GC.heap_info 2>/dev/null)
-
-  if printf '%s' "$ji" | grep -qi 'total .*used'; then
-    local total_k used_k meta_k used_b commit_b meta_b
-    total_k=$(printf '%s\n' "$ji" | grep -i 'total .*used' | sed -n 's/.*total \([0-9]*\)K.*/\1/p')
-    used_k=$( printf '%s\n' "$ji" | grep -i 'total .*used' | sed -n 's/.*used \([0-9]*\)K.*/\1/p')
-    meta_k=$( printf '%s\n' "$ji" | grep -i 'Metaspace'    | sed -n 's/.*used \([0-9]*\)K.*/\1/p')
-    is_int "$total_k" || total_k=0
-    is_int "$used_k"  || used_k=0
-    is_int "$meta_k"  || meta_k=0
-    used_b=$((   used_k  * 1024 ))
-    commit_b=$(( total_k * 1024 ))
-    meta_b=$((   meta_k  * 1024 ))
-
-    # True configured max heap via jcmd VM.flags -> MaxHeapSize=<bytes>
-    local vmflags max_b="n/a" mhs
-    vmflags=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 VM.flags 2>/dev/null)
-    mhs=$(printf '%s' "$vmflags" | grep -o 'MaxHeapSize=[0-9]*' | head -1 | cut -d= -f2)
-    if is_int "$mhs" && [ "$mhs" -gt 0 ]; then max_b="$mhs"; fi
-
-    emit_row "$pod" "$used_b" "$commit_b" "$max_b" "$meta_b" "n/a" "n/a" "n/a" "n/a"
-    return
-  fi
-
-  # --- Neither worked ---
-  printf "%-42s ${R}%s${X}\n" "$pod" "unreachable (no jstat/jcmd, or wrong -c container?)"
-}
-
-# ---------- container memory vs limit ----------
-print_container_mem() {
-  echo
-  echo "${B}Container memory (oc adm top pod):${X}"
-  local out
-  out=$(oc adm top pod -n "$NS" --no-headers 2>/dev/null | grep -E "$SELECTOR")
-  if [ -z "$out" ]; then
-    echo "  (metrics unavailable - metrics-server may be down)"
-  else
-    printf '%s\n' "$out" | awk '{printf "  %-42s cpu=%-8s mem=%s\n", $1, $2, $3}'
-  fi
-}
-
-# ---------- render ----------
-render() {
-  echo "${B}=============================================================================================================${X}"
-  echo "${B} JVM Heap & GC report  |  ns=${C}${NS}${X}${B}  |  $(date '+%Y-%m-%d %H:%M:%S')${X}"
-  echo "${B}=============================================================================================================${X}"
-  printf "${B}%-42s %8s %8s %8s %8s %6s  %6s %8s %5s %8s  %8s  %s${X}\n" \
-    "POD" "USED" "COMMIT" "MAX" "FREE" "USE%" "YGC" "YGCt" "FGC" "FGCt" "META" "HEALTH"
-  echo "-------------------------------------------------------------------------------------------------------------"
-
-  local pods
-  pods=$(get_pods)
-  if [ -z "$pods" ]; then
-    echo "${R}No pods matched (ns=$NS selector='$SELECTOR').${X}"
-    return 1
-  fi
-
-  while IFS= read -r pod; do
-    [ -z "$pod" ] && continue
-    collect_pod "$pod"
-  done <<< "$pods"
-
-  print_container_mem
-
-  echo
-  echo "Legend: USED = live heap in use.  COMMIT = heap currently committed (grows on demand)."
-  echo "        MAX = configured max heap ceiling (-Xmx / MaxRAMPercentage).  FREE = MAX - USED."
-  echo "        USE% & HEALTH are measured against MAX (the real ceiling), not COMMIT."
-  echo "        META = metaspace used.  YGC/FGC = young/full GC count (t = cumulative seconds)."
-  echo "        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure."
-  echo "        MAX/GC cols show 'n/a' or '-' when the source tool can't supply them."
-}
-
-# ---------- run once or watch ----------
-if [ "$WATCH" -gt 0 ]; then
-  while true; do
-    clear
-    render
-    echo
-    echo "(refreshing every ${WATCH}s - Ctrl-C to stop)"
-    sleep "$WATCH"
-  done
-else
-  render
-fi
+1780383237345	2026-06-02T06:53:57.345Z	[2026-06-02T06:53:56.395Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.144:47024 - -
+1780383237345	2026-06-02T06:53:57.345Z	[2026-06-02T06:53:56.395Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.144:47026 - -
+1780383236758	2026-06-02T06:53:56.758Z	[2026-06-02T06:53:55.963Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.20:40674 - -
+1780383236758	2026-06-02T06:53:56.758Z	[2026-06-02T06:53:55.963Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.20:40662 - -
+1780383227609	2026-06-02T06:53:47.609Z	[2026-06-02T06:53:47.554Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.29.207:42970 - -
+1780383227609	2026-06-02T06:53:47.609Z	[2026-06-02T06:53:47.554Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.29.207:42980 - -
+1780383226262	2026-06-02T06:53:46.262Z	[2026-06-02T06:53:45.450Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.16.76:37434 - -
+1780383226262	2026-06-02T06:53:46.262Z	[2026-06-02T06:53:45.450Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.16.76:37428 - -
+1780383224993	2026-06-02T06:53:44.993Z	[2026-06-02T06:53:44.941Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.39.179:35090 - -
+1780383224993	2026-06-02T06:53:44.993Z	[2026-06-02T06:53:44.941Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.39.179:35102 - -
+1780383224724	2026-06-02T06:53:44.724Z	[2026-06-02T06:53:44.011Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.26.122:47772 - -
+1780383224724	2026-06-02T06:53:44.724Z	[2026-06-02T06:53:44.011Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.26.122:47782 - -
+1780383221267	2026-06-02T06:53:41.267Z	[2026-06-02T06:53:41.243Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.18.50:36994 - -
+1780383221267	2026-06-02T06:53:41.267Z	[2026-06-02T06:53:41.242Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.18.50:36978 - -
+1780383207946	2026-06-02T06:53:27.946Z	[2026-06-02T06:53:27.195Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41424 - -
+1780383207946	2026-06-02T06:53:27.946Z	[2026-06-02T06:53:27.195Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41420 - -
+1780383204946	2026-06-02T06:53:24.946Z	[2026-06-02T06:53:24.249Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41390 - -
+1780383204946	2026-06-02T06:53:24.946Z	[2026-06-02T06:53:24.249Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41386 - -
+1780383200031	2026-06-02T06:53:20.031Z	[2026-06-02T06:53:19.832Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:59012 - -
+1780383200031	2026-06-02T06:53:20.031Z	[2026-06-02T06:53:19.832Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:59018 - -
+1780383199031	2026-06-02T06:53:19.031Z	[2026-06-02T06:53:18.417Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53736 - -
+1780383199031	2026-06-02T06:53:19.031Z	[2026-06-02T06:53:18.417Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53750 - -
+1780383196233	2026-06-02T06:53:16.233Z	[2026-06-02T06:53:15.310Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:53884 - -
+1780383196233	2026-06-02T06:53:16.233Z	[2026-06-02T06:53:15.310Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:53868 - -
+1780383194232	2026-06-02T06:53:14.232Z	[2026-06-02T06:53:13.861Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:53828 - -
+1780383194232	2026-06-02T06:53:14.232Z	[2026-06-02T06:53:13.861Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:53844 - -
+1780383188425	2026-06-02T06:53:08.425Z	[2026-06-02T06:53:08.395Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:37032 - -
+1780383188425	2026-06-02T06:53:08.425Z	[2026-06-02T06:53:08.395Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:37040 - -
+1780383185424	2026-06-02T06:53:05.424Z	[2026-06-02T06:53:05.221Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:36994 - -
+1780383185424	2026-06-02T06:53:05.424Z	[2026-06-02T06:53:05.221Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:36998 - -
+1780383178674	2026-06-02T06:52:58.674Z	[2026-06-02T06:52:58.535Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:44948 - -
+1780383178674	2026-06-02T06:52:58.674Z	[2026-06-02T06:52:58.535Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:44954 - -
+1780383173675	2026-06-02T06:52:53.675Z	[2026-06-02T06:52:53.616Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:43528 - -
+1780383173675	2026-06-02T06:52:53.675Z	[2026-06-02T06:52:53.616Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:43524 - -
+1780383154618	2026-06-02T06:52:34.618Z	[2026-06-02T06:52:34.559Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:49492 - -
+1780383154618	2026-06-02T06:52:34.618Z	[2026-06-02T06:52:34.559Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:49506 - -
+1780383115839	2026-06-02T06:51:55.839Z	[2026-06-02T06:51:55.106Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:55970 - -
+1780383115839	2026-06-02T06:51:55.839Z	[2026-06-02T06:51:55.106Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:55968 - -
+1780383108837	2026-06-02T06:51:48.837Z	[2026-06-02T06:51:48.810Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:55924 - -
+1780383108837	2026-06-02T06:51:48.837Z	[2026-06-02T06:51:48.810Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:55908 - -
+1780382882919	2026-06-02T06:48:02.919Z	[2026-06-02T06:48:02.234Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:60174 - -
+1780382882919	2026-06-02T06:48:02.919Z	[2026-06-02T06:48:02.234Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:60176 - -
+1780382879919	2026-06-02T06:47:59.919Z	[2026-06-02T06:47:59.321Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41526 - -
+1780382879919	2026-06-02T06:47:59.919Z	[2026-06-02T06:47:59.321Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.42.135:41534 - -
+1780382878002	2026-06-02T06:47:58.002Z	[2026-06-02T06:47:57.347Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53238 - -
+1780382878002	2026-06-02T06:47:58.002Z	[2026-06-02T06:47:57.347Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53236 - -
+1780382875002	2026-06-02T06:47:55.002Z	[2026-06-02T06:47:54.358Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53184 - -
+1780382875002	2026-06-02T06:47:55.002Z	[2026-06-02T06:47:54.358Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.36.135:53196 - -
+1780382873199	2026-06-02T06:47:53.199Z	[2026-06-02T06:47:52.639Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:42044 - -
+1780382873199	2026-06-02T06:47:53.199Z	[2026-06-02T06:47:52.639Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:42038 - -
+1780382868198	2026-06-02T06:47:48.198Z	[2026-06-02T06:47:48.138Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:42004 - -
+1780382868198	2026-06-02T06:47:48.198Z	[2026-06-02T06:47:48.138Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.20.58:42012 - -
+1780382862396	2026-06-02T06:47:42.396Z	[2026-06-02T06:47:42.186Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52906 - -
+1780382862396	2026-06-02T06:47:42.396Z	[2026-06-02T06:47:42.185Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52900 - -
+1780382857396	2026-06-02T06:47:37.396Z	[2026-06-02T06:47:37.235Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52876 - -
+1780382857396	2026-06-02T06:47:37.396Z	[2026-06-02T06:47:37.235Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52874 - -
+1780382850645	2026-06-02T06:47:30.645Z	[2026-06-02T06:47:30.487Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:54900 - -
+1780382850645	2026-06-02T06:47:30.645Z	[2026-06-02T06:47:30.487Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:54890 - -
+1780382846644	2026-06-02T06:47:26.644Z	[2026-06-02T06:47:25.816Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:60156 - -
+1780382846644	2026-06-02T06:47:26.644Z	[2026-06-02T06:47:25.816Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.22.13:60152 - -
+1780382813393	2026-06-02T06:46:53.393Z	[2026-06-02T06:46:53.136Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52752 - -
+1780382813393	2026-06-02T06:46:53.393Z	[2026-06-02T06:46:53.136Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:52764 - -
+1780382809392	2026-06-02T06:46:49.392Z	[2026-06-02T06:46:48.544Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:36920 - -
+1780382809392	2026-06-02T06:46:49.392Z	[2026-06-02T06:46:48.544Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:36910 - -
+1780382789807	2026-06-02T06:46:29.807Z	[2026-06-02T06:46:29.099Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:39104 - -
+1780382789807	2026-06-02T06:46:29.807Z	[2026-06-02T06:46:29.099Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:39112 - -
+1780382786807	2026-06-02T06:46:26.807Z	[2026-06-02T06:46:26.478Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:47072 - -
+1780382786807	2026-06-02T06:46:26.807Z	[2026-06-02T06:46:26.478Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.97:47068 - -
+1780380606203	2026-06-02T06:10:06.203Z	[2026-06-02T06:10:05.448Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:48330 - -
+1780380606203	2026-06-02T06:10:06.203Z	[2026-06-02T06:10:05.448Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.44.134:48336 - -
+1780373080632	2026-06-02T04:04:40.632Z	[2026-06-02T04:04:40.024Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:33246 - -
+1780373080632	2026-06-02T04:04:40.632Z	[2026-06-02T04:04:40.024Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:33258 - -
+1780372928617	2026-06-02T04:02:08.617Z	[2026-06-02T04:02:07.992Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:56756 - -
+1780372928617	2026-06-02T04:02:08.617Z	[2026-06-02T04:02:07.992Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:56760 - -
+1780372925617	2026-06-02T04:02:05.617Z	[2026-06-02T04:02:04.907Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:33292 - -
+1780372925617	2026-06-02T04:02:05.617Z	[2026-06-02T04:02:04.906Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:33288 - -
+1780372792602	2026-06-02T03:59:52.602Z	[2026-06-02T03:59:51.834Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:57844 - -
+1780372792602	2026-06-02T03:59:52.602Z	[2026-06-02T03:59:51.834Z] "- - -" 0 UF,URX - - "delayed_connect_error:_Connection_refused" 0 0 0 - "-" "-" "-" "-" "169.254.169.254:80" PassthroughCluster - 169.254.169.254:80 172.16.24.112:57834 - -
