@@ -1,3 +1,3 @@
 oc logs txn-transactionservice-65cc564dd5-s7c5d \
 -n prod-dc-transaction \
---since=2h | grep -A20 -B20 "2101"
+--since=2h | grep -A20 -B20 "Admin service is currently unavailable. Please try again later"
