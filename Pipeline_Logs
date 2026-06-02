@@ -1,31 +1,16 @@
-Edit allowed to push and merge
-
-Administrators
-Maintainers
-Developers and Maintainers
-No one
-Users
-1
-Search to add users
-O
-Omkar Gupta
-@V1021577
-Groups
-4
-Search to add groups
-E
-epay-gitlab-vendor-app-lead
-@epay-gitlab-vendor-app-lead
-E
-epay-gitlab-vendor-infra-developer
-@epay-gitlab-vendor-infra-developer
-E
-epay-gitlab-vendor-app-maintainer
-@epay-gitlab-vendor-app-maintainer
-E
-epay-gitlab-vendor-infra-maintainer
-@epay-gitlab-vendor-infra-maintainer
-Deploy keys
-0
-Search to add deploy keys
-No deploy keys have been added.
+[osuser@dcepayprodbastion logs]$ oc get po -n prod-dc-transaction
+NAME                                      READY   STATUS    RESTARTS   AGE
+payment-paymentservice-5d48d47b6-5ffwd    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-7pk6z    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-cr6lx    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-mjh82    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-v5psm    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-vhdn7    2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-4gds8   2/2     Running   0          23h
+txn-transactionservice-65cc564dd5-4tqnm   2/2     Running   0          34h
+txn-transactionservice-65cc564dd5-jxqzr   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-ll7t4   2/2     Running   0          23h
+txn-transactionservice-65cc564dd5-lm9q8   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-mf9dd   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-s7c5d   2/2     Running   0          23h
+txn-transactionservice-65cc564dd5-xxx7j   2/2     Running   0          34h
