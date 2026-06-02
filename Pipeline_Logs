@@ -1,188 +1,77 @@
-#!/usr/bin/env bash
-#
-# gc-monitor.sh - Human-readable JVM heap & GC monitor for OpenShift pods
-#
-# Prints a clean per-pod table: heap used / max / free / use%, GC counts &
-# time, metaspace, plus container memory vs limit, with a health flag.
-#
-# Usage:
-#   ./gc-monitor.sh -n prod-dc-transaction
-#   ./gc-monitor.sh -n prod-dc-transaction -s 'payment|txn'
-#   ./gc-monitor.sh -n prod-dc-transaction -c <appcontainer> -w 5
-#   ./gc-monitor.sh -n prod-dc-transaction -p <single-pod-name>
-#
-# Flags:
-#   -n  namespace          (default: prod-dc-transaction)
-#   -s  pod name regex     (default: 'payment|txn')
-#   -c  container name     (default: pod's default container)
-#   -p  single pod name    (overrides -s)
-#   -w  watch interval sec (default: 0 = run once)
-#   -h  help
-#
-# Requires: oc CLI logged in + JDK tools (jstat) in the target container.
-# Read-only: only runs `oc exec ... jstat` and `oc adm top`. Changes nothing.
-# ----------------------------------------------------------------------------
+[osuser@dcepayprodbastion GC_Script]$ chmod +x gc_monitor.sh
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -p txn-transactionservice-65cc564dd5-4tqnm
+==================================================================================================
+ JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:30:42
+==================================================================================================
+POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
+--------------------------------------------------------------------------------------------------
+txn-transactionservice-65cc564dd5-4tqnm        273M     328M      55M    83%    2529   6.837s     0   0.000s      189M  WATCH
 
-set -uo pipefail
+Container memory (oc adm top pod):
+  payment-paymentservice-5d48d47b6-5ffwd     cpu=44m      mem=1050Mi
+  payment-paymentservice-5d48d47b6-7pk6z     cpu=27m      mem=1041Mi
+  payment-paymentservice-5d48d47b6-cr6lx     cpu=48m      mem=1006Mi
+  payment-paymentservice-5d48d47b6-mjh82     cpu=44m      mem=1075Mi
+  payment-paymentservice-5d48d47b6-v5psm     cpu=50m      mem=1066Mi
+  payment-paymentservice-5d48d47b6-vhdn7     cpu=93m      mem=1078Mi
+  txn-transactionservice-65cc564dd5-4gds8    cpu=30m      mem=933Mi
+  txn-transactionservice-65cc564dd5-4tqnm    cpu=36m      mem=1054Mi
+  txn-transactionservice-65cc564dd5-jxqzr    cpu=48m      mem=1299Mi
+  txn-transactionservice-65cc564dd5-ll7t4    cpu=27m      mem=1022Mi
+  txn-transactionservice-65cc564dd5-lm9q8    cpu=35m      mem=1388Mi
+  txn-transactionservice-65cc564dd5-mf9dd    cpu=44m      mem=1436Mi
+  txn-transactionservice-65cc564dd5-s7c5d    cpu=26m      mem=1056Mi
+  txn-transactionservice-65cc564dd5-xxx7j    cpu=51m      mem=1068Mi
 
-# ---------- defaults ----------
-NS="prod-dc-transaction"
-SELECTOR='payment|txn'
-CONTAINER=""
-SINGLE_POD=""
-WATCH=0
+Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
+        YGC/FGC = young/full GC count (t = cumulative seconds).
+        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction
+==================================================================================================
+ JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:32:54
+==================================================================================================
+POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
+--------------------------------------------------------------------------------------------------
+payment-paymentservice-5d48d47b6-5ffwd     unreachable (check -c container / jstat present?)
+payment-paymentservice-5d48d47b6-7pk6z     unreachable (check -c container / jstat present?)
+payment-paymentservice-5d48d47b6-cr6lx     unreachable (check -c container / jstat present?)
+payment-paymentservice-5d48d47b6-mjh82     unreachable (check -c container / jstat present?)
+payment-paymentservice-5d48d47b6-v5psm     unreachable (check -c container / jstat present?)
+payment-paymentservice-5d48d47b6-vhdn7     unreachable (check -c container / jstat present?)
+txn-transactionservice-65cc564dd5-4gds8        168M     226M      58M    74%    1459   5.414s     0   0.000s      191M  OK
+txn-transactionservice-65cc564dd5-4tqnm        211M     328M     117M    64%    2533   6.846s     0   0.000s      189M  OK
+txn-transactionservice-65cc564dd5-jxqzr        333M     544M     211M    61%    3171  11.893s     0   0.000s      192M  OK
+txn-transactionservice-65cc564dd5-ll7t4        228M     310M      82M    74%    1645   4.831s     0   0.000s      190M  OK
+txn-transactionservice-65cc564dd5-lm9q8        425M     618M     193M    69%    3200  13.732s     0   0.000s      197M  OK
+txn-transactionservice-65cc564dd5-mf9dd        602M     648M      46M    93%    3435  12.694s     0   0.000s      197M  HIGH
+txn-transactionservice-65cc564dd5-s7c5d        121M     328M     207M    37%    1525   5.290s     0   0.000s      193M  OK
+txn-transactionservice-65cc564dd5-xxx7j        227M     324M      97M    70%    2450   7.922s     0   0.000s      192M  OK
 
-# ---------- colors (auto-off when not a terminal) ----------
-if [ -t 1 ]; then
-  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[1m'; C=$'\033[36m'; X=$'\033[0m'
-else
-  R=""; G=""; Y=""; B=""; C=""; X=""
-fi
+Container memory (oc adm top pod):
+  payment-paymentservice-5d48d47b6-5ffwd     cpu=45m      mem=1091Mi
+  payment-paymentservice-5d48d47b6-7pk6z     cpu=64m      mem=1056Mi
+  payment-paymentservice-5d48d47b6-cr6lx     cpu=47m      mem=1082Mi
+  payment-paymentservice-5d48d47b6-mjh82     cpu=35m      mem=1036Mi
+  payment-paymentservice-5d48d47b6-v5psm     cpu=42m      mem=1015Mi
+  payment-paymentservice-5d48d47b6-vhdn7     cpu=22m      mem=1010Mi
+  txn-transactionservice-65cc564dd5-4gds8    cpu=38m      mem=933Mi
+  txn-transactionservice-65cc564dd5-4tqnm    cpu=41m      mem=1053Mi
+  txn-transactionservice-65cc564dd5-jxqzr    cpu=57m      mem=1300Mi
+  txn-transactionservice-65cc564dd5-ll7t4    cpu=39m      mem=1022Mi
+  txn-transactionservice-65cc564dd5-lm9q8    cpu=57m      mem=1388Mi
+  txn-transactionservice-65cc564dd5-mf9dd    cpu=40m      mem=1437Mi
+  txn-transactionservice-65cc564dd5-s7c5d    cpu=40m      mem=1057Mi
+  txn-transactionservice-65cc564dd5-xxx7j    cpu=55m      mem=1067Mi
 
-usage() { grep '^#' "$0" | sed 's/^#\{1,\} \{0,1\}//'; exit 0; }
-
-while getopts "n:s:c:p:w:h" opt; do
-  case "$opt" in
-    n) NS="$OPTARG" ;;
-    s) SELECTOR="$OPTARG" ;;
-    c) CONTAINER="$OPTARG" ;;
-    p) SINGLE_POD="$OPTARG" ;;
-    w) WATCH="$OPTARG" ;;
-    h) usage ;;
-    *) usage ;;
-  esac
-done
-
-# ---------- guards ----------
-command -v oc >/dev/null 2>&1 || { echo "ERROR: 'oc' CLI not found in PATH." >&2; exit 1; }
-case "$WATCH" in
-  ''|*[!0-9]*) echo "ERROR: -w must be a whole number of seconds." >&2; exit 1 ;;
-esac
-
-# is the value a non-negative integer?
-is_int() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
-
-# bytes -> human (MiB/GiB)
-human() {
-  local b="$1"
-  is_int "$b" || { echo "-"; return; }
-  [ "$b" -eq 0 ] && { echo "0"; return; }
-  awk -v b="$b" 'BEGIN{
-    if (b >= 1073741824) printf "%.2fG", b/1073741824;
-    else                 printf "%.0fM", b/1048576;
-  }'
-}
-
-# ---------- pod list ----------
-get_pods() {
-  if [ -n "$SINGLE_POD" ]; then
-    printf '%s\n' "$SINGLE_POD"
-  else
-    oc get po -n "$NS" --no-headers 2>/dev/null | awk '{print $1}' | grep -E "$SELECTOR"
-  fi
-}
-
-# ---------- per-pod collection ----------
-collect_pod() {
-  local pod="$1"
-
-  # Build container flag as an array (safe whether empty or set).
-  local cf=()
-  [ -n "$CONTAINER" ] && cf=(-c "$CONTAINER")
-
-  local gc
-  gc=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gc 1 2>/dev/null | tail -1)
-
-  # No data, or header echoed instead of numbers -> mark unreachable.
-  if [ -z "$gc" ] || printf '%s' "$gc" | grep -qi 'S0C'; then
-    printf "%-42s ${R}%s${X}\n" "$pod" "unreachable (check -c container / jstat present?)"
-    return
-  fi
-
-  # jstat -gc columns (JDK 17/21):
-  # S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
-  local S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
-  # shellcheck disable=SC2034  # read consumes all 19 columns positionally; some intentionally unused
-  read -r S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT <<<"$gc"
-
-  # Heap used/capacity (KB, may be decimals) -> bytes. Heap = survivors+eden+old.
-  local used_b cap_b free_b pct meta_b
-  used_b=$(awk -v a="$S0U" -v b="$S1U" -v e="$EU" -v o="$OU" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
-  cap_b=$(awk  -v a="$S0C" -v b="$S1C" -v e="$EC" -v o="$OC" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
-  free_b=$(awk -v c="$cap_b" -v u="$used_b" 'BEGIN{printf "%.0f", c-u}')
-  pct=$(awk    -v u="$used_b" -v c="$cap_b" 'BEGIN{if(c>0) printf "%.0f", u*100/c; else print 0}')
-  meta_b=$(awk -v m="$MU" 'BEGIN{printf "%.0f", m*1024}')
-
-  # Full-GC count as integer (strip any decimal).
-  local fgc_i="${FGC%%.*}"
-  is_int "$fgc_i" || fgc_i=0
-
-  # Health flag (pct is always an integer from awk above).
-  local flag="${G}OK${X}"
-  if   [ "$pct" -ge 90 ]; then flag="${R}HIGH${X}"
-  elif [ "$pct" -ge 75 ]; then flag="${Y}WATCH${X}"
-  fi
-  if [ "$pct" -ge 75 ] && [ "$fgc_i" -gt 0 ]; then flag="${R}FGC!${X}"; fi
-
-  printf "%-42s %8s %8s %8s %5s%%  %6s %8s %5s %8s  %8s  %b\n" \
-    "$pod" \
-    "$(human "$used_b")" "$(human "$cap_b")" "$(human "$free_b")" "$pct" \
-    "$YGC" "${YGCT}s" "$FGC" "${FGCT}s" \
-    "$(human "$meta_b")" \
-    "$flag"
-}
-
-# ---------- container memory vs limit ----------
-print_container_mem() {
-  echo
-  echo "${B}Container memory (oc adm top pod):${X}"
-  local out
-  out=$(oc adm top pod -n "$NS" --no-headers 2>/dev/null | grep -E "$SELECTOR")
-  if [ -z "$out" ]; then
-    echo "  (metrics unavailable - metrics-server may be down)"
-  else
-    printf '%s\n' "$out" | awk '{printf "  %-42s cpu=%-8s mem=%s\n", $1, $2, $3}'
-  fi
-}
-
-# ---------- render ----------
-render() {
-  echo "${B}==================================================================================================${X}"
-  echo "${B} JVM Heap & GC report  |  ns=${C}${NS}${X}${B}  |  $(date '+%Y-%m-%d %H:%M:%S')${X}"
-  echo "${B}==================================================================================================${X}"
-  printf "${B}%-42s %8s %8s %8s %6s  %6s %8s %5s %8s  %8s  %s${X}\n" \
-    "POD" "USED" "MAX" "FREE" "USE%" "YGC" "YGCt" "FGC" "FGCt" "META" "HEALTH"
-  echo "--------------------------------------------------------------------------------------------------"
-
-  local pods
-  pods=$(get_pods)
-  if [ -z "$pods" ]; then
-    echo "${R}No pods matched (ns=$NS selector='$SELECTOR').${X}"
-    return 1
-  fi
-
-  while IFS= read -r pod; do
-    [ -z "$pod" ] && continue
-    collect_pod "$pod"
-  done <<< "$pods"
-
-  print_container_mem
-
-  echo
-  echo "Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used."
-  echo "        YGC/FGC = young/full GC count (t = cumulative seconds)."
-  echo "        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure."
-}
-
-# ---------- run once or watch ----------
-if [ "$WATCH" -gt 0 ]; then
-  while true; do
-    clear
-    render
-    echo
-    echo "(refreshing every ${WATCH}s - Ctrl-C to stop)"
-    sleep "$WATCH"
-  done
-else
-  render
-fi
+Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
+        YGC/FGC = young/full GC count (t = cumulative seconds).
+        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
