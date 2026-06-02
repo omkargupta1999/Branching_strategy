@@ -1,71 +1,82 @@
-sh-5.1$ env  | grep -i admin
-HOSTNAME=admin-adminservice-65f9cfb994-62lpc
-ADMIN_ADMINSERVICE_PORT_9094_TCP_ADDR=172.30.167.5
-ADMIN_ADMINSERVICE_SERVICE_PORT_9094_TCP=9094
-ADMIN_ADMINSERVICE_SERVICE_HOST=172.30.167.5
-ADMIN_ADMINSERVICE_PORT=tcp://172.30.167.5:9094
-ADMIN_ADMINSERVICE_PORT_9094_TCP=tcp://172.30.167.5:9094
-ADMIN_ADMINSERVICE_PORT_9094_TCP_PROTO=tcp
-ADMIN_ADMINSERVICE_PORT_9094_TCP_PORT=9094
-ADMIN_ADMINSERVICE_SERVICE_PORT=9094
+sh-5.1$ curl -v http://admin-adminservice.prod-dc-admin.svc.cluster.local:9094
+*   Trying 172.30.167.5:9094...
+* Connected to admin-adminservice.prod-dc-admin.svc.cluster.local (172.30.167.5) port 9094 (#0)
+> GET / HTTP/1.1
+> Host: admin-adminservice.prod-dc-admin.svc.cluster.local:9094
+> User-Agent: curl/7.76.1
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 404 Not Found
+< content-type: text/html;charset=utf-8
+< content-language: en
+< content-length: 431
+< date: Tue, 02 Jun 2026 09:08:40 GMT
+< x-envoy-upstream-service-time: 9
+< server: envoy
+<
+* Connection #0 to host admin-adminservice.prod-dc-admin.svc.cluster.local left intact
+<!doctype html><html lang="en"><head><title>HTTP Status 404 – Not Found</title><style type="text/css">body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}</style></head><body><h1>HTTP Status 404 – Not Found</h1></body></html>sh-5.1$
 sh-5.1$
-sh-5.1$ exit
-exit
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc get po
-NAME                                  READY   STATUS    RESTARTS   AGE
-admin-adminservice-65f9cfb994-62lpc   2/2     Running   0          14m
-admin-adminservice-65f9cfb994-7mbtm   2/2     Running   0          14m
-admin-adminservice-65f9cfb994-d8tdl   2/2     Running   0          18m
-admin-adminservice-65f9cfb994-h9jhf   2/2     Running   0          18m
-admin-adminservice-65f9cfb994-mwkj7   2/2     Running   0          18m
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc get svc -A | grep -i admin
-prod-dc-admin                                      admin-adminservice                                          ClusterIP      172.30.167.5     <none>                                 9094/TCP                                          153d
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc project prod-dc-transaction
-Now using project "prod-dc-transaction" on server "https://api.dc.prod.epay.sbi:6443".
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc get po
-NAME                                      READY   STATUS    RESTARTS   AGE
-payment-paymentservice-5d48d47b6-5ffwd    2/2     Running   0          2d18h
-payment-paymentservice-5d48d47b6-7pk6z    2/2     Running   0          2d18h
-payment-paymentservice-5d48d47b6-cr6lx    2/2     Running   0          2d18h
-payment-paymentservice-5d48d47b6-mjh82    2/2     Running   0          2d18h
-payment-paymentservice-5d48d47b6-v5psm    2/2     Running   0          2d18h
-payment-paymentservice-5d48d47b6-vhdn7    2/2     Running   0          2d18h
-txn-transactionservice-65cc564dd5-4gds8   2/2     Running   0          27h
-txn-transactionservice-65cc564dd5-4tqnm   2/2     Running   0          38h
-txn-transactionservice-65cc564dd5-jxqzr   2/2     Running   0          2d18h
-txn-transactionservice-65cc564dd5-ll7t4   2/2     Running   0          27h
-txn-transactionservice-65cc564dd5-lm9q8   2/2     Running   0          2d18h
-txn-transactionservice-65cc564dd5-mf9dd   2/2     Running   0          2d18h
-txn-transactionservice-65cc564dd5-s7c5d   2/2     Running   0          27h
-txn-transactionservice-65cc564dd5-xxx7j   2/2     Running   0          38h
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc rsh txn-transactionservice-65cc564dd5-jxqzr
-sh-5.1$
-sh-5.1$ env | egrep -i "admin|url|host|service"
-KUBERNETES_SERVICE_PORT_HTTPS=443
-TXN_TRANSACTIONSERVICE_PORT_9092_TCP=tcp://172.30.108.206:9092
-KUBERNETES_SERVICE_PORT=443
-PAYMENT_PAYMENTSERVICE_PORT_9093_TCP_PROTO=tcp
-HOSTNAME=txn-transactionservice-65cc564dd5-jxqzr
-TXN_TRANSACTIONSERVICE_PORT_9092_TCP_ADDR=172.30.108.206
-TXN_TRANSACTIONSERVICE_PORT=tcp://172.30.108.206:9092
-TXN_TRANSACTIONSERVICE_PORT_9092_TCP_PORT=9092
-TXN_TRANSACTIONSERVICE_PORT_9092_TCP_PROTO=tcp
-PAYMENT_PAYMENTSERVICE_SERVICE_PORT_9093_TCP=9093
-TXN_TRANSACTIONSERVICE_SERVICE_PORT=9092
-PAYMENT_PAYMENTSERVICE_PORT_9093_TCP=tcp://172.30.23.135:9093
-PAYMENT_PAYMENTSERVICE_SERVICE_PORT=9093
-PAYMENT_PAYMENTSERVICE_SERVICE_HOST=172.30.23.135
-PAYMENT_PAYMENTSERVICE_PORT=tcp://172.30.23.135:9093
-TXN_TRANSACTIONSERVICE_SERVICE_PORT_9092_TCP=9092
-KUBERNETES_SERVICE_HOST=172.30.0.1
-TXN_TRANSACTIONSERVICE_SERVICE_HOST=172.30.108.206
-PAYMENT_PAYMENTSERVICE_PORT_9093_TCP_ADDR=172.30.23.135
-PAYMENT_PAYMENTSERVICE_PORT_9093_TCP_PORT=9093
+sh-5.1$ curl -v http://172.30.167.5:9094
+*   Trying 172.30.167.5:9094...
+* Connected to 172.30.167.5 (172.30.167.5) port 9094 (#0)
+> GET / HTTP/1.1
+> Host: 172.30.167.5:9094
+> User-Agent: curl/7.76.1
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 404 Not Found
+< content-type: text/html;charset=utf-8
+< content-language: en
+< content-length: 431
+< date: Tue, 02 Jun 2026 09:08:47 GMT
+< x-envoy-upstream-service-time: 1
+< server: envoy
+<
+* Connection #0 to host 172.30.167.5 left intact
+<!doctype html><html lang="en"><head><title>HTTP Status 404 – Not Found</title><style type="text/css">body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}</style></head><body><h1>HTTP Status 404 – Not Found</h1></body></html>sh-5.1$
 sh-5.1$
 sh-5.1$
+sh-5.1$
+sh-5.1$ curl -v http://172.30.167.5:9094/actuator/health
+*   Trying 172.30.167.5:9094...
+* Connected to 172.30.167.5 (172.30.167.5) port 9094 (#0)
+> GET /actuator/health HTTP/1.1
+> Host: 172.30.167.5:9094
+> User-Agent: curl/7.76.1
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 404 Not Found
+< content-type: text/html;charset=utf-8
+< content-language: en
+< content-length: 431
+< date: Tue, 02 Jun 2026 09:09:02 GMT
+< x-envoy-upstream-service-time: 1
+< server: envoy
+<
+* Connection #0 to host 172.30.167.5 left intact
+<!doctype html><html lang="en"><head><title>HTTP Status 404 – Not Found</title><style type="text/css">body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}</style></head><body><h1>HTTP Status 404 – Not Found</h1></body></html>sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$ curl -v http://admin-adminservice.prod-dc-admin.svc.cluster.local:9094/actuator/health
+*   Trying 172.30.167.5:9094...
+* Connected to admin-adminservice.prod-dc-admin.svc.cluster.local (172.30.167.5) port 9094 (#0)
+> GET /actuator/health HTTP/1.1
+> Host: admin-adminservice.prod-dc-admin.svc.cluster.local:9094
+> User-Agent: curl/7.76.1
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 404 Not Found
+< content-type: text/html;charset=utf-8
+< content-language: en
+< content-length: 431
+< date: Tue, 02 Jun 2026 09:09:19 GMT
+< x-envoy-upstream-service-time: 8
+< server: envoy
+<
+* Connection #0 to host admin-adminservice.prod-dc-admin.svc.cluster.local left intact
+<!doctype html><html lang="en"><head><title>HTTP Status 404 – Not Found</title><style type="text/css">body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}</style></head><body><h1>HTTP Status 404 – Not Found</h1></body></html>sh-5.1$
