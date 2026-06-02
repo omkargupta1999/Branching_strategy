@@ -1,2 +1,8 @@
-oc exec txn-transactionservice-65cc564dd5-4gds8 -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
-oc exec txn-transactionservice-65cc564dd5-mf9dd -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
+[osuser@dcepayprodbastion ~]$ oc exec txn-transactionservice-65cc564dd5-4gds8 -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
+   size_t MaxHeapSize                              = 3437232128                                {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 3437232128                             {manageable} {ergonomic}
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ oc exec txn-transactionservice-65cc564dd5-mf9dd -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
+   size_t MaxHeapSize                              = 3437232128                                {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 3437232128                             {manageable} {ergonomic}
+[osuser@dcepayprodbastion ~]$
