@@ -1,83 +1,262 @@
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -p payment-paymentservice-5d48d47b6-cr6lx
-=============================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 12:16:54
-=============================================================================================================
-POD                                            USED   COMMIT      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
--------------------------------------------------------------------------------------------------------------
-payment-paymentservice-5d48d47b6-cr6lx         467M     474M    3.20G    2.74G    14%     n/a      n/a   n/a      n/a      157M  OK
+#!/usr/bin/env bash
+#
+# gc-monitor.sh - Human-readable JVM heap & GC monitor for OpenShift pods
+#
+# Prints a clean per-pod table: heap used / max / free / use%, GC counts &
+# time, metaspace, plus container memory vs limit, with a health flag.
+#
+# Usage:
+#   ./gc-monitor.sh -n prod-dc-transaction
+#   ./gc-monitor.sh -n prod-dc-transaction -s 'payment|txn'
+#   ./gc-monitor.sh -n prod-dc-transaction -c <appcontainer> -w 5
+#   ./gc-monitor.sh -n prod-dc-transaction -p <single-pod-name>
+#
+# Flags:
+#   -n  namespace          (default: prod-dc-transaction)
+#   -s  pod name regex     (default: 'payment|txn')
+#   -c  container name     (default: pod's default container)
+#   -p  single pod name    (overrides -s)
+#   -w  watch interval sec (default: 0 = run once)
+#   -h  help
+#
+# Requires: oc CLI logged in + JDK tools (jstat) in the target container.
+# Read-only: only runs `oc exec ... jstat` and `oc adm top`. Changes nothing.
+# ----------------------------------------------------------------------------
 
-Container memory (oc adm top pod):
-  payment-paymentservice-5d48d47b6-5ffwd     cpu=40m      mem=1075Mi
-  payment-paymentservice-5d48d47b6-7pk6z     cpu=74m      mem=1047Mi
-  payment-paymentservice-5d48d47b6-cr6lx     cpu=43m      mem=1033Mi
-  payment-paymentservice-5d48d47b6-mjh82     cpu=209m     mem=1061Mi
-  payment-paymentservice-5d48d47b6-v5psm     cpu=52m      mem=1014Mi
-  payment-paymentservice-5d48d47b6-vhdn7     cpu=37m      mem=1069Mi
-  txn-transactionservice-65cc564dd5-4gds8    cpu=39m      mem=954Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=29m      mem=1056Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=34m      mem=1320Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=30m      mem=1049Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=60m      mem=1398Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=40m      mem=1455Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=36m      mem=1060Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=68m      mem=1070Mi
+set -uo pipefail
 
-Legend: USED = live heap in use.  COMMIT = heap currently committed (grows on demand).
-        MAX = configured max heap ceiling (-Xmx / MaxRAMPercentage).  FREE = MAX - USED.
-        USE% & HEALTH are measured against MAX (the real ceiling), not COMMIT.
-        META = metaspace used.  YGC/FGC = young/full GC count (t = cumulative seconds).
-        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
-        MAX/GC cols show 'n/a' or '-' when the source tool can't supply them.
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction
-=============================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 12:17:29
-=============================================================================================================
-POD                                            USED   COMMIT      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
--------------------------------------------------------------------------------------------------------------
-payment-paymentservice-5d48d47b6-5ffwd         142M     414M    3.20G    3.06G     4%     n/a      n/a   n/a      n/a      156M  OK
-payment-paymentservice-5d48d47b6-7pk6z         176M     464M    3.20G    3.03G     5%     n/a      n/a   n/a      n/a      157M  OK
-payment-paymentservice-5d48d47b6-cr6lx         413M     442M    3.20G    2.80G    13%     n/a      n/a   n/a      n/a      157M  OK
-payment-paymentservice-5d48d47b6-mjh82         132M     406M    3.20G    3.07G     4%     n/a      n/a   n/a      n/a      157M  OK
-payment-paymentservice-5d48d47b6-v5psm         170M     414M    3.20G    3.03G     5%     n/a      n/a   n/a      n/a      157M  OK
-payment-paymentservice-5d48d47b6-vhdn7         414M     420M    3.20G    2.80G    13%     n/a      n/a   n/a      n/a      156M  OK
-txn-transactionservice-65cc564dd5-4gds8        163M     226M    6.40G    6.24G     2%    1770   6.385s     0   0.000s      191M  OK
-txn-transactionservice-65cc564dd5-4tqnm        187M     328M    6.40G    6.22G     3%    2861   7.632s     0   0.000s      189M  OK
-txn-transactionservice-65cc564dd5-jxqzr        345M     544M    6.40G    6.07G     5%    3498  12.954s     0   0.000s      192M  OK
-txn-transactionservice-65cc564dd5-ll7t4        199M     310M    6.40G    6.21G     3%    1992   5.619s     0   0.000s      190M  OK
-txn-transactionservice-65cc564dd5-lm9q8        427M     620M    6.40G    5.98G     7%    3494  14.561s     0   0.000s      197M  OK
-txn-transactionservice-65cc564dd5-mf9dd        541M     650M    6.40G    5.87G     8%    3716  13.489s     0   0.000s      197M  OK
-txn-transactionservice-65cc564dd5-s7c5d        273M     328M    6.40G    6.14G     4%    1856   6.067s     0   0.000s      194M  OK
-txn-transactionservice-65cc564dd5-xxx7j        287M     324M    6.40G    6.12G     4%    2802   8.940s     0   0.000s      193M  OK
+# ---------- defaults ----------
+NS="prod-dc-transaction"
+SELECTOR='payment|txn'
+CONTAINER=""
+SINGLE_POD=""
+WATCH=0
 
-Container memory (oc adm top pod):
-  payment-paymentservice-5d48d47b6-5ffwd     cpu=202m     mem=1042Mi
-  payment-paymentservice-5d48d47b6-7pk6z     cpu=133m     mem=1092Mi
-  payment-paymentservice-5d48d47b6-cr6lx     cpu=114m     mem=1096Mi
-  payment-paymentservice-5d48d47b6-mjh82     cpu=248m     mem=1034Mi
-  payment-paymentservice-5d48d47b6-v5psm     cpu=62m      mem=1016Mi
-  payment-paymentservice-5d48d47b6-vhdn7     cpu=54m      mem=1016Mi
-  txn-transactionservice-65cc564dd5-4gds8    cpu=37m      mem=954Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=42m      mem=1056Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=32m      mem=1320Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=35m      mem=1049Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=44m      mem=1401Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=52m      mem=1455Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=37m      mem=1060Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=75m      mem=1070Mi
+# ---------- colors (auto-off when not a terminal) ----------
+if [ -t 1 ]; then
+  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[1m'; C=$'\033[36m'; X=$'\033[0m'
+else
+  R=""; G=""; Y=""; B=""; C=""; X=""
+fi
 
-Legend: USED = live heap in use.  COMMIT = heap currently committed (grows on demand).
-        MAX = configured max heap ceiling (-Xmx / MaxRAMPercentage).  FREE = MAX - USED.
-        USE% & HEALTH are measured against MAX (the real ceiling), not COMMIT.
-        META = metaspace used.  YGC/FGC = young/full GC count (t = cumulative seconds).
-        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
-        MAX/GC cols show 'n/a' or '-' when the source tool can't supply them.
+usage() { grep '^#' "$0" | sed 's/^#\{1,\} \{0,1\}//'; exit 0; }
+
+while getopts "n:s:c:p:w:h" opt; do
+  case "$opt" in
+    n) NS="$OPTARG" ;;
+    s) SELECTOR="$OPTARG" ;;
+    c) CONTAINER="$OPTARG" ;;
+    p) SINGLE_POD="$OPTARG" ;;
+    w) WATCH="$OPTARG" ;;
+    h) usage ;;
+    *) usage ;;
+  esac
+done
+
+# ---------- guards ----------
+command -v oc >/dev/null 2>&1 || { echo "ERROR: 'oc' CLI not found in PATH." >&2; exit 1; }
+case "$WATCH" in
+  ''|*[!0-9]*) echo "ERROR: -w must be a whole number of seconds." >&2; exit 1 ;;
+esac
+
+# is the value a non-negative integer?
+is_int() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
+
+# bytes -> human (MiB/GiB)
+human() {
+  local b="$1"
+  is_int "$b" || { echo "-"; return; }
+  [ "$b" -eq 0 ] && { echo "0"; return; }
+  awk -v b="$b" 'BEGIN{
+    if (b >= 1073741824) printf "%.2fG", b/1073741824;
+    else                 printf "%.0fM", b/1048576;
+  }'
+}
+
+# ---------- pod list ----------
+get_pods() {
+  if [ -n "$SINGLE_POD" ]; then
+    printf '%s\n' "$SINGLE_POD"
+  else
+    oc get po -n "$NS" --no-headers 2>/dev/null | awk '{print $1}' | grep -E "$SELECTOR"
+  fi
+}
+
+# ---------- emit one formatted row ----------
+# args: pod used_b commit_b max_b meta_b ygc ygct fgc fgct  (ygc.. & max_b may be "n/a")
+# USE% and health are computed against the TRUE configured max heap (max_b),
+# not the currently committed heap (commit_b). FREE = max_b - used_b.
+emit_row() {
+  local pod="$1" used_b="$2" commit_b="$3" max_b="$4" meta_b="$5" ygc="$6" ygct="$7" fgc="$8" fgct="$9"
+  local free_b pct flag fgc_i base_b
+
+  # If we couldn't read the true max, fall back to committed for the math
+  # (and the MAX column will show "-").
+  if is_int "$max_b" && [ "$max_b" -gt 0 ]; then base_b="$max_b"; else base_b="$commit_b"; fi
+
+  free_b=$(awk -v c="$base_b" -v u="$used_b" 'BEGIN{printf "%.0f", c-u}')
+  pct=$(awk    -v u="$used_b" -v c="$base_b" 'BEGIN{if(c>0) printf "%.0f", u*100/c; else print 0}')
+
+  flag="${G}OK${X}"
+  if   [ "$pct" -ge 90 ]; then flag="${R}HIGH${X}"
+  elif [ "$pct" -ge 75 ]; then flag="${Y}WATCH${X}"
+  fi
+  fgc_i="${fgc%%.*}"
+  is_int "$fgc_i" || fgc_i=0
+  if [ "$pct" -ge 75 ] && [ "$fgc_i" -gt 0 ]; then flag="${R}FGC!${X}"; fi
+
+  # append 's' to GC times only when numeric
+  local ygct_d="$ygct" fgct_d="$fgct"
+  [ "$ygct" != "n/a" ] && ygct_d="${ygct}s"
+  [ "$fgct" != "n/a" ] && fgct_d="${fgct}s"
+
+  # MAX column shows "-" if we couldn't determine the true ceiling
+  local max_disp
+  if is_int "$max_b" && [ "$max_b" -gt 0 ]; then max_disp="$(human "$max_b")"; else max_disp="-"; fi
+
+  printf "%-42s %8s %8s %8s %8s %5s%%  %6s %8s %5s %8s  %8s  %b\n" \
+    "$pod" \
+    "$(human "$used_b")" "$(human "$commit_b")" "$max_disp" "$(human "$free_b")" "$pct" \
+    "$ygc" "$ygct_d" "$fgc" "$fgct_d" \
+    "$(human "$meta_b")" \
+    "$flag"
+}
+
+# ---------- per-pod collection ----------
+collect_pod() {
+  local pod="$1"
+
+  # Build container flag as an array (safe whether empty or set).
+  local cf=()
+  [ -n "$CONTAINER" ] && cf=(-c "$CONTAINER")
+
+  # --- Attempt 1: jstat -gc (full JDK image; gives GC counts too) ---
+  local gc
+  gc=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gc 1 2>/dev/null | tail -1)
+
+  if [ -n "$gc" ] && ! printf '%s' "$gc" | grep -qi 'S0C'; then
+    # jstat -gc columns (JDK 17/21):
+    # S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
+    local S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT
+    # shellcheck disable=SC2034  # read consumes all 19 columns positionally; some intentionally unused
+    read -r S0C S1C S0U S1U EC EU OC OU MC MU CCSC CCSU YGC YGCT FGC FGCT CGC CGCT GCT <<<"$gc"
+    local used_b commit_b meta_b
+    used_b=$(awk   -v a="$S0U" -v b="$S1U" -v e="$EU" -v o="$OU" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
+    commit_b=$(awk -v a="$S0C" -v b="$S1C" -v e="$EC" -v o="$OC" 'BEGIN{printf "%.0f",(a+b+e+o)*1024}')
+    meta_b=$(awk   -v m="$MU" 'BEGIN{printf "%.0f", m*1024}')
+
+    # True configured max heap.
+    # PRIMARY: jcmd VM.flags -> MaxHeapSize=<bytes>. This is the real -Xmx ceiling
+    # and is accurate for G1 (unlike summing jstat -gccapacity NGCMX+OGCMX, which
+    # double-counts because G1 young/old maxes each approximate the whole heap).
+    local max_b="n/a" vmflags mhs
+    vmflags=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 VM.flags 2>/dev/null)
+    mhs=$(printf '%s' "$vmflags" | grep -o 'MaxHeapSize=[0-9]*' | head -1 | cut -d= -f2)
+    if is_int "$mhs" && [ "$mhs" -gt 0 ]; then
+      max_b="$mhs"
+    else
+      # FALLBACK: jstat -gccapacity. For G1 take the LARGER of NGCMX/OGCMX (each
+      # approximates the full heap) rather than their sum, to avoid double-counting.
+      # gccapacity cols: NGCMN NGCMX NGC S0C S1C EC OGCMN OGCMX OGC OC ...
+      local capline NGCMX OGCMX
+      capline=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jstat -gccapacity 1 2>/dev/null | tail -1)
+      if [ -n "$capline" ] && ! printf '%s' "$capline" | grep -qi 'NGCMN'; then
+        NGCMX=$(printf '%s' "$capline" | awk '{print $2}')
+        OGCMX=$(printf '%s' "$capline" | awk '{print $8}')
+        if printf '%s' "$NGCMX" | grep -qE '^[0-9.]+$' && printf '%s' "$OGCMX" | grep -qE '^[0-9.]+$'; then
+          max_b=$(awk -v n="$NGCMX" -v o="$OGCMX" 'BEGIN{m=(n>o)?n:o; printf "%.0f", m*1024}')
+        fi
+      fi
+    fi
+
+    emit_row "$pod" "$used_b" "$commit_b" "$max_b" "$meta_b" "$YGC" "$YGCT" "$FGC" "$FGCT"
+    return
+  fi
+
+  # --- Attempt 2: jcmd GC.heap_info (slim image; heap sizes only, no GC counts) ---
+  local ji
+  ji=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 GC.heap_info 2>/dev/null)
+
+  if printf '%s' "$ji" | grep -qi 'total .*used'; then
+    local total_k used_k meta_k used_b commit_b meta_b
+    total_k=$(printf '%s\n' "$ji" | grep -i 'total .*used' | sed -n 's/.*total \([0-9]*\)K.*/\1/p')
+    used_k=$( printf '%s\n' "$ji" | grep -i 'total .*used' | sed -n 's/.*used \([0-9]*\)K.*/\1/p')
+    meta_k=$( printf '%s\n' "$ji" | grep -i 'Metaspace'    | sed -n 's/.*used \([0-9]*\)K.*/\1/p')
+    is_int "$total_k" || total_k=0
+    is_int "$used_k"  || used_k=0
+    is_int "$meta_k"  || meta_k=0
+    used_b=$((   used_k  * 1024 ))
+    commit_b=$(( total_k * 1024 ))
+    meta_b=$((   meta_k  * 1024 ))
+
+    # True configured max heap via jcmd VM.flags -> MaxHeapSize=<bytes>
+    local vmflags max_b="n/a" mhs
+    vmflags=$(oc exec "$pod" -n "$NS" ${cf[@]+"${cf[@]}"} -- jcmd 1 VM.flags 2>/dev/null)
+    mhs=$(printf '%s' "$vmflags" | grep -o 'MaxHeapSize=[0-9]*' | head -1 | cut -d= -f2)
+    if is_int "$mhs" && [ "$mhs" -gt 0 ]; then max_b="$mhs"; fi
+
+    emit_row "$pod" "$used_b" "$commit_b" "$max_b" "$meta_b" "n/a" "n/a" "n/a" "n/a"
+    return
+  fi
+
+  # --- Neither worked ---
+  printf "%-42s ${R}%s${X}\n" "$pod" "unreachable (no jstat/jcmd, or wrong -c container?)"
+}
+
+# ---------- container memory vs limit ----------
+print_container_mem() {
+  echo
+  echo "${B}Container memory (oc adm top pod):${X}"
+  local out
+  out=$(oc adm top pod -n "$NS" --no-headers 2>/dev/null | grep -E "$SELECTOR")
+  if [ -z "$out" ]; then
+    echo "  (metrics unavailable - metrics-server may be down)"
+  else
+    printf '%s\n' "$out" | awk '{printf "  %-42s cpu=%-8s mem=%s\n", $1, $2, $3}'
+  fi
+}
+
+# ---------- render ----------
+render() {
+  echo "${B}=============================================================================================================${X}"
+  echo "${B} JVM Heap & GC report  |  ns=${C}${NS}${X}${B}  |  $(date '+%Y-%m-%d %H:%M:%S')${X}"
+  echo "${B}=============================================================================================================${X}"
+  printf "${B}%-42s %8s %8s %8s %8s %6s  %6s %8s %5s %8s  %8s  %s${X}\n" \
+    "POD" "USED" "COMMIT" "MAX" "FREE" "USE%" "YGC" "YGCt" "FGC" "FGCt" "META" "HEALTH"
+  echo "-------------------------------------------------------------------------------------------------------------"
+
+  local pods
+  pods=$(get_pods)
+  if [ -z "$pods" ]; then
+    echo "${R}No pods matched (ns=$NS selector='$SELECTOR').${X}"
+    return 1
+  fi
+
+  while IFS= read -r pod; do
+    [ -z "$pod" ] && continue
+    collect_pod "$pod"
+  done <<< "$pods"
+
+  print_container_mem
+
+  echo
+  echo "Legend: USED = live heap in use.  COMMIT = heap currently committed (grows on demand)."
+  echo "        MAX = configured max heap ceiling (-Xmx / MaxRAMPercentage).  FREE = MAX - USED."
+  echo "        USE% & HEALTH are measured against MAX (the real ceiling), not COMMIT."
+  echo "        META = metaspace used.  YGC/FGC = young/full GC count (t = cumulative seconds)."
+  echo "        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure."
+  echo "        MAX/GC cols show 'n/a' or '-' when the source tool can't supply them."
+}
+
+# ---------- run once or watch ----------
+if [ "$WATCH" -gt 0 ]; then
+  while true; do
+    clear
+    render
+    echo
+    echo "(refreshing every ${WATCH}s - Ctrl-C to stop)"
+    sleep "$WATCH"
+  done
+else
+  render
+fi
