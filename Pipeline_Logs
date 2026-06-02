@@ -1,19 +1,2 @@
-[osuser@dcepayprodbastion GC_Script]$ oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- which jstat
-time="2026-06-02T06:09:01Z" level=error msg="exec failed: unable to start container process: exec: \"which\": executable file not found in $PATH"
-command terminated with exit code 255
-[osuser@dcepayprodbastion GC_Script]$ oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- java -version
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-openjdk version "21.0.8" 2025-07-15 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.8.0.9-1) (build 21.0.8+9-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.8.0.9-1) (build 21.0.8+9-LTS, mixed mode, sharing)
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ oc exec payment-paymentservice-5d48d47b6-cr6lx -n prod-dc-transaction -c paymentservice -- jcmd 1 GC.heap_info
-Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
-1:
- garbage-first heap   total 417792K, used 304862K [0x0000000733200000, 0x0000000800000000)
-  region size 2048K, 23 young (47104K), 1 survivors (2048K)
- Metaspace       used 160471K, committed 161856K, reserved 1245184K
-  class space    used 18953K, committed 19712K, reserved 1048576K
-[osuser@dcepayprodbastion GC_Script]$ oc get deployment txn-transactionservice -n prod-dc-transaction -o jsonpath='{range .spec.template.spec.containers[*]}{.name}{": "}{.resources}{"\n"}{end}'
-transactionservice: {"limits":{"cpu":"3","memory":"4Gi"},"requests":{"cpu":"2","memory":"3Gi"}}
-[osuser@dcepayprodbastion GC_Script]$
+oc exec txn-transactionservice-65cc564dd5-4gds8 -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
+oc exec txn-transactionservice-65cc564dd5-mf9dd -n prod-dc-transaction -c transactionservice -- java -XX:+PrintFlagsFinal -version 2>/dev/null | grep -i maxheapsize
