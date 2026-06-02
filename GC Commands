@@ -1,0 +1,11 @@
+ oc exec -it txn-transactionservice-65cc564dd5-4gds8  -n prod-dc-transaction -- jcmd 1 GC.heap_info
+Picked up JAVA_TOOL_OPTIONS: -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxRAMPercentage=80.0
+1:
+ garbage-first heap   total 231424K, used 175909K [0x0000000733200000, 0x0000000800000000)
+  region size 2048K, 29 young (59392K), 1 survivors (2048K)
+ Metaspace       used 195449K, committed 196800K, reserved 1245184K
+  class space    used 23046K, committed 23808K, reserved 1048576K
+
+
+
+https://sbiepay.sbi.bank.in/api/transaction/v1/token/txn/6u4AbburFv7Slba2A1ClAA4XOEIbqH1KH4ME7IywPmu49KRLuTdCw9xlhd7Mt7hj1Ey6Sf88ec1ftCfKXccw 
