@@ -1,77 +1,84 @@
-[osuser@dcepayprodbastion GC_Script]$ chmod +x gc_monitor.sh
+[osuser@dcepayprodbastion GC_Script]$ oc get po payment-paymentservice-5d48d47b6-7pk6z  -n prod-dc-transaction -o jsonpath='{.spec.containers[*].name}'
+paymentservice istio-proxy[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ oc get po txn-transactionservice-65cc564dd5-jxqzr   -n prod-dc-transaction -o jsonpath='{.spec.containers[*].name}'
+transactionservice istio-proxy[osuser@dcepayprodbastion GC_Script]$
 [osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -p txn-transactionservice-65cc564dd5-4tqnm
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -p payment-paymentservice-5d48d47b6-cr6lx
 ==================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:30:42
+ JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:35:11
 ==================================================================================================
 POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
 --------------------------------------------------------------------------------------------------
-txn-transactionservice-65cc564dd5-4tqnm        273M     328M      55M    83%    2529   6.837s     0   0.000s      189M  WATCH
-
-Container memory (oc adm top pod):
-  payment-paymentservice-5d48d47b6-5ffwd     cpu=44m      mem=1050Mi
-  payment-paymentservice-5d48d47b6-7pk6z     cpu=27m      mem=1041Mi
-  payment-paymentservice-5d48d47b6-cr6lx     cpu=48m      mem=1006Mi
-  payment-paymentservice-5d48d47b6-mjh82     cpu=44m      mem=1075Mi
-  payment-paymentservice-5d48d47b6-v5psm     cpu=50m      mem=1066Mi
-  payment-paymentservice-5d48d47b6-vhdn7     cpu=93m      mem=1078Mi
-  txn-transactionservice-65cc564dd5-4gds8    cpu=30m      mem=933Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=36m      mem=1054Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=48m      mem=1299Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=27m      mem=1022Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=35m      mem=1388Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=44m      mem=1436Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=26m      mem=1056Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=51m      mem=1068Mi
-
-Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
-        YGC/FGC = young/full GC count (t = cumulative seconds).
-        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$
-[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction
-==================================================================================================
- JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:32:54
-==================================================================================================
-POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
---------------------------------------------------------------------------------------------------
-payment-paymentservice-5d48d47b6-5ffwd     unreachable (check -c container / jstat present?)
-payment-paymentservice-5d48d47b6-7pk6z     unreachable (check -c container / jstat present?)
 payment-paymentservice-5d48d47b6-cr6lx     unreachable (check -c container / jstat present?)
-payment-paymentservice-5d48d47b6-mjh82     unreachable (check -c container / jstat present?)
-payment-paymentservice-5d48d47b6-v5psm     unreachable (check -c container / jstat present?)
-payment-paymentservice-5d48d47b6-vhdn7     unreachable (check -c container / jstat present?)
-txn-transactionservice-65cc564dd5-4gds8        168M     226M      58M    74%    1459   5.414s     0   0.000s      191M  OK
-txn-transactionservice-65cc564dd5-4tqnm        211M     328M     117M    64%    2533   6.846s     0   0.000s      189M  OK
-txn-transactionservice-65cc564dd5-jxqzr        333M     544M     211M    61%    3171  11.893s     0   0.000s      192M  OK
-txn-transactionservice-65cc564dd5-ll7t4        228M     310M      82M    74%    1645   4.831s     0   0.000s      190M  OK
-txn-transactionservice-65cc564dd5-lm9q8        425M     618M     193M    69%    3200  13.732s     0   0.000s      197M  OK
-txn-transactionservice-65cc564dd5-mf9dd        602M     648M      46M    93%    3435  12.694s     0   0.000s      197M  HIGH
-txn-transactionservice-65cc564dd5-s7c5d        121M     328M     207M    37%    1525   5.290s     0   0.000s      193M  OK
-txn-transactionservice-65cc564dd5-xxx7j        227M     324M      97M    70%    2450   7.922s     0   0.000s      192M  OK
 
 Container memory (oc adm top pod):
-  payment-paymentservice-5d48d47b6-5ffwd     cpu=45m      mem=1091Mi
-  payment-paymentservice-5d48d47b6-7pk6z     cpu=64m      mem=1056Mi
-  payment-paymentservice-5d48d47b6-cr6lx     cpu=47m      mem=1082Mi
-  payment-paymentservice-5d48d47b6-mjh82     cpu=35m      mem=1036Mi
-  payment-paymentservice-5d48d47b6-v5psm     cpu=42m      mem=1015Mi
-  payment-paymentservice-5d48d47b6-vhdn7     cpu=22m      mem=1010Mi
-  txn-transactionservice-65cc564dd5-4gds8    cpu=38m      mem=933Mi
-  txn-transactionservice-65cc564dd5-4tqnm    cpu=41m      mem=1053Mi
-  txn-transactionservice-65cc564dd5-jxqzr    cpu=57m      mem=1300Mi
-  txn-transactionservice-65cc564dd5-ll7t4    cpu=39m      mem=1022Mi
-  txn-transactionservice-65cc564dd5-lm9q8    cpu=57m      mem=1388Mi
-  txn-transactionservice-65cc564dd5-mf9dd    cpu=40m      mem=1437Mi
-  txn-transactionservice-65cc564dd5-s7c5d    cpu=40m      mem=1057Mi
-  txn-transactionservice-65cc564dd5-xxx7j    cpu=55m      mem=1067Mi
+  payment-paymentservice-5d48d47b6-5ffwd     cpu=96m      mem=1036Mi
+  payment-paymentservice-5d48d47b6-7pk6z     cpu=18m      mem=1046Mi
+  payment-paymentservice-5d48d47b6-cr6lx     cpu=42m      mem=1031Mi
+  payment-paymentservice-5d48d47b6-mjh82     cpu=207m     mem=1021Mi
+  payment-paymentservice-5d48d47b6-v5psm     cpu=54m      mem=1037Mi
+  payment-paymentservice-5d48d47b6-vhdn7     cpu=42m      mem=1022Mi
+  txn-transactionservice-65cc564dd5-4gds8    cpu=30m      mem=947Mi
+  txn-transactionservice-65cc564dd5-4tqnm    cpu=29m      mem=1054Mi
+  txn-transactionservice-65cc564dd5-jxqzr    cpu=23m      mem=1318Mi
+  txn-transactionservice-65cc564dd5-ll7t4    cpu=31m      mem=1040Mi
+  txn-transactionservice-65cc564dd5-lm9q8    cpu=36m      mem=1390Mi
+  txn-transactionservice-65cc564dd5-mf9dd    cpu=42m      mem=1454Mi
+  txn-transactionservice-65cc564dd5-s7c5d    cpu=35m      mem=1059Mi
+  txn-transactionservice-65cc564dd5-xxx7j    cpu=88m      mem=1067Mi
 
 Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
         YGC/FGC = young/full GC count (t = cumulative seconds).
         HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
 [osuser@dcepayprodbastion GC_Script]$
 [osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ ./gc_monitor.sh -n prod-dc-transaction -s 'txn'
+==================================================================================================
+ JVM Heap & GC report  |  ns=prod-dc-transaction  |  2026-06-02 11:35:34
+==================================================================================================
+POD                                            USED      MAX     FREE   USE%     YGC     YGCt   FGC     FGCt      META  HEALTH
+--------------------------------------------------------------------------------------------------
+txn-transactionservice-65cc564dd5-4gds8        195M     226M      31M    86%    1510   5.569s     0   0.000s      191M  WATCH
+txn-transactionservice-65cc564dd5-4tqnm        255M     328M      73M    78%    2591   6.973s     0   0.000s      189M  WATCH
+txn-transactionservice-65cc564dd5-jxqzr        380M     544M     164M    70%    3230  12.079s     0   0.000s      192M  OK
+txn-transactionservice-65cc564dd5-ll7t4        283M     310M      27M    91%    1708   4.973s     0   0.000s      190M  HIGH
+txn-transactionservice-65cc564dd5-lm9q8        414M     620M     206M    67%    3253  13.878s     0   0.000s      197M  OK
+txn-transactionservice-65cc564dd5-mf9dd        572M     648M      76M    88%    3486  12.847s     0   0.000s      197M  WATCH
+txn-transactionservice-65cc564dd5-s7c5d        124M     328M     204M    38%    1587   5.436s     0   0.000s      193M  OK
+txn-transactionservice-65cc564dd5-xxx7j        248M     324M      76M    76%    2516   8.113s     0   0.000s      192M  WATCH
+
+Container memory (oc adm top pod):
+  txn-transactionservice-65cc564dd5-4gds8    cpu=821m     mem=948Mi
+  txn-transactionservice-65cc564dd5-4tqnm    cpu=884m     mem=1054Mi
+  txn-transactionservice-65cc564dd5-jxqzr    cpu=1292m    mem=1318Mi
+  txn-transactionservice-65cc564dd5-ll7t4    cpu=854m     mem=1041Mi
+  txn-transactionservice-65cc564dd5-lm9q8    cpu=1239m    mem=1391Mi
+  txn-transactionservice-65cc564dd5-mf9dd    cpu=1247m    mem=1455Mi
+  txn-transactionservice-65cc564dd5-s7c5d    cpu=909m     mem=1059Mi
+  txn-transactionservice-65cc564dd5-xxx7j    cpu=1065m    mem=1068Mi
+
+Legend: USED/MAX/FREE = JVM heap (survivor+eden+old).  META = metaspace used.
+        YGC/FGC = young/full GC count (t = cumulative seconds).
+        HEALTH: OK <75% | WATCH >=75% | HIGH >=90% | FGC! = full GC under pressure.
+[osuser@dcepayprodbastion GC_Script]$
+[osuser@dcepayprodbastion GC_Script]$ oc get po -n prod-dc-transaction
+NAME                                      READY   STATUS    RESTARTS   AGE
+payment-paymentservice-5d48d47b6-5ffwd    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-7pk6z    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-cr6lx    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-mjh82    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-v5psm    2/2     Running   0          2d15h
+payment-paymentservice-5d48d47b6-vhdn7    2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-4gds8   2/2     Running   0          24h
+txn-transactionservice-65cc564dd5-4tqnm   2/2     Running   0          35h
+txn-transactionservice-65cc564dd5-jxqzr   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-ll7t4   2/2     Running   0          24h
+txn-transactionservice-65cc564dd5-lm9q8   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-mf9dd   2/2     Running   0          2d15h
+txn-transactionservice-65cc564dd5-s7c5d   2/2     Running   0          24h
+txn-transactionservice-65cc564dd5-xxx7j   2/2     Running   0          35h
