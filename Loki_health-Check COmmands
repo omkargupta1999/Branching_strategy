@@ -1,3 +1,150 @@
+
+
+
+
+Two distinct questions here: (1) can the cluster handle the ingest volume and what resources to give, and (2) why Grafana query fetches fail and how to fix. Let me address both with what your own data tells us, then give concrete numbers.
+
+## First — what your volume actually is
+
+From your ingester flush logs, the picture is clear. Individual streams are flushing chunks of **22–50 MB uncompressed** every few seconds, compressing to ~1.3 MB each, across many high-volume pods (transactionservice, paymentservice, kmsservice, adminservice, istio-proxy). Node 1's ingester logged ~60 flushes in 5 minutes. This is genuinely heavy — but here's the important framing: **everything currently lands under one tenant (`fake`)**, sharing one rate budget and one stream namespace.
+
+To size properly, you need the actual numbers, not estimates. Run these to measure real throughput:
+
+```bash
+# Bytes received per second, per distributor (sum across both nodes = your true ingest rate)
+curl -s http://10.189.35.10:3100/metrics | grep -E "loki_distributor_bytes_received_total"
+curl -s http://10.189.35.11:3100/metrics | grep -E "loki_distributor_bytes_received_total"
+
+# Lines/sec and active streams
+curl -s http://10.189.35.10:3100/metrics | grep -E "loki_distributor_lines_received_total|loki_ingester_memory_streams "
+
+# Discarded (anything still being dropped, and why)
+curl -s http://10.189.35.10:3100/metrics | grep "loki_discarded_samples_total"
+```
+
+The `loki_discarded_samples_total` line is the one to watch — if it's climbing with reason `rate_limited` or `per_stream_rate_limit`, you're still losing data and limits need another bump.
+
+## Can the current config handle the load?
+
+**Rate limits: yes, with headroom now.** You raised global to 256 MB/s per distributor with `local` strategy — at 4 distributors that's a lot of ceiling, and rate-limit rejections are at zero. Good.
+
+**The likely bottleneck is `per_stream_rate_limit`, not the global rate.** It's still **10 MB/s per stream**. Your busiest pods flush 35–50 MB chunks; a single chatty transactionservice/istio-proxy stream can saturate 10 MB/s and get sharded (you can see `__stream_shard__` in the logs — Loki auto-splitting hot streams). That's working, but if you see `per_stream_rate_limit` in discarded metrics, raise it:
+
+```yaml
+per_stream_rate_limit: 25MB
+per_stream_rate_limit_burst: 75MB
+```
+
+**Resources — current usage vs. recommendation.** Your `docker stats` showed ingesters at 1.3–4.5 GiB on a 93 GiB host, distributors ~50–100 MiB, CPU single-digit %. You have enormous headroom, but the containers currently have **no limits set**, which is dangerous in production — one runaway component could starve the host. Set explicit reservations and limits. Recommended starting point per container type for your volume:
+
+| Component | CPU request | CPU limit | Mem request | Mem limit | Notes |
+|---|---|---|---|---|---|
+| Ingester (×2/node) | 2 | 4 | 6 GiB | 12 GiB | Heaviest; holds chunks + WAL in memory. `REPLAY_MEMORY_CEILING=4GB` is set — give mem limit well above it |
+| Distributor (×2/node) | 1 | 2 | 1 GiB | 2 GiB | CPU-bound on parsing/sharding, low mem |
+| Querier (×2/node) | 2 | 4 | 4 GiB | 8 GiB | Query-time spikes (see query section) |
+| Query-frontend (×1) | 0.5 | 1 | 512 MiB | 1 GiB | Lightweight |
+| Compactor (×1) | 1 | 2 | 1 GiB | 4 GiB | Periodic spikes during compaction |
+
+Add to each service in `docker-compose.yml`:
+```yaml
+    deploy:
+      resources:
+        limits:   { cpus: '4', memory: 12G }
+        reservations: { cpus: '2', memory: 6G }
+```
+The ingester memory limit matters most — with `REPLAY_MEMORY_CEILING=4GB`, a WAL replay after restart can briefly use several GB, so 12 GiB limit gives safe margin.
+
+**One structural recommendation for "huge volume":** because `auth_enabled: false`, all application + audit + infrastructure logs are one tenant competing for one budget. For a bank-grade high-volume platform, enabling multi-tenancy (separate tenants per log type via `X-Scope-OrgID`) gives each class its own limits and isolates a noisy source from starving the others. Not required today, but it's the right direction as volume grows.
+
+## Second — why Grafana query fetches fail (the 1-hour / 2-day query problem)
+
+This is a **query-path limit problem, separate from ingestion**. When you query a wide time range and it fails, you're almost certainly hitting one of these limits in your config. Your current values:
+
+```
+max_entries_limit_per_query: 20000     ← caps returned log lines
+max_query_series: 500000
+split_queries_by_interval: 24h
+max_query_length: 8760h
+querier max_concurrent: 100
+MAX_OUTSTANDING_PER_TENANT: 1024
+query_ingesters_within: 6h
+```
+
+The failures usually come from one of three causes:
+
+**1. Too many results / range too wide.** A 2-day query over high-volume logs returns far more than `max_entries_limit_per_query: 20000`, or scans so much data it times out. The fix on the **query side** is mostly about narrowing the query, but you can also raise limits.
+
+**2. Query timeout.** Your `loki-config.yaml` doesn't set an explicit `querier.query_timeout` or frontend timeout, so a 2-day scan over this volume can exceed defaults and fail. Add:
+```yaml
+limits_config:
+  query_timeout: 5m            # default is often 1m — too short for 2-day scans
+  max_query_parallelism: 64    # you have this; keep it
+querier:
+  query_timeout: 5m
+```
+
+**3. `split_queries_by_interval: 24h` is too coarse for this volume.** Splitting a 2-day query into only 2 sub-queries means each sub-query is enormous. Smaller splits parallelize better and avoid timeouts:
+```yaml
+limits_config:
+  split_queries_by_interval: 1h    # was 24h — far better for high volume
+```
+
+**Most important for the user experience:** the fix is partly behavioral. For high-volume logs, **always query with a tight label selector**, not a bare time range. A query like `{log_type="application"}` over 2 days will scan everything and fail; `{kubernetes_namespace_name="prod-dc-transaction", kubernetes_container_name="transactionservice"}` over the same range is bounded and fast. Tell the team: narrow by namespace/pod/container first, then widen the time range.
+
+To diagnose a specific failure, capture the actual error:
+```bash
+# Run the failing query against the frontend and see the real error
+curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={log_type="application"}' \
+  --data-urlencode "start=$(date -d '2 days ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=1000" | head -c 800; echo
+
+# Check querier logs for the failure reason
+docker logs --since 30m loki-querier-secondary-1-node2 2>&1 | grep -iE "timeout|too many|limit|context|error" | tail -20
+```
+The error text tells you exactly which limit: `"max entries limit"`, `"query timeout"`, `"too many outstanding requests"`, or `"the query time range exceeds the limit"`.
+
+## Recommended query-side config additions
+
+Add/adjust these in `limits_config` on **both** nodes:
+```yaml
+limits_config:
+  query_timeout: 5m                  # ADD — prevents 2-day query timeouts
+  split_queries_by_interval: 1h      # CHANGE from 24h — parallelizes large queries
+  max_entries_limit_per_query: 20000 # keep; tell users to use limit + narrow selectors
+  tsdb_max_query_parallelism: 128    # ADD — more parallelism for TSDB scans
+```
+And consider enabling results caching (currently `cache_results: false`), which dramatically speeds repeated/dashboards queries — though that needs a cache backend (your Redis is deployed but not wired to Loki query caching yet).
+
+## Summary
+
+1. **Ingest capacity:** rate limits now have headroom (zero rejections). Watch `loki_discarded_samples_total`; if `per_stream_rate_limit` appears, raise per-stream to 25 MB. Measure real throughput with the metrics commands before declaring final capacity.
+2. **Resources:** set explicit container limits (none today). Ingesters are the priority — 6 GiB request / 12 GiB limit each. Table above for the rest.
+3. **Grafana query failures:** add `query_timeout: 5m`, change `split_queries_by_interval` to `1h`, and — most impactful — query with tight label selectors instead of bare wide ranges. Capture the actual error with the curl/logs commands to pinpoint which limit.
+
+If you run the throughput metrics and the failing-query error capture, paste them back and I'll give you exact tuned numbers for your real volume rather than starting-point estimates.
+
+
+
+
+
+
+
+
+========================================================================
+
+
+
+
+
+
+
+
+
+
+
+
 Here's a complete health-check runbook for the two-node external Loki cluster. Run these from the Loki hosts (they have `docker` and `curl`). I've grouped them so you can work top-down: containers → ring → memberlist → storage → limits → end-to-end → the OpenShift collector side.
 
 ## 1. Container status (both nodes)
