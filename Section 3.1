@@ -116,6 +116,23 @@ c02014494edb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ag
 b67b673aa012   redis/redis-7:9.6        "container-entrypoin…"   13 minutes ago   Up 13 minutes                       redis-node1
 c594325b8a9a   grafana/grafana:latest   "/run.sh"                6 months ago     Up 2 weeks                          grafana
 
+[root@loki1 node1]# curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={kubernetes_namespace_name="prod-dc-transaction"}' \
+  --data-urlencode "start=$(date -d '2 days ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=1000" | head -c 300; echo
+{"status":"success","data":{"resultType":"streams","result":[{"stream":{"detected_level":"info","k8s_container_name":"transactionservice","k8s_namespace_name":"prod-dc-transaction","k8s_node_name":"worker6.dc.prod.epay.sbi","k8s_pod_name":"txn-transactionservice-65cc564dd5-jxqzr","kubernetes_contain
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#   docker logs --since 3m loki-distributor-primary-1-node1 2>&1 | grep -ic "rate limit exceeded"   # expect 0
+0
+[root@loki1 node1]#
+[root@loki1 node1]#
+
+
+
 
 
 
