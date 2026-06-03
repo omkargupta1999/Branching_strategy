@@ -1,46 +1,22 @@
+Apply the corrected file to Node 2 (it had the same invalid query_timeout line, now fixed in the file I gave you):
+#################################################################
+cd /root/dclogforward1/multi-node/node2
+# replace loki-config.yaml with corrected node2-loki-config.yaml
 docker compose down && docker compose --profile redis up -d
 sleep 30
-docker ps --format "table {{.Names}}\t{{.Status}}" | grep loki   # all should be Up, none Restarting
-curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE           # expect 4
-curl -s http://10.189.35.10:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep loki    # all Up
+curl -s http://10.189.35.11:3100/ring | grep -c ACTIVE            # expect 4
+curl -s http://10.189.35.11:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results"
 
 
+############################################################
 
-==========================================
+# 2-day range with a narrow selector
+curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={kubernetes_namespace_name="prod-dc-transaction"}' \
+  --data-urlencode "start=$(date -d '2 days ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=1000" | head -c 300; echo
 
-
-[root@loki1 node1]# curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE     # expect 4
-4
-[root@loki1 node1]#
-[root@loki1 node1]# docker ps --format "table {{.Names}}\t{{.Status}}" | grep loki   # all should be Up, none Restarting
-curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE           # expect 4
-curl -s http://10.189.35.10:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
-loki-ingester-primary-1-node1      Up 2 minutes (healthy)
-loki-ingester-primary-2-node1      Up 2 minutes (healthy)
-loki-query-frontend-node1          Up 2 minutes
-loki-distributor-primary-2-node1   Up 2 minutes
-loki-querier-primary-2-node1       Up 2 minutes
-loki-compactor-node1               Up 2 minutes
-loki-querier-primary-1-node1       Up 2 minutes
-loki-distributor-primary-1-node1   Up 2 minutes
-4
-  max_outstanding_requests_per_tenant: 32000
-  max_outstanding_per_tenant: 2048
-  cache_results: true
-  max_outstanding_per_tenant: 1024
-  query_timeout: 5m
-  split_queries_by_interval: 1h
-[root@loki1 node1]#
-[root@loki1 node1]# docker ps -a
-CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS                   PORTS     NAMES
-4bd2abb1e3c1   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes (healthy)             loki-ingester-primary-1-node1
-ada1d87bca3c   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes (healthy)             loki-ingester-primary-2-node1
-90a95c067f96   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-query-frontend-node1
-43218d20df24   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-distributor-primary-2-node1
-8172f63c65f8   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-querier-primary-2-node1
-c02014494edb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-compactor-node1
-858349cf1a9a   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-querier-primary-1-node1
-7021b0164f69   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes                       loki-distributor-primary-1-node1
-86582b37bb22   prom/prometheus:v3.5.0   "/bin/prometheus --w…"   2 minutes ago   Up 2 minutes                       prometheus-node1
-b67b673aa012   redis/redis-7:9.6        "container-entrypoin…"   5 minutes ago   Up 5 minutes                       redis-node1
-c594325b8a9a   grafana/grafana:latest   "/run.sh"                6 months ago    Up 2 weeks                         grafana
+  #########################################################################
+  docker logs --since 3m loki-distributor-primary-1-node1 2>&1 | grep -ic "rate limit exceeded"   # expect 0
