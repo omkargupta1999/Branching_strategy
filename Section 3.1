@@ -6,6 +6,17 @@ curl -s --max-time 300 -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
   --data-urlencode "step=120000ms" -o /dev/null -w "http=%{http_code} time=%{time_total}s\n"
 
 
+Output of above commands:
+
+[root@loki1 datasources]#  curl -s --max-time 300 -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={k8s_container_name="transactionservice"} |= `error` | json | line_format `{{.message}}`' \
+  --data-urlencode "start=$(date -d '24 hours ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=5000" \
+  --data-urlencode "step=120000ms" -o /dev/null -w "http=%{http_code} time=%{time_total}s\n"
+http=200 time=71.495122s
+
+
 
 [root@loki1 datasources]# pwd
 /dclogforward1/multi-node/observe/grafana/provisioning/datasources
