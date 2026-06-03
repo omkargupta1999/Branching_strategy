@@ -1,171 +1,84 @@
-Here's a complete health-check runbook for the two-node external Loki cluster. Run these from the Loki hosts (they have `docker` and `curl`). I've grouped them so you can work top-down: containers → ring → memberlist → storage → limits → end-to-end → the OpenShift collector side.
+Node1 Output :L
 
-## 1. Container status (both nodes)
+CONTAINER ID   IMAGE                    COMMAND                  CREATED             STATUS                       PORTS     NAMES
+60fed4947b77   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-distributor-primary-1-node1
+1c5883c404c9   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-querier-primary-1-node1
+b9bf7ab9e14d   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour (healthy)             loki-ingester-primary-1-node1
+86c5f0e889b1   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour (healthy)             loki-ingester-primary-2-node1
+2533b7a7d166   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-query-frontend-node1
+2888f05b10cc   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-compactor-node1
+87b65964ac23   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-querier-primary-2-node1
+fe8e076ea87b   prom/prometheus:v3.5.0   "/bin/prometheus --w…"   About an hour ago   Up About an hour                       prometheus-node1
+144fbf19146f   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-distributor-primary-2-node1
+c594325b8a9a   grafana/grafana:latest   "/run.sh"                6 months ago        Up 2 weeks                             grafana
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]# curl -s http://10.189.35.10:3100/metrics | grep -E "loki_distributor_bytes_received_total"
+# HELP loki_distributor_bytes_received_total The total number of uncompressed bytes received per tenant. Includes structured metadata bytes.
+# TYPE loki_distributor_bytes_received_total counter
+loki_distributor_bytes_received_total{aggregated_metric="false",policy="",retention_hours="",tenant="fake"} 3.4615750158e+10
+[root@loki1 ~]#
+[root@loki1 ~]# curl -s http://10.189.35.10:3100/metrics | grep -E "loki_distributor_lines_received_total|loki_ingester_memory_streams "
+# HELP loki_distributor_lines_received_total The total number of lines received per tenant
+# TYPE loki_distributor_lines_received_total counter
+loki_distributor_lines_received_total{aggregated_metric="false",policy="",tenant="fake"} 8.235411e+06
+[root@loki1 ~]#
+[root@loki1 ~]# curl -s http://10.189.35.10:3100/metrics | grep "loki_discarded_samples_total"
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]# curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={log_type="application"}' \
+  --data-urlencode "start=$(date -d '2 days ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=1000" | head -c 800; echo
+{"status":"success","data":{"resultType":"streams","result":[{"stream":{"detected_level":"info","k8s_container_name":"transactionservice","k8s_namespace_name":"prod-dc-transaction","k8s_node_name":"worker7.dc.prod.epay.sbi","k8s_pod_name":"txn-transactionservice-65cc564dd5-ll7t4","kubernetes_container_name":"transactionservice","kubernetes_host":"worker7.dc.prod.epay.sbi","kubernetes_namespace_name":"prod-dc-transaction","kubernetes_pod_name":"txn-transactionservice-65cc564dd5-ll7t4","log_type":"application","openshift_log_type":"application","service_name":"transactionservice"},"values":[["1780485764966762478","{\"@timestamp\":\"2026-06-03T11:22:44.966762478Z\",\"hostname\":\"worker7.dc.prod.epay.sbi\",\"kubernetes\":{\"annotations\":{\"dynakube.dynatrace.com/injected\":\"true\",\"istio.i
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]# docker logs --since 30m loki-querier-secondary-1-node2 2>&1 | grep -iE "timeout|too many|limit|context|error" | tail -20^C
+[root@loki1 ~]#
 
-```bash
-# On loki1
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "loki|redis|prometheus"
-# On loki2 (same command)
 
-# Anything restarting/unhealthy? — should return nothing
-docker ps --filter "health=unhealthy" --format "{{.Names}}"
-docker ps -a --filter "status=restarting" --format "{{.Names}}"
+Node1 Output:
 
-# Restart counts — all should be low/stable, not climbing
-docker ps -a --format "{{.Names}}" | grep loki | while read c; do
-  echo "$c restarts=$(docker inspect -f '{{.RestartCount}}' $c)"
-done
-```
-
-## 2. Per-component readiness (both nodes)
-
-Each Loki target exposes `/ready`. Node1 ports 3100–3107, Node2 same HTTP ports.
-
-```bash
-# Node1 (10.189.35.10)
-for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
-  echo -n "node1:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.10:$p/ready
-done
-
-# Node2 (10.189.35.11)
-for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
-  echo -n "node2:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.11:$p/ready
-done
-```
-All should return `200`. A `503` means that component is still joining or unhealthy.
-
-## 3. Ring health — the most important check
-
-```bash
-# Ingester ring — expect 4 ACTIVE total (2 per node), no UNHEALTHY/LEAVING/PENDING
-curl -s http://10.189.35.10:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
-
-# Cross-check from node2's view — must show the SAME 4 ACTIVE
-curl -s http://10.189.35.11:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
-
-# Distributor ring
-curl -s "http://10.189.35.10:3100/distributor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
-
-# Compactor ring (1 compactor per node = 2)
-curl -s "http://10.189.35.10:3107/compactor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
-```
-Both nodes must report the **same** ring membership. If node1 sees 4 ACTIVE but node2 sees 2, memberlist isn't converging (check section 4).
-
-## 4. Memberlist / cluster gossip
-
-```bash
-# Total members in gossip — you have ~14 components across both nodes
-curl -s http://10.189.35.10:3100/memberlist | grep -c "10.189.35"
-
-# Same count from node2 — should match node1
-curl -s http://10.189.35.11:3100/memberlist | grep -c "10.189.35"
-
-# Look for gossip errors (EOF, connection refused, failed to connect)
-docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
-docker logs loki-distributor-secondary-1-node2 2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
-```
-Both nodes should report the same member count. Occasional EOF on reconnect is normal; repeated "failed to connect" to a specific IP:port is not.
-
-## 5. Object storage (S3) connectivity — only ingesters/compactor write
-
-```bash
-# Confirm ingesters are flushing chunks to S3 (no errors). Recent flushes = healthy.
-docker logs --since 10m loki-ingester-primary-1-node1   2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
-docker logs --since 10m loki-ingester-secondary-1-node2 2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
-
-# Positive signal: you SHOULD see "flushing stream" info lines
-docker logs --since 5m loki-ingester-primary-1-node1 2>&1 | grep -c "flushing stream"
-
-# Compactor reaching S3 (no auth/endpoint errors)
-docker logs --since 15m loki-compactor-node1 2>&1 | grep -iE "s3|error|compact" | tail -15
-
-# Direct S3 reachability from the host (TLS + DNS to the NetApp endpoint)
-curl -s -o /dev/null -w "S3 endpoint -> %{http_code}\n" https://s3store-A9cl2-pr.bank.sbi
-```
-The S3 endpoint returning `403`/`400` to a bare curl is fine (it means it's reachable but needs auth/signing) — what you don't want is a timeout or TLS error. The key positive signal is ingesters logging `flushing stream` with no S3 errors alongside.
-
-## 6. Confirm the limit fixes actually took effect
-
-This is the verification that your 429 fix is live:
-
-```bash
-# Dump the runtime config the distributor actually loaded and check the rate values
-curl -s http://10.189.35.10:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
-curl -s http://10.189.35.11:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
-```
-Expect to see `ingestion_rate_mb: 256`, `ingestion_burst_size_mb: 512`, `ingestion_rate_strategy: local`, `max_line_size: 4194304`, `reject_old_samples: false`. If `/config` shows the old values, the container wasn't recreated (you did `restart` instead of `down`/`up`).
-
-```bash
-# No NEW rate-limit rejections in the last few minutes on any distributor
-for n in 10.189.35.10 10.189.35.11; do
-  echo "== $n =="
-done
-docker logs --since 5m loki-distributor-primary-1-node1   2>&1 | grep -ic "rate limit exceeded"
-docker logs --since 5m loki-distributor-primary-2-node1   2>&1 | grep -ic "rate limit exceeded"
-docker logs --since 5m loki-distributor-secondary-1-node2 2>&1 | grep -ic "rate limit exceeded"
-docker logs --since 5m loki-distributor-secondary-2-node2 2>&1 | grep -ic "rate limit exceeded"
-```
-All four counts should be `0` (or steeply dropping). Any non-zero and still-climbing count means a distributor is still on old config or volume genuinely exceeds 256 MB/s.
-
-## 7. End-to-end write + read test
-
-Prove the cluster actually accepts and returns data:
-
-```bash
-# Push a test log line (auth disabled, tenant "fake")
-NOW=$(date +%s%N)
-curl -s -o /dev/null -w "push -> %{http_code}\n" -X POST http://10.189.35.10:3100/loki/api/v1/push \
-  -H "Content-Type: application/json" \
-  -d '{"streams":[{"stream":{"job":"healthcheck","node":"manual"},"values":[["'$NOW'","loki-cluster-healthcheck-test"]]}]}'
-# Expect 204
-
-# Read it back via the query-frontend (port 3104)
-sleep 3
-curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
-  --data-urlencode 'query={job="healthcheck"}' \
-  --data-urlencode "start=$(date -d '5 min ago' +%s)000000000" \
-  --data-urlencode "end=$(date +%s)000000000" | head -c 500; echo
-```
-A `204` on push and your test string appearing in the query result = the full write→ingest→query path works on the cluster.
-
-## 8. Resource pressure (catches the slow-burn problems)
-
-```bash
-# CPU/mem per container — watch for ingesters pinned at memory limit
-docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" | grep -E "loki|redis"
-
-# Disk on the WAL/data path — full disk = ingesters stop flushing
-df -h /data/loki
-```
-
-## 9. The OpenShift collector side (does Grafana actually get logs now)
-
-```bash
-# 429/400 should be gone; 204s flowing. Sample a few grafana collectors:
-for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do
-  echo "== $p =="
-  oc -n openshift-logging logs ${p#pod/} --since=5m | grep -Eic "429|too many"
-done
-# All should be 0 or near-0
-
-# Confirm the forwarder still targets the external Loki
-oc -n openshift-logging get clusterlogforwarder collector-grafana -o jsonpath='{.spec.outputs[*].loki.url}'; echo
-```
-
-## What "healthy" looks like — quick reference
-
-| Check | Healthy result |
-|---|---|
-| Containers | All `Up`, none restarting, no `unhealthy` |
-| `/ready` (all ports, both nodes) | `200` |
-| Ingester ring | 4 ACTIVE, identical from both nodes |
-| Memberlist count | Same on both nodes (~14) |
-| Ingester logs | `flushing stream`, no S3 errors |
-| `/config` | rate=256, burst=512, strategy=local, line=4194304, reject_old=false |
-| Rate-limit rejections (last 5m) | 0 |
-| Push test | `204` |
-| Query test | returns the test line |
-| Disk `/data/loki` | not near full |
-| collector-grafana 429s | 0 |
-
-Run sections 1–6 first — if those are clean, the cluster is structurally healthy. Section 7 confirms the data path, and section 9 confirms the original Grafana symptom is resolved. If anything fails, tell me which section and paste the output, and I'll narrow it down.
+[root@loki2 ~]# docker ps -a
+CONTAINER ID   IMAGE                    COMMAND                  CREATED             STATUS                       PORTS     NAMES
+48ff8951c44d   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-distributor-secondary-1-node2
+a961002d8637   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-distributor-secondary-2-node2
+8e3d21d92cb4   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-compactor-node2
+1dd4bbf86d26   prom/prometheus:v3.5.0   "/bin/prometheus --w…"   About an hour ago   Up About an hour                       prometheus-node2
+ec1fccc03b13   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour (healthy)             loki-ingester-secondary-2-node2
+1a9f7b39889e   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-query-frontend-node2
+33a0bf03d208   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-querier-secondary-1-node2
+bbdea304e058   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour (healthy)             loki-ingester-secondary-1-node2
+3f0039fcab0c   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   About an hour ago   Up About an hour                       loki-querier-secondary-2-node2
+[root@loki2 ~]#
+[root@loki2 ~]#
+[root@loki2 ~]#
+[root@loki2 ~]# curl -s http://10.189.35.11:3100/metrics | grep -E "loki_distributor_bytes_received_total"
+# HELP loki_distributor_bytes_received_total The total number of uncompressed bytes received per tenant. Includes structured metadata bytes.
+# TYPE loki_distributor_bytes_received_total counter
+loki_distributor_bytes_received_total{aggregated_metric="false",policy="",retention_hours="",tenant="fake"} 2.5014972581e+10
+[root@loki2 ~]#
+[root@loki2 ~]# docker logs --since 30m loki-querier-secondary-1-node2 2>&1 | grep -iE "timeout|too many|limit|context|error" | tail -20
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":583099,"cache_chunk_download_time":"33.293µs","cache_chunk_hit":0,"cache_chunk_req":4,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.370891ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"367.071201ms","end_delta":"33.896312491s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"821kB","ingester_chunk_decompressed_bytes":"618kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":4,"ingester_chunk_refs":0,"ingester_post_filter_lines":126,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":604,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":222,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m33.896312353s","status":"200","step":"1h0m0s","store_chunks_download_time":"354.426222ms","throughput":"3.0MB","total_bytes":"1.1MB","total_bytes_structured_metadata":"6.7kB","total_entries":10,"total_lines":222,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.569323957Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":1600641,"cache_chunk_download_time":"74.746µs","cache_chunk_hit":0,"cache_chunk_req":7,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"894.723µs","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"395.018793ms","end_delta":"33.923584676s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"2.0MB","ingester_chunk_decompressed_bytes":"567kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"202kB","ingester_chunk_matches":5,"ingester_chunk_refs":0,"ingester_post_filter_lines":158,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":645,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":255,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m33.923584526s","status":"200","step":"1h0m0s","store_chunks_download_time":"382.688924ms","throughput":"3.1MB","total_bytes":"1.2MB","total_bytes_structured_metadata":"6.7kB","total_entries":10,"total_lines":255,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.596598324Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":1809320,"cache_chunk_download_time":"39.948µs","cache_chunk_hit":0,"cache_chunk_req":5,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.137499ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"414.379099ms","end_delta":"33.941958644s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"1.5MB","ingester_chunk_decompressed_bytes":"462kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"365kB","ingester_chunk_matches":6,"ingester_chunk_refs":0,"ingester_post_filter_lines":169,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":740,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":307,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m33.941958479s","status":"200","step":"1h0m0s","store_chunks_download_time":"403.307892ms","throughput":"3.6MB","total_bytes":"1.5MB","total_bytes_structured_metadata":"7.5kB","total_entries":10,"total_lines":307,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.614970182Z"}
+{"cache_chunk_bytes_fetched":1324223,"cache_chunk_bytes_stored":27965805,"cache_chunk_download_time":"34.448µs","cache_chunk_hit":1,"cache_chunk_req":23,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.284189ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"415.643463ms","end_delta":"33.943322137s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"26MB","ingester_chunk_decompressed_bytes":"592kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":20,"ingester_chunk_refs":0,"ingester_post_filter_lines":120,"ingester_requests":3,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":671,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":279,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m33.943321981s","status":"200","step":"1h0m0s","store_chunks_download_time":"232.903128ms","throughput":"3.3MB","total_bytes":"1.4MB","total_bytes_structured_metadata":"8.4kB","total_entries":10,"total_lines":279,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.616338412Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":7088598,"cache_chunk_download_time":"49.712µs","cache_chunk_hit":0,"cache_chunk_req":11,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.23702ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"527.502495ms","end_delta":"34.056656558s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"6.1MB","ingester_chunk_decompressed_bytes":"0B","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"694kB","ingester_chunk_matches":9,"ingester_chunk_refs":0,"ingester_post_filter_lines":164,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":690,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":364,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.056656398s","status":"200","step":"1h0m0s","store_chunks_download_time":"483.234003ms","throughput":"3.1MB","total_bytes":"1.6MB","total_bytes_structured_metadata":"7.3kB","total_entries":10,"total_lines":364,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.729676755Z"}
+{"caller":"parallel_chunk_fetch.go:71","err":"context canceled","level":"error","msg":"error fetching chunks","ts":"2026-06-03T11:22:20.774177671Z"}
+{"caller":"spanlogger.go:116","err":"context canceled","level":"error","msg":"failed downloading chunks","ts":"2026-06-03T11:22:20.774312968Z","user":"fake"}
+{"cache_chunk_bytes_fetched":10605499,"cache_chunk_bytes_stored":77099267,"cache_chunk_download_time":"70.587µs","cache_chunk_hit":8,"cache_chunk_req":89,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.999902ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"574.094396ms","end_delta":"34.101560446s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"36MB","ingester_chunk_decompressed_bytes":"305kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":27,"ingester_chunk_refs":0,"ingester_post_filter_lines":62,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":484,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":278,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.101560314s","status":"200","step":"1h0m0s","store_chunks_download_time":"406.899879ms","throughput":"2.4MB","total_bytes":"1.4MB","total_bytes_structured_metadata":"8.3kB","total_entries":10,"total_lines":278,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.774571743Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":17077445,"cache_chunk_download_time":"51.031µs","cache_chunk_hit":0,"cache_chunk_req":18,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.222411ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"571.945138ms","end_delta":"34.103050022s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"9.0MB","ingester_chunk_decompressed_bytes":"477kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"223kB","ingester_chunk_matches":9,"ingester_chunk_refs":0,"ingester_post_filter_lines":143,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":629,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":360,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.103049892s","status":"200","step":"1h0m0s","store_chunks_download_time":"531.345799ms","throughput":"3.1MB","total_bytes":"1.8MB","total_bytes_structured_metadata":"9.8kB","total_entries":10,"total_lines":360,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.776061068Z"}
+{"cache_chunk_bytes_fetched":1322258,"cache_chunk_bytes_stored":18982653,"cache_chunk_download_time":"48.091µs","cache_chunk_hit":1,"cache_chunk_req":16,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.263047ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"609.821362ms","end_delta":"34.140253061s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"20MB","ingester_chunk_decompressed_bytes":"603kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":18,"ingester_chunk_refs":0,"ingester_post_filter_lines":124,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":375,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":229,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.140252874s","status":"200","step":"1h0m0s","store_chunks_download_time":"546.116293ms","throughput":"1.8MB","total_bytes":"1.1MB","total_bytes_structured_metadata":"6.9kB","total_entries":10,"total_lines":229,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.813277123Z"}
+{"cache_chunk_bytes_fetched":1329849,"cache_chunk_bytes_stored":18626405,"cache_chunk_download_time":"31.287µs","cache_chunk_hit":1,"cache_chunk_req":16,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.077887ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"636.973914ms","end_delta":"34.168198407s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"10MB","ingester_chunk_decompressed_bytes":"80kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":9,"ingester_chunk_refs":0,"ingester_post_filter_lines":16,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":156,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":100,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.168198248s","status":"200","step":"1h0m0s","store_chunks_download_time":"573.147696ms","throughput":"777kB","total_bytes":"495kB","total_bytes_structured_metadata":"3.0kB","total_entries":10,"total_lines":100,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.841213906Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":15341331,"cache_chunk_download_time":"42.651µs","cache_chunk_hit":0,"cache_chunk_req":17,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.095403ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"788.787524ms","end_delta":"34.317026736s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"12MB","ingester_chunk_decompressed_bytes":"370kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"260kB","ingester_chunk_matches":15,"ingester_chunk_refs":0,"ingester_post_filter_lines":130,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":515,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":407,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.317026545s","status":"200","step":"1h0m0s","store_chunks_download_time":"742.7052ms","throughput":"2.5MB","total_bytes":"2.0MB","total_bytes_structured_metadata":"11kB","total_entries":10,"total_lines":407,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.990041512Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":27515960,"cache_chunk_download_time":"40.769µs","cache_chunk_hit":0,"cache_chunk_req":23,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.98341ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"793.085887ms","end_delta":"34.322674069s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"25MB","ingester_chunk_decompressed_bytes":"903kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":22,"ingester_chunk_refs":0,"ingester_post_filter_lines":184,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":453,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":360,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.322673952s","status":"200","step":"1h0m0s","store_chunks_download_time":"688.916804ms","throughput":"2.2MB","total_bytes":"1.8MB","total_bytes_structured_metadata":"11kB","total_entries":10,"total_lines":360,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:20.995690587Z"}
+{"caller":"parallel_chunk_fetch.go:71","err":"failed to load chunk 'fake/7fb28d5a2158271a/19e8d01b0c8:19e8d02df65:cf38e499': failed to get s3 object: RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"error fetching chunks","ts":"2026-06-03T11:22:21.292292284Z"}
+{"caller":"spanlogger.go:116","err":"failed to load chunk 'fake/7fb28d5a2158271a/19e8d01b0c8:19e8d02df65:cf38e499': failed to get s3 object: RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed downloading chunks","ts":"2026-06-03T11:22:21.292371298Z","user":"fake"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":63052417,"cache_chunk_download_time":"59.691µs","cache_chunk_hit":0,"cache_chunk_req":54,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.379639ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"1.091141775s","end_delta":"34.619464237s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"70MB","ingester_chunk_decompressed_bytes":"611kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":56,"ingester_chunk_refs":0,"ingester_post_filter_lines":124,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":351,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":384,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.619464078s","status":"200","step":"1h0m0s","store_chunks_download_time":"926.116171ms","throughput":"1.7MB","total_bytes":"1.9MB","total_bytes_structured_metadata":"12kB","total_entries":10,"total_lines":384,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:21.292476247Z"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":64465714,"cache_chunk_download_time":"42.702µs","cache_chunk_hit":0,"cache_chunk_req":50,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"2.440175ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"1.122296298s","end_delta":"34.651427945s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"35MB","ingester_chunk_decompressed_bytes":"787kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":29,"ingester_chunk_refs":0,"ingester_post_filter_lines":160,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":469,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":527,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.651427802s","status":"200","step":"1h0m0s","store_chunks_download_time":"1.01455657s","throughput":"2.3MB","total_bytes":"2.6MB","total_bytes_structured_metadata":"16kB","total_entries":10,"total_lines":527,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:21.324441311Z"}
+{"caller":"parallel_chunk_fetch.go:71","err":"failed to load chunk 'fake/69821934595a316f/19e8d0ec11e:19e8d0f8cc5:7bb53e9a': failed to get s3 object: RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"error fetching chunks","ts":"2026-06-03T11:22:21.609701676Z"}
+{"caller":"spanlogger.go:116","err":"failed to load chunk 'fake/69821934595a316f/19e8d0ec11e:19e8d0f8cc5:7bb53e9a': failed to get s3 object: RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed downloading chunks","ts":"2026-06-03T11:22:21.609760498Z","user":"fake"}
+{"cache_chunk_bytes_fetched":0,"cache_chunk_bytes_stored":63311829,"cache_chunk_download_time":"59.291µs","cache_chunk_hit":0,"cache_chunk_req":57,"cache_index_download_time":"0s","cache_index_hit":0,"cache_index_req":0,"cache_result_download_time":"0s","cache_result_hit":0,"cache_result_query_length_served":"0s","cache_result_req":0,"cache_stats_results_download_time":"0s","cache_stats_results_hit":0,"cache_stats_results_req":0,"cache_volume_results_download_time":"0s","cache_volume_results_hit":0,"cache_volume_results_req":0,"caller":"metrics.go:237","cardinality_estimate":0,"chunk_refs_fetch_time":"1.318763ms","component":"querier","congestion_control_latency":"0s","disable_pipeline_wrappers":"false","duration":"1.408348532s","end_delta":"34.93680556s","has_labelfilter_before_parser":"false","index_bloom_filter_ratio":"0.00","index_post_bloom_filter_chunks":0,"index_shard_resolver_duration":"0s","index_total_chunks":0,"index_used_bloom_filters":false,"ingester_chunk_compressed_bytes":"110MB","ingester_chunk_decompressed_bytes":"915kB","ingester_chunk_downloaded":0,"ingester_chunk_head_bytes":"0B","ingester_chunk_matches":88,"ingester_chunk_refs":0,"ingester_post_filter_lines":188,"ingester_requests":4,"latency":"fast","length":"1h0m0s","level":"info","limit":10,"lines_per_second":325,"org_id":"fake","pipeline_wrapper_filtered_lines":0,"post_filter_lines":459,"query":"{k8s_container_name=\"transactionservice\"} |= \"\"","query_hash":436354490,"query_referenced_structured_metadata":false,"query_type":"limited","queue_time":"0s","range_type":"range","returned_lines":10,"shards":0,"source":"datasample","splits":0,"start_delta":"1h0m34.936805425s","status":"200","step":"1h0m0s","store_chunks_download_time":"1.236240737s","throughput":"1.6MB","total_bytes":"2.2MB","total_bytes_structured_metadata":"14kB","total_entries":10,"total_lines":459,"traceID":"10982a01c36851c8","ts":"2026-06-03T11:22:21.609817224Z"}
