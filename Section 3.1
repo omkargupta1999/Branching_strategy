@@ -20,3 +20,103 @@ curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
 
   #########################################################################
   docker logs --since 3m loki-distributor-primary-1-node1 2>&1 | grep -ic "rate limit exceeded"   # expect 0
+
+
+
+
+
+
+
+
+
+
+
+
+Output for verification:
+
+[root@loki2 node2]# curl -s http://10.189.35.11:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results"
+  cache_results: true
+  query_timeout: 5m
+  split_queries_by_interval: 1h
+[root@loki2 node2]#
+[root@loki2 node2]# curl -s http://10.189.35.11:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results"
+  cache_results: true
+  query_timeout: 5m
+  split_queries_by_interval: 1h
+[root@loki2 node2]#
+[root@loki2 node2]# docker ps --format "table {{.Names}}\t{{.Status}}" | grep loki   # all should be Up, none Restarting
+curl -s http://10.189.35.11:3100/ring | grep -c ACTIVE           # expect 4
+curl -s http://10.189.35.11:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
+loki-query-frontend-node2            Up 2 minutes
+loki-ingester-secondary-1-node2      Up 2 minutes (healthy)
+loki-distributor-secondary-2-node2   Up 2 minutes
+loki-ingester-secondary-2-node2      Up 2 minutes (healthy)
+loki-distributor-secondary-1-node2   Up 2 minutes
+loki-querier-secondary-2-node2       Up 2 minutes
+loki-compactor-node2                 Up 2 minutes
+loki-querier-secondary-1-node2       Up 2 minutes
+4
+  max_outstanding_requests_per_tenant: 32000
+  max_outstanding_per_tenant: 2048
+  cache_results: true
+  max_outstanding_per_tenant: 1024
+  query_timeout: 5m
+  split_queries_by_interval: 1h
+[root@loki2 node2]#
+[root@loki2 node2]#
+[root@loki2 node2]#
+[root@loki2 node2]# docker ps -a
+CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS                   PORTS     NAMES
+46573c19726b   redis/redis-7:9.6        "container-entrypoin…"   4 minutes ago   Up 4 minutes                       redis-node2
+2d7310db0b62   prom/prometheus:v3.5.0   "/bin/prometheus --w…"   4 minutes ago   Up 4 minutes                       prometheus-node2
+501ffd237f65   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-query-frontend-node2
+36d90f70578b   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes (healthy)             loki-ingester-secondary-1-node2
+e8363e9fd563   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-distributor-secondary-2-node2
+0534ebd90f41   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes (healthy)             loki-ingester-secondary-2-node2
+9af1fce1e66d   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-distributor-secondary-1-node2
+48d6dad36c48   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-querier-secondary-2-node2
+c9b218bb8335   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-compactor-node2
+e3af2fbf102a   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   4 minutes ago   Up 4 minutes                       loki-querier-secondary-1-node2
+
+
+
+======================================
+
+[root@loki1 node1]# docker ps --format "table {{.Names}}\t{{.Status}}" | grep loki   # all should be Up, none Restarting
+curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE           # expect 4
+curl -s http://10.189.35.10:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
+loki-ingester-primary-1-node1      Up 10 minutes (healthy)
+loki-ingester-primary-2-node1      Up 10 minutes (healthy)
+loki-query-frontend-node1          Up 10 minutes
+loki-distributor-primary-2-node1   Up 10 minutes
+loki-querier-primary-2-node1       Up 10 minutes
+loki-compactor-node1               Up 10 minutes
+loki-querier-primary-1-node1       Up 10 minutes
+loki-distributor-primary-1-node1   Up 10 minutes
+4
+  max_outstanding_requests_per_tenant: 32000
+  max_outstanding_per_tenant: 2048
+  cache_results: true
+  max_outstanding_per_tenant: 1024
+  query_timeout: 5m
+  split_queries_by_interval: 1h
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]# docker ps -a
+CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS                    PORTS     NAMES
+4bd2abb1e3c1   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes (healthy)             loki-ingester-primary-1-node1
+ada1d87bca3c   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes (healthy)             loki-ingester-primary-2-node1
+90a95c067f96   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-query-frontend-node1
+43218d20df24   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-distributor-primary-2-node1
+8172f63c65f8   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-querier-primary-2-node1
+c02014494edb   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-compactor-node1
+858349cf1a9a   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-querier-primary-1-node1
+7021b0164f69   grafana/loki:3.5.5       "/usr/bin/loki -conf…"   11 minutes ago   Up 11 minutes                       loki-distributor-primary-1-node1
+86582b37bb22   prom/prometheus:v3.5.0   "/bin/prometheus --w…"   11 minutes ago   Up 11 minutes                       prometheus-node1
+b67b673aa012   redis/redis-7:9.6        "container-entrypoin…"   13 minutes ago   Up 13 minutes                       redis-node1
+c594325b8a9a   grafana/grafana:latest   "/run.sh"                6 months ago     Up 2 weeks                          grafana
+
+
+
+
+
