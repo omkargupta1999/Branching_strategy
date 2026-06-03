@@ -1,66 +1,119 @@
-This confirms the diagnosis precisely. The query **completes server-side in 71.5 seconds** with `http=200`. Loki is fine — it's purely that Grafana is giving up before 71s. So this is 100% a Grafana timeout tuning issue, not a query or cluster problem.
-
-The fix has two parts, and **both are required** because they cap each other.
-
-## Part 1 — Datasource timeout (datasources.yml)
-
-Add `timeout: 300` and `httpMethod: POST` to `jsonData` on all three Loki datasources (`Loki-Default`, `Loki-Node1`, `Loki-Node2`). Example for one:
-
-```yaml
+apiVersion: 1
+datasources:
+  # Default Prometheus (Aggregated)
+  - name: Prometheus-Default
+    type: prometheus
+    access: proxy
+    url: http://10.177.139.191:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+    uid: prometheus-default
+  # Default Loki (Aggregated)
+  - name: Loki-Default
+    type: loki
+    access: proxy
+    url: http://10.189.35.10:3104
+    isDefault: false
+    editable: true
     jsonData:
       maxLines: 5000
-      timeout: 300         # ADD
-      httpMethod: POST     # ADD
+      timeout: 300              # ADDED: allow long (e.g. 24h | json) queries to finish; was Grafana default ~30s
+      httpMethod: POST          # ADDED: POST handles large queries/payloads better than GET
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-default
+  # Loki Node 1 (Primary)
+  - name: Loki-Node1
+    type: loki
+    access: proxy
+    url: http://10.189.35.10:3104
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 5000
+      timeout: 300              # ADDED
+      httpMethod: POST          # ADDED
       derivedFields:
-        ...
-```
-
-## Part 2 — Server dataproxy timeout (the one that's actually capping you at ~30–60s)
-
-Your `grafana` container sets a bunch of `GF_*` env vars but **no dataproxy timeout** — so it's at Grafana's 30s default, which overrides whatever the datasource says. Add these env vars to the `grafana` service in `observe/docker-compose.yml`:
-
-```yaml
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL}
-      # ... your existing vars ...
-      - GF_DATAPROXY_TIMEOUT=300              # ADD — the critical one
-      - GF_DATAPROXY_DIAL_TIMEOUT=30          # ADD
-      - GF_DATAPROXY_KEEP_ALIVE_SECONDS=300   # ADD
-```
-
-The `GF_DATAPROXY_TIMEOUT=300` is the single most important line — without it, your 71s query keeps failing no matter what the datasource timeout says.
-
-## Apply
-
-```bash
-cd /dclogforward1/multi-node/observe
-# edit grafana/provisioning/datasources/datasources.yml (Part 1)
-# edit docker-compose.yml grafana env block (Part 2)
-
-# recreate so the new env vars take effect (restart alone won't add new env vars)
-docker compose --profile alertmanager up -d grafana
-# or if grafana is brought up without a profile:
-docker compose up -d --force-recreate grafana
-```
-
-A plain `docker restart grafana` reloads provisioning but does **not** pick up new environment variables — you need `up -d` / `--force-recreate` for the `GF_DATAPROXY_*` vars to apply.
-
-## Verify
-
-```bash
-# Confirm the env var is in the running container
-docker exec grafana env | grep DATAPROXY
-
-# Then re-run the failing query from the Grafana UI — with 300s end-to-end it returns in ~71s
-```
-In the UI: Configuration → Data sources → Loki-Node1 → Timeout field should show 300.
-
-## Two notes
-
-**1. Why it returned 71s and not faster:** the query is genuinely heavy — `| json | line_format` parsing every line of your highest-volume container over 24h. 71s is "working but slow." Raising the timeout makes it succeed, but coach users that for a better experience over wide ranges they should keep `|= \`error\`` (cheap, before parsing — they're already doing this) and either shorten the window or skip `| json | line_format` unless they need parsed fields. For 24h error trends, `count_over_time({k8s_container_name="transactionservice"} |= \`error\` [5m])` is far faster than pulling 5000 parsed lines.
-
-**2. Unrelated thing I noticed in observe.env** — the `NODE1_IP` / `NODE2_IP` here are `10.177.139.191/192`, and `GRAFANA_ROOT_URL` and the Prometheus-Default datasource also point at `10.177.139.191`. But your actual Loki nodes are `10.189.35.10/11` (which the Loki datasources correctly use). That `10.177.139.x` range appears to be a different network/interface for this observe host. It's working because the Loki datasources use the correct `10.189.35.x` URLs — just flagging the inconsistency in case those `observe.env` node IPs are stale and cause confusion later. Not related to today's fix.
-
-After the recreate, the 24h query that failed will complete in ~71s instead of timing out. Run it from the UI to confirm, and you're done.
+        - datasourceUid: prometheus-node1
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+        - datasourceUid: prometheus-node1
+          matcherRegex: "(?:user|userId|user_id)=([\\w.]+)"
+          name: UserID
+          url: "$${__value.raw}"
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-node1
+  # Loki Node 2 (Secondary)
+  - name: Loki-Node2
+    type: loki
+    access: proxy
+    url: http://10.189.35.11:3104
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 5000
+      timeout: 300              # ADDED
+      httpMethod: POST          # ADDED
+      derivedFields:
+        - datasourceUid: prometheus-node2
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+        - datasourceUid: prometheus-node2
+          matcherRegex: "(?:user|userId|user_id)=([\\w.]+)"
+          name: UserID
+          url: "$${__value.raw}"
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-node2
+  # Prometheus Node 1
+  - name: Prometheus-Node1
+    type: prometheus
+    access: proxy
+    url: http://10.189.35.10:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: TraceID
+          datasourceUid: loki-node1
+    uid: prometheus-node1
+  # Prometheus Node 2
+  - name: Prometheus-Node2
+    type: prometheus
+    access: proxy
+    url: http://10.189.35.11:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: TraceID
+          datasourceUid: loki-node2
+    uid: prometheus-node2
+  # AlertManager (Single Instance)
+  - name: AlertManager
+    type: alertmanager
+    access: proxy
+    url: http://10.189.35.10:9093
+    isDefault: false
+    editable: true
+    implementation: prometheus
+    uid: alertmanager
