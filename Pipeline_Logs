@@ -1,361 +1,114 @@
-[osuser@dcepayprodbastion ~]$ oc get po -n openshift-logging
-NAME                                          READY   STATUS    RESTARTS   AGE
-cluster-logging-operator-785974d5d-xk5hd      1/1     Running   0          38d
-collector-2fjxt                               1/1     Running   0          86m
-collector-4m67x                               1/1     Running   0          87m
-collector-5466j                               1/1     Running   0          91m
-collector-5c7cx                               1/1     Running   0          91m
-collector-628k6                               1/1     Running   0          91m
-collector-7bl8t                               1/1     Running   0          87m
-collector-cv24x                               1/1     Running   0          86m
-collector-grafana-49k65                       1/1     Running   0          89m
-collector-grafana-5pz6x                       1/1     Running   0          90m
-collector-grafana-75cls                       1/1     Running   0          89m
-collector-grafana-85qsx                       1/1     Running   0          88m
-collector-grafana-876r9                       1/1     Running   0          88m
-collector-grafana-cmhxp                       1/1     Running   0          88m
-collector-grafana-fg44m                       1/1     Running   0          89m
-collector-grafana-g886z                       1/1     Running   0          89m
-collector-grafana-hzg9r                       1/1     Running   0          88m
-collector-grafana-mvxx4                       1/1     Running   0          90m
-collector-grafana-stvxm                       1/1     Running   0          90m
-collector-grafana-wfllh                       1/1     Running   0          89m
-collector-grafana-wxkkj                       1/1     Running   0          88m
-collector-grafana-zd9rc                       1/1     Running   0          90m
-collector-grafana-zslrm                       1/1     Running   0          90m
-collector-mrq6p                               1/1     Running   0          90m
-collector-thx57                               1/1     Running   0          90m
-collector-v4dgg                               1/1     Running   0          87m
-collector-wl2n4                               1/1     Running   0          91m
-collector-wq5q7                               1/1     Running   0          91m
-collector-wq8t6                               1/1     Running   0          91m
-collector-x5nch                               1/1     Running   0          92m
-collector-x6x5b                               1/1     Running   0          86m
-logfilesmetricexporter-2ppnh                  1/1     Running   0          61d
-logfilesmetricexporter-429p5                  1/1     Running   0          61d
-logfilesmetricexporter-4xpr7                  1/1     Running   0          61d
-logfilesmetricexporter-5qlnb                  1/1     Running   1          61d
-logfilesmetricexporter-7j9lm                  1/1     Running   0          61d
-logfilesmetricexporter-82xn9                  1/1     Running   0          61d
-logfilesmetricexporter-8gmnb                  1/1     Running   1          61d
-logfilesmetricexporter-9rz5f                  1/1     Running   0          61d
-logfilesmetricexporter-fcxzx                  1/1     Running   1          61d
-logfilesmetricexporter-hz9wb                  1/1     Running   1          61d
-logfilesmetricexporter-klfkq                  1/1     Running   0          61d
-logfilesmetricexporter-m7nj5                  1/1     Running   0          61d
-logfilesmetricexporter-sdbq7                  1/1     Running   0          61d
-logfilesmetricexporter-vsj82                  1/1     Running   0          61d
-logfilesmetricexporter-vxrgs                  1/1     Running   0          61d
-proddc-loki-compactor-0                       1/1     Running   0          10d
-proddc-loki-distributor-69f8885b79-28xzv      1/1     Running   0          10d
-proddc-loki-distributor-69f8885b79-5rmhv      1/1     Running   0          10d
-proddc-loki-gateway-78d596b66-jx6zb           2/2     Running   0          10d
-proddc-loki-gateway-78d596b66-ztknx           2/2     Running   0          10d
-proddc-loki-index-gateway-0                   1/1     Running   0          10d
-proddc-loki-index-gateway-1                   1/1     Running   0          10d
-proddc-loki-ingester-0                        1/1     Running   0          96m
-proddc-loki-ingester-1                        1/1     Running   0          93m
-proddc-loki-querier-7d849db895-v9c9k          1/1     Running   0          23h
-proddc-loki-querier-7d849db895-x88tv          1/1     Running   0          23h
-proddc-loki-query-frontend-684fdf89c6-d2f29   1/1     Running   0          23h
-proddc-loki-query-frontend-684fdf89c6-wl864   1/1     Running   0          23h
-
-
-
--====================================================================================================  ClusterLogForwarder.yaml
-
-
-
-
-
-
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
-  name: collector-grafana
+[osuser@dcepayprodbastion ~]$ oc get lokistack proddc-loki -n openshift-logging  -o yaml
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"loki.grafana.com/v1","kind":"LokiStack","metadata":{"annotations":{},"name":"proddc-loki","namespace":"openshift-logging"},"spec":{"hashRing":{"type":"memberlist"},"limits":{"global":{"retention":{"days":7}}},"managementState":"Managed","size":"1x.extra-small","storage":{"schemas":[{"effectiveDate":"2025-08-08","version":"v13"}],"secret":{"credentialMode":"static","name":"logging-loki-s3","type":"s3"},"tls":{"caName":"loki-s3-ca"}},"storageClassName":"thin-csi","tenants":{"mode":"openshift-logging"}}}
+    loki.grafana.com/certRotationRequiredAt: "2026-05-23T18:43:57Z"
+    loki.grafana.com/rulesDiscoveredAt: "2026-06-03T04:00:12Z"
+  creationTimestamp: "2025-08-08T08:17:22Z"
+  generation: 37
+  name: proddc-loki
   namespace: openshift-logging
-  resourceVersion: '544601809'
-  uid: c5fc12cf-baf5-474d-ab10-918f0c22e2a8
+  resourceVersion: "544479727"
+  uid: 103d3dd8-7c8c-4897-a177-c0efa2aba09b
 spec:
+  hashRing:
+    type: memberlist
+  limits:
+    global:
+      ingestion:
+        ingestionBurstSize: 512
+        ingestionRate: 256
+        maxGlobalStreamsPerTenant: 20000
+        maxLineSize: 1000000
+        perStreamRateLimit: 5
+        perStreamRateLimitBurst: 20
+      retention:
+        days: 15
   managementState: Managed
-  outputs:
-    - loki:
-        tuning: {}
-        url: 'http://10.189.35.16:3100'
-      name: lokistack-grafana
-      type: loki
-  pipelines:
-    - inputRefs:
-        - audit
-        - application
-        - infrastructure
-      name: input-loki
-      outputRefs:
-        - lokistack-grafana
-  serviceAccount:
-    name: logging-collector
+  rules:
+    enabled: false
+  size: 1x.extra-small
+  storage:
+    schemas:
+    - effectiveDate: "2025-08-08"
+      version: v13
+    secret:
+      credentialMode: static
+      name: logging-loki-s3
+      type: s3
+    tls:
+      caName: loki-s3-ca
+  storageClassName: thin-csi
+  tenants:
+    mode: openshift-logging
 status:
+  components:
+    compactor:
+      Ready:
+      - proddc-loki-compactor-0
+    distributor:
+      Ready:
+      - proddc-loki-distributor-69f8885b79-28xzv
+      - proddc-loki-distributor-69f8885b79-5rmhv
+    gateway:
+      Ready:
+      - proddc-loki-gateway-78d596b66-jx6zb
+      - proddc-loki-gateway-78d596b66-ztknx
+    indexGateway:
+      Ready:
+      - proddc-loki-index-gateway-0
+      - proddc-loki-index-gateway-1
+    ingester:
+      Ready:
+      - proddc-loki-ingester-1
+      - proddc-loki-ingester-0
+    querier:
+      Ready:
+      - proddc-loki-querier-7d849db895-v9c9k
+      - proddc-loki-querier-7d849db895-x88tv
+    queryFrontend:
+      Ready:
+      - proddc-loki-query-frontend-684fdf89c6-d2f29
+      - proddc-loki-query-frontend-684fdf89c6-wl864
+    ruler:
+      Failed: []
+      Pending: []
+      Ready: []
+      Running: []
   conditions:
-    - lastTransitionTime: '2025-11-26T07:15:59Z'
-      message: 'permitted to collect log types: [application audit infrastructure]'
-      reason: ClusterRolesExist
-      status: 'True'
-      type: observability.openshift.io/Authorized
-    - lastTransitionTime: '2025-11-26T07:15:59Z'
-      message: ''
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/Valid
-    - lastTransitionTime: '2026-06-03T07:32:44Z'
-      message: ''
-      reason: ReconciliationComplete
-      status: 'True'
-      type: Ready
-  inputConditions:
-    - lastTransitionTime: '2026-06-03T09:03:09Z'
-      message: input "infrastructure" is valid
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/ValidInput-infrastructure
-    - lastTransitionTime: '2026-06-03T09:03:09Z'
-      message: input "audit" is valid
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/ValidInput-audit
-    - lastTransitionTime: '2026-06-03T09:03:09Z'
-      message: input "application" is valid
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/ValidInput-application
-  outputConditions:
-    - lastTransitionTime: '2025-11-26T07:15:59Z'
-      message: output "lokistack-grafana" is valid
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/ValidOutput-lokistack-grafana
-  pipelineConditions:
-    - lastTransitionTime: '2025-11-26T07:15:59Z'
-      message: pipeline "input-loki" is valid
-      reason: ValidationSuccess
-      status: 'True'
-      type: observability.openshift.io/ValidPipeline-input-loki
-
------------------------------------------------------------------------------------
-
-
-[osuser@dcepayprodbastion ~]$ oc -n openshift-logging logs proddc-loki-distributor-69f8885b79-28xzv | grep -Ei "rate|limit|429|ingest"
-level=warn ts=2026-05-23T18:45:54.969987429Z caller=logging.go:142 orgID=application msg="POST /loki/api/v1/push (500) 957.438µs"
-level=warn ts=2026-05-23T18:46:10.071429115Z caller=logging.go:142 orgID=application msg="POST /loki/api/v1/push (500) 386.254µs"
-level=warn ts=2026-05-23T18:46:10.142900119Z caller=logging.go:142 orgID=audit msg="POST /loki/api/v1/push (500) 889.103µs"
-level=warn ts=2026-05-23T18:46:22.277654297Z caller=logging.go:142 orgID=application msg="POST /loki/api/v1/push (500) 168.488µs"
-level=warn ts=2026-05-23T18:46:30.526693429Z caller=logging.go:142 orgID=infrastructure msg="POST /loki/api/v1/push (500) 165.231µs"
-level=warn ts=2026-05-23T18:46:33.515642981Z caller=logging.go:142 orgID=infrastructure msg="POST /loki/api/v1/push (500) 151.93µs"
-level=info ts=2026-05-23T20:32:20.294290821Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-23T21:36:50.314291784Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T21:44:50.271994295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T22:07:20.271418429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T22:08:20.294292554Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-23T22:15:50.294296303Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T22:23:20.317074295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T22:37:50.271429977Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-23T22:56:50.271342912Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T00:47:20.316214296Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T00:48:50.3142429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T04:18:50.295102429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T10:09:50.294295281Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T10:24:50.315942964Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T11:12:50.308474295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T12:30:50.309429522Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T14:50:50.27142901Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T15:50:20.294299159Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T17:33:20.271442919Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T20:05:20.313461429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T21:37:50.272142945Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-24T21:38:20.316242912Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-24T23:48:50.312807429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T00:01:20.271429422Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T01:11:20.293394297Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T02:12:20.271856429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T03:03:50.317114292Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T03:36:20.272142996Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T04:37:50.271942975Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T05:06:20.271511429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T05:06:50.314874292Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T05:12:20.271516429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T06:41:20.318429843Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T06:54:50.316429611Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T07:33:50.294295157Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T09:23:20.314298228Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T09:38:20.314298205Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T11:59:20.312429945Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T12:12:50.297004429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T12:29:20.296842933Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-25T14:38:20.314291582Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T16:08:50.271429361Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T16:44:20.313429669Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T19:11:50.271934291Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T20:37:20.271774291Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-25T23:22:20.271429633Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T03:03:50.295642997Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-26T04:38:50.271429862Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T05:06:20.271342928Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T05:33:50.298429429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-26T06:31:50.271510429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T07:00:50.310424298Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T11:15:50.311142944Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T16:47:20.31154292Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-26T17:54:50.311429364Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-26T19:59:50.272024295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-26T21:47:20.294296105Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-27T00:05:20.293334297Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-27T00:29:20.309429228Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=error ts=2026-05-27T03:29:03.222724291Z caller=manager.go:49 component=distributor path=write msg="write operation failed" details="max entry size '1000000' bytes exceeded for stream '{k8s_node_name=\"master2.dc.prod.epay.sbi\", kubernetes_host=\"master2.dc.prod.epay.sbi\", log_type=\"audit\", openshift_log_type=\"audit\"}' while adding an entry with length '1738227' bytes" org_id=audit
-level=info ts=2026-05-27T07:14:20.311136429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-27T13:30:50.311042968Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-27T14:31:50.271429768Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-27T18:07:20.271429961Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-27T20:15:50.294742988Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-28T01:36:50.314842912Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T03:32:50.272215429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T08:02:20.308634295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T09:26:20.346542957Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T10:29:20.343903429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-28T13:04:20.271429407Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T14:14:50.271429634Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T17:39:50.29174294Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T18:01:50.271605429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T18:18:50.350574294Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T18:32:50.271429303Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T18:50:50.272142932Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T19:16:20.271636429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T19:59:20.320429145Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-28T20:23:20.316528429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-28T20:56:20.313808429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-28T22:00:20.272154294Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-28T23:17:20.314293176Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T01:56:20.294290944Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T02:18:50.315284295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T04:00:50.314752429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T04:56:20.303442931Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T04:57:50.298114429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T05:31:50.271429568Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T09:28:20.271942909Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T09:54:50.318242987Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T11:59:20.315642908Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T12:21:50.315564293Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T13:23:20.315489429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T13:40:50.271964291Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T14:08:50.271524291Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T15:19:20.271442952Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T16:50:50.272042951Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T17:00:20.2714295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T19:27:50.312429777Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T19:38:20.314429656Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T21:29:50.271789429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T21:32:20.314290888Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-29T23:00:50.294295604Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-29T23:24:50.314291915Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T00:08:20.294142987Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T00:26:50.272242976Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T01:33:50.292326429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T01:54:50.294942926Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-30T03:14:20.313398429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T03:18:50.294298363Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-30T06:33:20.271454295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T07:33:20.271484429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T08:48:50.294291222Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-30T11:32:20.30996429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=error ts=2026-05-30T11:43:59.968293074Z caller=manager.go:49 component=distributor path=write msg="write operation failed" details="max entry size '1000000' bytes exceeded for stream '{k8s_node_name=\"master1.dc.prod.epay.sbi\", kubernetes_host=\"master1.dc.prod.epay.sbi\", log_type=\"audit\", openshift_log_type=\"audit\"}' while adding an entry with length '1742971' bytes" org_id=audit
-level=info ts=2026-05-30T12:14:20.299142959Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-30T14:26:20.311604298Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-30T14:34:50.271676429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T14:50:20.310254292Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T15:02:50.271429408Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T15:47:50.271574299Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T19:46:20.271442992Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T20:45:20.271429217Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-30T22:23:20.309429799Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T02:38:20.292342923Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T04:05:20.309034295Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T04:20:20.309429632Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T08:12:20.271429088Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T09:05:20.30942974Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T11:36:20.271342905Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T12:39:50.294444297Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T13:19:20.272174291Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T13:26:20.310664297Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T14:08:20.312702429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T15:56:20.319386429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T17:05:20.314291078Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T20:53:20.317078429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-05-31T21:30:50.316509429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-05-31T22:54:50.314294754Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=error ts=2026-05-31T23:43:59.233876429Z caller=manager.go:49 component=distributor path=write msg="write operation failed" details="max entry size '1000000' bytes exceeded for stream '{k8s_node_name=\"master1.dc.prod.epay.sbi\", kubernetes_host=\"master1.dc.prod.epay.sbi\", log_type=\"audit\", openshift_log_type=\"audit\"}' while adding an entry with length '1782220' bytes" org_id=audit
-level=info ts=2026-05-31T23:51:20.271514292Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T05:00:50.315429877Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=error ts=2026-06-01T10:43:58.601429298Z caller=manager.go:49 component=distributor path=write msg="write operation failed" details="max entry size '1000000' bytes exceeded for stream '{k8s_node_name=\"master1.dc.prod.epay.sbi\", kubernetes_host=\"master1.dc.prod.epay.sbi\", log_type=\"audit\", openshift_log_type=\"audit\"}' while adding an entry with length '1994100' bytes" org_id=audit
-level=info ts=2026-06-01T12:57:20.271429279Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T14:02:50.271852429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T14:33:50.293743429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T16:19:20.271384429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T17:48:50.310429356Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-01T18:00:50.31054298Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-01T18:05:50.27142961Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-01T23:33:50.293542951Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-01T23:49:50.271982429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T01:51:50.316093429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T03:30:50.316429295Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T07:01:20.271429211Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T09:43:20.271439429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T10:47:20.309483429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T12:05:20.314292237Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T12:33:20.271530429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T14:08:50.27185429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T16:23:20.310676429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T16:31:50.271719429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T16:48:50.309604292Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T17:40:20.271429809Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T18:32:20.314290986Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T20:45:20.27142949Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T21:06:20.271726429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-02T21:24:50.294950429Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-02T23:36:50.312429462Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-03T02:01:50.272242906Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-03T02:34:20.271429078Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-03T03:06:50.317842921Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-03T03:47:20.314296017Z caller=memberlist_client.go:543 phase=periodic_rejoin msg="re-joined memberlist cluster" reached_nodes=7
-level=info ts=2026-06-03T05:30:50.320585429Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-03T08:02:50.271429437Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-level=info ts=2026-06-03T08:15:50.294234297Z caller=memberlist_client.go:552 msg="initiating cleanup of obsolete entries"
-
-
-
-=====================================================================================================================
-
-
-[osuser@dcepayprodbastion ~]$ oc -n openshift-logging get lokistack -o yaml | grep -A5 size
-        {"apiVersion":"loki.grafana.com/v1","kind":"LokiStack","metadata":{"annotations":{},"name":"proddc-loki","namespace":"openshift-logging"},"spec":{"hashRing":{"type":"memberlist"},"limits":{"global":{"retention":{"days":7}}},"managementState":"Managed","size":"1x.extra-small","storage":{"schemas":[{"effectiveDate":"2025-08-08","version":"v13"}],"secret":{"credentialMode":"static","name":"logging-loki-s3","type":"s3"},"tls":{"caName":"loki-s3-ca"}},"storageClassName":"thin-csi","tenants":{"mode":"openshift-logging"}}}
-      loki.grafana.com/certRotationRequiredAt: "2026-05-23T18:43:57Z"
-      loki.grafana.com/rulesDiscoveredAt: "2026-06-03T04:00:12Z"
-    creationTimestamp: "2025-08-08T08:17:22Z"
-    generation: 37
-    name: proddc-loki
---
-    size: 1x.extra-small
-    storage:
-      schemas:
-      - effectiveDate: "2025-08-08"
-        version: v13
-      secret:
+  - lastTransitionTime: "2026-06-03T07:41:37Z"
+    message: All components ready
+    reason: ReadyComponents
+    status: "True"
+    type: Ready
+  - lastTransitionTime: "2026-06-03T07:29:57Z"
+    message: One or more LokiStack components pending on dependencies
+    reason: PendingComponents
+    status: "False"
+    type: Pending
+  - lastTransitionTime: "2026-05-23T18:44:28Z"
+    message: One or more LokiStack components failed
+    reason: FailedComponents
+    status: "False"
+    type: Failed
+  - lastTransitionTime: "2026-01-05T05:45:56Z"
+    message: 'Invalid object storage secret contents: endpoint for S3 must be an HTTP
+      or HTTPS URL'
+    reason: InvalidObjectStorageSecret
+    status: "False"
+    type: Degraded
+  - lastTransitionTime: "2025-08-08T09:29:12Z"
+    message: Missing object storage secret
+    reason: MissingObjectStorageSecret
+    status: "False"
+    type: Degraded
+  networkPolicyRuleSet: None
+  storage:
+    credentialMode: static
+    schemas:
+    - effectiveDate: "2025-08-08"
+      version: v13
 [osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc -n openshift-logging get pods -o wide | grep -E "ingester|distributor|compactor"
-proddc-loki-compactor-0                       1/1     Running   0          10d    172.16.42.132   gemfire4.dc.prod.epay.sbi   <none>           <none>
-proddc-loki-distributor-69f8885b79-28xzv      1/1     Running   0          10d    172.16.40.106   gemfire3.dc.prod.epay.sbi   <none>           <none>
-proddc-loki-distributor-69f8885b79-5rmhv      1/1     Running   0          10d    172.16.36.132   gemfire1.dc.prod.epay.sbi   <none>           <none>
-proddc-loki-ingester-0                        1/1     Running   0          100m   172.16.39.238   gemfire2.dc.prod.epay.sbi   <none>           <none>
-proddc-loki-ingester-1                        1/1     Running   0          97m    172.16.40.134   gemfire3.dc.prod.epay.sbi   <none>           <none>
-[osuser@dcepayprodbastion ~]$
-[osuser@dcepayprodbastion ~]$ oc -n openshift-logging describe pod proddc-loki-ingester-0  | grep -Ei "oom|evict|restart"
-    Restart Count:  0
-[osuser@dcepayprodbastion ~]$ oc -n openshift-logging describe pod proddc-loki-ingester-1  | grep -Ei "oom|evict|restart"
-    Restart Count:  0
