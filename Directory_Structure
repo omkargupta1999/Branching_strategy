@@ -1,21 +1,107 @@
-FROM registry.access.redhat.com/ubi9/openjdk-21:latest
+Here are the implementation steps for applying the query-fix config to both nodes. I'll keep it sequential and safe — Node 1 first, verify, then Node 2.
 
-USER root
+## Pre-checks (before you start)
 
-RUN dnf install -y unzip && dnf clean all
+```bash
+# Confirm current cluster is healthy before changing anything
+curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE     # expect 4
+curl -s http://10.189.35.11:3100/ring | grep -c ACTIVE     # expect 4
+```
+If both show 4, proceed. The two new config files are the ones I generated: `node1-loki-config.yaml` and `node2-loki-config.yaml`.
 
-WORKDIR /app
+## Node 1
 
-# Copy Gradle (offline safe)
-COPY gradle-8.9 /opt/gradle/
+```bash
+cd /root/dclogforward1/multi-node/node1
 
-ENV GRADLE_HOME=/opt/gradle
-ENV PATH=$PATH:$GRADLE_HOME/bin
+# 1. Back up the current working config
+cp loki-config.yaml loki-config.yaml.bak.$(date +%Y%m%d-%H%M%S)
 
-RUN chmod -R 777 /opt/gradle
+# 2. Put the new config in place (transfer node1-loki-config.yaml here first,
+#    then rename it over the existing file)
+cp node1-loki-config.yaml loki-config.yaml
 
-USER 185
+# 3. (Optional) sanity-check it's valid YAML before restarting
+docker run --rm -v "$PWD/loki-config.yaml:/c.yaml:ro" grafana/loki:3.5.5 \
+  -config.file=/c.yaml -verify-config -config.expand-env=true 2>&1 | tail -5 || true
 
-EXPOSE 8080 8443
+# 4. Recreate so the mounted config is reloaded
+docker compose down && docker compose --profile redis up -d
+```
 
-CMD ["bash"]
+**Verify Node 1 before touching Node 2:**
+```bash
+sleep 30
+# Ring back to 4 ACTIVE
+curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE
+
+# All components ready
+for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
+  echo -n "node1:$p -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.10:$p/ready
+done
+
+# New query settings actually loaded
+curl -s http://10.189.35.10:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
+```
+Expect `split_queries_by_interval: 1h`, `query_timeout: 5m`, `cache_results: true`, `max_outstanding_per_tenant: 2048`. Only continue if Node 1 is healthy and shows these values.
+
+## Node 2 (only after Node 1 is confirmed good)
+
+```bash
+cd /root/dclogforward1/multi-node/node2
+
+cp loki-config.yaml loki-config.yaml.bak.$(date +%Y%m%d-%H%M%S)
+cp node2-loki-config.yaml loki-config.yaml
+
+docker run --rm -v "$PWD/loki-config.yaml:/c.yaml:ro" grafana/loki:3.5.5 \
+  -config.file=/c.yaml -verify-config -config.expand-env=true 2>&1 | tail -5 || true
+
+docker compose down && docker compose --profile redis up -d
+```
+
+**Verify Node 2:**
+```bash
+sleep 30
+curl -s http://10.189.35.11:3100/ring | grep -c ACTIVE          # expect 4
+curl -s http://10.189.35.11:3100/config | grep -iE "split_queries_by_interval|query_timeout|cache_results|max_outstanding"
+```
+
+## Final cluster-wide validation
+
+```bash
+# Both nodes see the same 4 ACTIVE ingesters
+curl -s http://10.189.35.10:3100/ring | grep -c ACTIVE
+curl -s http://10.189.35.11:3100/ring | grep -c ACTIVE
+
+# Memberlist converged (14 on both)
+curl -s http://10.189.35.10:3100/memberlist | grep -c "10.189.35"
+curl -s http://10.189.35.11:3100/memberlist | grep -c "10.189.35"
+
+# Ingestion still healthy — no rate-limit rejections
+docker logs --since 5m loki-distributor-primary-1-node1 2>&1 | grep -ic "rate limit exceeded"
+
+# The actual test: a wide (2-day) query that used to fail, with a narrow selector
+curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={kubernetes_namespace_name="prod-dc-transaction"}' \
+  --data-urlencode "start=$(date -d '2 days ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" \
+  --data-urlencode "limit=1000" | head -c 300; echo
+```
+A `"status":"success"` with results = the query fix works. Then confirm the same in the **Grafana UI** with a 1-hour and a 2-day range.
+
+## If something goes wrong — rollback
+
+The backups make this safe. On either node:
+```bash
+cd /root/dclogforward1/multi-node/node<N>
+cp loki-config.yaml.bak.<timestamp> loki-config.yaml
+docker compose down && docker compose --profile redis up -d
+```
+
+## Notes
+
+- **Redis:** keep using `--profile redis` exactly as before. As discussed, the embedded cache handles this fix; the Redis container just idles. No change needed there.
+- **One node at a time** is important — with RF=2, keeping Node 1's ingesters serving while Node 2 restarts means no gap in log ingestion.
+- The `-verify-config` step is optional but a good safety net; if it errors, it'll be because of an env var it can't expand in standalone mode — in that case just skip it and rely on the post-restart `/config` check, which is the real confirmation.
+
+Once both nodes show the new settings in `/config` and the 2-day test query returns success, you're done. Share the sizing output whenever ready and I'll confirm the queriers can handle the increased parallelism under your real load.
