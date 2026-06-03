@@ -1,0 +1,171 @@
+Here's a complete health-check runbook for the two-node external Loki cluster. Run these from the Loki hosts (they have `docker` and `curl`). I've grouped them so you can work top-down: containers → ring → memberlist → storage → limits → end-to-end → the OpenShift collector side.
+
+## 1. Container status (both nodes)
+
+```bash
+# On loki1
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "loki|redis|prometheus"
+# On loki2 (same command)
+
+# Anything restarting/unhealthy? — should return nothing
+docker ps --filter "health=unhealthy" --format "{{.Names}}"
+docker ps -a --filter "status=restarting" --format "{{.Names}}"
+
+# Restart counts — all should be low/stable, not climbing
+docker ps -a --format "{{.Names}}" | grep loki | while read c; do
+  echo "$c restarts=$(docker inspect -f '{{.RestartCount}}' $c)"
+done
+```
+
+## 2. Per-component readiness (both nodes)
+
+Each Loki target exposes `/ready`. Node1 ports 3100–3107, Node2 same HTTP ports.
+
+```bash
+# Node1 (10.189.35.10)
+for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
+  echo -n "node1:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.10:$p/ready
+done
+
+# Node2 (10.189.35.11)
+for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
+  echo -n "node2:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.11:$p/ready
+done
+```
+All should return `200`. A `503` means that component is still joining or unhealthy.
+
+## 3. Ring health — the most important check
+
+```bash
+# Ingester ring — expect 4 ACTIVE total (2 per node), no UNHEALTHY/LEAVING/PENDING
+curl -s http://10.189.35.10:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
+
+# Cross-check from node2's view — must show the SAME 4 ACTIVE
+curl -s http://10.189.35.11:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
+
+# Distributor ring
+curl -s "http://10.189.35.10:3100/distributor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+
+# Compactor ring (1 compactor per node = 2)
+curl -s "http://10.189.35.10:3107/compactor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+```
+Both nodes must report the **same** ring membership. If node1 sees 4 ACTIVE but node2 sees 2, memberlist isn't converging (check section 4).
+
+## 4. Memberlist / cluster gossip
+
+```bash
+# Total members in gossip — you have ~14 components across both nodes
+curl -s http://10.189.35.10:3100/memberlist | grep -c "10.189.35"
+
+# Same count from node2 — should match node1
+curl -s http://10.189.35.11:3100/memberlist | grep -c "10.189.35"
+
+# Look for gossip errors (EOF, connection refused, failed to connect)
+docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+docker logs loki-distributor-secondary-1-node2 2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+```
+Both nodes should report the same member count. Occasional EOF on reconnect is normal; repeated "failed to connect" to a specific IP:port is not.
+
+## 5. Object storage (S3) connectivity — only ingesters/compactor write
+
+```bash
+# Confirm ingesters are flushing chunks to S3 (no errors). Recent flushes = healthy.
+docker logs --since 10m loki-ingester-primary-1-node1   2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
+docker logs --since 10m loki-ingester-secondary-1-node2 2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
+
+# Positive signal: you SHOULD see "flushing stream" info lines
+docker logs --since 5m loki-ingester-primary-1-node1 2>&1 | grep -c "flushing stream"
+
+# Compactor reaching S3 (no auth/endpoint errors)
+docker logs --since 15m loki-compactor-node1 2>&1 | grep -iE "s3|error|compact" | tail -15
+
+# Direct S3 reachability from the host (TLS + DNS to the NetApp endpoint)
+curl -s -o /dev/null -w "S3 endpoint -> %{http_code}\n" https://s3store-A9cl2-pr.bank.sbi
+```
+The S3 endpoint returning `403`/`400` to a bare curl is fine (it means it's reachable but needs auth/signing) — what you don't want is a timeout or TLS error. The key positive signal is ingesters logging `flushing stream` with no S3 errors alongside.
+
+## 6. Confirm the limit fixes actually took effect
+
+This is the verification that your 429 fix is live:
+
+```bash
+# Dump the runtime config the distributor actually loaded and check the rate values
+curl -s http://10.189.35.10:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
+curl -s http://10.189.35.11:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
+```
+Expect to see `ingestion_rate_mb: 256`, `ingestion_burst_size_mb: 512`, `ingestion_rate_strategy: local`, `max_line_size: 4194304`, `reject_old_samples: false`. If `/config` shows the old values, the container wasn't recreated (you did `restart` instead of `down`/`up`).
+
+```bash
+# No NEW rate-limit rejections in the last few minutes on any distributor
+for n in 10.189.35.10 10.189.35.11; do
+  echo "== $n =="
+done
+docker logs --since 5m loki-distributor-primary-1-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-primary-2-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-1-node2 2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-2-node2 2>&1 | grep -ic "rate limit exceeded"
+```
+All four counts should be `0` (or steeply dropping). Any non-zero and still-climbing count means a distributor is still on old config or volume genuinely exceeds 256 MB/s.
+
+## 7. End-to-end write + read test
+
+Prove the cluster actually accepts and returns data:
+
+```bash
+# Push a test log line (auth disabled, tenant "fake")
+NOW=$(date +%s%N)
+curl -s -o /dev/null -w "push -> %{http_code}\n" -X POST http://10.189.35.10:3100/loki/api/v1/push \
+  -H "Content-Type: application/json" \
+  -d '{"streams":[{"stream":{"job":"healthcheck","node":"manual"},"values":[["'$NOW'","loki-cluster-healthcheck-test"]]}]}'
+# Expect 204
+
+# Read it back via the query-frontend (port 3104)
+sleep 3
+curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={job="healthcheck"}' \
+  --data-urlencode "start=$(date -d '5 min ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" | head -c 500; echo
+```
+A `204` on push and your test string appearing in the query result = the full write→ingest→query path works on the cluster.
+
+## 8. Resource pressure (catches the slow-burn problems)
+
+```bash
+# CPU/mem per container — watch for ingesters pinned at memory limit
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" | grep -E "loki|redis"
+
+# Disk on the WAL/data path — full disk = ingesters stop flushing
+df -h /data/loki
+```
+
+## 9. The OpenShift collector side (does Grafana actually get logs now)
+
+```bash
+# 429/400 should be gone; 204s flowing. Sample a few grafana collectors:
+for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do
+  echo "== $p =="
+  oc -n openshift-logging logs ${p#pod/} --since=5m | grep -Eic "429|too many"
+done
+# All should be 0 or near-0
+
+# Confirm the forwarder still targets the external Loki
+oc -n openshift-logging get clusterlogforwarder collector-grafana -o jsonpath='{.spec.outputs[*].loki.url}'; echo
+```
+
+## What "healthy" looks like — quick reference
+
+| Check | Healthy result |
+|---|---|
+| Containers | All `Up`, none restarting, no `unhealthy` |
+| `/ready` (all ports, both nodes) | `200` |
+| Ingester ring | 4 ACTIVE, identical from both nodes |
+| Memberlist count | Same on both nodes (~14) |
+| Ingester logs | `flushing stream`, no S3 errors |
+| `/config` | rate=256, burst=512, strategy=local, line=4194304, reject_old=false |
+| Rate-limit rejections (last 5m) | 0 |
+| Push test | `204` |
+| Query test | returns the test line |
+| Disk `/data/loki` | not near full |
+| collector-grafana 429s | 0 |
+
+Run sections 1–6 first — if those are clean, the cluster is structurally healthy. Section 7 confirms the data path, and section 9 confirms the original Grafana symptom is resolved. If anything fails, tell me which section and paste the output, and I'll narrow it down.
