@@ -1,0 +1,325 @@
+Node1 Commands Output:
+
+
+
+[root@loki1 node1]# docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "loki|redis|prometheus"
+loki-distributor-primary-1-node1   Up 19 minutes
+loki-querier-primary-1-node1       Up 19 minutes
+loki-ingester-primary-1-node1      Up 19 minutes (healthy)
+loki-ingester-primary-2-node1      Up 19 minutes (healthy)
+loki-query-frontend-node1          Up 19 minutes
+loki-compactor-node1               Up 19 minutes
+loki-querier-primary-2-node1       Up 19 minutes
+prometheus-node1                   Up 19 minutes
+loki-distributor-primary-2-node1   Up 19 minutes
+[root@loki1 node1]#
+[root@loki1 node1]# docker ps --filter "health=unhealthy" --format "{{.Names}}"
+docker ps -a --filter "status=restarting" --format "{{.Names}}"
+[root@loki1 node1]# docker ps -a --format "{{.Names}}" | grep loki | while read c; do
+  echo "$c restarts=$(docker inspect -f '{{.RestartCount}}' $c)"
+done
+loki-distributor-primary-1-node1 restarts=0
+loki-querier-primary-1-node1 restarts=0
+loki-ingester-primary-1-node1 restarts=0
+loki-ingester-primary-2-node1 restarts=0
+loki-query-frontend-node1 restarts=0
+loki-compactor-node1 restarts=0
+loki-querier-primary-2-node1 restarts=0
+loki-distributor-primary-2-node1 restarts=0
+[root@loki1 node1]# # Node1 (10.189.35.10)
+for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
+  echo -n "node1:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.10:$p/ready
+done
+node1:3100 /ready -> 200
+node1:3101 /ready -> 200
+node1:3102 /ready -> 200
+node1:3103 /ready -> 200
+node1:3104 /ready -> 200
+node1:3105 /ready -> 200
+node1:3106 /ready -> 200
+node1:3107 /ready -> 200
+[root@loki1 node1]# curl -s http://10.189.35.10:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
+      4 ACTIVE
+[root@loki1 node1]# curl -s "http://10.189.35.10:3100/distributor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+[root@loki1 node1]#
+[root@loki1 node1]# curl -s "http://10.189.35.10:3100/distributor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+[root@loki1 node1]#
+[root@loki1 node1]# curl -s "http://10.189.35.10:3107/compactor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+      2 ACTIVE
+[root@loki1 node1]# curl -s http://10.189.35.10:3100/memberlist | grep -c "10.189.35"
+14
+[root@loki1 node1]# docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+docker logs loki-distributor-secondary-1-node2 2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6448","ts":"2026-06-03T10:24:36.070658805Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6449","ts":"2026-06-03T10:24:46.070706925Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6450","ts":"2026-06-03T10:24:56.070825505Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6451","ts":"2026-06-03T10:25:06.071397677Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6452","ts":"2026-06-03T10:25:16.07135852Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6453","ts":"2026-06-03T10:25:26.071515371Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6454","ts":"2026-06-03T10:25:36.071686159Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6455","ts":"2026-06-03T10:25:46.071721629Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6456","ts":"2026-06-03T10:25:56.071636921Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6457","ts":"2026-06-03T10:26:06.071252147Z"}
+[root@loki1 node1]# docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6453","ts":"2026-06-03T10:25:26.071515371Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6454","ts":"2026-06-03T10:25:36.071686159Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6455","ts":"2026-06-03T10:25:46.071721629Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6456","ts":"2026-06-03T10:25:56.071636921Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6457","ts":"2026-06-03T10:26:06.071252147Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6458","ts":"2026-06-03T10:26:16.071294091Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6459","ts":"2026-06-03T10:26:26.071307927Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6460","ts":"2026-06-03T10:26:36.071770691Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6461","ts":"2026-06-03T10:26:46.071602904Z"}
+{"caller":"tcp_transport.go:286","component":"memberlist TCPTransport","err":"EOF","level":"warn","msg":"failed to read message type","remote":"10.189.35.16:6462","ts":"2026-06-03T10:26:56.071668618Z"}
+[root@loki1 node1]#
+[root@loki1 node1]# docker logs --since 10m loki-ingester-primary-1-node1   2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
+{"avg_comp":"1.3 MB","avg_uncomp":"35 MB","caller":"flush.go:304","component":"ingester","fp":"53feec5f865ad560","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker6.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-jxqzr\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"worker6.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-jxqzr\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"35 MB","ts":"2026-06-03T10:26:10.643410382Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"36 MB","caller":"flush.go:304","component":"ingester","fp":"e2a9fb00f021d27f","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire2.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire2.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"36 MB","ts":"2026-06-03T10:26:28.092858033Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"34 MB","caller":"flush.go:304","component":"ingester","fp":"d5a91bd903be238e","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker5.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-4gds8\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"worker5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-4gds8\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"34 MB","ts":"2026-06-03T10:26:28.737339244Z","user":"fake"}
+{"avg_comp":"603 kB","avg_uncomp":"35 MB","caller":"flush.go:304","component":"ingester","fp":"a42a67a389fd25ad","full":1,"immediate":false,"labels":"{k8s_container_name=\"istio-proxy\", k8s_namespace_name=\"prod-dc-istio-system\", k8s_node_name=\"worker2.dc.prod.epay.sbi\", k8s_pod_name=\"prod-dc-istio-gateway-79d756475-89hlm\", kubernetes_container_name=\"istio-proxy\", kubernetes_host=\"worker2.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-istio-system\", kubernetes_pod_name=\"prod-dc-istio-gateway-79d756475-89hlm\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"istio-proxy\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"603 kB","total_uncomp":"35 MB","ts":"2026-06-03T10:26:29.166762929Z","user":"fake"}
+{"avg_comp":"1.0 MB","avg_uncomp":"38 MB","caller":"flush.go:304","component":"ingester","fp":"390466ae57f299ab","full":1,"immediate":false,"labels":"{k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker3.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"worker3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.0 MB","total_uncomp":"38 MB","ts":"2026-06-03T10:26:31.959531762Z","user":"fake"}
+{"avg_comp":"1.1 MB","avg_uncomp":"22 MB","caller":"flush.go:304","component":"ingester","fp":"b7b4cb62a3064f81","immediate":false,"labels":"{k8s_container_name=\"adminservice\", k8s_namespace_name=\"prod-dc-admin\", k8s_node_name=\"gemfire1.dc.prod.epay.sbi\", k8s_pod_name=\"admin-adminservice-65f9cfb994-mwkj7\", kubernetes_container_name=\"adminservice\", kubernetes_host=\"gemfire1.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-admin\", kubernetes_pod_name=\"admin-adminservice-65f9cfb994-mwkj7\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"adminservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"synced":1,"total_comp":"1.1 MB","total_uncomp":"22 MB","ts":"2026-06-03T10:26:34.322564509Z","user":"fake"}
+{"avg_comp":"290 kB","avg_uncomp":"31 MB","caller":"flush.go:304","component":"ingester","fp":"70d09f39ed155953","full":1,"immediate":false,"labels":"{__stream_shard__=\"0\", k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire5.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"290 kB","total_uncomp":"31 MB","ts":"2026-06-03T10:26:35.181825075Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"32 MB","caller":"flush.go:304","component":"ingester","fp":"65f566afcaf19df9","full":1,"immediate":false,"labels":"{__stream_shard__=\"1\", k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire5.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"32 MB","ts":"2026-06-03T10:26:38.834368431Z","user":"fake"}
+{"avg_comp":"1.0 MB","avg_uncomp":"50 MB","caller":"flush.go:304","component":"ingester","fp":"0f99228022dc07d4","full":1,"immediate":false,"labels":"{k8s_container_name=\"istio-proxy\", k8s_namespace_name=\"prod-dc-kms\", k8s_node_name=\"gemfire4.dc.prod.epay.sbi\", k8s_pod_name=\"kms-kmsservice-5d5547dbb-cqk44\", kubernetes_container_name=\"istio-proxy\", kubernetes_host=\"gemfire4.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-kms\", kubernetes_pod_name=\"kms-kmsservice-5d5547dbb-cqk44\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"istio-proxy\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.0 MB","total_uncomp":"50 MB","ts":"2026-06-03T10:26:54.307768285Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"26 MB","caller":"flush.go:304","component":"ingester","fp":"d4246da617a71cbe","full":1,"immediate":false,"labels":"{k8s_container_name=\"adminservice\", k8s_namespace_name=\"prod-dc-admin\", k8s_node_name=\"gemfire3.dc.prod.epay.sbi\", k8s_pod_name=\"admin-adminservice-65f9cfb994-62lpc\", kubernetes_container_name=\"adminservice\", kubernetes_host=\"gemfire3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-admin\", kubernetes_pod_name=\"admin-adminservice-65f9cfb994-62lpc\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"adminservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"26 MB","ts":"2026-06-03T10:26:56.74482998Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"41 MB","caller":"flush.go:304","component":"ingester","fp":"e0ec6ed3799ff23b","full":1,"immediate":false,"labels":"{k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker5.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-5ffwd\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"worker5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-5ffwd\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"41 MB","ts":"2026-06-03T10:26:56.966349314Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"13 MB","caller":"flush.go:304","component":"ingester","fp":"45f1f533bf75c2f0","full":2,"immediate":false,"labels":"{k8s_node_name=\"master2.dc.prod.epay.sbi\", kubernetes_host=\"master2.dc.prod.epay.sbi\", log_type=\"audit\", openshift_log_type=\"audit\", service_name=\"unknown_service\"}","level":"info","msg":"flushing stream","num_chunks":2,"total_comp":"2.7 MB","total_uncomp":"25 MB","ts":"2026-06-03T10:26:59.180901225Z","user":"fake"}
+{"avg_comp":"968 kB","avg_uncomp":"34 MB","caller":"flush.go:304","component":"ingester","fp":"8367045b910ae825","full":1,"immediate":false,"labels":"{__stream_shard__=\"0\", k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire5.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-cr6lx\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"gemfire5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-cr6lx\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"968 kB","total_uncomp":"34 MB","ts":"2026-06-03T10:27:01.174500008Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"40 MB","caller":"flush.go:304","component":"ingester","fp":"06a4d09da304aa4d","full":1,"immediate":false,"labels":"{k8s_container_name=\"kmsservice\", k8s_namespace_name=\"prod-dc-kms\", k8s_node_name=\"worker6.dc.prod.epay.sbi\", k8s_pod_name=\"kms-kmsservice-5d5547dbb-9cb47\", kubernetes_container_name=\"kmsservice\", kubernetes_host=\"worker6.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-kms\", kubernetes_pod_name=\"kms-kmsservice-5d5547dbb-9cb47\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"kmsservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"40 MB","ts":"2026-06-03T10:27:04.496076317Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"34 MB","caller":"flush.go:304","component":"ingester","fp":"53feec5f865ad560","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker6.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-jxqzr\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"worker6.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-jxqzr\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"34 MB","ts":"2026-06-03T10:27:07.597075114Z","user":"fake"}
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]# docker logs --since 5m loki-ingester-primary-1-node1 2>&1 | grep -c "flushing stream"
+60
+[root@loki1 node1]# docker logs --since 15m loki-compactor-node1 2>&1 | grep -iE "s3|error|compact" | tail -15
+{"caller":"compactor.go:522","level":"info","msg":"this instance has been chosen to run the compactor, starting compactor","ts":"2026-06-03T10:19:36.279241939Z"}
+{"caller":"compactor.go:551","level":"info","msg":"waiting 10m0s for ring to stay stable and previous compactions to finish before starting compactor","ts":"2026-06-03T10:19:36.279327173Z"}
+{"caller":"compactor.go:531","level":"info","msg":"this instance should no longer run the compactor, stopping compactor","ts":"2026-06-03T10:20:06.279262906Z"}
+{"caller":"compactor.go:536","level":"info","msg":"compactor stopped","ts":"2026-06-03T10:20:06.279309352Z"}
+{"caller":"cached_client.go:189","err":"RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed to build table names cache","ts":"2026-06-03T10:20:06.27948131Z"}
+{"caller":"cached_client.go:189","err":"RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed to build table names cache","ts":"2026-06-03T10:20:06.279518746Z"}
+{"caller":"cached_client.go:189","err":"RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed to build table names cache","ts":"2026-06-03T10:20:06.279551598Z"}
+{"caller":"compactor.go:563","err":"failed to list tables: RequestCanceled: request context canceled\ncaused by: context canceled","level":"error","msg":"failed to run compaction","ts":"2026-06-03T10:20:06.279567637Z"}
+{"caller":"compactor.go:621","level":"info","msg":"compactor started","ts":"2026-06-03T10:20:06.279574682Z"}
+[root@loki1 node1]#
+[root@loki1 node1]# curl -s -o /dev/null -w "S3 endpoint -> %{http_code}\n" https://s3store-A9cl2-pr.bank.sbi
+S3 endpoint -> 403
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]# curl -s http://10.189.35.10:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
+  ingestion_rate_strategy: local
+  ingestion_rate_mb: 256
+  ingestion_burst_size_mb: 512
+  reject_old_samples: false
+  reject_old_samples_max_age: 1w
+  max_line_size: 4MB
+  max_line_size_truncate: false
+  per_stream_rate_limit: 10MB
+  per_stream_rate_limit_burst: 50MB
+[root@loki1 node1]# for n in 10.189.35.10 10.189.35.11; do
+  echo "== $n =="
+done
+docker logs --since 5m loki-distributor-primary-1-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-primary-2-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-1-node2 2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-2-node2 2>&1 | grep -ic "rate limit exceeded"
+== 10.189.35.10 ==
+== 10.189.35.11 ==
+0
+0
+0
+0
+[root@loki1 node1]# NOW=$(date +%s%N)
+curl -s -o /dev/null -w "push -> %{http_code}\n" -X POST http://10.189.35.10:3100/loki/api/v1/push \
+  -H "Content-Type: application/json" \
+  -d '{"streams":[{"stream":{"job":"healthcheck","node":"manual"},"values":[["'$NOW'","loki-cluster-healthcheck-test"]]}]}'
+push -> 204
+[root@loki1 node1]# curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
+  --data-urlencode 'query={job="healthcheck"}' \
+  --data-urlencode "start=$(date -d '5 min ago' +%s)000000000" \
+  --data-urlencode "end=$(date +%s)000000000" | head -c 500; echo
+{"status":"success","data":{"resultType":"streams","result":[{"stream":{"detected_level":"unknown","job":"healthcheck","node":"manual","service_name":"healthcheck"},"values":[["1780482588180158165","loki-cluster-healthcheck-test"]]}],"stats":{"summary":{"bytesProcessedPerSecond":6160,"linesProcessedPerSecond":166,"totalBytesProcessed":37,"totalLinesProcessed":1,"execTime":0.006006,"queueTime":0,"subqueries":0,"totalEntriesReturned":1,"splits":0,"shards":1,"totalPostFilterLines":1,"totalStructure
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]#
+[root@loki1 node1]# docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" | grep -E "loki"
+loki-distributor-primary-1-node1   23.75%    89.94MiB / 93.88GiB   0.09%
+loki-querier-primary-1-node1       0.22%     996.7MiB / 93.88GiB   1.04%
+loki-ingester-primary-1-node1      7.20%     3.193GiB / 93.88GiB   3.40%
+loki-ingester-primary-2-node1      9.78%     4.505GiB / 93.88GiB   4.80%
+loki-query-frontend-node1          0.15%     169.2MiB / 93.88GiB   0.18%
+loki-compactor-node1               0.11%     56.86MiB / 93.88GiB   0.06%
+loki-querier-primary-2-node1       0.20%     1.105GiB / 93.88GiB   1.18%
+loki-distributor-primary-2-node1   0.80%     72.21MiB / 93.88GiB   0.08%
+[root@loki1 node1]#
+[root@loki1 node1]# for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do
+  echo "== $p =="
+  oc -n openshift-logging logs ${p#pod/} --since=5m | grep -Eic "429|too many"
+done
+bash: oc: command not found...
+Failed to search for file: GDBus.Error:org.freedesktop.DBus.Error.NameHasNoOwner: Could not activate remote peer.
+[root@loki1 node1]#
+
+
+
+Node2 Commands Output:
+
+
+[root@loki2 node2]# docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "loki|redis|prometheus"
+loki-distributor-secondary-1-node2   Up 3 minutes
+loki-distributor-secondary-2-node2   Up 3 minutes
+loki-compactor-node2                 Up 3 minutes
+prometheus-node2                     Up 3 minutes
+loki-ingester-secondary-2-node2      Up 3 minutes (healthy)
+loki-query-frontend-node2            Up 3 minutes
+loki-querier-secondary-1-node2       Up 3 minutes
+loki-ingester-secondary-1-node2      Up 3 minutes (healthy)
+loki-querier-secondary-2-node2       Up 3 minutes
+[root@loki2 node2]# docker ps --filter "health=unhealthy" --format "{{.Names}}"
+docker ps -a --filter "status=restarting" --format "{{.Names}}"
+[root@loki2 node2]# docker ps -a --format "{{.Names}}" | grep loki | while read c; do
+  echo "$c restarts=$(docker inspect -f '{{.RestartCount}}' $c)"
+done
+loki-distributor-secondary-1-node2 restarts=0
+loki-distributor-secondary-2-node2 restarts=0
+loki-compactor-node2 restarts=0
+loki-ingester-secondary-2-node2 restarts=0
+loki-query-frontend-node2 restarts=0
+loki-querier-secondary-1-node2 restarts=0
+loki-ingester-secondary-1-node2 restarts=0
+loki-querier-secondary-2-node2 restarts=0
+[root@loki2 node2]# for p in 3100 3101 3102 3103 3104 3105 3106 3107; do
+  echo -n "node2:$p /ready -> "; curl -s -o /dev/null -w "%{http_code}\n" http://10.189.35.11:$p/ready
+done
+node2:3100 /ready -> 200
+node2:3101 /ready -> 200
+node2:3102 /ready -> 200
+node2:3103 /ready -> 200
+node2:3104 /ready -> 200
+node2:3105 /ready -> 200
+node2:3106 /ready -> 200
+node2:3107 /ready -> 200
+[root@loki2 node2]# curl -s http://10.189.35.11:3100/ring | grep -Eo "ACTIVE|UNHEALTHY|LEAVING|PENDING|JOINING" | sort | uniq -c
+      4 ACTIVE
+[root@loki2 node2]# curl -s "http://10.189.35.10:3100/distributor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+[root@loki2 node2]# curl -s "http://10.189.35.10:3107/compactor/ring" | grep -Eo "ACTIVE|UNHEALTHY" | sort | uniq -c
+      2 ACTIVE
+[root@loki2 node2]# curl -s http://10.189.35.10:3100/memberlist | grep -c "10.189.35"
+14
+[root@loki2 node2]# curl -s http://10.189.35.11:3100/memberlist | grep -c "10.189.35"
+14
+[root@loki2 node2]# docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+docker logs loki-distributor-secondary-1-node2 2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+[root@loki2 node2]#
+[root@loki2 node2]#
+[root@loki2 node2]# docker logs loki-distributor-primary-1-node1   2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10^C
+[root@loki2 node2]# docker logs loki-distributor-secondary-1-node2 2>&1 | grep -i "memberlist" | grep -iE "err|fail|refused" | tail -10
+[root@loki2 node2]# docker logs --since 10m loki-ingester-secondary-1-node2 2>&1 | grep -iE "flush|s3|error" | grep -iv "level=info.*flushing stream" | tail -15
+{"avg_comp":"629 kB","avg_uncomp":"12 MB","caller":"flush.go:304","component":"ingester","fp":"b7b4cb62a3064f81","immediate":false,"labels":"{k8s_container_name=\"adminservice\", k8s_namespace_name=\"prod-dc-admin\", k8s_node_name=\"gemfire1.dc.prod.epay.sbi\", k8s_pod_name=\"admin-adminservice-65f9cfb994-mwkj7\", kubernetes_container_name=\"adminservice\", kubernetes_host=\"gemfire1.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-admin\", kubernetes_pod_name=\"admin-adminservice-65f9cfb994-mwkj7\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"adminservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"synced":1,"total_comp":"629 kB","total_uncomp":"12 MB","ts":"2026-06-03T10:26:34.528013739Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"42 MB","caller":"flush.go:304","component":"ingester","fp":"6907ad98836ec98f","full":1,"immediate":false,"labels":"{k8s_container_name=\"kmsservice\", k8s_namespace_name=\"prod-dc-kms\", k8s_node_name=\"gemfire4.dc.prod.epay.sbi\", k8s_pod_name=\"kms-kmsservice-5d5547dbb-cqk44\", kubernetes_container_name=\"kmsservice\", kubernetes_host=\"gemfire4.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-kms\", kubernetes_pod_name=\"kms-kmsservice-5d5547dbb-cqk44\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"kmsservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"42 MB","ts":"2026-06-03T10:26:34.828567831Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"35 MB","caller":"flush.go:304","component":"ingester","fp":"dc40f7ba1ae3b645","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker2.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-4tqnm\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"worker2.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-4tqnm\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"35 MB","ts":"2026-06-03T10:26:35.427838657Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"26 MB","caller":"flush.go:304","component":"ingester","fp":"d4246da617a71cbe","full":1,"immediate":false,"labels":"{k8s_container_name=\"adminservice\", k8s_namespace_name=\"prod-dc-admin\", k8s_node_name=\"gemfire3.dc.prod.epay.sbi\", k8s_pod_name=\"admin-adminservice-65f9cfb994-62lpc\", kubernetes_container_name=\"adminservice\", kubernetes_host=\"gemfire3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-admin\", kubernetes_pod_name=\"admin-adminservice-65f9cfb994-62lpc\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"adminservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"26 MB","ts":"2026-06-03T10:26:36.328046469Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"37 MB","caller":"flush.go:304","component":"ingester","fp":"eca0ddf4377b42cc","full":1,"immediate":false,"labels":"{k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker4.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-7pk6z\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"worker4.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-7pk6z\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"37 MB","ts":"2026-06-03T10:26:37.228568863Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"50 MB","caller":"flush.go:304","component":"ingester","fp":"449e4979012480f2","full":1,"immediate":false,"labels":"{k8s_container_name=\"istio-proxy\", k8s_namespace_name=\"prod-dc-kms\", k8s_node_name=\"worker6.dc.prod.epay.sbi\", k8s_pod_name=\"kms-kmsservice-5d5547dbb-9cb47\", kubernetes_container_name=\"istio-proxy\", kubernetes_host=\"worker6.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-kms\", kubernetes_pod_name=\"kms-kmsservice-5d5547dbb-9cb47\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"istio-proxy\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"50 MB","ts":"2026-06-03T10:26:39.627638006Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"36 MB","caller":"flush.go:304","component":"ingester","fp":"69821934595a316f","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire5.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-s7c5d\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"36 MB","ts":"2026-06-03T10:26:43.528205642Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"33 MB","caller":"flush.go:304","component":"ingester","fp":"9782494091568138","full":1,"immediate":false,"labels":"{__stream_shard__=\"1\", k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker3.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"worker3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"33 MB","ts":"2026-06-03T10:27:09.95454603Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"40 MB","caller":"flush.go:304","component":"ingester","fp":"e4988de2345600f6","full":1,"immediate":false,"labels":"{k8s_container_name=\"kmsservice\", k8s_namespace_name=\"prod-dc-kms\", k8s_node_name=\"gemfire1.dc.prod.epay.sbi\", k8s_pod_name=\"kms-kmsservice-5d5547dbb-9v94l\", kubernetes_container_name=\"kmsservice\", kubernetes_host=\"gemfire1.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-kms\", kubernetes_pod_name=\"kms-kmsservice-5d5547dbb-9v94l\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"kmsservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"40 MB","ts":"2026-06-03T10:27:13.854695229Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"39 MB","caller":"flush.go:304","component":"ingester","fp":"390466ae57f299ab","full":1,"immediate":false,"labels":"{k8s_container_name=\"paymentservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker3.dc.prod.epay.sbi\", k8s_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", kubernetes_container_name=\"paymentservice\", kubernetes_host=\"worker3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"payment-paymentservice-5d48d47b6-v5psm\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"paymentservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"39 MB","ts":"2026-06-03T10:27:15.054186224Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"32 MB","caller":"flush.go:304","component":"ingester","fp":"68433d2471ba12e1","full":1,"immediate":false,"labels":"{__stream_shard__=\"1\", k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"worker7.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-ll7t4\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"worker7.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-ll7t4\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"32 MB","ts":"2026-06-03T10:27:15.9546415Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"32 MB","caller":"flush.go:304","component":"ingester","fp":"d8d78a4b468004ef","full":1,"immediate":false,"labels":"{__stream_shard__=\"1\", k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire2.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire2.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"32 MB","ts":"2026-06-03T10:27:16.25381184Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"36 MB","caller":"flush.go:304","component":"ingester","fp":"b95bbf487b41a440","full":1,"immediate":false,"labels":"{k8s_container_name=\"istio-proxy\", k8s_namespace_name=\"prod-dc-istio-system\", k8s_node_name=\"gemfire3.dc.prod.epay.sbi\", k8s_pod_name=\"prod-dc-istio-gateway-79d756475-dnj6n\", kubernetes_container_name=\"istio-proxy\", kubernetes_host=\"gemfire3.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-istio-system\", kubernetes_pod_name=\"prod-dc-istio-gateway-79d756475-dnj6n\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"istio-proxy\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"36 MB","ts":"2026-06-03T10:27:16.854575246Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"26 MB","caller":"flush.go:304","component":"ingester","fp":"6f7c3d8109bf3afb","full":1,"immediate":false,"labels":"{k8s_container_name=\"adminservice\", k8s_namespace_name=\"prod-dc-admin\", k8s_node_name=\"gemfire5.dc.prod.epay.sbi\", k8s_pod_name=\"admin-adminservice-65f9cfb994-d8tdl\", kubernetes_container_name=\"adminservice\", kubernetes_host=\"gemfire5.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-admin\", kubernetes_pod_name=\"admin-adminservice-65f9cfb994-d8tdl\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"adminservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"26 MB","ts":"2026-06-03T10:27:17.754091549Z","user":"fake"}
+{"avg_comp":"1.3 MB","avg_uncomp":"36 MB","caller":"flush.go:304","component":"ingester","fp":"e2a9fb00f021d27f","full":1,"immediate":false,"labels":"{k8s_container_name=\"transactionservice\", k8s_namespace_name=\"prod-dc-transaction\", k8s_node_name=\"gemfire2.dc.prod.epay.sbi\", k8s_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", kubernetes_container_name=\"transactionservice\", kubernetes_host=\"gemfire2.dc.prod.epay.sbi\", kubernetes_namespace_name=\"prod-dc-transaction\", kubernetes_pod_name=\"txn-transactionservice-65cc564dd5-mf9dd\", log_type=\"application\", openshift_log_type=\"application\", service_name=\"transactionservice\"}","level":"info","msg":"flushing stream","num_chunks":1,"total_comp":"1.3 MB","total_uncomp":"36 MB","ts":"2026-06-03T10:27:18.054132013Z","user":"fake"}
+[root@loki2 node2]# docker logs --since 5m loki-ingester-primary-1-node2 2>&1 | grep -c "flushing stream"
+0
+[root@loki2 node2]# curl -s http://10.189.35.11:3100/config | grep -iE "ingestion_rate_mb|ingestion_burst_size_mb|ingestion_rate_strategy|max_line_size|reject_old_samples|per_stream_rate_limit"
+  ingestion_rate_strategy: local
+  ingestion_rate_mb: 256
+  ingestion_burst_size_mb: 512
+  reject_old_samples: false
+  reject_old_samples_max_age: 1w
+  max_line_size: 4MB
+  max_line_size_truncate: false
+  per_stream_rate_limit: 10MB
+  per_stream_rate_limit_burst: 50MB
+[root@loki2 node2]# for n in 10.189.35.10 10.189.35.11; do
+  echo "== $n =="
+done
+docker logs --since 5m loki-distributor-primary-1-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-primary-2-node1   2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-1-node2 2>&1 | grep -ic "rate limit exceeded"
+docker logs --since 5m loki-distributor-secondary-2-node2 2>&1 | grep -ic "rate limit exceeded"
+== 10.189.35.10 ==
+== 10.189.35.11 ==
+0
+0
+0
+0
+[root@loki2 node2]# docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" | grep -E "loki|redis"
+loki-distributor-secondary-1-node2   8.04%     101MiB / 93.88GiB     0.11%
+loki-distributor-secondary-2-node2   0.74%     54.85MiB / 93.88GiB   0.06%
+loki-compactor-node2                 0.41%     81.45MiB / 93.88GiB   0.08%
+loki-ingester-secondary-2-node2      8.07%     1.674GiB / 93.88GiB   1.78%
+loki-query-frontend-node2            0.11%     39.88MiB / 93.88GiB   0.04%
+loki-querier-secondary-1-node2       3.28%     56.82MiB / 93.88GiB   0.06%
+loki-ingester-secondary-1-node2      3.73%     1.363GiB / 93.88GiB   1.45%
+loki-querier-secondary-2-node2       0.47%     61.96MiB / 93.88GiB   0.06%
+[root@loki2 node2]# df -h /data/loki
+df: /data/loki: No such file or directory
+[root@loki2 node2]#
+
+
+
+============ 
+
+
+[osuser@dcepayprodbastion ~]$ for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do
+  echo "== $p =="
+  oc -n openshift-logging logs ${p#pod/} --since=5m | grep -Eic "429|too many"
+done
+== pod/collector-grafana-49k65 ==
+0
+== pod/collector-grafana-5pz6x ==
+0
+== pod/collector-grafana-75cls ==
+0
+== pod/collector-grafana-7tsvn ==
+0
+== pod/collector-grafana-85qsx ==
+0
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do   echo "== $p ==";   oc -n openshift-logging logs ${p#pod/} --since=5m | grep -Eic "429|too many"; done
+== pod/collector-grafana-49k65 ==
+0
+== pod/collector-grafana-5pz6x ==
+0
+== pod/collector-grafana-75cls ==
+0
+== pod/collector-grafana-7tsvn ==
+0
+== pod/collector-grafana-85qsx ==
+0
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ for p in $(oc -n openshift-logging get po -o name | grep collector-grafana | head -5); do   echo "== $p ==";   oc -n openshift-logging logs ${p#pod/} --since=50m | grep -Eic "429|too many"; done
+== pod/collector-grafana-49k65 ==
+0
+== pod/collector-grafana-5pz6x ==
+0
+== pod/collector-grafana-75cls ==
+0
+== pod/collector-grafana-7tsvn ==
+0
+== pod/collector-grafana-85qsx ==
+0
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$ oc -n openshift-logging get clusterlogforwarder collector-grafana -o jsonpath='{.spec.outputs[*].loki.url}'; echo
+http://10.189.35.16:3100
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
+[osuser@dcepayprodbastion ~]$
