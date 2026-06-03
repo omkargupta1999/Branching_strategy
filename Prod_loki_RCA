@@ -1,0 +1,31 @@
+Here's a shortened version with the exact config changes called out.
+
+## Incident Summary — Grafana Log Visibility
+
+**Issue:** Application logs from the SBIePay/OpenShift platform stopped appearing in Grafana dashboards.
+
+**Impact:** Loss of log visibility in Grafana for monitoring only. No impact to the payment application or transactions.
+
+**Root cause:** The external Loki log-storage cluster was rejecting incoming logs (`429 Too Many Requests`). The effective ingestion rate limit was far below the platform's log volume — the configured 64 MB/s was being split across two distributor processes (~32 MB/s effective), and a separate 1 MB line-size limit was rejecting larger (~2 MB) audit entries.
+
+**Resolution:** Corrected the `limits_config` on both Loki nodes and restarted one node at a time (no logging outage during the fix). Logs resumed flowing into Grafana immediately.
+
+**Exact configuration changes (`limits_config`):**
+
+| Setting | Before | After | Why |
+|---|---|---|---|
+| `ingestion_rate_strategy` | (default: global) | `local` | Each distributor enforces the full rate instead of dividing it — primary fix |
+| `ingestion_rate_mb` | 64 | 256 | Raise headroom for actual log volume |
+| `ingestion_burst_size_mb` | 128 | 512 | Allow larger bursts |
+| `max_line_size` | 1 MB | 4 MB | Stop rejecting ~2 MB audit log lines |
+| `reject_old_samples` | true | false | Prevent drops of slightly-delayed batches during recovery |
+
+Duplicate/conflicting config entries were also cleaned up and made consistent across both nodes.
+
+**Verification:** Both nodes healthy (all components up, zero restarts), storage ring consistent across nodes, corrected limits confirmed live, zero rate-limit rejections after the change, end-to-end write/read test passed, and the OpenShift collectors showed zero `429` errors over the following ~50 minutes.
+
+**Status:** Resolved and verified.
+
+Follow-up (recommended): rotate S3 storage credentials as a precaution, and review the unusually large (~2 MB) audit log entries with the audit-policy owners.
+
+If you'd like, confirm recent logs are queryable in the Grafana UI as the final user-facing check before closing it with the bank.
