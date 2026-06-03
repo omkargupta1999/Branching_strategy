@@ -1,110 +1,94 @@
-rnal_log_rate_limit=true
-2026-06-03T07:08:41.773397Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:08:51.642421Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 104 times.
-2026-06-03T07:08:51.642438Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:08:51.674600Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:01.762226Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 114 times.
-2026-06-03T07:09:01.762242Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:01.807336Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:12.047687Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 91 times.
-2026-06-03T07:09:12.047712Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:12.370804Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:22.060973Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 110 times.
-2026-06-03T07:09:22.060994Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:22.092786Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:32.091443Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 158 times.
-2026-06-03T07:09:32.091462Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:32.192353Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:42.264120Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 109 times.
-2026-06-03T07:09:42.264140Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:42.435705Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:09:52.351325Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 130 times.
-2026-06-03T07:09:52.351343Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:09:52.436991Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:02.498424Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 219 times.
-2026-06-03T07:10:02.498448Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:02.498474Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:12.546098Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 237 times.
-2026-06-03T07:10:12.546115Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:12.550417Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:22.599863Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 249 times.
-2026-06-03T07:10:22.599882Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:22.614594Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:32.606592Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 226 times.
-2026-06-03T07:10:32.606608Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:32.715828Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:42.631558Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 261 times.
-2026-06-03T07:10:42.631576Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:42.690878Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:10:52.658141Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 251 times.
-2026-06-03T07:10:52.658159Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:10:52.680248Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:02.675033Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 204 times.
-2026-06-03T07:11:02.675055Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:02.779039Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:12.680416Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 190 times.
-2026-06-03T07:11:12.680433Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:12.778619Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:22.795472Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 197 times.
-2026-06-03T07:11:22.795491Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:22.910748Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:32.865053Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 95 times.
-2026-06-03T07:11:32.865073Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:32.901923Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:42.882351Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 125 times.
-2026-06-03T07:11:42.882369Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:42.957624Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:11:52.965899Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 128 times.
-2026-06-03T07:11:52.965920Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:11:53.011681Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:03.057561Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 112 times.
-2026-06-03T07:12:03.057579Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:03.147618Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:13.068521Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 108 times.
-2026-06-03T07:12:13.068539Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:13.170427Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:23.152846Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 135 times.
-2026-06-03T07:12:23.152864Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:23.226912Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:33.182116Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 100 times.
-2026-06-03T07:12:33.182135Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:33.313022Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:43.183466Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 110 times.
-2026-06-03T07:12:43.183484Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:43.184922Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:12:53.307165Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 97 times.
-2026-06-03T07:12:53.307187Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:12:53.342529Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:13:03.887219Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 122 times.
-2026-06-03T07:13:03.887236Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:13:03.935633Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:13:14.209263Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 37 times.
-2026-06-03T07:13:14.209283Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:13:14.298347Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:13:24.606980Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 36 times.
-2026-06-03T07:13:24.606999Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:13:24.797798Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:13:34.627314Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 24 times.
-2026-06-03T07:13:34.627334Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 429 Too Many Requests internal_log_rate_limit=true
-2026-06-03T07:13:34.712129Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:14:12.845018Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 14 times.
-2026-06-03T07:14:12.845035Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:14:13.845540Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:14:23.040696Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 5 times.
-2026-06-03T07:14:23.040713Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:14:24.090070Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:14:33.534853Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 5 times.
-2026-06-03T07:14:33.534872Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:14:48.434178Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:14:49.122283Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:14:58.990183Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 5 times.
-2026-06-03T07:14:58.990206Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:14:59.905545Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:15:17.951733Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 1 times.
-2026-06-03T07:15:17.951751Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:15:22.994217Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:15:28.175470Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 3 times.
-2026-06-03T07:15:28.175487Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
-2026-06-03T07:15:28.257109Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
-2026-06-03T07:18:02.950394Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 5 times.
-2026-06-03T07:18:02.950412Z  WARN sink{component_kind="sink" component_id=output_lokistack_grafana component_type=loki}: vector::sinks::util::retries: Retrying after error. error=Server responded with an error: 500 Internal Server Error internal_log_rate_limit=true
+Your Vector collector is healthy. The problem is downstream: LokiStack is rejecting writes with 429 (Too Many Requests) and intermittently 500. The collector is just retrying, and because the backpressure builds up, application logs aren't landing in the OpenShift console Observe → Logs view.
+
+## Root cause
+
+`429 Too Many Requests` from Loki = the **ingestion rate/burst limits** on the LokiStack are being exceeded. The `500` errors that appear later are typically the ingester/distributor falling over or queues backing up under sustained pressure. This is almost always one of: per-tenant rate limits too low for your log volume, or an undersized LokiStack `size` / storage backend struggling.
+
+## Solution
+
+**1. Confirm it's rate limiting (not storage/auth)**
+
+```bash
+oc -n openshift-logging logs <lokistack-distributor-pod> | grep -Ei "rate|limit|429|ingest"
+oc -n openshift-logging get pods | grep lokistack
+oc -n openshift-logging get lokistack -o yaml | grep -A5 size
+```
+
+Check ingester/distributor aren't OOMKilled or pending:
+```bash
+oc -n openshift-logging get pods -o wide | grep -E "ingester|distributor|compactor"
+oc -n openshift-logging describe pod <ingester-pod> | grep -Ei "oom|evict|restart"
+```
+
+**2. Raise the ingestion limits on the LokiStack CR**
+
+This is the direct fix for 429. Edit the LokiStack and set/raise the global limits:
+
+```yaml
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: openshift-logging
+spec:
+  limits:
+    global:
+      ingestion:
+        ingestionRate: 15            # MB/s, default is 4
+        ingestionBurstSize: 20       # MB, default is 6
+        maxLabelNamesPerSeries: 30
+        perStreamRateLimit: 5        # MB/s per stream, default 3
+        perStreamRateLimitBurst: 15  # MB, default 15
+```
+
+Apply, then watch the distributor recover:
+```bash
+oc -n openshift-logging apply -f lokistack.yaml
+oc -n openshift-logging logs -f <distributor-pod> | grep -i 429
+```
+
+**3. If 429 persists or 500s dominate → the deployment size is too small**
+
+`spec.size` drives the resource/replica profile. If you're on `1x.demo` or `1x.extra-small`, that's not viable for real application log volume:
+
+```yaml
+spec:
+  size: 1x.small   # or 1x.medium for higher volume
+```
+
+Note: `1x.demo` has **no rate-limit headroom and no HA** — never use it for production.
+
+**4. Reduce the load from the source side (high-leverage)**
+
+Often the real issue is one chatty namespace/stream flooding Loki. Cap it in the ClusterLogForwarder rather than just raising limits forever:
+
+- Drop or filter noisy logs (e.g., these Vector internal retry warnings themselves, debug logs).
+- Reduce high-cardinality labels — excessive label combinations explode stream counts and trigger per-stream limits.
+
+```yaml
+# In ClusterLogForwarder, add a prune/drop filter for noisy content
+filters:
+  - name: drop-noise
+    type: drop
+    drop:
+      - test:
+          - field: .message
+            matches: "Too Many Requests|Retrying after error"
+```
+
+**5. Verify storage backend health (cause of the 500s)**
+
+500s from Loki frequently trace back to the object store (ODF/S3/NooBaa). Check the ingester can write:
+```bash
+oc -n openshift-logging logs <ingester-pod> | grep -Ei "s3|object|store|flush|error"
+oc -n openshift-storage get pods   # if using ODF/NooBaa
+```
+If the bucket/endpoint is throttling or full, raising Loki limits won't help — fix storage first.
+
+## Recommended order
+
+Start with **#1** to confirm, apply **#2** (limit bump) for immediate relief, then address **#4** (source-side reduction) and **#5** (storage) for a durable fix. If pods are OOMKilled or the size is `demo`/`extra-small`, **#3** is mandatory.
+
+Once the distributor stops returning 429/500, the collector's retry queue drains and logs reappear in the Observe → Logs console within a minute or two.
+
+If you can share `oc get lokistack -o yaml` (the `spec.size` and `spec.limits` sections) and whether the ingester pods show OOMKills, I can give you exact target values for your volume.
