@@ -117,3 +117,114 @@ datasources:
     editable: true
     implementation: prometheus
     uid: alertmanager
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==============
+
+
+# =============================================================================
+# OBSERVABILITY STACK - DOCKER COMPOSE
+# =============================================================================
+# Grafana and AlertManager with NetAPP S3 integration
+#
+# CHANGE vs original: added three GF_DATAPROXY_* env vars to the grafana
+# service so Grafana's server-side proxy waits long enough for heavy Loki
+# queries (e.g. 24h | json) to return. The datasource timeout alone is NOT
+# enough — it is capped by GF_DATAPROXY_TIMEOUT (default 30s).
+
+volumes:
+  grafana_data:
+  alertmanager_data:
+  minio_data:
+
+services:
+  # Single AlertManager (Centralized) - Exposed on port 9093 (Optional)
+  alertmanager:
+    image: ${ALERTMANAGER_IMAGE_TAG}
+    container_name: alertmanager
+    network_mode: host
+    volumes:
+      - alertmanager_data:/alertmanager
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://127.0.0.1:${ALERTMANAGER_HTTP_PORT}'
+    profiles:
+      - alertmanager
+
+  # Single Grafana (Centralized) - Exposed on port 3000
+  grafana:
+    image: ${GRAFANA_IMAGE_TAG}
+    container_name: grafana
+    network_mode: host
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL}
+#      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_SESSION_PROVIDER=memory
+      - GF_SESSION_COOKIE_SECURE=false
+      - GF_SESSION_COOKIE_SAMESITE=lax
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      - GF_LOG_LEVEL=info
+      - GF_LOG_MODE=console
+      # --- ADDED: server-side proxy timeouts so long Loki queries don't get cut off ---
+      - GF_DATAPROXY_TIMEOUT=300              # seconds; the critical one (default 30) - caps datasource timeout
+      - GF_DATAPROXY_DIAL_TIMEOUT=30          # connection establishment timeout
+      - GF_DATAPROXY_KEEP_ALIVE_SECONDS=300   # keep the upstream connection alive for the duration
+    deploy:
+      resources:
+        limits:
+          memory: ${GRAFANA_MEMORY_LIMIT}
+          cpus: '${GRAFANA_CPU_LIMIT}'
+        reservations:
+          memory: ${GRAFANA_MEMORY_RESERVATION}
+          cpus: '${GRAFANA_CPU_RESERVATION}'
+
+#  # MinIO S3 Compatible Storage - Exposed on ports 9000 (API) and 9001 (Console)
+#  minio:
+#    image: ${MINIO_IMAGE_TAG}
+#    container_name: minio
+#    network_mode: host
+#    volumes:
+#      - minio_data:/data
+#    restart: unless-stopped
+#    environment:
+#      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+#      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+#    command: server /data --address ":${MINIO_PORT}" --console-address ":${MINIO_CONSOLE_PORT}"
+#    deploy:
+#      resources:
+#        limits:
+#          memory: ${MINIO_MEMORY_LIMIT}
+#          cpus: '${MINIO_CPU_LIMIT}'
+#        reservations:
+#          memory: ${MINIO_MEMORY_RESERVATION}
+#          cpus: '${MINIO_CPU_RESERVATION}'
