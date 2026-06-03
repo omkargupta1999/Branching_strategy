@@ -1,4 +1,125 @@
+[root@loki1 datasources]# pwd
+/dclogforward1/multi-node/observe/grafana/provisioning/datasources
+[root@loki1 datasources]#
+[root@loki1 datasources]#
+[root@loki1 datasources]#
+[root@loki1 datasources]# cat datasources.yml
+apiVersion: 1
 
+datasources:
+  # Default Prometheus (Aggregated)
+  - name: Prometheus-Default
+    type: prometheus
+    access: proxy
+    url: http://10.177.139.191:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+    uid: prometheus-default
 
-Get "http://10.189.35.10:3104/loki/api/v1/query_range?direction=backward&end=1780487540068000000&limit=5000&query=%7Bk8s_container_name%3D%22transactionservice%22%7D+%7C%3D+%60error%60+%7C+json+%7C+line_format+%60%7B%7B.message%7D%7D%60&start=1780401140068000000&step=120000ms": net/http: timeout awaiting response headers (Client.Timeout exceeded while awaiting headers)
+  # Default Loki (Aggregated)
+  - name: Loki-Default
+    type: loki
+    access: proxy
+    url: http://10.189.35.10:3104
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 5000
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-default
+  # Loki Node 1 (Primary)
+  - name: Loki-Node1
+    type: loki
+    access: proxy
+    url: http://10.189.35.10:3104
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 5000
+      derivedFields:
+        - datasourceUid: prometheus-node1
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+        - datasourceUid: prometheus-node1
+          matcherRegex: "(?:user|userId|user_id)=([\\w.]+)"
+          name: UserID
+          url: "$${__value.raw}"
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-node1
 
+  # Loki Node 2 (Secondary)
+  - name: Loki-Node2
+    type: loki
+    access: proxy
+    url: http://10.189.35.11:3104
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 5000
+      derivedFields:
+        - datasourceUid: prometheus-node2
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+        - datasourceUid: prometheus-node2
+          matcherRegex: "(?:user|userId|user_id)=([\\w.]+)"
+          name: UserID
+          url: "$${__value.raw}"
+      alertmanager:
+        handleGrafanaManagedAlerts: true
+        implementation: prometheus
+        url: http://127.0.0.1:9093
+    uid: loki-node2
+
+  # Prometheus Node 1
+  - name: Prometheus-Node1
+    type: prometheus
+    access: proxy
+    url: http://10.189.35.10:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: TraceID
+          datasourceUid: loki-node1
+    uid: prometheus-node1
+
+  # Prometheus Node 2
+  - name: Prometheus-Node2
+    type: prometheus
+    access: proxy
+    url: http://10.189.35.11:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: TraceID
+          datasourceUid: loki-node2
+    uid: prometheus-node2
+
+  # AlertManager (Single Instance)
+  - name: AlertManager
+    type: alertmanager
+    access: proxy
+    url: http://10.189.35.10:9093
+    isDefault: false
+    editable: true
+    implementation: prometheus
+    uid: alertmanager
