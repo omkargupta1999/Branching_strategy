@@ -1,114 +1,146 @@
-[osuser@dcepayprodbastion ~]$ oc get lokistack proddc-loki -n openshift-logging  -o yaml
-apiVersion: loki.grafana.com/v1
-kind: LokiStack
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"loki.grafana.com/v1","kind":"LokiStack","metadata":{"annotations":{},"name":"proddc-loki","namespace":"openshift-logging"},"spec":{"hashRing":{"type":"memberlist"},"limits":{"global":{"retention":{"days":7}}},"managementState":"Managed","size":"1x.extra-small","storage":{"schemas":[{"effectiveDate":"2025-08-08","version":"v13"}],"secret":{"credentialMode":"static","name":"logging-loki-s3","type":"s3"},"tls":{"caName":"loki-s3-ca"}},"storageClassName":"thin-csi","tenants":{"mode":"openshift-logging"}}}
-    loki.grafana.com/certRotationRequiredAt: "2026-05-23T18:43:57Z"
-    loki.grafana.com/rulesDiscoveredAt: "2026-06-03T04:00:12Z"
-  creationTimestamp: "2025-08-08T08:17:22Z"
-  generation: 37
-  name: proddc-loki
-  namespace: openshift-logging
-  resourceVersion: "544479727"
-  uid: 103d3dd8-7c8c-4897-a177-c0efa2aba09b
-spec:
-  hashRing:
-    type: memberlist
-  limits:
-    global:
-      ingestion:
-        ingestionBurstSize: 512
-        ingestionRate: 256
-        maxGlobalStreamsPerTenant: 20000
-        maxLineSize: 1000000
-        perStreamRateLimit: 5
-        perStreamRateLimitBurst: 20
-      retention:
-        days: 15
-  managementState: Managed
-  rules:
-    enabled: false
-  size: 1x.extra-small
-  storage:
-    schemas:
-    - effectiveDate: "2025-08-08"
-      version: v13
-    secret:
-      credentialMode: static
-      name: logging-loki-s3
-      type: s3
-    tls:
-      caName: loki-s3-ca
-  storageClassName: thin-csi
-  tenants:
-    mode: openshift-logging
-status:
-  components:
-    compactor:
-      Ready:
-      - proddc-loki-compactor-0
-    distributor:
-      Ready:
-      - proddc-loki-distributor-69f8885b79-28xzv
-      - proddc-loki-distributor-69f8885b79-5rmhv
-    gateway:
-      Ready:
-      - proddc-loki-gateway-78d596b66-jx6zb
-      - proddc-loki-gateway-78d596b66-ztknx
-    indexGateway:
-      Ready:
-      - proddc-loki-index-gateway-0
-      - proddc-loki-index-gateway-1
-    ingester:
-      Ready:
-      - proddc-loki-ingester-1
-      - proddc-loki-ingester-0
-    querier:
-      Ready:
-      - proddc-loki-querier-7d849db895-v9c9k
-      - proddc-loki-querier-7d849db895-x88tv
-    queryFrontend:
-      Ready:
-      - proddc-loki-query-frontend-684fdf89c6-d2f29
-      - proddc-loki-query-frontend-684fdf89c6-wl864
-    ruler:
-      Failed: []
-      Pending: []
-      Ready: []
-      Running: []
-  conditions:
-  - lastTransitionTime: "2026-06-03T07:41:37Z"
-    message: All components ready
-    reason: ReadyComponents
-    status: "True"
-    type: Ready
-  - lastTransitionTime: "2026-06-03T07:29:57Z"
-    message: One or more LokiStack components pending on dependencies
-    reason: PendingComponents
-    status: "False"
-    type: Pending
-  - lastTransitionTime: "2026-05-23T18:44:28Z"
-    message: One or more LokiStack components failed
-    reason: FailedComponents
-    status: "False"
-    type: Failed
-  - lastTransitionTime: "2026-01-05T05:45:56Z"
-    message: 'Invalid object storage secret contents: endpoint for S3 must be an HTTP
-      or HTTPS URL'
-    reason: InvalidObjectStorageSecret
-    status: "False"
-    type: Degraded
-  - lastTransitionTime: "2025-08-08T09:29:12Z"
-    message: Missing object storage secret
-    reason: MissingObjectStorageSecret
-    status: "False"
-    type: Degraded
-  networkPolicyRuleSet: None
-  storage:
-    credentialMode: static
-    schemas:
-    - effectiveDate: "2025-08-08"
-      version: v13
-[osuser@dcepayprodbastion ~]$
+Let me give you a clean, methodical verification runbook plus the architecture answer you're asking for.
+
+## First — the Grafana collector question (definitive answer)
+
+Your `collector-grafana` ClusterLogForwarder has exactly one output:
+
+```yaml
+outputs:
+  - loki:
+      url: 'http://10.189.35.16:3100'
+    name: lokistack-grafana
+    type: loki
+```
+
+`collector-grafana` uses the **external Loki** at `10.189.35.16:3100`. It does **not** use the internal `proddc-loki` LokiStack. Two pieces of evidence:
+
+1. **It's `type: loki`, not `type: lokiStack`.** A `lokiStack` output references the in-cluster LokiStack by name and routes through the operator-managed gateway with tenant auth. A `loki` output with a raw `http://IP:3100` URL is a generic Loki push to an external endpoint.
+2. **It points at a hardcoded IP on port 3100** — the raw Loki push port — bypassing the `proddc-loki-gateway` service entirely.
+
+So you have two independent pipelines:
+
+| Pipeline | Collector pods | Destination | Feeds |
+|---|---|---|---|
+| Internal | `collector-*` | `proddc-loki` LokiStack (via gateway) | OpenShift console → Observe → Logs |
+| External/Grafana | `collector-grafana-*` | `10.189.35.16:3100` (external Loki) | Grafana dashboards |
+
+**Why you're missing logs in Grafana specifically:** the 429/500 errors in your very first log dump came from sink `output_lokistack_grafana` — that's the **external** Loki rejecting writes. So the Grafana gap and the console gap have *different* root causes. Grafana gap = external Loki at `10.189.35.16` throttling/erroring. Console gap = internal `proddc-loki` issues (S3 secret + maxLineSize). You have to debug them separately.
+
+## Why you're getting these errors (summary)
+
+Three separate faults, on two separate stacks:
+
+1. **`max entry size '1000000' bytes exceeded` (internal, audit)** — audit events are ~2 MB; `maxLineSize` is still 1 MB. Permanently dropped, not retried.
+2. **`InvalidObjectStorageSecret` Degraded condition (internal)** — the S3 endpoint in `logging-loki-s3` is missing its `http://`/`https://` scheme. When ingesters can't flush to object storage, they return 500s and historical queries show gaps in the console.
+3. **429 Too Many Requests (external `10.189.35.16:3100`)** — the external Loki's own ingestion limits are too low for what 22 `collector-grafana` pods are pushing. This is why Grafana has no logs. Not operator-managed; fixed on the external Loki itself.
+
+## Re-verification runbook
+
+### A. Internal LokiStack health & the Degraded condition
+
+```bash
+# Overall conditions — look for any status:"True" on Degraded/Failed
+oc -n openshift-logging get lokistack proddc-loki \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"="}{.status}{"  "}{.message}{"\n"}{end}'
+
+# Decode the S3 endpoint — THE key check. Must start with http:// or https://
+oc -n openshift-logging get secret logging-loki-s3 \
+  -o jsonpath='{.data.endpoint}' | base64 -d; echo
+
+# Confirm all keys present in the secret
+oc -n openshift-logging get secret logging-loki-s3 \
+  -o jsonpath='{range .data}{.}{"\n"}{end}'  ; \
+  oc -n openshift-logging get secret logging-loki-s3 -o jsonpath='{.data}' | tr ',' '\n'
+```
+
+If the endpoint has no scheme, that's confirmed root cause #2.
+
+### B. Internal distributor — are entries still being dropped / 500ing?
+
+```bash
+# Check BOTH distributors, recent only
+for p in proddc-loki-distributor-69f8885b79-28xzv proddc-loki-distributor-69f8885b79-5rmhv; do
+  echo "===== $p ====="
+  oc -n openshift-logging logs $p --since=2h | grep -Ei "max entry size|429|500|rate|exceeded" | tail -30
+done
+```
+
+### C. Internal ingester — confirm chunks are flushing to S3
+
+This is how you prove the object-store path works or not:
+
+```bash
+for p in proddc-loki-ingester-0 proddc-loki-ingester-1; do
+  echo "===== $p ====="
+  oc -n openshift-logging logs $p --since=2h | grep -Ei "s3|flush|chunk|storage|error|endpoint" | tail -30
+done
+```
+
+If you see flush/S3 errors here, the object store is the problem regardless of what the secret looks like.
+
+### D. Confirm the console's data source is reading from internal Loki
+
+```bash
+# Is the application tenant actually receiving pushes on the internal gateway?
+for p in proddc-loki-gateway-78d596b66-jx6zb proddc-loki-gateway-78d596b66-ztknx; do
+  echo "===== $p ====="
+  oc -n openshift-logging logs $p --since=1h -c gateway 2>/dev/null | grep -Ei "push|application|429|500" | tail -20
+done
+```
+
+### E. External Loki pipeline (the Grafana side)
+
+```bash
+# Confirm what collector-grafana is actually configured to hit
+oc -n openshift-logging get clusterlogforwarder collector-grafana \
+  -o jsonpath='{.spec.outputs[*].loki.url}'; echo
+
+# Live errors on the grafana collectors (this is where your 429s live)
+for p in $(oc -n openshift-logging get po -l app.kubernetes.io/instance=collector-grafana -o name 2>/dev/null); do
+  echo "===== $p ====="
+  oc -n openshift-logging logs $p --since=30m 2>/dev/null | grep -Ei "429|500|error|too many" | tail -15
+done
+# If the label selector returns nothing, fall back to name match:
+for p in $(oc -n openshift-logging get po -o name | grep collector-grafana); do
+  echo "===== $p ====="
+  oc -n openshift-logging logs $p --since=30m | grep -Ei "429|500|error|too many" | tail -15
+done
+```
+
+### F. Reachability of the external Loki from inside the cluster (air-gapped sanity check)
+
+```bash
+# From a grafana collector pod, can it even reach 10.189.35.16:3100?
+GP=$(oc -n openshift-logging get po -o name | grep collector-grafana | head -1)
+oc -n openshift-logging exec ${GP#pod/} -- \
+  curl -sS -o /dev/null -w "%{http_code}\n" http://10.189.35.16:3100/ready 2>/dev/null || \
+  echo "curl not available in pod — check NetworkPolicy / route to 10.189.35.16"
+```
+
+A `429`/`500` here = the external Loki is up but rejecting/erroring. A timeout = network/route problem to the external host.
+
+## Interpreting the results
+
+| What you find | Root cause | Fix |
+|---|---|---|
+| S3 endpoint has no `http(s)://` | Internal Loki can't flush | Patch `logging-loki-s3` secret endpoint with scheme |
+| Ingester logs show S3 flush errors | Object store unreachable | Fix endpoint/credentials/CA, then restart ingesters |
+| `max entry size` errors continue | `maxLineSize` still 1 MB | Raise to 4 MB |
+| 429 only on `collector-grafana` pods | External Loki throttling | Raise limits on external Loki at `10.189.35.16` |
+| curl to `:3100` times out | Network/route to external Loki | Check NetworkPolicy / firewall to `10.189.35.16` |
+
+## The fixes, once confirmed
+
+```bash
+# 1. Fix S3 endpoint scheme (internal console logs + 500s)
+oc -n openshift-logging patch secret logging-loki-s3 --type merge \
+  -p '{"data":{"endpoint":"'$(echo -n 'https://<your-s3-host>:<port>' | base64 -w0)'"}}'
+
+# 2. Raise maxLineSize + perStreamRateLimit (apply edited lokistack.yaml)
+#    maxLineSize: 4194304 ; perStreamRateLimit: 20 ; perStreamRateLimitBurst: 60
+
+# 3. External Grafana 429 — raise ingestion_rate_mb / per_stream_rate_limit
+#    in the external Loki's OWN runtime config at 10.189.35.16 (not operator-managed)
+```
+
+The single most important command in all of this is the **S3 endpoint decode** (section A) — if that comes back without a scheme, you've found why the internal console is missing logs and producing 500s. Run that first and share what it returns (redact the host) and I'll tell you the exact patch.
