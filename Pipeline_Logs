@@ -1,110 +1,136 @@
-# templates/ci/backend/java.yml
-# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
-# For library/utility repos (produce JARs → JFrog), use java.library.yml
-#
-# App repo .gitlab-ci.yml:
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: txn
-#     CHART_NAME:   transactionservice
+Let me read the uploaded zip to get the full picture.Now I have the complete picture. Let me also check the deployment repo's `.gitlab-ci.yml`:Now I have the **complete picture**. Here's the definitive root cause analysis:
 
-default:
-  tags:
-    - common_runner
+---
 
-include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  - local: 'ci/image/image.build.yml'
-  - local: 'ci/image/image.push.yml'
-  - local: 'ci/release/tag.yml'
-  - local: 'ci/deploy/trigger.cd.yml'
-  - local: 'ci/deploy/deploy.jobs.yml'
+## Complete Root Cause — Full Chain Traced
 
-stages:
-  - version       # version generation
-  - build         # gradle compile
-  - test          # unit + integration
-  - sast          # gitlab sast + fortify
-  - security      # sca + secrets + iac + license + sbom
-  - image-build   # podman build (local only — no push)
-  - image-scan    # trivy + xray + rhacs (gate before sign)
-  - image-push    # push to JFrog (only after scan + sign)
-  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
-  - deploy        # trigger buttons → deployment repo CD pipeline
+### The VERSION Flow (How It Should Work)
 
-variables:
-  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
-  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
-  GIT_STRATEGY: clone
-  RELEASE_NAME: ""
-  CHART_NAME:   ""
-  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
-  BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907"
-  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+```
+App Repo CI Pipeline
+  └── version job → writes VERSION=dev-<sha> to version.env (dotenv artifact)
+  └── image:push  → pushes image tagged VERSION to JFrog
+  └── deploy-dev  → triggers Deployment Repo pipeline
+        └── forwards VERSION via pipeline_variables + yaml_variables
+              │
+Deployment Repo Pipeline
+  └── update-tag  → sed-replaces tag in values.yaml → git commit
+  └── validate    → helm template --set image.tag=${VERSION}
+  └── helm:deploy → helm upgrade --set image.tag=${VERSION}
+```
 
-# Branch + MR filter — applied to all jobs via extends
-.rules:
+---
+
+### Where It's Breaking — Two Compounding Problems
+
+#### Problem 1: `values:update` job is NOT activated in `deploy.single.yml`
+
+Look at `deploy.single.yml`:
+
+```yaml
+update-tag:
+  extends:
+    - .update_tag
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'   # ✅ this triggers
+```
 
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
+But look at `values.update.yml` — the actual job definition is **commented out**:
 
-# # ── Stage: image-build ─────────────────────────────────────────────────────────
-image:build:
-  extends: [.image_build, .rules]
+```yaml
+# values:update:
+#   extends: .update_tag      ← COMMENTED OUT
+```
 
-# # ── Stage: image-push ──────────────────────────────────────────────────────────
-image:push:
-  extends: [.image_push, .rules]
+The `update-tag` job in `deploy.single.yml` extends `.update_tag` (the hidden template) directly — this part is correct. **But the `values.update.yml` include inside `helm.deploy.yml` also declares its own stages**, which **conflicts** with `deploy.single.yml`'s stage list. This creates a stage ordering race where `publish` (values update) may not run before `deploy`.
 
+#### Problem 2 (The Direct Cause): `VERSION` is empty when `deploy-dev` triggers
 
+From your pipeline log:
+```
+Service=epay_admin_service | ENV=dev | VERSION=
+```
 
------------------------------------------------------------- trigger.cd.yml 
+Trace it through `trigger.cd.yml`:
 
+```yaml
 .trigger_cd:
-  stage: deploy
   variables:
-    DEPLOYMENT_BRANCH: "feature/deploy-cicd"
-    # DEPLOYMENT_BRANCH: "deploy_cicd"
-    SERVICE_NAME: "${CI_PROJECT_NAME}"
-    VERSION: "${VERSION}"
+    VERSION: "${VERSION}"    # ← references $VERSION variable
   trigger:
-    project: "itepaypg-sbiepay2/infra/devops/deployment"
-    branch:  "$DEPLOYMENT_BRANCH"
-    strategy: depend            # CI pipeline waits for CD result — pass/fail shown inline
     forward:
-      pipeline_variables: true  # forwards VERSION, ENV, SERVICE_NAME, CHART_NAME etc.
-      yaml_variables: true
-	  
-----------------------------
+      pipeline_variables: true   # forwards parent pipeline vars
+      yaml_variables: true       # forwards YAML-defined vars
+```
 
-# ── DEV — auto on develop push ────────────────────────────────────────────────  deploy-jobs.yml
+The `deploy-dev` job in `deploy.jobs.yml` **does NOT list `VERSION` in its own variables block**:
+
+```yaml
 deploy-dev:
   extends: .trigger_cd
   variables:
     ENV:          dev
     SERVICE_NAME: "$CI_PROJECT_NAME"
     CHART_NAME:   "$CHART_NAME"
+    # VERSION is inherited from .trigger_cd via extends
+    # BUT — this variables block OVERRIDES the parent's variables block entirely
+    # So VERSION: "${VERSION}" from .trigger_cd is DROPPED
+```
+
+This is the **classic GitLab `extends` + `variables` override bug** — a child job's `variables:` block **replaces** the parent's `variables:` block, not merges with it. Since `deploy-dev` defines its own `variables:`, the `VERSION: "${VERSION}"` from `.trigger_cd` is silently dropped.
+
+---
+
+### The Fix
+
+**Fix 1 — Add `VERSION` explicitly to every deploy job in `deploy.jobs.yml`:**
+
+```yaml
+deploy-dev:
+  extends: .trigger_cd
+  variables:
+    ENV:          dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION:      "$VERSION"      # ← ADD THIS explicitly to every deploy job
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
       when: on_success
-    - if: '$CI_COMMIT_BRANCH == "feature/deploy-cicd" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-      when: on_success
     - when: never
+```
+
+Apply the same to `deploy-sit`, `deploy-uat`, `deploy-int`, `deploy-prod-dc`, `deploy-prod-dr`, etc.
+
+**Fix 2 — Add a guard in `helm.deploy.yml`'s `helm:deploy` script (fail fast instead of silent fallback):**
+
+```bash
+# Add at the top of helm:deploy script block
+if [ -z "$VERSION" ]; then
+  echo "❌ FATAL: VERSION is empty — aborting deploy to prevent wrong image tag"
+  exit 1
+fi
+```
+
+**Fix 3 — Also add VERSION to `validate_service` dotenv output** so `helm:deploy` receives it via artifact even if the trigger forwarding is unreliable:
+
+```yaml
+# In validate_service script, add to build.env:
+echo "VERSION=$VERSION" >> build.env
+```
+
+---
+
+### Why the `values.update.yml` `sed` isn't saving you either
+
+Even when `update-tag` runs correctly, look at the `helm:deploy` command:
+
+```bash
+helm upgrade --install ${RELEASE_NAME} \
+  ${ENV}/charts/${SERVICE_NAME} \
+  -n ${NAMESPACE} \
+  -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+  --set image.tag=${VERSION} \      ← VERSION is empty here too
+  --history-max=${HELM_HISTORY_MAX}
+```
+
+`--set image.tag=` (empty) overrides whatever `values.update.yml` wrote to `values.yaml`. So even if the sed update ran perfectly, the `--set` with empty VERSION wins. Both problems must be fixed together.
