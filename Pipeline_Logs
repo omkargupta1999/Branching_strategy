@@ -1,62 +1,20 @@
-From your screenshot, the two pods are running on:
-
-worker6.dc.prod.epay.sbi
-
-gemfire3.dc.prod.epay.sbi
-
-
-Run these commands directly.
-
-Check current time inside both pods
-
-kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +"%Y-%m-%d %H:%M:%S.%N %Z"
-
-kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +"%Y-%m-%d %H:%M:%S.%N %Z"
-
-Check epoch time (best for comparison)
-
-kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N
-
-kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N
-
-Check timezone inside pods
-
-kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date
-
-kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date
-
-SSH to both worker nodes and run
-
-On worker6.dc.prod.epay.sbi
-
-date +"%Y-%m-%d %H:%M:%S.%N %Z"
-timedatectl
-chronyc tracking
-chronyc sources -v
-
-On gemfire3.dc.prod.epay.sbi
-
-date +"%Y-%m-%d %H:%M:%S.%N %Z"
-timedatectl
-chronyc tracking
-chronyc sources -v
-
-Single command to compare both pods quickly
-
-echo "POD1:" && kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N && echo "POD2:" && kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N
-
-If you want millisecond-level verification
-
-Run this 4-5 times:
-
-for i in {1..5}; do kubectl exec ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N; sleep 1; done
-
-for i in {1..5}; do kubectl exec ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N; sleep 1; done
-
-Share the outputs of:
-
-date +%s.%N
-timedatectl
-chronyc tracking
-
-from both nodes, and I can tell you immediately whether the issue is actual node time drift, NTP synchronization, timezone mismatch, or just application log timestamp differences.
+[osuser@bastion ~]$ oc rsh ops-operationsservice-57d5b465dd-27h9q date +"%H:%M:%S.%3N"
+11:10:26.405
+[osuser@bastion ~]$ oc rsh ops-operationsservice-57d5b465dd-mlr65  date +"%H:%M:%S.%3N"
+11:10:32.605
+[osuser@bastion ~]$ echo "POD1:" && oc exec -it ops-operationsservice-57d5b465dd-27h9q -n dev-rns -- date +%s.%N && echo "POD2:" && oc exec -it ops-operationsservice-57d5b465dd-mlr65 -n dev-rns -- date +%s.%N
+POD1:
+1780571582.143931881
+POD2:
+1780571582.624882538
+[osuser@bastion ~]$
+[osuser@bastion ~]$ echo "POD1:" && oc exec -it ops-operationsservice-57d5b465dd-27h9q -n dev-rns -- date +"%H:%M:%S.%3N" && echo "POD2:" && oc exec -it ops-operationsservice-57d5b465dd-mlr65 -n dev-rns -- date +"%H:%M:%S.%3N"
+POD1:
+11:13:35.704
+POD2:
+11:13:36.182
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get po -o wide
+NAME                                     READY   STATUS             RESTARTS          AGE     IP              NODE                      NOMINATED NODE   READINESS GATES
+ops-operationsservice-57d5b465dd-27h9q   2/2     Running            0                 8m16s   172.16.17.218   worker3.dev.sbiepay.sbi   <none>           <none>
+ops-operationsservice-57d5b465dd-mlr65   2/2     Running            0                 4m19s   172.16.9.101    worker1.dev.sbiepay.sbi   <none>           <none>
