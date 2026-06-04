@@ -12,15 +12,15 @@
     - git config --global user.name "ci"
     - git config --global user.email "ci.cedge@sbi.co.in"
 
+    # Configure bot token
     - git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
 
+    # Validate token
     - echo "=== GitLab Authentication Validation ==="
-
     - |
       curl -k --silent \
       --header "PRIVATE-TOKEN: ${GITLAB_CI_DEPLOY_TOKEN}" \
       https://gitlab.sbi/api/v4/user || true
-
     - echo ""
     - echo "========================================"
 
@@ -30,5 +30,134 @@
       set -x
 
       echo "========== DEBUG =========="
-      echo "PROJECT = ${CI_PROJECT_PATH}"
-      echo "BRANCH  = ${CI_COMMIT_BRANCH}"
+      echo "PROJECT   = ${CI_PROJECT_PATH}"
+      echo "BRANCH    = ${CI_COMMIT_BRANCH}"
+      echo "SERVICE   = ${SERVICE_NAME}"
+      echo "ENV       = ${ENV}"
+      echo "VERSION   = ${VERSION}"
+      echo "CHART     = ${CHART_NAME}"
+      echo "RELEASE   = ${RELEASE_NAME}"
+      echo "==========================="
+
+      if [ -z "${SERVICE_NAME}" ]; then
+        echo "ERROR: SERVICE_NAME is empty"
+        exit 1
+      fi
+
+      if [ -z "${ENV}" ]; then
+        echo "ERROR: ENV is empty"
+        exit 1
+      fi
+
+      if [ -z "${VERSION}" ]; then
+        echo "ERROR: VERSION is empty"
+        exit 1
+      fi
+
+      if [ -z "${GITLAB_CI_DEPLOY_TOKEN}" ]; then
+        echo "ERROR: GITLAB_CI_DEPLOY_TOKEN is empty"
+        exit 1
+      fi
+
+      TAG="${VERSION}"
+      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      VALUES_FILE="${SERVICE_PATH}/values.yaml"
+
+      echo "SERVICE_PATH = ${SERVICE_PATH}"
+      echo "VALUES_FILE  = ${VALUES_FILE}"
+
+      echo "=== Available charts in ${ENV}/charts/ ==="
+
+      ls -ltrh "${ENV}/charts/" || {
+        echo "ERROR: ${ENV}/charts directory not found"
+        exit 1
+      }
+
+      if [ ! -d "${SERVICE_PATH}" ]; then
+        echo "ERROR: Service directory not found: ${SERVICE_PATH}"
+        exit 1
+      fi
+
+      if [ ! -f "${VALUES_FILE}" ]; then
+        echo "ERROR: values.yaml not found: ${VALUES_FILE}"
+        exit 1
+      fi
+
+      echo "=== Current values.yaml ==="
+      cat "${VALUES_FILE}"
+
+      git fetch origin
+
+      git checkout "${CI_COMMIT_BRANCH}"
+
+      REBASE_SUCCESS=false
+
+      for i in 1 2 3; do
+        if git pull --rebase origin "${CI_COMMIT_BRANCH}"; then
+          REBASE_SUCCESS=true
+          break
+        fi
+
+        echo "Rebase attempt ${i} failed"
+
+        sleep 2
+
+        git rebase --abort 2>/dev/null || true
+      done
+
+      if [ "${REBASE_SUCCESS}" = "false" ]; then
+        echo "ERROR: Rebase failed"
+        exit 1
+      fi
+
+      echo "=== Updating image tag to ${TAG} ==="
+
+      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" "${VALUES_FILE}"
+
+      echo "=== Updated values.yaml ==="
+      cat "${VALUES_FILE}"
+
+      git add "${VALUES_FILE}"
+
+      if [[ $(git status --porcelain) ]]; then
+
+        git commit -m "chore: update ${SERVICE_NAME} image tag to ${TAG} for ${ENV} [skip ci]"
+
+        PUSH_SUCCESS=false
+
+        for i in 1 2 3; do
+
+          echo "=== Push Attempt ${i} ==="
+          echo "Branch = ${CI_COMMIT_BRANCH}"
+
+          git remote -v
+
+          if git push origin "${CI_COMMIT_BRANCH}" 2>&1 | tee push.log; then
+            PUSH_SUCCESS=true
+            break
+          fi
+
+          echo "Push output:"
+          cat push.log
+
+          echo "Push attempt ${i} failed"
+
+          sleep 2
+
+          git pull --rebase origin "${CI_COMMIT_BRANCH}" || true
+
+        done
+
+        if [ "${PUSH_SUCCESS}" = "false" ]; then
+          echo "ERROR: Push failed after 3 attempts"
+          exit 1
+        fi
+
+        echo "SUCCESS: values.yaml updated successfully"
+
+      else
+        echo "No changes detected"
+      fi
+
+      echo "=== Final values.yaml ==="
+      cat "${VALUES_FILE}"
