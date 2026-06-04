@@ -1,370 +1,62 @@
+From your screenshot, the two pods are running on:
+
+worker6.dc.prod.epay.sbi
+
+gemfire3.dc.prod.epay.sbi
 
 
-deployment.yaml ============
+Run these commands directly.
 
+Check current time inside both pods
 
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  annotations:
-    deployment.kubernetes.io/revision: '69'
-    meta.helm.sh/release-name: admin
-    meta.helm.sh/release-namespace: dev-admin
-  resourceVersion: '794617835'
-  name: admin-adminservice
-  uid: e0434e93-ab46-4c91-9f11-cb52088df44a
-  creationTimestamp: '2026-05-03T18:15:01Z'
-  generation: 69
-  managedFields:
-    - manager: kubectl-edit
-      operation: Update
-      apiVersion: apps/v1
-      time: '2026-05-04T12:23:58Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:spec':
-          'f:template':
-            'f:spec':
-              'f:imagePullSecrets':
-                .: {}
-                'k:{"name":"jfrog-pull-secret"}': {}
-    - manager: Mozilla
-      operation: Update
-      apiVersion: apps/v1
-      time: '2026-05-14T08:44:04Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:spec':
-          'f:template':
-            'f:metadata':
-              'f:annotations':
-                'f:openshift.openshift.io/restartedAt': {}
-    - manager: kubectl-rollout
-      operation: Update
-      apiVersion: apps/v1
-      time: '2026-05-14T09:00:31Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:spec':
-          'f:template':
-            'f:metadata':
-              'f:annotations':
-                'f:kubectl.kubernetes.io/restartedAt': {}
-    - manager: helm
-      operation: Update
-      apiVersion: apps/v1
-      time: '2026-06-04T10:43:49Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            .: {}
-            'f:meta.helm.sh/release-name': {}
-            'f:meta.helm.sh/release-namespace': {}
-          'f:labels':
-            .: {}
-            'f:app.kubernetes.io/instance': {}
-            'f:app.kubernetes.io/managed-by': {}
-            'f:app.kubernetes.io/name': {}
-            'f:app.kubernetes.io/version': {}
-            'f:helm.sh/chart': {}
-        'f:spec':
-          'f:progressDeadlineSeconds': {}
-          'f:replicas': {}
-          'f:revisionHistoryLimit': {}
-          'f:selector': {}
-          'f:strategy':
-            'f:rollingUpdate':
-              .: {}
-              'f:maxSurge': {}
-              'f:maxUnavailable': {}
-            'f:type': {}
-          'f:template':
-            'f:metadata':
-              'f:annotations':
-                .: {}
-                'f:checksum/configmap': {}
-              'f:labels':
-                .: {}
-                'f:app.kubernetes.io/instance': {}
-                'f:app.kubernetes.io/managed-by': {}
-                'f:app.kubernetes.io/name': {}
-                'f:app.kubernetes.io/version': {}
-                'f:helm.sh/chart': {}
-            'f:spec':
-              'f:volumes':
-                .: {}
-                'k:{"name":"config"}':
-                  .: {}
-                  'f:configMap':
-                    .: {}
-                    'f:defaultMode': {}
-                    'f:name': {}
-                  'f:name': {}
-                'k:{"name":"payment-upivpaqr-cert"}':
-                  .: {}
-                  'f:name': {}
-                  'f:secret':
-                    .: {}
-                    'f:defaultMode': {}
-                    'f:secretName': {}
-              'f:containers':
-                'k:{"name":"adminservice"}':
-                  'f:image': {}
-                  'f:volumeMounts':
-                    .: {}
-                    'k:{"mountPath":"/certs"}':
-                      .: {}
-                      'f:mountPath': {}
-                      'f:name': {}
-                      'f:readOnly': {}
-                    'k:{"mountPath":"/opt/gradle"}':
-                      .: {}
-                      'f:mountPath': {}
-                      'f:name': {}
-                  'f:terminationMessagePolicy': {}
-                  .: {}
-                  'f:resources': {}
-                  'f:livenessProbe':
-                    .: {}
-                    'f:failureThreshold': {}
-                    'f:httpGet':
-                      .: {}
-                      'f:path': {}
-                      'f:port': {}
-                      'f:scheme': {}
-                    'f:initialDelaySeconds': {}
-                    'f:periodSeconds': {}
-                    'f:successThreshold': {}
-                    'f:timeoutSeconds': {}
-                  'f:env':
-                    .: {}
-                    'k:{"name":"DB_PASSWORD"}':
-                      .: {}
-                      'f:name': {}
-                      'f:valueFrom':
-                        .: {}
-                        'f:secretKeyRef': {}
-                    'k:{"name":"DB_USERNAME"}':
-                      .: {}
-                      'f:name': {}
-                      'f:valueFrom':
-                        .: {}
-                        'f:secretKeyRef': {}
-                    'k:{"name":"SPRING_CONFIG_LOCATION"}':
-                      .: {}
-                      'f:name': {}
-                      'f:value': {}
-                  'f:readinessProbe':
-                    .: {}
-                    'f:failureThreshold': {}
-                    'f:httpGet':
-                      .: {}
-                      'f:path': {}
-                      'f:port': {}
-                      'f:scheme': {}
-                    'f:initialDelaySeconds': {}
-                    'f:periodSeconds': {}
-                    'f:successThreshold': {}
-                    'f:timeoutSeconds': {}
-                  'f:securityContext': {}
-                  'f:terminationMessagePath': {}
-                  'f:imagePullPolicy': {}
-                  'f:ports':
-                    .: {}
-                    'k:{"containerPort":9094,"protocol":"TCP"}':
-                      .: {}
-                      'f:containerPort': {}
-                      'f:name': {}
-                      'f:protocol': {}
-                  'f:name': {}
-              'f:dnsPolicy': {}
-              'f:serviceAccount': {}
-              'f:restartPolicy': {}
-              'f:schedulerName': {}
-              'f:terminationGracePeriodSeconds': {}
-              'f:serviceAccountName': {}
-              'f:securityContext': {}
-    - manager: kube-controller-manager
-      operation: Update
-      apiVersion: apps/v1
-      time: '2026-06-04T10:43:49Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:deployment.kubernetes.io/revision': {}
-        'f:status':
-          'f:availableReplicas': {}
-          'f:conditions':
-            .: {}
-            'k:{"type":"Available"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"Progressing"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-          'f:observedGeneration': {}
-          'f:readyReplicas': {}
-          'f:replicas': {}
-          'f:unavailableReplicas': {}
-          'f:updatedReplicas': {}
-      subresource: status
-  namespace: dev-admin
-  labels:
-    app.kubernetes.io/instance: admin
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: adminservice
-    app.kubernetes.io/version: 1.16.0
-    helm.sh/chart: adminservice-0.1.0
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: admin
-      app.kubernetes.io/name: adminservice
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app.kubernetes.io/instance: admin
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: adminservice
-        app.kubernetes.io/version: 1.16.0
-        helm.sh/chart: adminservice-0.1.0
-      annotations:
-        checksum/configmap: 62b51fbb1cf25e9ec33af936970aab0daded50c7659857bd982d69b05f20e5ca
-        kubectl.kubernetes.io/restartedAt: '2026-05-14T14:30:31+05:30'
-        openshift.openshift.io/restartedAt: '2026-05-14T08:44:04.781Z'
-    spec:
-      restartPolicy: Always
-      serviceAccountName: default
-      imagePullSecrets:
-        - name: jfrog-pull-secret
-      schedulerName: default-scheduler
-      terminationGracePeriodSeconds: 30
-      securityContext: {}
-      containers:
-        - resources: {}
-          readinessProbe:
-            httpGet:
-              path: /api/admin/v1/actuator/health/readiness
-              port: 9094
-              scheme: HTTP
-            initialDelaySeconds: 60
-            timeoutSeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-          terminationMessagePath: /dev/termination-log
-          name: adminservice
-          livenessProbe:
-            httpGet:
-              path: /api/admin/v1/actuator/health/liveness
-              port: 9094
-              scheme: HTTP
-            initialDelaySeconds: 30
-            timeoutSeconds: 10
-            periodSeconds: 20
-            successThreshold: 1
-            failureThreshold: 6
-          env:
-            - name: SPRING_CONFIG_LOCATION
-              value: 'file:/opt/gradle/'
-            - name: DB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: my-secrets-admin-service-secret
-                  key: DB_USERNAME
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: my-secrets-admin-service-secret
-                  key: DB_PASSWORD
-          securityContext: {}
-          ports:
-            - name: http
-              containerPort: 9094
-              protocol: TCP
-          imagePullPolicy: IfNotPresent
-          volumeMounts:
-            - name: config
-              mountPath: /opt/gradle
-            - name: payment-upivpaqr-cert
-              readOnly: true
-              mountPath: /certs
-          terminationMessagePolicy: File
-          image: 'artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:1.16.0'
-      serviceAccount: default
-      volumes:
-        - name: config
-          configMap:
-            name: admin-config
-            defaultMode: 420
-        - name: payment-upivpaqr-cert
-          secret:
-            secretName: payment-upivpaqr
-            defaultMode: 444
-      dnsPolicy: ClusterFirst
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
-status:
-  observedGeneration: 69
-  replicas: 2
-  updatedReplicas: 1
-  readyReplicas: 1
-  availableReplicas: 1
-  unavailableReplicas: 1
-  conditions:
-    - type: Available
-      status: 'True'
-      lastUpdateTime: '2026-06-01T09:58:37Z'
-      lastTransitionTime: '2026-06-01T09:58:37Z'
-      reason: MinimumReplicasAvailable
-      message: Deployment has minimum availability.
-    - type: Progressing
-      status: 'True'
-      lastUpdateTime: '2026-06-04T10:43:49Z'
-      lastTransitionTime: '2026-06-04T10:43:49Z'
-      reason: ReplicaSetUpdated
-      message: ReplicaSet "admin-adminservice-598f545dcf" is progressing.
+kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +"%Y-%m-%d %H:%M:%S.%N %Z"
 
+kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +"%Y-%m-%d %H:%M:%S.%N %Z"
 
+Check epoch time (best for comparison)
 
+kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N
 
+kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N
 
-===================================================== values.yml
+Check timezone inside pods
 
-replicaCount: 1
+kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date
 
-virtualService:
-  enabled: true
+kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date
 
-image:
-  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  #tag: "dev-e65d6ffa"
-  #tag: "dev-e65d6ffa"
-  tag: "dev-e65d6ffa"
-  
-  
-In values.yaml we have updated images tag but in clusters deployment.yml it is always taking image-tag: 1.16.0
+SSH to both worker nodes and run
 
+On worker6.dc.prod.epay.sbi
 
-could you please help me to understood the problem cause here why it is happening like this ....
+date +"%Y-%m-%d %H:%M:%S.%N %Z"
+timedatectl
+chronyc tracking
+chronyc sources -v
+
+On gemfire3.dc.prod.epay.sbi
+
+date +"%Y-%m-%d %H:%M:%S.%N %Z"
+timedatectl
+chronyc tracking
+chronyc sources -v
+
+Single command to compare both pods quickly
+
+echo "POD1:" && kubectl exec -it ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N && echo "POD2:" && kubectl exec -it ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N
+
+If you want millisecond-level verification
+
+Run this 4-5 times:
+
+for i in {1..5}; do kubectl exec ops-operationsservice-78f6d55b69-5sjcw -n prod-dc-rms -- date +%s.%N; sleep 1; done
+
+for i in {1..5}; do kubectl exec ops-operationsservice-78f6d55b69-d1w65 -n prod-dc-rms -- date +%s.%N; sleep 1; done
+
+Share the outputs of:
+
+date +%s.%N
+timedatectl
+chronyc tracking
+
+from both nodes, and I can tell you immediately whether the issue is actual node time drift, NTP synchronization, timezone mismatch, or just application log timestamp differences.
