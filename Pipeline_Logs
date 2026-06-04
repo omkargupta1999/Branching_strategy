@@ -1,5 +1,87 @@
-oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc tracking
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc tracking
+[root@bastion ~]# oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc tracking
+Temporary namespace openshift-debug-nb4n9 is created for debugging node...
+Starting pod/worker3devsbiepaysbi-debug-qzszz ...
+To use host binaries, run `chroot /host`
+Reference ID    : 0AB34603 (10.179.70.3)
+Stratum         : 2
+Ref time (UTC)  : Thu Jun 04 11:12:27 2026
+System time     : 0.000002608 seconds slow of NTP time
+Last offset     : +0.000005734 seconds
+RMS offset      : 0.000014145 seconds
+Frequency       : 10.854 ppm slow
+Residual freq   : -0.000 ppm
+Skew            : 0.003 ppm
+Root delay      : 0.002974277 seconds
+Root dispersion : 0.001935558 seconds
+Update interval : 1039.3 seconds
+Leap status     : Normal
 
-oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc sources -v
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc sources -v
+Removing debug pod ...
+Temporary namespace openshift-debug-nb4n9 was removed.
+[root@bastion ~]# oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc tracking
+Temporary namespace openshift-debug-f29nm is created for debugging node...
+Starting pod/worker1devsbiepaysbi-debug-48vms ...
+To use host binaries, run `chroot /host`
+Reference ID    : 0AB34603 (10.179.70.3)
+Stratum         : 2
+Ref time (UTC)  : Thu Jun 04 11:07:43 2026
+System time     : 0.000062891 seconds fast of NTP time
+Last offset     : +0.000064583 seconds
+RMS offset      : 0.008062966 seconds
+Frequency       : 10.424 ppm slow
+Residual freq   : +0.001 ppm
+Skew            : 0.049 ppm
+Root delay      : 0.001603521 seconds
+Root dispersion : 0.003040290 seconds
+Update interval : 1026.9 seconds
+Leap status     : Normal
+
+Removing debug pod ...
+Temporary namespace openshift-debug-f29nm was removed.
+[root@bastion ~]#
+[root@bastion ~]# oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc sources -v
+Temporary namespace openshift-debug-67s4x is created for debugging node...
+Starting pod/worker3devsbiepaysbi-debug-p6bzd ...
+To use host binaries, run `chroot /host`
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample
+===============================================================================
+^- 10.191.174.52                 1  10   377   179   -266us[ -266us] +/-   30ms
+^- 10.191.174.53                 1  10   377   549   -632us[ -627us] +/-   40ms
+^- 10.179.70.2                   1  10   377   899  -1324us[-1318us] +/-   13ms
+^* 10.179.70.3                   1  10   377   545  -1362us[-1356us] +/- 8238us
+
+Removing debug pod ...
+Temporary namespace openshift-debug-67s4x was removed.
+[root@bastion ~]# oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc sources -v
+Temporary namespace openshift-debug-qhstq is created for debugging node...
+Starting pod/worker1devsbiepaysbi-debug-8p5c4 ...
+To use host binaries, run `chroot /host`
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample
+===============================================================================
+^- 10.191.174.52                 1  10   377    97   +205us[ +205us] +/-   31ms
+^- 10.191.174.53                 1  10   377   291   -195us[ -195us] +/-   28ms
+^- 10.179.70.2                   1  10   377   477   -919us[ -919us] +/-   11ms
+^* 10.179.70.3                   1  10   377   840   +137us[ +201us] +/- 8575us
+
+Removing debug pod ...
+Temporary namespace openshift-debug-qhstq was removed.
+[root@bastion ~]#
+
