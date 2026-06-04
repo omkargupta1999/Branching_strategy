@@ -1,26 +1,164 @@
-I need the metrics file you mentioned — it didn't come through. Let me check whether it landed as an upload.The metrics details didn't make it through — the only upload present is the earlier `dashboards.zip`. Your message says "Sharing the complete metric details to you" but there's no file or pasted text attached.
+# cd/publish/values.update.yml
 
-This matters a lot here, because the whole point of this pass is to validate every query against your *actual* exposed metrics rather than my best-guess of the Loki 3.5.5 metric names. Without the real metric list I'd just be re-confirming assumptions.
+.update_tag:
+stage: publish
+tags:
+- deploy_runner
 
-The most useful thing you can give me is the raw metric output from your Loki and Prometheus endpoints. Any one of these works:
+image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
 
-**Best — Loki's own metrics (the metric names + labels):**
-```bash
-curl -s http://10.189.35.10:3100/metrics | grep -E '^# (HELP|TYPE)' > loki1_metrics.txt
-curl -s http://10.189.35.11:3200/metrics | grep -E '^# (HELP|TYPE)' > loki2_metrics.txt
+before_script:
+- git config --global http.sslVerify false
+- git config --global --add safe.directory '*'
+- git config --global user.name "ci"
+- git config --global user.email "[ci.cedge@sbi.co.in](mailto:ci.cedge@sbi.co.in)"
+
 ```
-The `# HELP`/`# TYPE` lines give me every metric name and its type without the millions of sample lines — compact and exactly what I need.
+# Use Bot Token
+- git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
 
-**Even better — what Prometheus actually has (names + labels as scraped):**
-```bash
-curl -s http://10.189.35.10:9090/api/v1/label/__name__/values > prom_metric_names.json
-# and to see the labels (job, instance, etc.) on a sample:
-curl -s 'http://10.189.35.10:9090/api/v1/query?query=up' > prom_up.json
+# Debug authentication
+- echo "=== GitLab Authentication Validation ==="
+- |
+  curl -k --silent \
+  --header "PRIVATE-TOKEN: ${GITLAB_CI_DEPLOY_TOKEN}" \
+  https://gitlab.sbi/api/v4/user || true
+- echo ""
+- echo "========================================"
 ```
-The Prometheus version is ideal because it shows the real `job`/`instance` label values, which is what several panels filter on (`job=~"loki-ingester.*"`, `instance=~"..."`) — and those label conventions are the other thing that can silently break panels.
 
-**If node_exporter question matters:** also include whether `node_*` metrics appear in `prom_metric_names.json` — that settles the resource-utilization dashboard.
+script:
+- |
+set -eo pipefail
+set -x
 
-You can paste the text directly or upload the files — whichever is easier through the air-gapped path. Zip them together if you like.
+```
+  echo "========== DEBUG =========="
+  echo "PROJECT   = ${CI_PROJECT_PATH}"
+  echo "BRANCH    = ${CI_COMMIT_BRANCH}"
+  echo "SERVICE   = ${SERVICE_NAME}"
+  echo "ENV       = ${ENV}"
+  echo "VERSION   = ${VERSION}"
+  echo "CHART     = ${CHART_NAME}"
+  echo "RELEASE   = ${RELEASE_NAME}"
+  echo "==========================="
 
-Once I have that, I'll: validate every single query against the real names and labels, fix anything still off, improve the visual layout (consistent units, thresholds, legends, row grouping, sensible panel sizing), confirm the node_exporter situation, and add any production-monitoring dashboards that are genuinely missing — I'd be looking at whether you have good coverage for an **alerting/SLO overview**, **per-tenant/stream limits & cardinality**, **write-path latency (push p99)**, and **read-path/query-queue saturation**, since those are the things that usually matter most in production and I want to check them against your metrics before adding.
+  if [ -z "${SERVICE_NAME}" ]; then
+    echo "❌ ERROR: SERVICE_NAME is empty"
+    exit 1
+  fi
+
+  if [ -z "${ENV}" ]; then
+    echo "❌ ERROR: ENV is empty"
+    exit 1
+  fi
+
+  if [ -z "${VERSION}" ]; then
+    echo "❌ ERROR: VERSION is empty"
+    exit 1
+  fi
+
+  if [ -z "${GITLAB_CI_DEPLOY_TOKEN}" ]; then
+    echo "❌ ERROR: GITLAB_CI_DEPLOY_TOKEN is empty"
+    exit 1
+  fi
+
+  TAG="${VERSION}"
+  SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+  VALUES_FILE="${SERVICE_PATH}/values.yaml"
+
+  echo "SERVICE_PATH = ${SERVICE_PATH}"
+  echo "VALUES_FILE  = ${VALUES_FILE}"
+
+  echo "=== Available charts in ${ENV}/charts/ ==="
+  ls -ltrh "${ENV}/charts/" || {
+    echo "❌ ERROR: ${ENV}/charts/ directory not found"
+    exit 1
+  }
+
+  if [ ! -d "${SERVICE_PATH}" ]; then
+    echo "❌ ERROR: Service directory not found: ${SERVICE_PATH}"
+    exit 1
+  fi
+
+  if [ ! -f "${VALUES_FILE}" ]; then
+    echo "❌ ERROR: values.yaml not found: ${VALUES_FILE}"
+    exit 1
+  fi
+
+  echo "=== Current values.yaml ==="
+  cat "${VALUES_FILE}"
+
+  git fetch origin
+
+  git checkout "${CI_COMMIT_BRANCH}"
+
+  REBASE_SUCCESS=false
+
+  for i in 1 2 3; do
+    if git pull --rebase origin "${CI_COMMIT_BRANCH}"; then
+      REBASE_SUCCESS=true
+      break
+    fi
+
+    echo "⚠️ Rebase attempt $i failed"
+    sleep 2
+    git rebase --abort 2>/dev/null || true
+  done
+
+  if [ "$REBASE_SUCCESS" = "false" ]; then
+    echo "❌ ERROR: Rebase failed"
+    exit 1
+  fi
+
+  echo "=== Updating image tag to ${TAG} ==="
+
+  sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" "${VALUES_FILE}"
+
+  echo "=== Updated values.yaml ==="
+  cat "${VALUES_FILE}"
+
+  git add "${VALUES_FILE}"
+
+  if [[ $(git status --porcelain) ]]; then
+
+    git commit -m "chore: update ${SERVICE_NAME} image tag to ${TAG} for ${ENV} [skip ci]"
+
+    PUSH_SUCCESS=false
+
+    for i in 1 2 3; do
+
+      echo "=== Push Attempt ${i} ==="
+      echo "Branch = ${CI_COMMIT_BRANCH}"
+
+      git remote -v
+
+      if git push origin "${CI_COMMIT_BRANCH}" 2>&1 | tee push.log; then
+        PUSH_SUCCESS=true
+        break
+      fi
+
+      echo "Push output:"
+      cat push.log
+
+      echo "⚠️ Push attempt ${i} failed"
+      sleep 2
+
+      git pull --rebase origin "${CI_COMMIT_BRANCH}" || true
+
+    done
+
+    if [ "$PUSH_SUCCESS" = "false" ]; then
+      echo "❌ ERROR: Push failed after 3 attempts"
+      exit 1
+    fi
+
+    echo "✅ values.yaml updated successfully"
+
+  else
+    echo "ℹ️ No changes detected"
+  fi
+
+  echo "=== Final values.yaml ==="
+  cat "${VALUES_FILE}"
+```
