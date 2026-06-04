@@ -1,69 +1,29 @@
-Your two pods are on different worker nodes (worker3 vs worker1), and the ~0.48s skew is consistent across all three measurements. This is node clock drift, not a pod-level problem. Pods inherit the kernel clock of their host node, so the fix is at the node/host layer.
+[root@bastion ~]# oc debug node/worker3.dev.sbiepay.sbi -- chroot /host timedatectl status
+Temporary namespace openshift-debug-r8jkm is created for debugging node...
+Starting pod/worker3devsbiepaysbi-debug-7cf69 ...
+To use host binaries, run `chroot /host`
+               Local time: Thu 2026-06-04 11:17:37 UTC
+           Universal time: Thu 2026-06-04 11:17:37 UTC
+                 RTC time: Thu 2026-06-04 11:17:37
+                Time zone: UTC (UTC, +0000)
+System clock synchronized: yes
+              NTP service: active
+          RTC in local TZ: no
 
-**Diagnose which nodes are off:**
+Removing debug pod ...
+Temporary namespace openshift-debug-r8jkm was removed.
+[root@bastion ~]# oc debug node/worker1.dev.sbiepay.sbi -- chroot /host timedatectl status
+Temporary namespace openshift-debug-7cftr is created for debugging node...
+Starting pod/worker1devsbiepaysbi-debug-5tcf4 ...
+To use host binaries, run `chroot /host`
+               Local time: Thu 2026-06-04 11:17:47 UTC
+           Universal time: Thu 2026-06-04 11:17:47 UTC
+                 RTC time: Thu 2026-06-04 11:17:47
+                Time zone: UTC (UTC, +0000)
+System clock synchronized: yes
+              NTP service: active
+          RTC in local TZ: no
 
-```bash
-# Check time sync status on each node
-oc debug node/worker3.dev.sbiepay.sbi -- chroot /host timedatectl status
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host timedatectl status
-
-# Or directly via chronyd
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc tracking
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc sources -v
-```
-
-Look for `System clock synchronized: yes` and a small `Last offset` / `RMS offset` in `chronyc tracking`. A ~480ms offset means chrony either isn't reaching its source or isn't running on one of the nodes.
-
-**Most likely cause in an air-gapped env:** the nodes can't reach an NTP server. Public pool servers (rhel.pool.ntp.org, etc.) are unreachable, so chrony falls back to free-running local clocks that drift apart. You need an internal NTP/PTP source.
-
-**Fix — point chrony at your internal time source via MachineConfig** (this is the supported OpenShift method, survives reboots/scaling):
-
-```bash
-# Build the chrony.conf
-cat > chrony.conf << 'EOF'
-server <your-internal-ntp-ip> iburst
-driftfile /var/lib/chrony/drift
-makestep 1.0 3
-rtcsync
-EOF
-
-# Base64 encode it
-BASE64=$(base64 -w0 chrony.conf)
-```
-
-Then create a MachineConfig for the worker pool:
-
-```yaml
-apiVersion: machineconfiguration.openshift.io/v1
-kind: MachineConfig
-metadata:
-  labels:
-    machineconfiguration.openshift.io/role: worker
-  name: 99-worker-chrony-conf
-spec:
-  config:
-    ignition:
-      version: 3.2.0
-    storage:
-      files:
-      - contents:
-          source: data:text/plain;charset=utf-8;base64,<BASE64_STRING>
-        mode: 420
-        overwrite: true
-        path: /etc/chrony.conf
-```
-
-```bash
-oc apply -f 99-worker-chrony-conf.yaml
-```
-
-MCO will roll the worker pool one node at a time (drains/reboots). Watch with `oc get mcp worker -w`.
-
-**Verify after rollout:**
-
-```bash
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc tracking
-# Re-run your two-pod comparison; offsets should be sub-millisecond to low-ms
-```
-
-One thing to confirm first: do all your air-gapped nodes already have a reachable internal NTP server, or does one need to be stood up? If there's no internal time source at all, that's the root cause and the MachineConfig needs a valid `server` IP to point at. If you tell me your time-source setup I can tailor the config.
+Removing debug pod ...
+Temporary namespace openshift-debug-7cftr was removed.
+[root@bastion ~]#
