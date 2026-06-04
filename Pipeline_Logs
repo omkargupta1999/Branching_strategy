@@ -1,169 +1,380 @@
-Getting this error:
-
-
-Running with gitlab-runner 17.8.0 (e4f782b3)
-  on DC-Gitlab-Runner rMTQxLq3, system ID: s_948d0ccb739a
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
-00:03
-Using Docker executor with image registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 ...
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Pulling docker image registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 ...
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 with digest registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
 Preparing environment
-00:03
-Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
-Using docker image sha256:c95744588b6d7e170a6866854932de40eaf1b5ed229ed818cba6a87a1f885773 for dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest with digest dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper@sha256:ebbf1c21e4272ae1f8c18b034d390809c836c2fc68c0f0f6d3a5aff9760aabf5 ...
-Running on runner-rmtqxlq3-project-130-concurrent-1 via Gitlab-DC-Runr...
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2655-concurrent-0 via PE3DSOPGrunners3...
 Getting source from Git repository
-00:04
-$ git config --global http.proxy $HTTP_PROXY; git config --global https.proxy $HTTPS_PROXY; git config --global no.proxy $NO_PROXY
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /tmp/builds/epay/frontends/epay_website/.git/
+00:08
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
 Created fresh repository.
-Checking out 5f480def as detached HEAD (ref is refs/merge-requests/75/head)...
+Checking out a05bf473 as detached HEAD (ref is feature/deploy-cicd)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-10:31
-Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 with digest registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-$ echo "BUILD STARTED"
-BUILD STARTED
-$ pwd
-/tmp/builds/epay/frontends/epay_website
-$ ls -la
-total 516
-drwxrwxrwx.  5 default root   4096 Jun  3 09:57 .
-drwxrwxrwx.  4 default root     50 Jun  3 09:57 ..
--rw-rw-rw-.  1 default root    145 Jun  3 09:57 .env
--rw-rw-rw-.  1 default root    197 Jun  3 09:57 .env.development
--rw-rw-rw-.  1 default root    153 Jun  3 09:57 .env.pre-prod
--rw-rw-rw-.  1 default root    147 Jun  3 09:57 .env.sit
--rw-rw-rw-.  1 default root    146 Jun  3 09:57 .env.uat
-drwxrwxrwx.  6 default root    128 Jun  3 09:57 .git
--rw-rw-rw-.  1 default root    277 Jun  3 09:57 .gitignore
--rw-rw-rw-.  1 default root    190 Jun  3 09:57 .gitlab-ci.yml
--rw-rw-rw-.  1 default root    864 Jun  3 09:57 Dockerfile
--rw-rw-rw-.  1 default root   2254 Jun  3 09:57 README.md
--rw-rw-rw-.  1 default root    446 Jun  3 09:57 components.json
--rw-rw-rw-.  1 default root    621 Jun  3 09:57 eslint.config.js
--rw-rw-rw-.  1 default root    428 Jun  3 09:57 index.html
--rw-rw-rw-.  1 default root   2443 Jun  3 09:57 nginx.conf
--rw-rw-rw-.  1 default root 435782 Jun  3 09:57 package-lock.json
--rw-rw-rw-.  1 default root   3053 Jun  3 09:57 package.json
-drwxrwxrwx.  4 default root     90 Jun  3 09:57 public
--rw-rw-rw-.  1 default root    147 Jun  3 09:57 setproxy.cmd
-drwxrwxrwx. 11 default root   4096 Jun  3 09:57 src
--rw-rw-rw-.  1 default root   1354 Jun  3 09:57 tailwind.config.js
--rw-rw-rw-.  1 default root    836 Jun  3 09:57 tsconfig.app.json
--rw-rw-rw-.  1 default root    238 Jun  3 09:57 tsconfig.json
--rw-rw-rw-.  1 default root    630 Jun  3 09:57 tsconfig.node.json
--rw-rw-rw-.  1 default root    607 Jun  3 09:57 vite.config.ts
-$ npm config set proxy http://serverswg.sbi.co.in:80 || true
-$ npm config set https-proxy http://serverswg.sbi.co.in:9090 || true
-$ npm cache clean --force
-npm warn using --force Recommended protections disabled.
-$ npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: '@vitejs/plugin-react@5.2.0',
-npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
-npm warn EBADENGINE   current: { node: 'v20.17.0', npm: '10.8.2' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'eslint-visitor-keys@5.0.1',
-npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.13.0 || >=24' },
-npm warn EBADENGINE   current: { node: 'v20.17.0', npm: '10.8.2' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'vite@7.3.5',
-npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
-npm warn EBADENGINE   current: { node: 'v20.17.0', npm: '10.8.2' }
-npm warn EBADENGINE }
-(node:50) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 socket listeners added to [ClientRequest]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-(Use `node --trace-warnings ...` to show where the warning was created)
-npm error Exit handler never called!
-npm error This is an error with npm itself. Please report this error at:
-npm error   <https://github.com/npm/cli/issues>
-npm error A complete log of this run can be found in: /opt/app-root/src/.npm/_logs/2026-06-03T09_57_32_174Z-debug-0.log
-$ npm run build
-> epay_website@0.0.0 build
-> node src/scripts/generateConfig.js blank && tsc -b && vite build
-node:internal/modules/esm/resolve:215
-  const resolvedOption = FSLegacyMainResolve(packageJsonUrlString, packageConfig.main, baseStringified);
-                         ^
-Error: Cannot find package '/tmp/builds/epay/frontends/epay_website/node_modules/dotenv/index.js' imported from /tmp/builds/epay/frontends/epay_website/src/scripts/generateConfig.js
-    at legacyMainResolve (node:internal/modules/esm/resolve:215:26)
-    at packageResolve (node:internal/modules/esm/resolve:841:14)
-    at moduleResolve (node:internal/modules/esm/resolve:927:18)
-    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
-    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:540:12)
-    at ModuleLoader.resolve (node:internal/modules/esm/loader:509:25)
-    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:239:38)
-    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:96:40)
-    at link (node:internal/modules/esm/module_job:95:36) {
-  code: 'ERR_MODULE_NOT_FOUND'
-}
-Node.js v20.17.0
+00:11
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:${CI_BOT_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
+$ echo "=== GitLab Authentication Validation ==="
+=== GitLab Authentication Validation ===
+$ curl -k --silent \ # collapsed multi-line command
+{"id":2011,"username":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1","public_email":null,"name":"CI_BOT_TOKEN","state":"active","locked":false,"avatar_url":null,"web_url":"https://gitlab.sbi/project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1","created_at":"2026-06-04T15:15:29.598+05:30","bio":"","location":"","skype":"","linkedin":"","twitter":"","discord":"","website_url":"","github":"","organization":"","job_title":"","pronouns":null,"bot":true,"work_information":null,"local_time":null,"last_sign_in_at":null,"confirmed_at":"2026-06-04T15:15:29.558+05:30","last_activity_on":"2026-06-04","email":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1@noreply.gitlab.sbi","theme_id":3,"color_scheme_id":1,"projects_limit":0,"current_sign_in_at":null,"identities":[],"can_create_group":false,"can_create_project":false,"two_factor_enabled":false,"external":false,"private_profile":false,"commit_email":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1@noreply.gitlab.sbi","shared_runners_minutes_limit":null,"extra_shared_runners_minutes_limit":null,"scim_identities":[]}$ echo ""
+$ echo "========================================"
+========================================
+$ set -eo pipefail # collapsed multi-line command
+========== DEBUG ==========
+PROJECT   = itepaypg-sbiepay2/infra/devops/deployment
+BRANCH    = feature/deploy-cicd
+SERVICE   = epay_admin_service
+ENV       = dev
+VERSION   = dev-e65d6ffa
+CHART     = $CHART_NAME
+RELEASE   = admin
+===========================
+++ echo '========== DEBUG =========='
+++ echo 'PROJECT   = itepaypg-sbiepay2/infra/devops/deployment'
+++ echo 'BRANCH    = feature/deploy-cicd'
+++ echo 'SERVICE   = epay_admin_service'
+++ echo 'ENV       = dev'
+++ echo 'VERSION   = dev-e65d6ffa'
+++ echo 'CHART     = $CHART_NAME'
+++ echo 'RELEASE   = admin'
+++ echo ===========================
+++ '[' -z epay_admin_service ']'
+++ '[' -z dev ']'
+++ '[' -z dev-e65d6ffa ']'
+++ '[' -z [MASKED] ']'
+++ TAG=dev-e65d6ffa
+++ SERVICE_PATH=dev/charts/epay_admin_service
+++ VALUES_FILE=dev/charts/epay_admin_service/values.yaml
+++ echo 'SERVICE_PATH = dev/charts/epay_admin_service'
+++ echo 'VALUES_FILE  = dev/charts/epay_admin_service/values.yaml'
+++ echo '=== Available charts in dev/charts/ ==='
+++ ls -ltrh dev/charts/
+SERVICE_PATH = dev/charts/epay_admin_service
+VALUES_FILE  = dev/charts/epay_admin_service/values.yaml
+=== Available charts in dev/charts/ ===
+total 0
+drwxrwxrwx 3 root root  79 Jun  4 09:57 backend_sdk_simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_admin_portal_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_bridge_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_admin_service
+drwxrwxrwx 4 root root 109 Jun  4 09:57 epay_common
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_communication_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_integration_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_gateway_pooling
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_key_managment
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_maintenance_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_integration_doc
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_notification_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_operations_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_payment_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_order_hash
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_refund_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_reports_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_stubs_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_sftp_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_transaction_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_transaction_service
+drwxrwxrwx 3 root root  79 Jun  4 09:57 java-utility-api-simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_website
+drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_dotnet
+drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_php
+drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_nodejs
+drwxrwxrwx 3 root root  60 Jun  4 09:57 microservice-secrets
+drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_python
+drwxrwxrwx 3 root root  79 Jun  4 09:57 transaction_job_service
+++ '[' '!' -d dev/charts/epay_admin_service ']'
+++ '[' '!' -f dev/charts/epay_admin_service/values.yaml ']'
+++ echo '=== Current values.yaml ==='
+=== Current values.yaml ===
+++ cat dev/charts/epay_admin_service/values.yaml
+# Default values for adminservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.##
+replicaCount: 1
+virtualService:
+  enabled: true
+image:
+  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "dev-307c81ea"
+  #tag: "dev-307c81ea"
+  tag: "dev-307c81ea"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+applicationProperties: ""
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 9094
+namespace: dev-admin
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: admin-adminservice
+serviceName: admin-adminservice
+prefixName:  /api/admin/v1
+servicePort: 9094
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
+routes:
+  - prefixName: /api/admin/v1/merchant/payMode/
+    serviceName: admin-adminservice
+    servicePort: 9094
+  
+configMap: 
+  additionalLabels:
+    # ...
+  annotations:
+    # ...
+  nameSuffix: "config"
+resources: {}
+ingress: {}
+# readinessProbe: {}
+# livenessProbe: {}
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/readiness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/liveness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+autoscaling: {}
+# Additional volumes on the output Deployment definition.
+volumes: []
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true#
+nodeSelector: {}
+tolerations: []
+affinity: {}
+#++ git fetch origin
+++ git checkout feature/deploy-cicd
+Switched to a new branch 'feature/deploy-cicd'
+branch 'feature/deploy-cicd' set up to track 'origin/feature/deploy-cicd'.
+++ REBASE_SUCCESS=false
+++ for i in 1 2 3
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Already up to date.
+++ REBASE_SUCCESS=true
+++ break
+++ '[' true = false ']'
+++ echo '=== Updating image tag to dev-e65d6ffa ==='
+++ sed -i 's/\(tag:\).*/\1 "dev-e65d6ffa"/' dev/charts/epay_admin_service/values.yaml
+=== Updating image tag to dev-e65d6ffa ===
+++ echo '=== Updated values.yaml ==='
+++ cat dev/charts/epay_admin_service/values.yaml
+=== Updated values.yaml ===
+# Default values for adminservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.##
+replicaCount: 1
+virtualService:
+  enabled: true
+image:
+  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "dev-e65d6ffa"
+  #tag: "dev-e65d6ffa"
+  tag: "dev-e65d6ffa"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+applicationProperties: ""
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 9094
+namespace: dev-admin
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: admin-adminservice
+serviceName: admin-adminservice
+prefixName:  /api/admin/v1
+servicePort: 9094
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
+routes:
+  - prefixName: /api/admin/v1/merchant/payMode/
+    serviceName: admin-adminservice
+    servicePort: 9094
+  
+configMap: 
+  additionalLabels:
+    # ...
+  annotations:
+    # ...
+  nameSuffix: "config"
+resources: {}
+ingress: {}
+# readinessProbe: {}
+# livenessProbe: {}
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/readiness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/liveness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+autoscaling: {}
+# Additional volumes on the output Deployment definition.
+volumes: []
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true#
+nodeSelector: {}
+tolerations: []
+affinity: {}
+#++ git add dev/charts/epay_admin_service/values.yaml
++++ git status --porcelain
+++ [[ -n M  dev/charts/epay_admin_service/values.yaml ]]
+++ git commit -m 'chore: update epay_admin_service image tag to dev-e65d6ffa for dev [skip ci]'
+[feature/deploy-cicd 0dfa4ba28] chore: update epay_admin_service image tag to dev-e65d6ffa for dev [skip ci]
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+++ PUSH_SUCCESS=false
+++ for i in 1 2 3
+=== Push Attempt 1 ===
+Branch = feature/deploy-cicd
+++ echo '=== Push Attempt 1 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+++ echo 'Push output:'
+++ cat push.log
+Push output:
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push attempt 1 failed
+++ echo 'Push attempt 1 failed'
+++ sleep 2
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+++ for i in 1 2 3
+++ echo '=== Push Attempt 2 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+=== Push Attempt 2 ===
+Branch = feature/deploy-cicd
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push output:
+++ echo 'Push output:'
+++ cat push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push attempt 2 failed
+++ echo 'Push attempt 2 failed'
+++ sleep 2
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+++ for i in 1 2 3
+++ echo '=== Push Attempt 3 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+=== Push Attempt 3 ===
+Branch = feature/deploy-cicd
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+++ echo 'Push output:'
+++ cat push.log
+Push output:
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+++ echo 'Push attempt 3 failed'
+++ sleep 2
+Push attempt 3 failed
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+++ '[' false = false ']'
+++ echo 'ERROR: Push failed after 3 attempts'
+++ exit 1
+ERROR: Push failed after 3 attempts
 Cleaning up project directory and file based variables
-00:03
+00:00
 ERROR: Job failed: exit code 1
 
-
-
--------------------------- Below is the configuration :
-
-
-
-.build:
-  stage: build
-  image:
-    name: registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113
-    pull_policy: always
-
-  script:
-    - echo "BUILD STARTED"
-    - pwd
-    - ls -la
-
-    # Proxy (optional)
-    - npm config set proxy http://serverswg.sbi.co.in:80 || true
-    - npm config set https-proxy http://serverswg.sbi.co.in:9090 || true
-
-    # Install dependencies
-    - npm cache clean --force
-    - npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-
-    # Build (Next.js / React / Angular)
-    - npm run build
-
-    # IMPORTANT: Skip export (Next.js latest uses output: export)
-    - echo "Skipping export step (handled by Next.js build)"
-
-    # Normalize output (SAFE FOR ALL APPS)
-    - |
-      if [ -d "out" ]; then
-        echo "Next.js detected - copying out to dist"
-        rm -rf dist
-        mkdir -p dist
-        cp -r out/* dist/
-      elif [ -d "dist" ]; then
-        echo "Using existing dist"
-      else
-        echo "ERROR: No dist or out folder found"
-        exit 1
-      fi
-
-    # Verify
-    - echo "FINAL DIST CONTENT"
-    - ls -la dist
-
-    - echo "BUILD COMPLETED"
-
-  artifacts:
-    paths:
-      - dist/
-    when: on_success
-    expire_in: 1 week
