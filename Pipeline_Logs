@@ -1,163 +1,379 @@
-.update_tag:
-  stage: publish
-
-  tags:
-    - deploy_runner
-
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-
-    # Configure bot token
-    - git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
-
-    # Validate token
-    - echo "=== GitLab Authentication Validation ==="
-    - |
-      curl -k --silent \
-      --header "PRIVATE-TOKEN: ${GITLAB_CI_DEPLOY_TOKEN}" \
-      https://gitlab.sbi/api/v4/user || true
-    - echo ""
-    - echo "========================================"
-
-  script:
-    - |
-      set -eo pipefail
-      set -x
-
-      echo "========== DEBUG =========="
-      echo "PROJECT   = ${CI_PROJECT_PATH}"
-      echo "BRANCH    = ${CI_COMMIT_BRANCH}"
-      echo "SERVICE   = ${SERVICE_NAME}"
-      echo "ENV       = ${ENV}"
-      echo "VERSION   = ${VERSION}"
-      echo "CHART     = ${CHART_NAME}"
-      echo "RELEASE   = ${RELEASE_NAME}"
-      echo "==========================="
-
-      if [ -z "${SERVICE_NAME}" ]; then
-        echo "ERROR: SERVICE_NAME is empty"
-        exit 1
-      fi
-
-      if [ -z "${ENV}" ]; then
-        echo "ERROR: ENV is empty"
-        exit 1
-      fi
-
-      if [ -z "${VERSION}" ]; then
-        echo "ERROR: VERSION is empty"
-        exit 1
-      fi
-
-      if [ -z "${GITLAB_CI_DEPLOY_TOKEN}" ]; then
-        echo "ERROR: GITLAB_CI_DEPLOY_TOKEN is empty"
-        exit 1
-      fi
-
-      TAG="${VERSION}"
-      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-      VALUES_FILE="${SERVICE_PATH}/values.yaml"
-
-      echo "SERVICE_PATH = ${SERVICE_PATH}"
-      echo "VALUES_FILE  = ${VALUES_FILE}"
-
-      echo "=== Available charts in ${ENV}/charts/ ==="
-
-      ls -ltrh "${ENV}/charts/" || {
-        echo "ERROR: ${ENV}/charts directory not found"
-        exit 1
-      }
-
-      if [ ! -d "${SERVICE_PATH}" ]; then
-        echo "ERROR: Service directory not found: ${SERVICE_PATH}"
-        exit 1
-      fi
-
-      if [ ! -f "${VALUES_FILE}" ]; then
-        echo "ERROR: values.yaml not found: ${VALUES_FILE}"
-        exit 1
-      fi
-
-      echo "=== Current values.yaml ==="
-      cat "${VALUES_FILE}"
-
-      git fetch origin
-
-      git checkout "${CI_COMMIT_BRANCH}"
-
-      REBASE_SUCCESS=false
-
-      for i in 1 2 3; do
-        if git pull --rebase origin "${CI_COMMIT_BRANCH}"; then
-          REBASE_SUCCESS=true
-          break
-        fi
-
-        echo "Rebase attempt ${i} failed"
-
-        sleep 2
-
-        git rebase --abort 2>/dev/null || true
-      done
-
-      if [ "${REBASE_SUCCESS}" = "false" ]; then
-        echo "ERROR: Rebase failed"
-        exit 1
-      fi
-
-      echo "=== Updating image tag to ${TAG} ==="
-
-      sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" "${VALUES_FILE}"
-
-      echo "=== Updated values.yaml ==="
-      cat "${VALUES_FILE}"
-
-      git add "${VALUES_FILE}"
-
-      if [[ $(git status --porcelain) ]]; then
-
-        git commit -m "chore: update ${SERVICE_NAME} image tag to ${TAG} for ${ENV} [skip ci]"
-
-        PUSH_SUCCESS=false
-
-        for i in 1 2 3; do
-
-          echo "=== Push Attempt ${i} ==="
-          echo "Branch = ${CI_COMMIT_BRANCH}"
-
-          git remote -v
-
-          if git push origin "${CI_COMMIT_BRANCH}" 2>&1 | tee push.log; then
-            PUSH_SUCCESS=true
-            break
-          fi
-
-          echo "Push output:"
-          cat push.log
-
-          echo "Push attempt ${i} failed"
-
-          sleep 2
-
-          git pull --rebase origin "${CI_COMMIT_BRANCH}" || true
-
-        done
-
-        if [ "${PUSH_SUCCESS}" = "false" ]; then
-          echo "ERROR: Push failed after 3 attempts"
-          exit 1
-        fi
-
-        echo "SUCCESS: values.yaml updated successfully"
-
-      else
-        echo "No changes detected"
-      fi
-
-      echo "=== Final values.yaml ==="
-      cat "${VALUES_FILE}"
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2655-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:08
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out a05bf473 as detached HEAD (ref is feature/deploy-cicd)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:12
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
+$ echo "=== GitLab Authentication Validation ==="
+=== GitLab Authentication Validation ===
+$ curl -k --silent \ # collapsed multi-line command
+{"id":552,"username":"6692435","public_email":null,"name":"Vishnu Gehlot","state":"active","locked":false,"avatar_url":null,"web_url":"https://gitlab.sbi/6692435","created_at":"2026-03-16T18:09:51.427+05:30","bio":"","location":"","skype":"","linkedin":"","twitter":"","discord":"","website_url":"","github":"","organization":"","job_title":"","pronouns":null,"bot":false,"work_information":null,"local_time":null,"last_sign_in_at":"2026-06-03T08:42:57.535+05:30","confirmed_at":"2026-03-16T18:09:51.309+05:30","last_activity_on":"2026-06-04","email":"vishnu.gehlot1@sbi.co.in","theme_id":3,"color_scheme_id":1,"projects_limit":0,"current_sign_in_at":"2026-06-04T13:42:58.151+05:30","identities":[{"provider":"ldapmain","extern_uid":"cn=vishnu gehlot,ou=gttech1 users,ou=gttech1,ou=gitc belapur,dc=corp,dc=ad,dc=sbi","saml_provider_id":null}],"can_create_group":false,"can_create_project":false,"two_factor_enabled":true,"external":false,"private_profile":false,"commit_email":"vishnu.gehlot1@sbi.co.in","shared_runners_minutes_limit":null,"extra_shared_runners_minutes_limit":null,"scim_identities":[]}$ echo ""
+$ echo "========================================"
+========================================
+$ set -eo pipefail # collapsed multi-line command
+========== DEBUG ==========
+PROJECT   = itepaypg-sbiepay2/infra/devops/deployment
+BRANCH    = feature/deploy-cicd
+SERVICE   = epay_admin_service
+ENV       = dev
+VERSION   = dev-23a33cba
+++ echo '========== DEBUG =========='
+++ echo 'PROJECT   = itepaypg-sbiepay2/infra/devops/deployment'
+++ echo 'BRANCH    = feature/deploy-cicd'
+++ echo 'SERVICE   = epay_admin_service'
+CHART     = $CHART_NAME
+RELEASE   = admin
+===========================
+++ echo 'ENV       = dev'
+++ echo 'VERSION   = dev-23a33cba'
+++ echo 'CHART     = $CHART_NAME'
+++ echo 'RELEASE   = admin'
+++ echo ===========================
+++ '[' -z epay_admin_service ']'
+++ '[' -z dev ']'
+++ '[' -z dev-23a33cba ']'
+++ '[' -z [MASKED] ']'
+++ TAG=dev-23a33cba
+++ SERVICE_PATH=dev/charts/epay_admin_service
+++ VALUES_FILE=dev/charts/epay_admin_service/values.yaml
+++ echo 'SERVICE_PATH = dev/charts/epay_admin_service'
+++ echo 'VALUES_FILE  = dev/charts/epay_admin_service/values.yaml'
+++ echo '=== Available charts in dev/charts/ ==='
+++ ls -ltrh dev/charts/
+SERVICE_PATH = dev/charts/epay_admin_service
+VALUES_FILE  = dev/charts/epay_admin_service/values.yaml
+=== Available charts in dev/charts/ ===
+total 0
+drwxrwxrwx 3 root root  79 Jun  4 09:36 backend_sdk_simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_admin_portal_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_admin_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_bridge_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_communication_service
+drwxrwxrwx 4 root root 109 Jun  4 09:36 epay_common
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_gateway_pooling
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_integration_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_maintenance_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_key_managment
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_merchant_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_merchant_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_merchant_integration_doc
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_merchant_simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_operations_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_notification_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_order_hash
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_payment_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_refund_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_reports_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_sftp_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_stubs_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_transaction_service
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_transaction_fe
+drwxrwxrwx 3 root root  79 Jun  4 09:36 epay_website
+drwxrwxrwx 3 root root  79 Jun  4 09:36 java-utility-api-simulator
+drwxrwxrwx 3 root root  79 Jun  4 09:36 merchant_api_simulator_nodejs
+drwxrwxrwx 3 root root  79 Jun  4 09:36 merchant_api_simulator_dotnet
+drwxrwxrwx 3 root root  79 Jun  4 09:36 merchant_api_simulator_python
+drwxrwxrwx 3 root root  79 Jun  4 09:36 merchant_api_simulator_php
+drwxrwxrwx 3 root root  79 Jun  4 09:36 transaction_job_service
+drwxrwxrwx 3 root root  60 Jun  4 09:36 microservice-secrets
+++ '[' '!' -d dev/charts/epay_admin_service ']'
+++ '[' '!' -f dev/charts/epay_admin_service/values.yaml ']'
+++ echo '=== Current values.yaml ==='
+++ cat dev/charts/epay_admin_service/values.yaml
+=== Current values.yaml ===
+# Default values for adminservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.##
+replicaCount: 1
+virtualService:
+  enabled: true
+image:
+  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "dev-307c81ea"
+  #tag: "dev-307c81ea"
+  tag: "dev-307c81ea"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+applicationProperties: ""
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 9094
+namespace: dev-admin
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: admin-adminservice
+serviceName: admin-adminservice
+prefixName:  /api/admin/v1
+servicePort: 9094
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
+routes:
+  - prefixName: /api/admin/v1/merchant/payMode/
+    serviceName: admin-adminservice
+    servicePort: 9094
+  
+configMap: 
+  additionalLabels:
+    # ...
+  annotations:
+    # ...
+  nameSuffix: "config"
+resources: {}
+ingress: {}
+# readinessProbe: {}
+# livenessProbe: {}
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/readiness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/liveness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+autoscaling: {}
+# Additional volumes on the output Deployment definition.
+volumes: []
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true#
+nodeSelector: {}
+tolerations: []
+affinity: {}
+#++ git fetch origin
+++ git checkout feature/deploy-cicd
+Switched to a new branch 'feature/deploy-cicd'
+branch 'feature/deploy-cicd' set up to track 'origin/feature/deploy-cicd'.
+++ REBASE_SUCCESS=false
+++ for i in 1 2 3
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Already up to date.
+++ REBASE_SUCCESS=true
+++ break
+++ '[' true = false ']'
+=== Updating image tag to dev-23a33cba ===
+++ echo '=== Updating image tag to dev-23a33cba ==='
+++ sed -i 's/\(tag:\).*/\1 "dev-23a33cba"/' dev/charts/epay_admin_service/values.yaml
+=== Updated values.yaml ===
+++ echo '=== Updated values.yaml ==='
+++ cat dev/charts/epay_admin_service/values.yaml
+# Default values for adminservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.##
+replicaCount: 1
+virtualService:
+  enabled: true
+image:
+  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "dev-23a33cba"
+  #tag: "dev-23a33cba"
+  tag: "dev-23a33cba"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+applicationProperties: ""
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 9094
+namespace: dev-admin
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: admin-adminservice
+serviceName: admin-adminservice
+prefixName:  /api/admin/v1
+servicePort: 9094
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
+routes:
+  - prefixName: /api/admin/v1/merchant/payMode/
+    serviceName: admin-adminservice
+    servicePort: 9094
+  
+configMap: 
+  additionalLabels:
+    # ...
+  annotations:
+    # ...
+  nameSuffix: "config"
+resources: {}
+ingress: {}
+# readinessProbe: {}
+# livenessProbe: {}
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/readiness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/liveness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+autoscaling: {}
+# Additional volumes on the output Deployment definition.
+volumes: []
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true#
+nodeSelector: {}
+tolerations: []
+affinity: {}
+#++ git add dev/charts/epay_admin_service/values.yaml
++++ git status --porcelain
+++ [[ -n M  dev/charts/epay_admin_service/values.yaml ]]
+++ git commit -m 'chore: update epay_admin_service image tag to dev-23a33cba for dev [skip ci]'
+[feature/deploy-cicd 88f13a1d6] chore: update epay_admin_service image tag to dev-23a33cba for dev [skip ci]
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+++ PUSH_SUCCESS=false
+++ for i in 1 2 3
+=== Push Attempt 1 ===
+Branch = feature/deploy-cicd
+++ echo '=== Push Attempt 1 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push output:
+++ echo 'Push output:'
+++ cat push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+++ echo 'Push attempt 1 failed'
+++ sleep 2
+Push attempt 1 failed
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+++ for i in 1 2 3
+++ echo '=== Push Attempt 2 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+=== Push Attempt 2 ===
+Branch = feature/deploy-cicd
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+++ echo 'Push output:'
+++ cat push.log
+Push output:
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push attempt 2 failed
+++ echo 'Push attempt 2 failed'
+++ sleep 2
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+=== Push Attempt 3 ===
+Branch = feature/deploy-cicd
+++ for i in 1 2 3
+++ echo '=== Push Attempt 3 ==='
+++ echo 'Branch = feature/deploy-cicd'
+++ git remote -v
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
+origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
+++ git push origin feature/deploy-cicd
+++ tee push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push output:
+++ echo 'Push output:'
+++ cat push.log
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+ ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
+Push attempt 3 failed
+++ echo 'Push attempt 3 failed'
+++ sleep 2
+++ git pull --rebase origin feature/deploy-cicd
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                feature/deploy-cicd -> FETCH_HEAD
+Current branch feature/deploy-cicd is up to date.
+++ '[' false = false ']'
+++ echo 'ERROR: Push failed after 3 attempts'
+++ exit 1
+ERROR: Push failed after 3 attempts
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
