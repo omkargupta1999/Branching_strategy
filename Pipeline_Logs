@@ -1,35 +1,15 @@
-[root@loki1 ~]# for i in 1 2; do
+# Fixed timestamps - same range both runs, ending ~2 hours ago (well outside the fresh zone)
+END=$(date -d '2 hours ago' +%s)000000000
+START=$(date -d '4 hours ago' +%s)000000000
+
+for i in 1 2; do
   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range" \
-    --data-urlencode 'query={k8s_container_name="transactionservice"} |= `error`' \
-    --data-urlencode "start=$(date -d '1 hour ago' +%s)000000000" \
-    --data-urlencode "end=$(date +%s)000000000" \
-    --data-urlencode "limit=100" -o /dev/null -w "run$i: time=%{time_total}s\n"
+    --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])' \
+    --data-urlencode "start=$START" \
+    --data-urlencode "end=$END" \
+    --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"
 done
-run1: time=1.631952s
-run2: time=1.276764s
-[root@loki1 ~]#
-[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query={k8s_container_name="transactionservice"} |= `error`'     --data-urlencode "start=$(date -d '1 hour ago' +%s)000000000"     --data-urlencode "end=$(date +%s)000000000"     --data-urlencode "limit=100" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
-run1: time=1.555441s
-run2: time=1.514151s
-[root@loki1 ~]#
-[root@loki1 ~]# docker logs --since 5m loki-querier-primary-1-node1 2>&1 | grep -o '"cache_result_hit":[0-9]*\|"cache_chunk_hit":[0-9]*' | tail -20
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
-"cache_chunk_hit":15
-"cache_result_hit":0
-"cache_chunk_hit":6
-"cache_result_hit":0
-"cache_chunk_hit":0
-"cache_result_hit":0
+
+# Now check result-cache hits for this query
+docker logs --since 2m loki-querier-primary-1-node1 2>&1 \
+  | grep -o '"cache_result_hit":[0-9]*\|"cache_result_req":[0-9]*' | tail -10
