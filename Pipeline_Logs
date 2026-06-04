@@ -1,4 +1,4 @@
-# Fixed timestamps - same range both runs, ending ~2 hours ago (well outside the fresh zone)
+[root@loki1 ~]# # Fixed timestamps - same range both runs, ending ~2 hours ago (well outside the fresh zone)
 END=$(date -d '2 hours ago' +%s)000000000
 START=$(date -d '4 hours ago' +%s)000000000
 
@@ -9,7 +9,39 @@ for i in 1 2; do
     --data-urlencode "end=$END" \
     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"
 done
-
-# Now check result-cache hits for this query
+run1: time=1.353063s
+run2: time=0.001765s
+[root@loki1 ~]#
+[root@loki1 ~]#
+[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])'     --data-urlencode "start=$START"     --data-urlencode "end=$END"     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
+run1: time=0.001872s
+run2: time=0.001482s
+[root@loki1 ~]#
+[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])'     --data-urlencode "start=$START"     --data-urlencode "end=$END"     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
+run1: time=0.001800s
+run2: time=0.001614s
+[root@loki1 ~]#
+[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])'     --data-urlencode "start=$START"     --data-urlencode "end=$END"     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
+run1: time=0.001923s
+run2: time=0.001432s
+[root@loki1 ~]#
+[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])'     --data-urlencode "start=$START"     --data-urlencode "end=$END"     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
+run1: time=0.001916s
+run2: time=0.001531s
+[root@loki1 ~]#
+[root@loki1 ~]# for i in 1 2; do   curl -s -G "http://10.189.35.10:3104/loki/api/v1/query_range"     --data-urlencode 'query=count_over_time({k8s_container_name="transactionservice"} |= `error` [5m])'     --data-urlencode "start=$START"     --data-urlencode "end=$END"     --data-urlencode "step=300000ms" -o /dev/null -w "run$i: time=%{time_total}s\n"; done
+run1: time=0.001835s
+run2: time=0.001536s
+[root@loki1 ~]# # Now check result-cache hits for this query
 docker logs --since 2m loki-querier-primary-1-node1 2>&1 \
   | grep -o '"cache_result_hit":[0-9]*\|"cache_result_req":[0-9]*' | tail -10
+"cache_result_hit":0
+"cache_result_req":0
+"cache_result_hit":0
+"cache_result_req":0
+"cache_result_hit":0
+"cache_result_req":0
+"cache_result_hit":0
+"cache_result_req":0
+"cache_result_hit":0
+"cache_result_req":0
