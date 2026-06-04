@@ -1,8 +1,11 @@
+getting below erro:
+
+
 Running with gitlab-runner 17.8.0 (e4f782b3)
   on DC-Gitlab-Runner rMTQxLq3, system ID: s_948d0ccb739a
 Resolving secrets
 Preparing the "docker" executor
-00:06
+00:04
 Using Docker executor with image registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 ...
 Using helper image:  dev-registry-route-quay-enterprise.apps.dev.sbiepay.sbi/microservices/library/gitlab-runner-helper:latest  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.8.0 )
 Using locally found image version due to "if-not-present" pull policy
@@ -22,47 +25,48 @@ $ git config --global http.proxy $HTTP_PROXY; git config --global https.proxy $H
 Fetching changes with git depth set to 20...
 Initialized empty Git repository in /tmp/builds/epay/frontends/epay_website/.git/
 Created fresh repository.
-Checking out 74a9b88d as detached HEAD (ref is refs/merge-requests/75/head)...
+Checking out 0db06522 as detached HEAD (ref is refs/merge-requests/75/head)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
 00:06
 Using docker image sha256:c1037efa7a6cfce811caf269e33c408144a2058361edcd7ab9d99c1aa67433c8 for registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113 with digest registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm@sha256:96ab8f99d7e94b7d955b4129daa1a36556977e216b5ff4b392c07e2d8a776e58 ...
-$ echo "=== BUILD STARTED ==="
-=== BUILD STARTED ===
+$ echo "BUILD STARTED"
+BUILD STARTED
 $ pwd
 /tmp/builds/epay/frontends/epay_website
 $ ls -la
 total 516
-drwxrwxrwx.  5 default root   4096 Jun  4 12:41 .
-drwxrwxrwx.  4 default root     50 Jun  4 12:41 ..
--rw-rw-rw-.  1 default root    145 Jun  4 12:41 .env
--rw-rw-rw-.  1 default root    197 Jun  4 12:41 .env.development
--rw-rw-rw-.  1 default root    153 Jun  4 12:41 .env.pre-prod
--rw-rw-rw-.  1 default root    147 Jun  4 12:41 .env.sit
--rw-rw-rw-.  1 default root    146 Jun  4 12:41 .env.uat
-drwxrwxrwx.  6 default root    128 Jun  4 12:41 .git
--rw-rw-rw-.  1 default root    277 Jun  4 12:41 .gitignore
--rw-rw-rw-.  1 default root    188 Jun  4 12:41 .gitlab-ci.yml
--rw-rw-rw-.  1 default root    864 Jun  4 12:41 Dockerfile
--rw-rw-rw-.  1 default root   2254 Jun  4 12:41 README.md
--rw-rw-rw-.  1 default root    446 Jun  4 12:41 components.json
--rw-rw-rw-.  1 default root    621 Jun  4 12:41 eslint.config.js
--rw-rw-rw-.  1 default root    428 Jun  4 12:41 index.html
--rw-rw-rw-.  1 default root   2443 Jun  4 12:41 nginx.conf
--rw-rw-rw-.  1 default root 435782 Jun  4 12:41 package-lock.json
--rw-rw-rw-.  1 default root   3053 Jun  4 12:41 package.json
-drwxrwxrwx.  4 default root     90 Jun  4 12:41 public
--rw-rw-rw-.  1 default root    147 Jun  4 12:41 setproxy.cmd
-drwxrwxrwx. 11 default root   4096 Jun  4 12:41 src
--rw-rw-rw-.  1 default root   1354 Jun  4 12:41 tailwind.config.js
--rw-rw-rw-.  1 default root    836 Jun  4 12:41 tsconfig.app.json
--rw-rw-rw-.  1 default root    238 Jun  4 12:41 tsconfig.json
--rw-rw-rw-.  1 default root    630 Jun  4 12:41 tsconfig.node.json
--rw-rw-rw-.  1 default root    607 Jun  4 12:41 vite.config.ts
-$ npm config delete proxy || true
-$ npm config delete https-proxy || true
-$ npm config set registry https://artifactory.jfrog.sbi:443/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/
-$ npm ci --legacy-peer-deps
+drwxrwxrwx.  5 default root   4096 Jun  4 12:45 .
+drwxrwxrwx.  4 default root     50 Jun  4 12:45 ..
+-rw-rw-rw-.  1 default root    145 Jun  4 12:45 .env
+-rw-rw-rw-.  1 default root    197 Jun  4 12:45 .env.development
+-rw-rw-rw-.  1 default root    153 Jun  4 12:45 .env.pre-prod
+-rw-rw-rw-.  1 default root    147 Jun  4 12:45 .env.sit
+-rw-rw-rw-.  1 default root    146 Jun  4 12:45 .env.uat
+drwxrwxrwx.  6 default root    128 Jun  4 12:45 .git
+-rw-rw-rw-.  1 default root    277 Jun  4 12:45 .gitignore
+-rw-rw-rw-.  1 default root    190 Jun  4 12:45 .gitlab-ci.yml
+-rw-rw-rw-.  1 default root    864 Jun  4 12:45 Dockerfile
+-rw-rw-rw-.  1 default root   2254 Jun  4 12:45 README.md
+-rw-rw-rw-.  1 default root    446 Jun  4 12:45 components.json
+-rw-rw-rw-.  1 default root    621 Jun  4 12:45 eslint.config.js
+-rw-rw-rw-.  1 default root    428 Jun  4 12:45 index.html
+-rw-rw-rw-.  1 default root   2443 Jun  4 12:45 nginx.conf
+-rw-rw-rw-.  1 default root 435782 Jun  4 12:45 package-lock.json
+-rw-rw-rw-.  1 default root   3053 Jun  4 12:45 package.json
+drwxrwxrwx.  4 default root     90 Jun  4 12:45 public
+-rw-rw-rw-.  1 default root    147 Jun  4 12:45 setproxy.cmd
+drwxrwxrwx. 11 default root   4096 Jun  4 12:45 src
+-rw-rw-rw-.  1 default root   1354 Jun  4 12:45 tailwind.config.js
+-rw-rw-rw-.  1 default root    836 Jun  4 12:45 tsconfig.app.json
+-rw-rw-rw-.  1 default root    238 Jun  4 12:45 tsconfig.json
+-rw-rw-rw-.  1 default root    630 Jun  4 12:45 tsconfig.node.json
+-rw-rw-rw-.  1 default root    607 Jun  4 12:45 vite.config.ts
+$ npm config set proxy http://serverswg.sbi.co.in:80 || true
+$ npm config set https-proxy http://serverswg.sbi.co.in:9090 || true
+$ npm cache clean --force
+npm warn using --force Recommended protections disabled.
+$ npm ci --offline --legacy-peer-deps --prefer-offline
 npm warn EBADENGINE Unsupported engine {
 npm warn EBADENGINE   package: '@vitejs/plugin-react@5.2.0',
 npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
@@ -78,9 +82,70 @@ npm warn EBADENGINE   package: 'vite@7.3.5',
 npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
 npm warn EBADENGINE   current: { node: 'v20.17.0', npm: '10.8.2' }
 npm warn EBADENGINE }
-npm error code EINVALIDPROXY
-npm error Invalid protocol `serverswg.sbi.co.in:` connecting to proxy ``
-npm error A complete log of this run can be found in: /opt/app-root/src/.npm/_logs/2026-06-04T12_41_35_117Z-debug-0.log
+npm error code ENOTCACHED
+npm error request to https://artifactory.jfrog.sbi/artifactory/api/npm/itepaypg-sbiepay2-npm-virtual/zod-to-json-schema/-/zod-to-json-schema-3.25.2.tgz failed: cache mode is 'only-if-cached' but no cached response is available.
+npm error A complete log of this run can be found in: /opt/app-root/src/.npm/_logs/2026-06-04T12_45_39_572Z-debug-0.log
 Cleaning up project directory and file based variables
 00:02
 ERROR: Job failed: exit code 1
+
+
+
+
+
+build configuration:
+
+
+
+
+.build:
+  stage: build
+  image:
+    name: registry.dev.sbiepay.sbi:8443/ubi9/reactjs_npm:20241113
+    pull_policy: always
+
+  script:
+    - echo "BUILD STARTED"
+    - pwd
+    - ls -la
+
+    # Proxy (optional)
+    - npm config set proxy http://serverswg.sbi.co.in:80 || true
+    - npm config set https-proxy http://serverswg.sbi.co.in:9090 || true
+
+    # Install dependencies
+    - npm cache clean --force
+    #- npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+    - npm ci --offline --legacy-peer-deps --prefer-offline
+
+    # Build (Next.js / React / Angular)
+    - npm run build
+
+    # IMPORTANT: Skip export (Next.js latest uses output: export)
+    - echo "Skipping export step (handled by Next.js build)"
+
+    # Normalize output (SAFE FOR ALL APPS)
+    - |
+      if [ -d "out" ]; then
+        echo "Next.js detected - copying out to dist"
+        rm -rf dist
+        mkdir -p dist
+        cp -r out/* dist/
+      elif [ -d "dist" ]; then
+        echo "Using existing dist"
+      else
+        echo "ERROR: No dist or out folder found"
+        exit 1
+      fi
+
+    # Verify
+    - echo "FINAL DIST CONTENT"
+    - ls -la dist
+
+    - echo "BUILD COMPLETED"
+
+  artifacts:
+    paths:
+      - dist/
+    when: on_success
+    expire_in: 1 week
