@@ -1,29 +1,5 @@
-[root@bastion ~]# oc debug node/worker3.dev.sbiepay.sbi -- chroot /host timedatectl status
-Temporary namespace openshift-debug-r8jkm is created for debugging node...
-Starting pod/worker3devsbiepaysbi-debug-7cf69 ...
-To use host binaries, run `chroot /host`
-               Local time: Thu 2026-06-04 11:17:37 UTC
-           Universal time: Thu 2026-06-04 11:17:37 UTC
-                 RTC time: Thu 2026-06-04 11:17:37
-                Time zone: UTC (UTC, +0000)
-System clock synchronized: yes
-              NTP service: active
-          RTC in local TZ: no
+oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc tracking
+oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc tracking
 
-Removing debug pod ...
-Temporary namespace openshift-debug-r8jkm was removed.
-[root@bastion ~]# oc debug node/worker1.dev.sbiepay.sbi -- chroot /host timedatectl status
-Temporary namespace openshift-debug-7cftr is created for debugging node...
-Starting pod/worker1devsbiepaysbi-debug-5tcf4 ...
-To use host binaries, run `chroot /host`
-               Local time: Thu 2026-06-04 11:17:47 UTC
-           Universal time: Thu 2026-06-04 11:17:47 UTC
-                 RTC time: Thu 2026-06-04 11:17:47
-                Time zone: UTC (UTC, +0000)
-System clock synchronized: yes
-              NTP service: active
-          RTC in local TZ: no
-
-Removing debug pod ...
-Temporary namespace openshift-debug-7cftr was removed.
-[root@bastion ~]#
+oc debug node/worker3.dev.sbiepay.sbi -- chroot /host chronyc sources -v
+oc debug node/worker1.dev.sbiepay.sbi -- chroot /host chronyc sources -v
