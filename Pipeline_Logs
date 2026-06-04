@@ -1,6 +1,25 @@
-# Pod time vs its host node time, same node — should match closely
-oc exec ops-operationsservice-57d5b465dd-27h9q -n dev-rns -- date +%s.%N
-oc debug node/worker3.dev.sbiepay.sbi -- chroot /host date +%s.%N
+[root@bastion ~]# oc exec ops-operationsservice-57d5b465dd-27h9q -n dev-rns -- date +%s.%N
+1780572268.140895614
+[root@bastion ~]# oc debug node/worker3.dev.sbiepay.sbi -- chroot /host date +%s.%N
+Temporary namespace openshift-debug-cnm2n is created for debugging node...
+Starting pod/worker3devsbiepaysbi-debug-7pnv5 ...
+To use host binaries, run `chroot /host`
+1780572269.095911115
 
-oc exec ops-operationsservice-57d5b465dd-mlr65 -n dev-rns -- date +%s.%N
-oc debug node/worker1.dev.sbiepay.sbi -- chroot /host date +%s.%N
+Removing debug pod ...
+Temporary namespace openshift-debug-cnm2n was removed.
+[root@bastion ~]#
+[root@bastion ~]# oc exec ops-operationsservice-57d5b465dd-mlr65 -n dev-rns -- date +%s.%N
+1780572269.761113180
+[root@bastion ~]# oc debug node/worker1.dev.sbiepay.sbi -- chroot /host date +%s.%N
+Temporary namespace openshift-debug-tqtnh is created for debugging node...
+Starting pod/worker1devsbiepaysbi-debug-wwvhc ...
+To use host binaries, run `chroot /host`
+1780572273.223659463
+
+Removing debug pod ...
+Temporary namespace openshift-debug-tqtnh was removed.
+[root@bastion ~]#
+
+
+In output you can see arond 5 min difference on both pod and nodes
