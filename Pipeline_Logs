@@ -1,380 +1,370 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-2655-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:08
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out a05bf473 as detached HEAD (ref is feature/deploy-cicd)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:11
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global --add safe.directory '*'
-$ git config --global user.name "ci"
-$ git config --global user.email "ci.cedge@sbi.co.in"
-$ git remote set-url origin "https://oauth2:${CI_BOT_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
-$ echo "=== GitLab Authentication Validation ==="
-=== GitLab Authentication Validation ===
-$ curl -k --silent \ # collapsed multi-line command
-{"id":2011,"username":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1","public_email":null,"name":"CI_BOT_TOKEN","state":"active","locked":false,"avatar_url":null,"web_url":"https://gitlab.sbi/project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1","created_at":"2026-06-04T15:15:29.598+05:30","bio":"","location":"","skype":"","linkedin":"","twitter":"","discord":"","website_url":"","github":"","organization":"","job_title":"","pronouns":null,"bot":true,"work_information":null,"local_time":null,"last_sign_in_at":null,"confirmed_at":"2026-06-04T15:15:29.558+05:30","last_activity_on":"2026-06-04","email":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1@noreply.gitlab.sbi","theme_id":3,"color_scheme_id":1,"projects_limit":0,"current_sign_in_at":null,"identities":[],"can_create_group":false,"can_create_project":false,"two_factor_enabled":false,"external":false,"private_profile":false,"commit_email":"project_2655_bot_47eba6bb1d5696686d5e512c0da56eb1@noreply.gitlab.sbi","shared_runners_minutes_limit":null,"extra_shared_runners_minutes_limit":null,"scim_identities":[]}$ echo ""
-$ echo "========================================"
-========================================
-$ set -eo pipefail # collapsed multi-line command
-========== DEBUG ==========
-PROJECT   = itepaypg-sbiepay2/infra/devops/deployment
-BRANCH    = feature/deploy-cicd
-SERVICE   = epay_admin_service
-ENV       = dev
-VERSION   = dev-e65d6ffa
-CHART     = $CHART_NAME
-RELEASE   = admin
-===========================
-++ echo '========== DEBUG =========='
-++ echo 'PROJECT   = itepaypg-sbiepay2/infra/devops/deployment'
-++ echo 'BRANCH    = feature/deploy-cicd'
-++ echo 'SERVICE   = epay_admin_service'
-++ echo 'ENV       = dev'
-++ echo 'VERSION   = dev-e65d6ffa'
-++ echo 'CHART     = $CHART_NAME'
-++ echo 'RELEASE   = admin'
-++ echo ===========================
-++ '[' -z epay_admin_service ']'
-++ '[' -z dev ']'
-++ '[' -z dev-e65d6ffa ']'
-++ '[' -z [MASKED] ']'
-++ TAG=dev-e65d6ffa
-++ SERVICE_PATH=dev/charts/epay_admin_service
-++ VALUES_FILE=dev/charts/epay_admin_service/values.yaml
-++ echo 'SERVICE_PATH = dev/charts/epay_admin_service'
-++ echo 'VALUES_FILE  = dev/charts/epay_admin_service/values.yaml'
-++ echo '=== Available charts in dev/charts/ ==='
-++ ls -ltrh dev/charts/
-SERVICE_PATH = dev/charts/epay_admin_service
-VALUES_FILE  = dev/charts/epay_admin_service/values.yaml
-=== Available charts in dev/charts/ ===
-total 0
-drwxrwxrwx 3 root root  79 Jun  4 09:57 backend_sdk_simulator
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_admin_portal_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_bridge_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_admin_service
-drwxrwxrwx 4 root root 109 Jun  4 09:57 epay_common
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_communication_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_integration_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_gateway_pooling
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_key_managment
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_maintenance_fe
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_integration_doc
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_fe
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_notification_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_merchant_simulator
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_operations_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_payment_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_order_hash
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_refund_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_reports_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_stubs_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_sftp_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_transaction_fe
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_transaction_service
-drwxrwxrwx 3 root root  79 Jun  4 09:57 java-utility-api-simulator
-drwxrwxrwx 3 root root  79 Jun  4 09:57 epay_website
-drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_dotnet
-drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_php
-drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_nodejs
-drwxrwxrwx 3 root root  60 Jun  4 09:57 microservice-secrets
-drwxrwxrwx 3 root root  79 Jun  4 09:57 merchant_api_simulator_python
-drwxrwxrwx 3 root root  79 Jun  4 09:57 transaction_job_service
-++ '[' '!' -d dev/charts/epay_admin_service ']'
-++ '[' '!' -f dev/charts/epay_admin_service/values.yaml ']'
-++ echo '=== Current values.yaml ==='
-=== Current values.yaml ===
-++ cat dev/charts/epay_admin_service/values.yaml
-# Default values for adminservice.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.##
-replicaCount: 1
-virtualService:
-  enabled: true
-image:
-  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  #tag: "dev-307c81ea"
-  #tag: "dev-307c81ea"
-  tag: "dev-307c81ea"
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-serviceAccount: {}
-podAnnotations: {}
-podLabels: {}
-podSecurityContext: {}
-applicationProperties: ""
-securityContext: {}
-service:
-  type: ClusterIP
-  port: 9094
-namespace: dev-admin
-gatewayName: dev-istio-system/dev-gateway
-virtualServiceName: admin-adminservice
-serviceName: admin-adminservice
-prefixName:  /api/admin/v1
-servicePort: 9094
-gatewayPort: 80
-gatewayHost: "dev.epay.sbi"
-routes:
-  - prefixName: /api/admin/v1/merchant/payMode/
-    serviceName: admin-adminservice
-    servicePort: 9094
-  
-configMap: 
-  additionalLabels:
-    # ...
+
+
+deployment.yaml ============
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
   annotations:
-    # ...
-  nameSuffix: "config"
-resources: {}
-ingress: {}
-# readinessProbe: {}
-# livenessProbe: {}
-# Enable health probes for proper HPA functioning
-readinessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/admin/v1/actuator/health/readiness"
-    port: 9094
-    scheme: HTTP
-  initialDelaySeconds: 60
-  periodSeconds: 10
-livenessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/admin/v1/actuator/health/liveness"
-    port: 9094
-    scheme: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 10
-autoscaling: {}
-# Additional volumes on the output Deployment definition.
-volumes: []
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true#
-nodeSelector: {}
-tolerations: []
-affinity: {}
-#++ git fetch origin
-++ git checkout feature/deploy-cicd
-Switched to a new branch 'feature/deploy-cicd'
-branch 'feature/deploy-cicd' set up to track 'origin/feature/deploy-cicd'.
-++ REBASE_SUCCESS=false
-++ for i in 1 2 3
-++ git pull --rebase origin feature/deploy-cicd
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Already up to date.
-++ REBASE_SUCCESS=true
-++ break
-++ '[' true = false ']'
-++ echo '=== Updating image tag to dev-e65d6ffa ==='
-++ sed -i 's/\(tag:\).*/\1 "dev-e65d6ffa"/' dev/charts/epay_admin_service/values.yaml
-=== Updating image tag to dev-e65d6ffa ===
-++ echo '=== Updated values.yaml ==='
-++ cat dev/charts/epay_admin_service/values.yaml
-=== Updated values.yaml ===
-# Default values for adminservice.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.##
+    deployment.kubernetes.io/revision: '69'
+    meta.helm.sh/release-name: admin
+    meta.helm.sh/release-namespace: dev-admin
+  resourceVersion: '794617835'
+  name: admin-adminservice
+  uid: e0434e93-ab46-4c91-9f11-cb52088df44a
+  creationTimestamp: '2026-05-03T18:15:01Z'
+  generation: 69
+  managedFields:
+    - manager: kubectl-edit
+      operation: Update
+      apiVersion: apps/v1
+      time: '2026-05-04T12:23:58Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:template':
+            'f:spec':
+              'f:imagePullSecrets':
+                .: {}
+                'k:{"name":"jfrog-pull-secret"}': {}
+    - manager: Mozilla
+      operation: Update
+      apiVersion: apps/v1
+      time: '2026-05-14T08:44:04Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:template':
+            'f:metadata':
+              'f:annotations':
+                'f:openshift.openshift.io/restartedAt': {}
+    - manager: kubectl-rollout
+      operation: Update
+      apiVersion: apps/v1
+      time: '2026-05-14T09:00:31Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:template':
+            'f:metadata':
+              'f:annotations':
+                'f:kubectl.kubernetes.io/restartedAt': {}
+    - manager: helm
+      operation: Update
+      apiVersion: apps/v1
+      time: '2026-06-04T10:43:49Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:meta.helm.sh/release-name': {}
+            'f:meta.helm.sh/release-namespace': {}
+          'f:labels':
+            .: {}
+            'f:app.kubernetes.io/instance': {}
+            'f:app.kubernetes.io/managed-by': {}
+            'f:app.kubernetes.io/name': {}
+            'f:app.kubernetes.io/version': {}
+            'f:helm.sh/chart': {}
+        'f:spec':
+          'f:progressDeadlineSeconds': {}
+          'f:replicas': {}
+          'f:revisionHistoryLimit': {}
+          'f:selector': {}
+          'f:strategy':
+            'f:rollingUpdate':
+              .: {}
+              'f:maxSurge': {}
+              'f:maxUnavailable': {}
+            'f:type': {}
+          'f:template':
+            'f:metadata':
+              'f:annotations':
+                .: {}
+                'f:checksum/configmap': {}
+              'f:labels':
+                .: {}
+                'f:app.kubernetes.io/instance': {}
+                'f:app.kubernetes.io/managed-by': {}
+                'f:app.kubernetes.io/name': {}
+                'f:app.kubernetes.io/version': {}
+                'f:helm.sh/chart': {}
+            'f:spec':
+              'f:volumes':
+                .: {}
+                'k:{"name":"config"}':
+                  .: {}
+                  'f:configMap':
+                    .: {}
+                    'f:defaultMode': {}
+                    'f:name': {}
+                  'f:name': {}
+                'k:{"name":"payment-upivpaqr-cert"}':
+                  .: {}
+                  'f:name': {}
+                  'f:secret':
+                    .: {}
+                    'f:defaultMode': {}
+                    'f:secretName': {}
+              'f:containers':
+                'k:{"name":"adminservice"}':
+                  'f:image': {}
+                  'f:volumeMounts':
+                    .: {}
+                    'k:{"mountPath":"/certs"}':
+                      .: {}
+                      'f:mountPath': {}
+                      'f:name': {}
+                      'f:readOnly': {}
+                    'k:{"mountPath":"/opt/gradle"}':
+                      .: {}
+                      'f:mountPath': {}
+                      'f:name': {}
+                  'f:terminationMessagePolicy': {}
+                  .: {}
+                  'f:resources': {}
+                  'f:livenessProbe':
+                    .: {}
+                    'f:failureThreshold': {}
+                    'f:httpGet':
+                      .: {}
+                      'f:path': {}
+                      'f:port': {}
+                      'f:scheme': {}
+                    'f:initialDelaySeconds': {}
+                    'f:periodSeconds': {}
+                    'f:successThreshold': {}
+                    'f:timeoutSeconds': {}
+                  'f:env':
+                    .: {}
+                    'k:{"name":"DB_PASSWORD"}':
+                      .: {}
+                      'f:name': {}
+                      'f:valueFrom':
+                        .: {}
+                        'f:secretKeyRef': {}
+                    'k:{"name":"DB_USERNAME"}':
+                      .: {}
+                      'f:name': {}
+                      'f:valueFrom':
+                        .: {}
+                        'f:secretKeyRef': {}
+                    'k:{"name":"SPRING_CONFIG_LOCATION"}':
+                      .: {}
+                      'f:name': {}
+                      'f:value': {}
+                  'f:readinessProbe':
+                    .: {}
+                    'f:failureThreshold': {}
+                    'f:httpGet':
+                      .: {}
+                      'f:path': {}
+                      'f:port': {}
+                      'f:scheme': {}
+                    'f:initialDelaySeconds': {}
+                    'f:periodSeconds': {}
+                    'f:successThreshold': {}
+                    'f:timeoutSeconds': {}
+                  'f:securityContext': {}
+                  'f:terminationMessagePath': {}
+                  'f:imagePullPolicy': {}
+                  'f:ports':
+                    .: {}
+                    'k:{"containerPort":9094,"protocol":"TCP"}':
+                      .: {}
+                      'f:containerPort': {}
+                      'f:name': {}
+                      'f:protocol': {}
+                  'f:name': {}
+              'f:dnsPolicy': {}
+              'f:serviceAccount': {}
+              'f:restartPolicy': {}
+              'f:schedulerName': {}
+              'f:terminationGracePeriodSeconds': {}
+              'f:serviceAccountName': {}
+              'f:securityContext': {}
+    - manager: kube-controller-manager
+      operation: Update
+      apiVersion: apps/v1
+      time: '2026-06-04T10:43:49Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            'f:deployment.kubernetes.io/revision': {}
+        'f:status':
+          'f:availableReplicas': {}
+          'f:conditions':
+            .: {}
+            'k:{"type":"Available"}':
+              .: {}
+              'f:lastTransitionTime': {}
+              'f:lastUpdateTime': {}
+              'f:message': {}
+              'f:reason': {}
+              'f:status': {}
+              'f:type': {}
+            'k:{"type":"Progressing"}':
+              .: {}
+              'f:lastTransitionTime': {}
+              'f:lastUpdateTime': {}
+              'f:message': {}
+              'f:reason': {}
+              'f:status': {}
+              'f:type': {}
+          'f:observedGeneration': {}
+          'f:readyReplicas': {}
+          'f:replicas': {}
+          'f:unavailableReplicas': {}
+          'f:updatedReplicas': {}
+      subresource: status
+  namespace: dev-admin
+  labels:
+    app.kubernetes.io/instance: admin
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/version: 1.16.0
+    helm.sh/chart: adminservice-0.1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: admin
+      app.kubernetes.io/name: adminservice
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: admin
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: adminservice
+        app.kubernetes.io/version: 1.16.0
+        helm.sh/chart: adminservice-0.1.0
+      annotations:
+        checksum/configmap: 62b51fbb1cf25e9ec33af936970aab0daded50c7659857bd982d69b05f20e5ca
+        kubectl.kubernetes.io/restartedAt: '2026-05-14T14:30:31+05:30'
+        openshift.openshift.io/restartedAt: '2026-05-14T08:44:04.781Z'
+    spec:
+      restartPolicy: Always
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: jfrog-pull-secret
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext: {}
+      containers:
+        - resources: {}
+          readinessProbe:
+            httpGet:
+              path: /api/admin/v1/actuator/health/readiness
+              port: 9094
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: adminservice
+          livenessProbe:
+            httpGet:
+              path: /api/admin/v1/actuator/health/liveness
+              port: 9094
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 20
+            successThreshold: 1
+            failureThreshold: 6
+          env:
+            - name: SPRING_CONFIG_LOCATION
+              value: 'file:/opt/gradle/'
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: my-secrets-admin-service-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-secrets-admin-service-secret
+                  key: DB_PASSWORD
+          securityContext: {}
+          ports:
+            - name: http
+              containerPort: 9094
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config
+              mountPath: /opt/gradle
+            - name: payment-upivpaqr-cert
+              readOnly: true
+              mountPath: /certs
+          terminationMessagePolicy: File
+          image: 'artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:1.16.0'
+      serviceAccount: default
+      volumes:
+        - name: config
+          configMap:
+            name: admin-config
+            defaultMode: 420
+        - name: payment-upivpaqr-cert
+          secret:
+            secretName: payment-upivpaqr
+            defaultMode: 444
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+status:
+  observedGeneration: 69
+  replicas: 2
+  updatedReplicas: 1
+  readyReplicas: 1
+  availableReplicas: 1
+  unavailableReplicas: 1
+  conditions:
+    - type: Available
+      status: 'True'
+      lastUpdateTime: '2026-06-01T09:58:37Z'
+      lastTransitionTime: '2026-06-01T09:58:37Z'
+      reason: MinimumReplicasAvailable
+      message: Deployment has minimum availability.
+    - type: Progressing
+      status: 'True'
+      lastUpdateTime: '2026-06-04T10:43:49Z'
+      lastTransitionTime: '2026-06-04T10:43:49Z'
+      reason: ReplicaSetUpdated
+      message: ReplicaSet "admin-adminservice-598f545dcf" is progressing.
+
+
+
+
+
+===================================================== values.yml
+
 replicaCount: 1
+
 virtualService:
   enabled: true
+
 image:
-  repository: "registry.dev.sbiepay.sbi:8443/library/{{ .Chart.Name }}"
+  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   #tag: "dev-e65d6ffa"
   #tag: "dev-e65d6ffa"
   tag: "dev-e65d6ffa"
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-serviceAccount: {}
-podAnnotations: {}
-podLabels: {}
-podSecurityContext: {}
-applicationProperties: ""
-securityContext: {}
-service:
-  type: ClusterIP
-  port: 9094
-namespace: dev-admin
-gatewayName: dev-istio-system/dev-gateway
-virtualServiceName: admin-adminservice
-serviceName: admin-adminservice
-prefixName:  /api/admin/v1
-servicePort: 9094
-gatewayPort: 80
-gatewayHost: "dev.epay.sbi"
-routes:
-  - prefixName: /api/admin/v1/merchant/payMode/
-    serviceName: admin-adminservice
-    servicePort: 9094
   
-configMap: 
-  additionalLabels:
-    # ...
-  annotations:
-    # ...
-  nameSuffix: "config"
-resources: {}
-ingress: {}
-# readinessProbe: {}
-# livenessProbe: {}
-# Enable health probes for proper HPA functioning
-readinessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/admin/v1/actuator/health/readiness"
-    port: 9094
-    scheme: HTTP
-  initialDelaySeconds: 60
-  periodSeconds: 10
-livenessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/admin/v1/actuator/health/liveness"
-    port: 9094
-    scheme: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 10
-autoscaling: {}
-# Additional volumes on the output Deployment definition.
-volumes: []
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true#
-nodeSelector: {}
-tolerations: []
-affinity: {}
-#++ git add dev/charts/epay_admin_service/values.yaml
-+++ git status --porcelain
-++ [[ -n M  dev/charts/epay_admin_service/values.yaml ]]
-++ git commit -m 'chore: update epay_admin_service image tag to dev-e65d6ffa for dev [skip ci]'
-[feature/deploy-cicd 0dfa4ba28] chore: update epay_admin_service image tag to dev-e65d6ffa for dev [skip ci]
- 1 file changed, 3 insertions(+), 3 deletions(-)
-++ PUSH_SUCCESS=false
-++ for i in 1 2 3
-=== Push Attempt 1 ===
-Branch = feature/deploy-cicd
-++ echo '=== Push Attempt 1 ==='
-++ echo 'Branch = feature/deploy-cicd'
-++ git remote -v
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
-++ git push origin feature/deploy-cicd
-++ tee push.log
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-++ echo 'Push output:'
-++ cat push.log
-Push output:
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push attempt 1 failed
-++ echo 'Push attempt 1 failed'
-++ sleep 2
-++ git pull --rebase origin feature/deploy-cicd
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-++ for i in 1 2 3
-++ echo '=== Push Attempt 2 ==='
-++ echo 'Branch = feature/deploy-cicd'
-++ git remote -v
-=== Push Attempt 2 ===
-Branch = feature/deploy-cicd
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
-++ git push origin feature/deploy-cicd
-++ tee push.log
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push output:
-++ echo 'Push output:'
-++ cat push.log
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-Push attempt 2 failed
-++ echo 'Push attempt 2 failed'
-++ sleep 2
-++ git pull --rebase origin feature/deploy-cicd
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-++ for i in 1 2 3
-++ echo '=== Push Attempt 3 ==='
-++ echo 'Branch = feature/deploy-cicd'
-++ git remote -v
-=== Push Attempt 3 ===
-Branch = feature/deploy-cicd
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (fetch)
-origin	https://oauth2:[MASKED]@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git (push)
-++ git push origin feature/deploy-cicd
-++ tee push.log
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-++ echo 'Push output:'
-++ cat push.log
-Push output:
-remote: GitLab: You are not allowed to push code to protected branches on this project.
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
- ! [remote rejected]     feature/deploy-cicd -> feature/deploy-cicd (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git'
-++ echo 'Push attempt 3 failed'
-++ sleep 2
-Push attempt 3 failed
-++ git pull --rebase origin feature/deploy-cicd
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                feature/deploy-cicd -> FETCH_HEAD
-Current branch feature/deploy-cicd is up to date.
-++ '[' false = false ']'
-++ echo 'ERROR: Push failed after 3 attempts'
-++ exit 1
-ERROR: Push failed after 3 attempts
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+  
+In values.yaml we have updated images tag but in clusters deployment.yml it is always taking image-tag: 1.16.0
 
+
+could you please help me to understood the problem cause here why it is happening like this ....
