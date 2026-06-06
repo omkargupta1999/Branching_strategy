@@ -1,86 +1,29 @@
-Your request (#724885) has been updated. To add additional comments, reply to this email.
+Subject: Re: [#724885] MR/Issue Author Attribution Lost Post-Import – Requesting Call Connect
 
-Please note that any attachments you might see will require logging into the Support Portal to access/download them.
+Hello Simon,
 
+Thank you for your response.
 
-
-	
-Simon Street (GitLab Support)
+I would like to clarify that this issue was initially raised as a non-emergency ticket, and we have not received any response for the past 4–6 hours — which is why we escalated. Given the nature of the impact, we believe this warrants urgent attention.
 
-Jun 6, 2026, 11:11 UTC
+To reiterate the business impact:
 
-Hello there,
- 
-Thank you for opening an emergency support ticket with GitLab Support.
- 
-In order to be sure that our on-call support engineers are always able to respond quickly to our customers' emergencies, we evaluate each new emergency request to determine whether it meets our Emergency criteria definition.
- 
-Based on the initial information you provided, we feel that your situation may not meet the criteria. We want to be sure, however, so we invite you to respond with more information about the problem and its impact on your business if you believe that we should treat this ticket as an emergency.
- 
-If you agree that the situation does not require emergency-level support, please proceed to:
- 
-Submit a non-emergency ticket through our support portal.
-If you are unable to open non-emergency tickets, this means you aren't currently set up as a named support contact. Please follow the process outlined here to get added as a support contact, which will allow you to submit non-emergency tickets.
- 
-We will keep this emergency ticket open for the next 30 minutes to give you time to respond.
- 
-Thank you for your understanding,
-Simon Street
-Senior Support Engineer
-GitLab Support
+• This affects SBI E-Pay, a banking payment platform where accurate MR/Issue authorship is mandatory for audit trails, compliance, and governance.
+• Post-import, 100% of Merge Request and Issue attributions have been overwritten to the importing user's account — original authors and assignees are completely lost.
+• This is not a cosmetic issue; it breaks traceability and change ownership records, which are critical from a PCI-DSS and internal governance standpoint.
+• The affected repository is a live application repository. Proceeding further with the migration plan is blocked until this is resolved.
 
-Want to submit feedback on this ticket so far? Click here to tell us how we're doing!
+We have already shared a Microsoft Teams meeting link in our previous correspondence for a live call:
 
-
-
-	
-vishnu.gehlot1@sbi.co.in
-
-Jun 6, 2026, 11:09 UTC
-
-Dear Team,
-
-As per your suggestion, we upgraded our source GitLab instance to match the destination centralized GitLab version (v18.1.6-ee).
-
-ISSUE SUMMARY
-
-Post-import, the author and assignee attribution for all Merge Requests and Issues has been overwritten. Records that originally belonged to individual team members are now showing under the account of the user who performed the import.
-
----
-
-OBSERVED BEHAVIOR
-
-Before Import (Old GitLab Instance):
- • MR Title : Release/v1.9.0 Mobikwik Integration
- • Status   : Open
- • Author   : PUNAM ANIL RAJPUT
- • Action   : Requested to merge release/v1.9.0 into main
-
-After Import (Centralized GitLab):
- • MR Title : Release/v1.9.0
- • Status   : Open
- • Author   : Vishnu Gehlot (import-performing user)
- • Action   : Requested to merge release/v1.9.0 into main
-
-This pattern is consistent across all MRs and Issues in the imported project.
-
----
-
-IMPACT
-
- • Audit trails and contribution history are inaccurate
- • Traceability of MR/Issue ownership is broken for compliance purposes
- • This affects our banking project (SBI E-Pay), where accurate change attribution is critical from a governance standpoint
-
-We tested the migration by exporting and importing one of our application repositories. However, we encountered the same issue: post-import, the author and assignee attributions for all merge requests and issues were overwritten by the account of the user who performed the import.
-
-Microsoft Teams meeting
-
-Join: https://teams.microsoft.com/meet/48727508084698?p=LJRz84Y58kxIsPeIRW
-
+🔗 Join: https://teams.microsoft.com/meet/48727508084698?p=LJRz84Y58kxIsPeIRW
 Meeting ID: 487 275 080 846 98
-
 Passcode: r2mZ6pP2
 
-Thanks & regards
+We kindly request that a GitLab Support engineer join this call at the earliest convenience so we can share our screen, walk through the exact steps performed, and work toward a resolution together.
+
+Please treat this as a high-priority non-emergency at minimum, and do let us know a suitable time slot if the Teams link above does not work for your team.
+
+Thanks & regards,
 Omkar Gupta
+SBI E-Pay | DevOps & Platform Engineering
+GITC, Navi Mumbai
