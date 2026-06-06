@@ -1,103 +1,86 @@
-Subject: include: project: from Private repo fails with CI_JOB_TOKEN despite inbound allowlist configured — no viable workaround without user membership
+Your request (#724885) has been updated. To add additional comments, reply to this email.
 
-Instance Details
-FieldValueGitLab EditionGitLab Ultimate, Self-ManagedGitLab Version18.1.6-eePlatformRed Hat OpenShift Container Platform 4.19Instance URLgitlab.sbi
-
-Project Structure
-gitlab.sbi/
-└── itepaypg-sbiepay2/
-    ├── application/
-    │   ├── backend/
-    │   │   └── epay_admin_service/      ← app repo (developers work here)
-    │   └── application-bridge/
-    └── infra/
-        └── devops/
-            └── cicd-templates/          ← private CI template repo (DevOps/Infra owned)
-
-Include Block in App Repos
-Every application repo .gitlab-ci.yml includes templates from cicd-templates like this:
-yamlinclude:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/cicd
-    file: 'templates/ci/backend/java.yml'
-
-Our Core Security Requirement
-
-cicd-templates must remain Private
-Application developers must have zero membership in cicd-templates
-cicd-templates must not appear in developer project listings, sidebar, or search results
-CI pipelines triggered by developer pushes to app repos must automatically resolve the include: via CI_JOB_TOKEN — no manual token injection or developer involvement
-Developers should only be able to trigger pipelines from their app repos — they must have no visibility into the Infra repo structure or template code whatsoever
+Please note that any attachments you might see will require logging into the Support Portal to access/download them.
 
 
-What Works (Confirmed Baseline)
-When cicd-templates is set to Internal visibility with Repository accessible to everyone — the include: resolves correctly and pipelines run successfully.
-This confirms with certainty that:
+
+	
+Simon Street (GitLab Support)
 
-The include path is correct
-The branch feature/cicd exists
-The file templates/ci/backend/java.yml exists
-The CI_JOB_TOKEN injection mechanism is working
+Jun 6, 2026, 11:11 UTC
 
-The only variable causing failure is the visibility/access setting on cicd-templates.
+Hello there,
+ 
+Thank you for opening an emergency support ticket with GitLab Support.
+ 
+In order to be sure that our on-call support engineers are always able to respond quickly to our customers' emergencies, we evaluate each new emergency request to determine whether it meets our Emergency criteria definition.
+ 
+Based on the initial information you provided, we feel that your situation may not meet the criteria. We want to be sure, however, so we invite you to respond with more information about the problem and its impact on your business if you believe that we should treat this ticket as an emergency.
+ 
+If you agree that the situation does not require emergency-level support, please proceed to:
+ 
+Submit a non-emergency ticket through our support portal.
+If you are unable to open non-emergency tickets, this means you aren't currently set up as a named support contact. Please follow the process outlined here to get added as a support contact, which will allow you to submit non-emergency tickets.
+ 
+We will keep this emergency ticket open for the next 30 minutes to give you time to respond.
+ 
+Thank you for your understanding,
+Simon Street
+Senior Support Engineer
+GitLab Support
 
-What Fails
-When cicd-templates is set to Private, every pipeline in every app repo fails at the YAML lint/include resolution stage with:
-Project itepaypg-sbiepay2/infra/devops/cicd-templates not found or access denied
-
-Everything We Tried — In Detail
-Attempt 1 — Private + Inbound Job Token Allowlist
-Configured on cicd-templates → Settings → CI/CD → Job Token Permissions → Authorized groups and projects:
-
-Added group itepaypg-sbiepay2/application
-Added group itepaypg-sbiepay2/application-bridge
-Added exact project itepaypg-sbiepay2/application/backend/epay_admin_service
-
-Result: ❌ Still fails with same not found or access denied error. The allowlist alone is insufficient — GitLab also requires the triggering user to be a member of the target project, which our developers are not and must not be.
-
-Attempt 2 — authentication: job_token in include block
-Tried adding:
-yamlinclude:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: feature/cicd
-    file: 'templates/ci/backend/java.yml'
-    authentication: job_token
-Result: ❌ GitLab CI linter immediately rejected this — Property authentication is not allowed on a project: include block. Confirmed this keyword does not exist for this include type.
-
-Attempt 3 — Internal visibility + Repository set to "Only Project Members"
-Set cicd-templates to Internal visibility, then under Settings → General → Visibility, project features, permissions → set Repository to "Only Project Members".
-Result: ❌ Same not found or access denied error as Private. Setting the repository feature to members-only effectively makes it behave identically to Private from the CI_JOB_TOKEN perspective — the triggering user membership check still fails.
-
-Attempt 4 — Internal visibility + Repository feature disabled entirely
-Disabled the Repository toggle completely on cicd-templates.
-Result: ❌ The include: failed — the repository files API GitLab uses internally to fetch the template YAML is unreachable when the repository feature is disabled, even for server-side CI_JOB_TOKEN requests.
-
-Attempt 5 — CI/CD Catalog component approach
-Investigated converting cicd-templates into a GitLab CI/CD Catalog resource and using include: component: instead of include: project:.
-Result: ❌ Per GitLab documentation, private catalog components require the pipeline-triggering user to have at least Reporter role on the source component project. This is the same membership requirement as the standard include: project: approach — the Catalog layer does not bypass the underlying project access controls. No improvement over the direct include approach.
-
-Root Cause Identified
-Per GitLab documentation, CI_JOB_TOKEN access to a private project requires both of the following conditions to pass simultaneously:
-
-✅ The source project must be added to the target project's inbound Job Token allowlist — we have this configured
-❌ The user who triggered the pipeline must be a direct member of the target project — our developers are intentionally not members and must not be
-
-Condition 2 is a hard requirement with no documented bypass. The allowlist alone (Condition 1) is not sufficient for private projects. This means the current GitLab architecture does not support a fully automated, membership-free, token-based trust between a private CI template repo and consuming application repos — even when both live under the same top-level group hierarchy.
-
-Workaround We Considered But Rejected
-Creating a epay-cicd-bot service account, adding it as Reporter to cicd-templates, and making it the owner of pipeline schedules or triggers in every app repo — so that the CI_JOB_TOKEN carries the bot's membership.
-Rejected because:
-
-Requires creating and maintaining a bot account across 31+ microservice repositories
-Requires pipeline schedules or trigger tokens to be owned by the bot in every app repo individually — all via UI since we have no CLI/API access
-Any developer push would still run as the developer's identity unless the pipeline is re-triggered as the bot — adding significant pipeline complexity
-Ongoing maintenance burden every time a new app repo is onboarded
-Does not scale for our multi-microservice banking environment under PCI-DSS compliance requirements
+Want to submit feedback on this ticket so far? Click here to tell us how we're doing!
 
 
-Ask for GitLab Support
+
+	
+vishnu.gehlot1@sbi.co.in
 
-Is there any configuration in GitLab 18.1.6-ee — at instance level, group level, or project level — that allows CI_JOB_TOKEN from a project: include to be authenticated purely by the inbound allowlist (project-to-project trust), without requiring the triggering user to be a member of the target private project?
-Is there a supported mechanism to designate cicd-templates as a trusted CI template source for an entire group (itepaypg-sbiepay2/application) such that any pipeline in that group can resolve includes from it without per-user membership?
-Is this a known limitation with an active issue or epic we can track for an upcoming fix?
-If none of the above — what is the GitLab-recommended architecture for a private, centralized CI template repository that serves multiple application teams in a self-managed enterprise environment, where template code must not be visible to application developers and no CLI/API access is available for setup?
+Jun 6, 2026, 11:09 UTC
+
+Dear Team,
+
+As per your suggestion, we upgraded our source GitLab instance to match the destination centralized GitLab version (v18.1.6-ee).
+
+ISSUE SUMMARY
+
+Post-import, the author and assignee attribution for all Merge Requests and Issues has been overwritten. Records that originally belonged to individual team members are now showing under the account of the user who performed the import.
+
+---
+
+OBSERVED BEHAVIOR
+
+Before Import (Old GitLab Instance):
+ • MR Title : Release/v1.9.0 Mobikwik Integration
+ • Status   : Open
+ • Author   : PUNAM ANIL RAJPUT
+ • Action   : Requested to merge release/v1.9.0 into main
+
+After Import (Centralized GitLab):
+ • MR Title : Release/v1.9.0
+ • Status   : Open
+ • Author   : Vishnu Gehlot (import-performing user)
+ • Action   : Requested to merge release/v1.9.0 into main
+
+This pattern is consistent across all MRs and Issues in the imported project.
+
+---
+
+IMPACT
+
+ • Audit trails and contribution history are inaccurate
+ • Traceability of MR/Issue ownership is broken for compliance purposes
+ • This affects our banking project (SBI E-Pay), where accurate change attribution is critical from a governance standpoint
+
+We tested the migration by exporting and importing one of our application repositories. However, we encountered the same issue: post-import, the author and assignee attributions for all merge requests and issues were overwritten by the account of the user who performed the import.
+
+Microsoft Teams meeting
+
+Join: https://teams.microsoft.com/meet/48727508084698?p=LJRz84Y58kxIsPeIRW
+
+Meeting ID: 487 275 080 846 98
+
+Passcode: r2mZ6pP2
+
+Thanks & regards
+Omkar Gupta
