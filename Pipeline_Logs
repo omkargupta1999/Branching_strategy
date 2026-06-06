@@ -1,27 +1,9 @@
-Here is the complete revised ticket.
+Subject: include: project: from Private repo fails with CI_JOB_TOKEN despite inbound allowlist configured — no viable workaround without user membership
 
----
+Instance Details
+FieldValueGitLab EditionGitLab Ultimate, Self-ManagedGitLab Version18.1.6-eePlatformRed Hat OpenShift Container Platform 4.19Instance URLgitlab.sbi
 
-## GitLab Support Ticket
-
-**Subject:** `include: project:` from Private repo fails with CI_JOB_TOKEN despite inbound allowlist configured — no viable workaround without user membership
-
----
-
-**Instance Details**
-
-| Field | Value |
-|---|---|
-| GitLab Edition | GitLab Ultimate, Self-Managed |
-| GitLab Version | **18.1.6-ee** |
-| Platform | Red Hat OpenShift Container Platform 4.19 |
-| Instance URL | `gitlab.sbi` |
-
----
-
-**Project Structure**
-
-```
+Project Structure
 gitlab.sbi/
 └── itepaypg-sbiepay2/
     ├── application/
@@ -31,152 +13,91 @@ gitlab.sbi/
     └── infra/
         └── devops/
             └── cicd-templates/          ← private CI template repo (DevOps/Infra owned)
-```
 
----
-
-**Include Block in App Repos**
-
-Every application repo `.gitlab-ci.yml` includes templates from `cicd-templates` like this:
-
-```yaml
-include:
+Include Block in App Repos
+Every application repo .gitlab-ci.yml includes templates from cicd-templates like this:
+yamlinclude:
   - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
     ref: feature/cicd
     file: 'templates/ci/backend/java.yml'
-```
 
----
+Our Core Security Requirement
 
-**Our Core Security Requirement**
+cicd-templates must remain Private
+Application developers must have zero membership in cicd-templates
+cicd-templates must not appear in developer project listings, sidebar, or search results
+CI pipelines triggered by developer pushes to app repos must automatically resolve the include: via CI_JOB_TOKEN — no manual token injection or developer involvement
+Developers should only be able to trigger pipelines from their app repos — they must have no visibility into the Infra repo structure or template code whatsoever
 
-- `cicd-templates` must remain **Private**
-- Application developers must have **zero membership** in `cicd-templates`
-- `cicd-templates` must **not appear** in developer project listings, sidebar, or search results
-- CI pipelines triggered by **developer pushes** to app repos must automatically resolve the `include:` via `CI_JOB_TOKEN` — no manual token injection or developer involvement
-- Developers should only be able to trigger pipelines from their app repos — they must have no visibility into the Infra repo structure or template code whatsoever
 
----
-
-**What Works (Confirmed Baseline)**
-
-When `cicd-templates` is set to **Internal** visibility with Repository accessible to everyone — the `include:` resolves correctly and pipelines run successfully.
-
+What Works (Confirmed Baseline)
+When cicd-templates is set to Internal visibility with Repository accessible to everyone — the include: resolves correctly and pipelines run successfully.
 This confirms with certainty that:
-- The include path is correct
-- The branch `feature/cicd` exists
-- The file `templates/ci/backend/java.yml` exists
-- The `CI_JOB_TOKEN` injection mechanism is working
 
-The **only variable** causing failure is the visibility/access setting on `cicd-templates`.
+The include path is correct
+The branch feature/cicd exists
+The file templates/ci/backend/java.yml exists
+The CI_JOB_TOKEN injection mechanism is working
 
----
+The only variable causing failure is the visibility/access setting on cicd-templates.
 
-**What Fails**
-
-When `cicd-templates` is set to **Private**, every pipeline in every app repo fails at the YAML lint/include resolution stage with:
-
-```
+What Fails
+When cicd-templates is set to Private, every pipeline in every app repo fails at the YAML lint/include resolution stage with:
 Project itepaypg-sbiepay2/infra/devops/cicd-templates not found or access denied
-```
 
----
+Everything We Tried — In Detail
+Attempt 1 — Private + Inbound Job Token Allowlist
+Configured on cicd-templates → Settings → CI/CD → Job Token Permissions → Authorized groups and projects:
 
-**Everything We Tried — In Detail**
+Added group itepaypg-sbiepay2/application
+Added group itepaypg-sbiepay2/application-bridge
+Added exact project itepaypg-sbiepay2/application/backend/epay_admin_service
 
-**Attempt 1 — Private + Inbound Job Token Allowlist**
+Result: ❌ Still fails with same not found or access denied error. The allowlist alone is insufficient — GitLab also requires the triggering user to be a member of the target project, which our developers are not and must not be.
 
-Configured on `cicd-templates` → Settings → CI/CD → Job Token Permissions → Authorized groups and projects:
-- Added group `itepaypg-sbiepay2/application`
-- Added group `itepaypg-sbiepay2/application-bridge`
-- Added exact project `itepaypg-sbiepay2/application/backend/epay_admin_service`
-
-Result: ❌ Still fails with same `not found or access denied` error. The allowlist alone is insufficient — GitLab also requires the triggering user to be a member of the target project, which our developers are not and must not be.
-
----
-
-**Attempt 2 — `authentication: job_token` in include block**
-
+Attempt 2 — authentication: job_token in include block
 Tried adding:
-```yaml
-include:
+yamlinclude:
   - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
     ref: feature/cicd
     file: 'templates/ci/backend/java.yml'
     authentication: job_token
-```
+Result: ❌ GitLab CI linter immediately rejected this — Property authentication is not allowed on a project: include block. Confirmed this keyword does not exist for this include type.
 
-Result: ❌ GitLab CI linter immediately rejected this — `Property authentication is not allowed` on a `project:` include block. Confirmed this keyword does not exist for this include type.
+Attempt 3 — Internal visibility + Repository set to "Only Project Members"
+Set cicd-templates to Internal visibility, then under Settings → General → Visibility, project features, permissions → set Repository to "Only Project Members".
+Result: ❌ Same not found or access denied error as Private. Setting the repository feature to members-only effectively makes it behave identically to Private from the CI_JOB_TOKEN perspective — the triggering user membership check still fails.
 
----
+Attempt 4 — Internal visibility + Repository feature disabled entirely
+Disabled the Repository toggle completely on cicd-templates.
+Result: ❌ The include: failed — the repository files API GitLab uses internally to fetch the template YAML is unreachable when the repository feature is disabled, even for server-side CI_JOB_TOKEN requests.
 
-**Attempt 3 — Internal visibility + Repository set to "Only Project Members"**
+Attempt 5 — CI/CD Catalog component approach
+Investigated converting cicd-templates into a GitLab CI/CD Catalog resource and using include: component: instead of include: project:.
+Result: ❌ Per GitLab documentation, private catalog components require the pipeline-triggering user to have at least Reporter role on the source component project. This is the same membership requirement as the standard include: project: approach — the Catalog layer does not bypass the underlying project access controls. No improvement over the direct include approach.
 
-Set `cicd-templates` to Internal visibility, then under Settings → General → Visibility, project features, permissions → set Repository to "Only Project Members".
+Root Cause Identified
+Per GitLab documentation, CI_JOB_TOKEN access to a private project requires both of the following conditions to pass simultaneously:
 
-Result: ❌ Same `not found or access denied` error as Private. Setting the repository feature to members-only effectively makes it behave identically to Private from the `CI_JOB_TOKEN` perspective — the triggering user membership check still fails.
-
----
-
-**Attempt 4 — Internal visibility + Repository feature disabled entirely**
-
-Disabled the Repository toggle completely on `cicd-templates`.
-
-Result: ❌ The `include:` failed — the repository files API GitLab uses internally to fetch the template YAML is unreachable when the repository feature is disabled, even for server-side `CI_JOB_TOKEN` requests.
-
----
-
-**Attempt 5 — CI/CD Catalog component approach**
-
-Investigated converting `cicd-templates` into a GitLab CI/CD Catalog resource and using `include: component:` instead of `include: project:`.
-
-Result: ❌ Per GitLab documentation, private catalog components require the pipeline-triggering user to have at least **Reporter role** on the source component project. This is the same membership requirement as the standard `include: project:` approach — the Catalog layer does not bypass the underlying project access controls. No improvement over the direct include approach.
-
----
-
-**Root Cause Identified**
-
-Per GitLab documentation, `CI_JOB_TOKEN` access to a private project requires **both** of the following conditions to pass simultaneously:
-
-1. ✅ The source project must be added to the target project's inbound Job Token allowlist — **we have this configured**
-2. ❌ The user who triggered the pipeline must be a direct member of the target project — **our developers are intentionally not members and must not be**
+✅ The source project must be added to the target project's inbound Job Token allowlist — we have this configured
+❌ The user who triggered the pipeline must be a direct member of the target project — our developers are intentionally not members and must not be
 
 Condition 2 is a hard requirement with no documented bypass. The allowlist alone (Condition 1) is not sufficient for private projects. This means the current GitLab architecture does not support a fully automated, membership-free, token-based trust between a private CI template repo and consuming application repos — even when both live under the same top-level group hierarchy.
 
----
+Workaround We Considered But Rejected
+Creating a epay-cicd-bot service account, adding it as Reporter to cicd-templates, and making it the owner of pipeline schedules or triggers in every app repo — so that the CI_JOB_TOKEN carries the bot's membership.
+Rejected because:
 
-**Workaround We Considered But Rejected**
+Requires creating and maintaining a bot account across 31+ microservice repositories
+Requires pipeline schedules or trigger tokens to be owned by the bot in every app repo individually — all via UI since we have no CLI/API access
+Any developer push would still run as the developer's identity unless the pipeline is re-triggered as the bot — adding significant pipeline complexity
+Ongoing maintenance burden every time a new app repo is onboarded
+Does not scale for our multi-microservice banking environment under PCI-DSS compliance requirements
 
-Creating a `epay-cicd-bot` service account, adding it as Reporter to `cicd-templates`, and making it the owner of pipeline schedules or triggers in every app repo — so that the `CI_JOB_TOKEN` carries the bot's membership.
 
-**Rejected because:**
-- Requires creating and maintaining a bot account across 31+ microservice repositories
-- Requires pipeline schedules or trigger tokens to be owned by the bot in every app repo individually — all via UI since we have no CLI/API access
-- Any developer push would still run as the developer's identity unless the pipeline is re-triggered as the bot — adding significant pipeline complexity
-- Ongoing maintenance burden every time a new app repo is onboarded
-- Does not scale for our multi-microservice banking environment under PCI-DSS compliance requirements
+Ask for GitLab Support
 
----
-
-**Ask for GitLab Support**
-
-1. Is there any configuration in GitLab 18.1.6-ee — at instance level, group level, or project level — that allows `CI_JOB_TOKEN` from a `project:` include to be authenticated **purely by the inbound allowlist** (project-to-project trust), without requiring the triggering user to be a member of the target private project?
-
-2. Is there a supported mechanism to designate `cicd-templates` as a **trusted CI template source** for an entire group (`itepaypg-sbiepay2/application`) such that any pipeline in that group can resolve includes from it without per-user membership?
-
-3. Is this a known limitation with an active issue or epic we can track for an upcoming fix?
-
-4. If none of the above — what is the **GitLab-recommended architecture** for a private, centralized CI template repository that serves multiple application teams in a self-managed enterprise environment, where template code must not be visible to application developers and no CLI/API access is available for setup?
-
----
-
-**References**
-
-- GitLab Issue #431258 — `CI_JOB_TOKEN cannot access private repositories even if "Limit Access to this Project" allows it`
-- GitLab Issue #439158 — `Allow read_repository for internal projects when using CI_JOB_TOKEN`
-- GitLab Forum — `Private CI/CD component cannot be included from the catalog if the user has the guest role` (April 2025)
-- GitLab Docs — CI/CD job token: *"The user that triggers the job must be a member of your project"*
-
----
-
-This is ready to paste directly into the GitLab Support portal. It gives them full context — environment, structure, requirement, every attempted solution with outcomes, root cause analysis, and four specific questions to answer. Good luck — and if they come back with a solution we haven't tried, bring it here and we'll evaluate it together.
+Is there any configuration in GitLab 18.1.6-ee — at instance level, group level, or project level — that allows CI_JOB_TOKEN from a project: include to be authenticated purely by the inbound allowlist (project-to-project trust), without requiring the triggering user to be a member of the target private project?
+Is there a supported mechanism to designate cicd-templates as a trusted CI template source for an entire group (itepaypg-sbiepay2/application) such that any pipeline in that group can resolve includes from it without per-user membership?
+Is this a known limitation with an active issue or epic we can track for an upcoming fix?
+If none of the above — what is the GitLab-recommended architecture for a private, centralized CI template repository that serves multiple application teams in a self-managed enterprise environment, where template code must not be visible to application developers and no CLI/API access is available for setup?
