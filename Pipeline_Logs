@@ -1,3 +1,14 @@
-This GitLab CI configuration is invalid: Project `itepaypg-sbiepay2/infra/devops/cicd-templates` not found or access denied! Make sure any includes in the pipeline configuration are correctly defined..
+include:
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: feature/cicd
+    file: 'templates/ci/backend/java.yml'
+    authentication: job_token
+variables:
+  RELEASE_NAME: admin
+  CHART_NAME: adminservice
+  #
 
 
+Getting below error in Gitlab pipeline editor after adding  authentication in .gitlab-ci.yaml
+
+Property authentication is not allowed.yaml-schema: https://gitlab.sbi/assets/webpack/ci.10e9a42e.json(0)
