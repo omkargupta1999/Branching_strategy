@@ -1,95 +1,62 @@
-import urllib.request
-import json
-import csv
-import ssl
+Dear Team,
 
-# ----------------------------------------
-# CONFIGURATION
-# ----------------------------------------
-GITLAB_URL = "https://gitlab.epay.sbi"
-TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx"  # Admin token required
+As part of the GitLab user account validation activity, we have observed that your GitLab profile does not have a **Public Email** configured.
 
-headers = {"PRIVATE-TOKEN": TOKEN}
-ssl_context = ssl._create_unverified_context()
+Kindly log in to GitLab and update your **Public Email Address** in your profile settings at the earliest. This is required for proper user identification, notifications, and repository-related activities.
 
-# ----------------------------------------
-# API CALL FUNCTION (with pagination)
-# ----------------------------------------
-def api_get_all(endpoint):
-    results = []
-    page = 1
-    while True:
-        sep = "&" if "?" in endpoint else "?"
-        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
-        req = urllib.request.Request(url)
-        for k, v in headers.items():
-            req.add_header(k, v)
-        response = urllib.request.urlopen(req, context=ssl_context)
-        data = json.loads(response.read())
-        if not data:
-            break
-        results.extend(data)
-        total_pages = response.headers.get("X-Total-Pages")
-        if total_pages and page >= int(total_pages):
-            break
-        page += 1
-    return results
+**Steps to update:**
 
-# ----------------------------------------
-# FETCH ALL USERS
-# ----------------------------------------
-print("Fetching all users...")
-users = api_get_all("/api/v4/users")
-print(f"  Total users fetched: {len(users)}")
+1. Log in to GitLab.
+2. Navigate to **Edit Profile** → **Main Settings**.
+3. Locate the **Public Email** field.
+4. Select your official email address as the Public Email.
+5. Save the changes.
 
-# ----------------------------------------
-# SPLIT INTO TWO GROUPS
-# ----------------------------------------
-with_public_email    = [u for u in users if u.get("public_email")]
-without_public_email = [u for u in users if not u.get("public_email")]
+Please complete this activity by **[DD-MMM-YYYY]** and confirm once done.
 
-print(f"  With public_email   : {len(with_public_email)}")
-print(f"  Without public_email: {len(without_public_email)}")
+**Users identified for this update:**
 
-# ----------------------------------------
-# CSV COLUMNS
-# ----------------------------------------
-COLUMNS = [
-    "ID", "Username", "Name", "State",
-    "Public Email", "Primary Email (Admin)",
-    "Identities (LDAP/OAuth)", "Is Admin", "Bot", "Created At"
-]
+| Username       | Name                         | Email Address                                                                   |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------------- |
+| V1024891       | SAADI MOHAMMAD MUZZAMMIL     | [saadi.mohammad.cedge@sbi.co.in](mailto:saadi.mohammad.cedge@sbi.co.in)         |
+| v1024893       | HARSHAL DEEPAK RAUT          | [harshal.raut.cedge@sbi.co.in](mailto:harshal.raut.cedge@sbi.co.in)             |
+| v1017495       | Ranjana Namdev Bajabale      | [ranjana.bajabale.cedge@sbi.co.in](mailto:ranjana.bajabale.cedge@sbi.co.in)     |
+| v1011870       | ABHAY ARVIND SHUKLA          | [abhay.shukla.cedge@sbi.co.in](mailto:abhay.shukla.cedge@sbi.co.in)             |
+| v1010984       | Shital Ganesh Sangrulkar     | [shital.sangrulkar.cedge@sbi.co.in](mailto:shital.sangrulkar.cedge@sbi.co.in)   |
+| v1010011       | SUPRIYA AMOL TAMHANE         | [supriya.tamhane.cedge@sbi.co.in](mailto:supriya.tamhane.cedge@sbi.co.in)       |
+| v1017984       | Bhushan Dinkar Bele          | [bhushan.bele.cedge@sbi.co.in](mailto:bhushan.bele.cedge@sbi.co.in)             |
+| v1013764       | Pooja Ishwar Patil           | [pooja.patil.cedge@sbi.co.in](mailto:pooja.patil.cedge@sbi.co.in)               |
+| v1014354       | Vivek Sanjay Vishwakrma      | [vivek.vishwakarma.cedge@sbi.co.in](mailto:vivek.vishwakarma.cedge@sbi.co.in)   |
+| v1010454       | SWAPNIL SANDESH THAKUR       | [swapnil.thakur.cedge@sbi.co.in](mailto:swapnil.thakur.cedge@sbi.co.in)         |
+| v1017502       | Manoj Babu Cherukuru         | [manoj.cherukuru.cedge@sbi.co.in](mailto:manoj.cherukuru.cedge@sbi.co.in)       |
+| v1011145       | Jitesh Mendhekar             | [jitesh.mendhekar.cedge@sbi.co.in](mailto:jitesh.mendhekar.cedge@sbi.co.in)     |
+| v1024840       | MANI KANTA SAI THOLUM        | [manikantha.sai.cedge@sbi.co.in](mailto:manikantha.sai.cedge@sbi.co.in)         |
+| v1021038       | Muthyalababu Musuluru        | [muthalayababu.m.cedge@sbi.co.in](mailto:muthalayababu.m.cedge@sbi.co.in)       |
+| v1024813       | RUSHIKESH SHIVAJI KADAM      | [rushikesh.kadam.cedge@sbi.co.in](mailto:rushikesh.kadam.cedge@sbi.co.in)       |
+| 1094516        | GOMSI GARG                   | [gomsi.garg@sbi.co.in](mailto:gomsi.garg@sbi.co.in)                             |
+| v1019432       | Chaitanya Shyam Sonawane     | [chaitnaya.sonawane.cedge@sbi.co.in](mailto:chaitnaya.sonawane.cedge@sbi.co.in) |
+| v1011467       | Shilpa Tiwari                | [shilpa.tiwari.cedge@sbi.co.in](mailto:shilpa.tiwari.cedge@sbi.co.in)           |
+| v1013756       | SAKSHI DEEPAK PAWAR          | [sakshi.pawar.cedge@sbi.co.in](mailto:sakshi.pawar.cedge@sbi.co.in)             |
+| v1010817       | SAIKAMAL DANGETI             | [saikamal.dangeti.cedge@sbi.co.in](mailto:saikamal.dangeti.cedge@sbi.co.in)     |
+| v10243461      | SUSHANT VASANTRAO PATIL      | [v1024346@corp.ad.sbi](mailto:v1024346@corp.ad.sbi)                             |
+| V1015778       | NIKHIL RAVINDRA GURAV        | [nikhil.cedge@sbi.co.in](mailto:nikhil.cedge@sbi.co.in)                         |
+| 7612176        | SOURABH DUTTA                | [sourabh.dutta@sbi.co.in](mailto:sourabh.dutta@sbi.co.in)                       |
+| v1017568       | Dipesh Manoj Bhanushali      | [dipesh.bhanushali.cedge@sbi.co.in](mailto:dipesh.bhanushali.cedge@sbi.co.in)   |
+| VTM00564221    | Jayavignesh V                | [jayavignesh.inbtechm@sbi.co.in](mailto:jayavignesh.inbtechm@sbi.co.in)         |
+| v1013367       | BHAGYASHRI TUSHAR TIKONE     | [bhagyashri.tikone.cedge@sbi.co.in](mailto:bhagyashri.tikone.cedge@sbi.co.in)   |
+| v1011945       | KARAN BHARAT THAKKAR         | [karan.thakkar.cedge@sbi.co.in](mailto:karan.thakkar.cedge@sbi.co.in)           |
+| v1013505       | Gaurav Diwakar Narvekar      | [gaurav.narvekar.cedge@sbi.co.in](mailto:gaurav.narvekar.cedge@sbi.co.in)       |
+| v1021137       | Murtaza Fakhruddin Vadnagarw | [v1021137@corp.ad.sbi](mailto:v1021137@corp.ad.sbi)                             |
+| 7314779        | MANOJ R                      | [manoj.ramachandran@sbi.co.in](mailto:manoj.ramachandran@sbi.co.in)             |
+| 1048894        | Arpita Srivastava            | [arpita.srivastava@sbi.co.in](mailto:arpita.srivastava@sbi.co.in)               |
+| Ritesh.gupta   | RITESH RAJENDRA GUPTA        | [ritesh.gupta.cedge@sbi.co.in](mailto:ritesh.gupta.cedge@sbi.co.in)             |
+| rishabh.pratap | Rishabh Pratap Singh         | [rishabh.singh.cedge@sbi.co.in](mailto:rishabh.singh.cedge@sbi.co.in)           |
+| 1048895        | Akhil Marrapu                | [akhil.marrapu@sbi.co.in](mailto:akhil.marrapu@sbi.co.in)                       |
+| 1064729        | PRABHAKAR THAKUR             | [prabhakar.thakur1@sbi.co.in](mailto:prabhakar.thakur1@sbi.co.in)               |
+| 6692435        | Vishnu Gehlot                | [vishnu.gehlot1@sbi.co.in](mailto:vishnu.gehlot1@sbi.co.in)                     |
 
-def write_csv(filename, userlist):
-    with open(filename, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(COLUMNS)
-        for u in userlist:
-            identities = u.get("identities", [])
-            identities_str = " | ".join(
-                f"{i.get('provider')}:{i.get('extern_uid')}"
-                for i in identities
-            ) if identities else ""
+If you have already configured your Public Email, kindly ignore this communication.
 
-            writer.writerow([
-                u.get("id"),
-                u.get("username"),
-                u.get("name"),
-                u.get("state"),
-                u.get("public_email") or "",
-                u.get("email") or "",          # admin-visible primary email
-                identities_str,
-                u.get("is_admin") or u.get("admin"),
-                u.get("bot"),
-                u.get("created_at"),
-            ])
-
-# ----------------------------------------
-# WRITE TWO SEPARATE CSV FILES
-# ----------------------------------------
-write_csv("users_with_public_email.csv",    with_public_email)
-write_csv("users_without_public_email.csv", without_public_email)
-
-print("\nDone!")
-print("  users_with_public_email.csv    -> users who SET their public email")
-print("  users_without_public_email.csv -> users who did NOT set public email")
+Regards,
+[Your Name]
+[Team Name]
