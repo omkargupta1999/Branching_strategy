@@ -1,1085 +1,274 @@
 #!/usr/bin/env python3
 """
-=============================================================================
- Script      : fetch_repos_audit.py
- Purpose     : Fetch complete repository audit details from GitLab for
-               migration planning (gitlab.epay.sbi → gitlab.sbi).
-               Covers every countable artifact per repo:
-               MRs, Issues, Epics, Branches, Tags, Pipelines,
-               Milestones, Releases, Environments, Members, Webhooks,
-               Deploy Keys, Protected Branches, Labels, Snippets.
-
- READ-ONLY   : This script issues ONLY HTTP GET requests.
-               No data is created, modified, or deleted in GitLab.
-
- Output      : gitlab_repo_audit.xlsx  (multi-sheet Excel workbook)
-               Sheet 1 — Dashboard       : Summary metrics & risk counts
-               Sheet 2 — Full Audit      : Every repo × every metric
-               Sheet 3 — Migration Plan  : Checklist sorted by risk
-               Sheet 4 — CI-CD Repos     : Repos with pipelines (HIGH risk)
-               Sheet 5 — Open Items      : Repos with open MRs or Issues
-
- Requires    : Python 3.6+, openpyxl (pip install openpyxl)
-               Admin Personal Access Token with  read_api  scope.
-
- Author      : SBI ePay — DevOps / Platform Engineering Team
- Instance    : gitlab.epay.sbi  (source)
-=============================================================================
+GitLab Repository Audit (Air-Gapped Version)
+- No third-party dependencies
+- Uses only Python standard library
+- Generates:
+    1. gitlab_repo_audit.html
+    2. gitlab_full_audit.csv
+    3. gitlab_cicd_repos.csv
+    4. gitlab_open_items.csv
 """
 
-import urllib.request
-import urllib.error
+import csv
 import json
 import ssl
 import sys
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
-from openpyxl import Workbook
-from openpyxl.styles import (
-    Font, PatternFill, Alignment, Border, Side, GradientFill
-)
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
+from html import escape
 
-# =============================================================================
-#  CONFIGURATION  — Edit only this block
-# =============================================================================
+# ================= CONFIG =================
 
-GITLAB_URL   = "https://gitlab.epay.sbi"    # Source GitLab instance
-TOKEN        = ""                             # Admin PAT  (glpat-...)
-
-# Scope: set to your group path, or "" for ALL projects instance-wide
+GITLAB_URL = "https://gitlab.epay.sbi"
+TOKEN = "REPLACE_WITH_PAT"
 TARGET_GROUP = "itepaypg-sbiepay2"
 
-OUTPUT_FILE  = "gitlab_repo_audit.xlsx"
+HTML_REPORT = "gitlab_repo_audit.html"
 
-# =============================================================================
-#  COLOUR PALETTE  (openpyxl uses ARGB hex — Alpha=FF)
-# =============================================================================
-
-C_HEADER_DARK  = "FF1C3557"   # Dark navy   — sheet header rows
-C_HEADER_MED   = "FF2E5F8A"   # Mid blue    — sub-header / section
-C_HEADER_LIGHT = "FFD6E4F0"   # Light blue  — alternating row tint
-C_WHITE        = "FFFFFFFF"
-C_BLACK        = "FF000000"
-C_HIGH         = "FFFF4C4C"   # Red         — HIGH risk fill
-C_HIGH_TXT     = "FF7B0000"
-C_MEDIUM       = "FFFFA500"   # Amber       — MEDIUM risk fill
-C_MEDIUM_TXT   = "FF5C3300"
-C_LOW          = "FF90EE90"   # Green       — LOW risk fill
-C_LOW_TXT      = "FF1A4D1A"
-C_ARCHIVED     = "FFB0B0B0"   # Grey        — ARCHIVED fill
-C_ARCHIVED_TXT = "FF3D3D3D"
-C_YES          = "FFE8F5E9"   # Very light green
-C_NO           = "FFFAFAFA"   # Near white
-C_DASH_BG      = "FFF0F4F8"   # Dashboard card background
-C_ACCENT       = "FF0070C0"   # MS-blue accent
-
-THIN = Side(style="thin", color="FFB0B0B0")
-BORDER_THIN = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+# ===========================================
 
 ssl_ctx = ssl._create_unverified_context()
 HEADERS = {"PRIVATE-TOKEN": TOKEN}
 
-# =============================================================================
-#  API HELPERS  (READ-ONLY)
-# =============================================================================
 
 def api_get(url):
     req = urllib.request.Request(url)
     for k, v in HEADERS.items():
         req.add_header(k, v)
+
     try:
-        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
         return json.loads(resp.read()), resp
-    except urllib.error.HTTPError as e:
-        if e.code == 401:
-            print(f"\n[ERROR] 401 Unauthorized — check TOKEN is set and is an admin token.")
-            sys.exit(1)
-        if e.code == 403:
-            print(f"\n[ERROR] 403 Forbidden — token valid but lacks admin scope.")
-            sys.exit(1)
-        if e.code == 404:
-            print(f"\n[ERROR] 404 Not Found — {url}")
-            return [], None
-        print(f"\n[WARN] HTTP {e.code} on {url} — skipping.")
+    except Exception as e:
+        print(f"[WARN] {url} -> {e}")
         return [], None
 
 
-def api_all(endpoint, extra_params=""):
-    """Paginate through all pages. Returns list. GET-only."""
-    results, page = [], 1
+def api_all(endpoint):
+    results = []
+    page = 1
+
     while True:
         sep = "&" if "?" in endpoint else "?"
-        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}{extra_params}"
+        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
+
         data, resp = api_get(url)
+
         if not data:
             break
+
         results.extend(data)
-        if resp:
-            total = resp.headers.get("X-Total-Pages", "1")
-            if page >= int(total):
-                break
+
+        total_pages = int(resp.headers.get("X-Total-Pages", "1"))
+
+        if page >= total_pages:
+            break
+
         page += 1
+
     return results
 
 
 def count_endpoint(pid, path, extra=""):
-    """Return the X-Total header count for a project sub-resource."""
-    url = f"{GITLAB_URL}/api/v4/projects/{pid}/{path}?per_page=1&page=1{extra}"
+    url = (
+        f"{GITLAB_URL}/api/v4/projects/{pid}/{path}"
+        f"?per_page=1&page=1{extra}"
+    )
+
     req = urllib.request.Request(url)
+
     for k, v in HEADERS.items():
         req.add_header(k, v)
+
     try:
-        resp = urllib.request.urlopen(req, context=ssl_ctx)
-        val  = resp.headers.get("X-Total", "0")
-        return int(val) if str(val).isdigit() else 0
+        resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
+        return int(resp.headers.get("X-Total", "0"))
     except Exception:
         return 0
 
 
-# =============================================================================
-#  UTILITY FUNCTIONS
-# =============================================================================
-
-def s(val, default=""):
-    return val if val not in (None, "", [], {}) else default
-
-
-def yn(val):
-    if val is True:  return "Yes"
-    if val is False: return "No"
-    return ""
-
-
-def fmt_size(kb):
-    if kb in (None, "", 0): return "0 KB"
-    try:
-        kb = int(kb)
-        if kb >= 1048576: return f"{kb/1048576:.1f} GB"
-        if kb >= 1024:    return f"{kb/1024:.1f} MB"
-        return f"{kb} KB"
-    except Exception:
-        return str(kb)
-
-
-def to_date(ts):
-    return ts[:10] if ts else ""
-
-
 def days_ago(ts):
-    if not ts: return ""
+    if not ts:
+        return ""
     try:
-        dt    = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        delta = datetime.now(timezone.utc) - dt
-        return delta.days
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - dt).days
     except Exception:
         return ""
 
 
-def risk_level(p, open_mrs):
-    if p.get("archived"):           return "ARCHIVED"
-    if p.get("jobs_enabled"):       return "HIGH"
-    if open_mrs > 0:                return "HIGH"
-    if (p.get("issues_enabled") or
-        p.get("wiki_enabled") or
-        p.get("packages_enabled")): return "MEDIUM"
-    return "LOW"
+def risk_level(ci_enabled, open_mrs, archived):
+    if archived:
+        return "ARCHIVED"
+    if ci_enabled or open_mrs > 0:
+        return "HIGH"
+    return "MEDIUM"
 
 
-RISK_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "ARCHIVED": 3}
-
-
-# =============================================================================
-#  EXCEL STYLE HELPERS
-# =============================================================================
-
-def hdr_font(bold=True, color=C_WHITE, size=10):
-    return Font(name="Arial", bold=bold, color=color, size=size)
-
-
-def body_font(bold=False, color=C_BLACK, size=9):
-    return Font(name="Arial", bold=bold, color=color, size=size)
-
-
-def fill(hex_color):
-    return PatternFill("solid", start_color=hex_color, fgColor=hex_color)
-
-
-def center():
-    return Alignment(horizontal="center", vertical="center", wrap_text=False)
-
-
-def left_align():
-    return Alignment(horizontal="left", vertical="center", wrap_text=False)
-
-
-def style_header_row(ws, row_num, col_start, col_end,
-                     bg=C_HEADER_DARK, fg=C_WHITE, bold=True, size=10):
-    for col in range(col_start, col_end + 1):
-        cell = ws.cell(row=row_num, column=col)
-        cell.font      = Font(name="Arial", bold=bold, color=fg, size=size)
-        cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-        cell.alignment = Alignment(horizontal="center", vertical="center",
-                                   wrap_text=True)
-        cell.border    = BORDER_THIN
-
-
-def style_data_row(ws, row_num, col_start, col_end, tint=False):
-    bg = C_HEADER_LIGHT if tint else C_WHITE
-    for col in range(col_start, col_end + 1):
-        cell = ws.cell(row=row_num, column=col)
-        cell.font      = body_font()
-        cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-        cell.alignment = left_align()
-        cell.border    = BORDER_THIN
-
-
-def risk_fill_font(risk):
-    mapping = {
-        "HIGH":     (C_HIGH,     C_HIGH_TXT),
-        "MEDIUM":   (C_MEDIUM,   C_MEDIUM_TXT),
-        "LOW":      (C_LOW,      C_LOW_TXT),
-        "ARCHIVED": (C_ARCHIVED, C_ARCHIVED_TXT),
-    }
-    bg, fg = mapping.get(risk, (C_WHITE, C_BLACK))
-    return fill(bg), Font(name="Arial", bold=True, color=fg, size=9)
-
-
-def set_col_widths(ws, widths):
-    """widths = list of (col_letter_or_idx, width)"""
-    for col, w in widths:
-        if isinstance(col, int):
-            col = get_column_letter(col)
-        ws.column_dimensions[col].width = w
-
-
-def freeze(ws, cell="B2"):
-    ws.freeze_panes = cell
-
-
-def autofilter(ws, ref):
-    ws.auto_filter.ref = ref
-
-
-# =============================================================================
-#  DATA COLLECTION
-# =============================================================================
-
-def fetch_all_projects():
-    if TOKEN == "":
-        print("[ERROR] TOKEN is not set. Fill in your admin Personal Access Token.")
+def fetch_projects():
+    if not TOKEN or TOKEN == "REPLACE_WITH_PAT":
+        print("Update TOKEN before execution.")
         sys.exit(1)
 
-    print("=" * 65)
-    print("  GitLab Repository Audit — Migration Planning")
-    print(f"  Source  : {GITLAB_URL}")
-    print(f"  Group   : {TARGET_GROUP or 'ALL (instance-wide)'}")
-    print("=" * 65)
+    endpoint = (
+        f"/api/v4/groups/{TARGET_GROUP}/projects"
+        f"?include_subgroups=true&with_statistics=true"
+    )
 
-    if TARGET_GROUP:
-        ep = (f"/api/v4/groups/{TARGET_GROUP}/projects"
-              f"?include_subgroups=true&with_statistics=true")
-    else:
-        ep = "/api/v4/projects?with_statistics=true"
-
-    print("\n[1/3] Fetching projects ...")
-    projects = api_all(ep)
-    print(f"       → {len(projects)} projects found.")
-    return projects
+    return api_all(endpoint)
 
 
-def fetch_per_project_counts(projects):
-    """
-    For each project fetch counts of every artifact type.
-    All READ-ONLY (GET requests only).
-    Returns dict: { project_id: { metric: count, ... } }
-    """
-    total = len(projects)
-    counts = {}
-
-    print(f"\n[2/3] Fetching per-project artifact counts ({total} repos) ...")
-    print("      This may take a few minutes depending on instance size.\n")
-
-    for i, p in enumerate(projects, start=1):
-        pid  = p["id"]
-        name = p.get("path_with_namespace", str(pid))
-        print(f"      [{i:>3}/{total}] {name}", end="\r")
-
-        c = {}
-
-        # --- Branches & Tags ---
-        c["branches"]     = count_endpoint(pid, "repository/branches")
-        c["tags"]         = count_endpoint(pid, "repository/tags")
-
-        # --- Merge Requests ---
-        c["mrs_open"]     = count_endpoint(pid, "merge_requests", "&state=opened")
-        c["mrs_merged"]   = count_endpoint(pid, "merge_requests", "&state=merged")
-        c["mrs_closed"]   = count_endpoint(pid, "merge_requests", "&state=closed")
-
-        # --- Issues ---
-        c["issues_open"]  = count_endpoint(pid, "issues", "&state=opened")
-        c["issues_closed"]= count_endpoint(pid, "issues", "&state=closed")
-
-        # --- Milestones ---
-        c["milestones"]   = count_endpoint(pid, "milestones")
-
-        # --- Labels ---
-        c["labels"]       = count_endpoint(pid, "labels")
-
-        # --- Pipelines ---
-        c["pipelines"]    = count_endpoint(pid, "pipelines")
-
-        # --- Releases ---
-        c["releases"]     = count_endpoint(pid, "releases")
-
-        # --- Environments ---
-        c["environments"] = count_endpoint(pid, "environments")
-
-        # --- Snippets ---
-        c["snippets"]     = count_endpoint(pid, "snippets")
-
-        # --- Deploy Keys ---
-        c["deploy_keys"]  = count_endpoint(pid, "deploy_keys")
-
-        # --- Webhooks ---
-        c["webhooks"]     = count_endpoint(pid, "hooks")
-
-        # --- Members (direct) ---
-        c["members"]      = count_endpoint(pid, "members/all")
-
-        # --- Protected Branches ---
-        c["protected_branches"] = count_endpoint(pid, "protected_branches")
-
-        # --- Epics (only available if group-level — handled below) ---
-        c["epics"] = 0
-
-        counts[pid] = c
-
-    # --- Epics are group-level, not project-level ---
-    # Fetch group epics if TARGET_GROUP is set
-    if TARGET_GROUP:
-        print(f"\n      Fetching group epics for {TARGET_GROUP} ...")
-        epics = api_all(f"/api/v4/groups/{TARGET_GROUP}/epics")
-        # Distribute epic count to all projects (group-level metric)
-        for pid in counts:
-            counts[pid]["group_epics"] = len(epics)
-    else:
-        for pid in counts:
-            counts[pid]["group_epics"] = 0
-
-    print(f"\n       → Artifact counts collected for {len(counts)} projects.")
-    return counts
-
-
-# =============================================================================
-#  EXCEL WORKBOOK BUILDER
-# =============================================================================
-
-def build_workbook(projects, counts):
-    print(f"\n[3/3] Building Excel workbook: {OUTPUT_FILE} ...")
-
-    wb = Workbook()
-    wb.remove(wb.active)   # Remove default sheet
-
-    # ── Prepare enriched rows ────────────────────────────────────────────────
+def collect_rows(projects):
     rows = []
-    for p in projects:
-        pid   = p["id"]
-        stats = p.get("statistics") or {}
-        c     = counts.get(pid, {})
-        risk  = risk_level(p, c.get("mrs_open", 0))
 
-        migration_notes = []
-        if c.get("mrs_open", 0) > 0:
-            migration_notes.append(f"{c['mrs_open']} open MR(s) — author attribution risk")
-        if p.get("lfs_enabled"):
-            migration_notes.append("LFS objects need separate migration")
-        if p.get("mirror"):
-            migration_notes.append("Mirror config — re-setup post-migration")
-        if p.get("container_registry_enabled"):
-            migration_notes.append("Container images — re-push to new registry")
-        if p.get("packages_enabled") and c.get("releases", 0) > 0:
-            migration_notes.append("Package registry data migration needed")
-        if p.get("ci_config_path"):
-            migration_notes.append(f"Custom CI path: {p['ci_config_path']}")
-        elif p.get("jobs_enabled"):
-            migration_notes.append("Review .gitlab-ci.yml — hardcoded registry/template paths")
-        if c.get("webhooks", 0) > 0:
-            migration_notes.append(f"{c['webhooks']} webhook(s) — re-configure post-migration")
-        if c.get("deploy_keys", 0) > 0:
-            migration_notes.append(f"{c['deploy_keys']} deploy key(s) — re-add post-migration")
-        if c.get("environments", 0) > 0:
-            migration_notes.append(f"{c['environments']} environment(s) — re-configure")
-        if p.get("archived"):
-            migration_notes.append("Archived — confirm if migration is needed")
-        if p.get("empty_repo"):
-            migration_notes.append("Empty repository — no commits")
+    for idx, p in enumerate(projects, start=1):
+
+        pid = p["id"]
+
+        print(f"[{idx}/{len(projects)}] {p.get('path_with_namespace')}")
+
+        branches = count_endpoint(pid, "repository/branches")
+        tags = count_endpoint(pid, "repository/tags")
+        mrs_open = count_endpoint(pid, "merge_requests", "&state=opened")
+        issues_open = count_endpoint(pid, "issues", "&state=opened")
+        pipelines = count_endpoint(pid, "pipelines")
+        members = count_endpoint(pid, "members/all")
+        webhooks = count_endpoint(pid, "hooks")
+        deploy_keys = count_endpoint(pid, "deploy_keys")
+
+        row = {
+            "id": pid,
+            "name": p.get("name"),
+            "path": p.get("path_with_namespace"),
+            "namespace": p.get("namespace", {}).get("full_path"),
+            "visibility": p.get("visibility"),
+            "default_branch": p.get("default_branch"),
+            "branches": branches,
+            "tags": tags,
+            "mrs_open": mrs_open,
+            "issues_open": issues_open,
+            "pipelines": pipelines,
+            "members": members,
+            "webhooks": webhooks,
+            "deploy_keys": deploy_keys,
+            "ci_enabled": "Yes" if p.get("jobs_enabled") else "No",
+            "archived": "Yes" if p.get("archived") else "No",
+            "last_activity": p.get("last_activity_at", "")[:10],
+            "days_inactive": days_ago(p.get("last_activity_at")),
+            "risk": risk_level(
+                p.get("jobs_enabled"),
+                mrs_open,
+                p.get("archived")
+            ),
+            "http_url": p.get("http_url_to_repo", "")
+        }
+
+        rows.append(row)
+
+    return rows
+
+
+def write_csv(filename, rows):
+    if not rows:
+        return
+
+    with open(filename, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def generate_html(rows):
+
+    total = len(rows)
+    high = len([r for r in rows if r["risk"] == "HIGH"])
+    medium = len([r for r in rows if r["risk"] == "MEDIUM"])
+    archived = len([r for r in rows if r["risk"] == "ARCHIVED"])
+
+    html = f"""
+<html>
+<head>
+<title>GitLab Audit</title>
+<style>
+body {{font-family:Arial;margin:20px;}}
+table {{border-collapse:collapse;width:100%;}}
+th {{background:#1c3557;color:white;padding:8px;}}
+td {{border:1px solid #ddd;padding:6px;}}
+tr:nth-child(even) {{background:#f2f2f2;}}
+.card {{display:inline-block;padding:10px 20px;margin:5px;color:white;}}
+.total {{background:#1c3557;}}
+.high {{background:red;}}
+.medium {{background:orange;}}
+.archived {{background:gray;}}
+</style>
+</head>
+<body>
+
+<h1>GitLab Repository Audit</h1>
+
+<div class="card total">Total Repos: {total}</div>
+<div class="card high">High Risk: {high}</div>
+<div class="card medium">Medium Risk: {medium}</div>
+<div class="card archived">Archived: {archived}</div>
+
+<table>
+<tr>
+<th>ID</th>
+<th>Repository</th>
+<th>Branches</th>
+<th>Tags</th>
+<th>Open MRs</th>
+<th>Issues</th>
+<th>Pipelines</th>
+<th>Members</th>
+<th>Risk</th>
+</tr>
+"""
 
-        rows.append({
-            "id":           pid,
-            "name":         s(p.get("name")),
-            "path":         s(p.get("path_with_namespace")),
-            "namespace":    s(p.get("namespace", {}).get("full_path")),
-            "description":  s(p.get("description")),
-            "visibility":   s(p.get("visibility")),
-            "default_branch": s(p.get("default_branch"), "N/A"),
-            "empty":        yn(p.get("empty_repo")),
-            "archived":     yn(p.get("archived")),
-            "created":      to_date(p.get("created_at")),
-            "last_activity":to_date(p.get("last_activity_at")),
-            "days_inactive":days_ago(p.get("last_activity_at")),
-            "repo_size":    fmt_size(stats.get("repository_size")),
-            "lfs_enabled":  yn(p.get("lfs_enabled")),
-            "lfs_size":     fmt_size(stats.get("lfs_objects_size")),
-            "branches":     c.get("branches", 0),
-            "tags":         c.get("tags", 0),
-            "mrs_open":     c.get("mrs_open", 0),
-            "mrs_merged":   c.get("mrs_merged", 0),
-            "mrs_closed":   c.get("mrs_closed", 0),
-            "issues_open":  c.get("issues_open", 0),
-            "issues_closed":c.get("issues_closed", 0),
-            "group_epics":  c.get("group_epics", 0),
-            "milestones":   c.get("milestones", 0),
-            "labels":       c.get("labels", 0),
-            "pipelines":    c.get("pipelines", 0),
-            "releases":     c.get("releases", 0),
-            "environments": c.get("environments", 0),
-            "snippets":     c.get("snippets", 0),
-            "deploy_keys":  c.get("deploy_keys", 0),
-            "webhooks":     c.get("webhooks", 0),
-            "members":      c.get("members", 0),
-            "protected_branches": c.get("protected_branches", 0),
-            "ci_enabled":   yn(p.get("jobs_enabled")),
-            "ci_config":    s(p.get("ci_config_path"), ".gitlab-ci.yml (default)"),
-            "shared_runners": yn(p.get("shared_runners_enabled")),
-            "auto_devops":  yn(p.get("auto_devops_enabled")),
-            "container_registry": yn(p.get("container_registry_enabled")),
-            "packages":     yn(p.get("packages_enabled")),
-            "wiki":         yn(p.get("wiki_enabled")),
-            "issues_feature": yn(p.get("issues_enabled")),
-            "merge_method": s(p.get("merge_method")),
-            "pipeline_required": yn(p.get("only_allow_merge_if_pipeline_succeeds")),
-            "mirror":       yn(p.get("mirror")),
-            "http_url":     s(p.get("http_url_to_repo")),
-            "ssh_url":      s(p.get("ssh_url_to_repo")),
-            "risk":         risk,
-            "migration_notes": " | ".join(migration_notes) if migration_notes else "Standard migration",
-        })
+    for r in rows:
+        html += f"""
+<tr>
+<td>{r['id']}</td>
+<td>{escape(str(r['path']))}</td>
+<td>{r['branches']}</td>
+<td>{r['tags']}</td>
+<td>{r['mrs_open']}</td>
+<td>{r['issues_open']}</td>
+<td>{r['pipelines']}</td>
+<td>{r['members']}</td>
+<td>{r['risk']}</td>
+</tr>
+"""
 
-    # Sort by risk for plan sheet
-    rows_by_risk = sorted(rows, key=lambda r: (RISK_ORDER.get(r["risk"], 9), r["path"]))
+    html += "</table></body></html>"
 
-    # ── SHEET 1: Dashboard ───────────────────────────────────────────────────
-    build_dashboard(wb, rows)
+    with open(HTML_REPORT, "w", encoding="utf-8") as f:
+        f.write(html)
 
-    # ── SHEET 2: Full Audit ──────────────────────────────────────────────────
-    build_full_audit(wb, rows)
 
-    # ── SHEET 3: Migration Plan ──────────────────────────────────────────────
-    build_migration_plan(wb, rows_by_risk)
+def main():
+    projects = fetch_projects()
 
-    # ── SHEET 4: CI-CD Repos ────────────────────────────────────────────────
-    build_cicd_sheet(wb, rows)
+    rows = collect_rows(projects)
 
-    # ── SHEET 5: Open Items ──────────────────────────────────────────────────
-    build_open_items(wb, rows)
+    write_csv("gitlab_full_audit.csv", rows)
 
-    wb.save(OUTPUT_FILE)
-    print(f"       → {OUTPUT_FILE} saved successfully.")
+    write_csv(
+        "gitlab_cicd_repos.csv",
+        [r for r in rows if r["ci_enabled"] == "Yes"]
+    )
 
+    write_csv(
+        "gitlab_open_items.csv",
+        [r for r in rows if r["mrs_open"] > 0 or r["issues_open"] > 0]
+    )
 
-# =============================================================================
-#  SHEET 1 — DASHBOARD
-# =============================================================================
+    generate_html(rows)
 
-def build_dashboard(wb, rows):
-    ws = wb.create_sheet("📊 Dashboard")
-    ws.sheet_view.showGridLines = False
-    ws.column_dimensions["A"].width = 3
-    ws.column_dimensions["B"].width = 30
-    ws.column_dimensions["C"].width = 18
-    ws.column_dimensions["D"].width = 3
-    ws.column_dimensions["E"].width = 30
-    ws.column_dimensions["F"].width = 18
+    print("Reports generated successfully.")
 
-    # Title
-    ws.merge_cells("B1:F1")
-    t = ws["B1"]
-    t.value     = "GitLab Repository Audit — Migration Dashboard"
-    t.font      = Font(name="Arial", bold=True, color=C_WHITE, size=14)
-    t.fill      = PatternFill("solid", start_color=C_HEADER_DARK, fgColor=C_HEADER_DARK)
-    t.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 32
-
-    # Sub-title
-    ws.merge_cells("B2:F2")
-    s2 = ws["B2"]
-    s2.value     = f"Source: {GITLAB_URL}  |  Group: {TARGET_GROUP or 'All Projects'}  |  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-    s2.font      = Font(name="Arial", italic=True, color=C_WHITE, size=9)
-    s2.fill      = PatternFill("solid", start_color=C_HEADER_MED, fgColor=C_HEADER_MED)
-    s2.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[2].height = 18
-
-    # Metric cards
-    total    = len(rows)
-    high     = sum(1 for r in rows if r["risk"] == "HIGH")
-    medium   = sum(1 for r in rows if r["risk"] == "MEDIUM")
-    low      = sum(1 for r in rows if r["risk"] == "LOW")
-    archived = sum(1 for r in rows if r["risk"] == "ARCHIVED")
-
-    total_mrs_open    = sum(r["mrs_open"]     for r in rows)
-    total_issues_open = sum(r["issues_open"]  for r in rows)
-    total_epics       = rows[0]["group_epics"] if rows else 0
-    total_pipelines   = sum(r["pipelines"]    for r in rows)
-    total_branches    = sum(r["branches"]     for r in rows)
-    total_tags        = sum(r["tags"]         for r in rows)
-    total_releases    = sum(r["releases"]     for r in rows)
-    total_members     = sum(r["members"]      for r in rows)
-    total_webhooks    = sum(r["webhooks"]     for r in rows)
-    total_envs        = sum(r["environments"] for r in rows)
-
-    cards_left = [
-        ("Total Repositories",  total,             C_HEADER_DARK, C_WHITE),
-        ("HIGH Risk",           high,              C_HIGH,        C_HIGH_TXT),
-        ("MEDIUM Risk",         medium,            C_MEDIUM,      C_MEDIUM_TXT),
-        ("LOW Risk",            low,               C_LOW,         C_LOW_TXT),
-        ("Archived",            archived,          C_ARCHIVED,    C_ARCHIVED_TXT),
-        ("Total Open MRs",      total_mrs_open,    C_HEADER_MED,  C_WHITE),
-        ("Total Open Issues",   total_issues_open, C_HEADER_MED,  C_WHITE),
-        ("Group Epics",         total_epics,       C_HEADER_MED,  C_WHITE),
-    ]
-    cards_right = [
-        ("Total Pipelines",     total_pipelines,   C_ACCENT,      C_WHITE),
-        ("Total Branches",      total_branches,    C_ACCENT,      C_WHITE),
-        ("Total Tags",          total_tags,        C_ACCENT,      C_WHITE),
-        ("Total Releases",      total_releases,    C_ACCENT,      C_WHITE),
-        ("Total Environments",  total_envs,        C_ACCENT,      C_WHITE),
-        ("Total Members",       total_members,     C_ACCENT,      C_WHITE),
-        ("Total Webhooks",      total_webhooks,    C_ACCENT,      C_WHITE),
-        ("Repos with CI/CD",    sum(1 for r in rows if r["ci_enabled"]=="Yes"), C_ACCENT, C_WHITE),
-    ]
-
-    def write_card(ws, row, label_col, val_col, label, value, bg, fg):
-        ws.row_dimensions[row].height   = 28
-        ws.row_dimensions[row+1].height = 28
-        lc = ws.cell(row=row,   column=label_col, value=label)
-        vc = ws.cell(row=row+1, column=val_col,   value=value)
-        for cell in (lc, vc):
-            cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-            cell.border    = BORDER_THIN
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-        lc.font = Font(name="Arial", bold=False, color=fg, size=9)
-        vc.font = Font(name="Arial", bold=True,  color=fg, size=16)
-
-    start_row = 4
-    for i, (label, value, bg, fg) in enumerate(cards_left):
-        r = start_row + i * 3
-        ws.merge_cells(start_row=r,   start_column=2, end_row=r,   end_column=3)
-        ws.merge_cells(start_row=r+1, start_column=2, end_row=r+1, end_column=3)
-        write_card(ws, r, 2, 2, label, value, bg, fg)
-
-    for i, (label, value, bg, fg) in enumerate(cards_right):
-        r = start_row + i * 3
-        ws.merge_cells(start_row=r,   start_column=5, end_row=r,   end_column=6)
-        ws.merge_cells(start_row=r+1, start_column=5, end_row=r+1, end_column=6)
-        write_card(ws, r, 5, 5, label, value, bg, fg)
-
-    # Legend
-    legend_row = start_row + len(cards_left) * 3 + 2
-    ws.merge_cells(start_row=legend_row, start_column=2,
-                   end_row=legend_row,   end_column=6)
-    lh = ws.cell(row=legend_row, column=2, value="Migration Risk Legend")
-    lh.font      = Font(name="Arial", bold=True, color=C_WHITE, size=10)
-    lh.fill      = PatternFill("solid", start_color=C_HEADER_DARK, fgColor=C_HEADER_DARK)
-    lh.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[legend_row].height = 22
-
-    legend_items = [
-        ("HIGH",     "CI/CD pipelines present OR open MRs exist",              C_HIGH,     C_HIGH_TXT),
-        ("MEDIUM",   "Issues / Wiki / Packages enabled (no open MRs / CI)",    C_MEDIUM,   C_MEDIUM_TXT),
-        ("LOW",      "Simple repository — no active features",                 C_LOW,      C_LOW_TXT),
-        ("ARCHIVED", "Archived project — verify if migration is needed",        C_ARCHIVED, C_ARCHIVED_TXT),
-    ]
-    for j, (risk, desc, bg, fg) in enumerate(legend_items):
-        r = legend_row + 1 + j
-        ws.row_dimensions[r].height = 20
-        rc = ws.cell(row=r, column=2, value=risk)
-        dc = ws.cell(row=r, column=3, value=desc)
-        for cell, w in [(rc, 2), (dc, 3)]:
-            cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-            cell.border    = BORDER_THIN
-            cell.alignment = Alignment(horizontal="center" if w==2 else "left",
-                                       vertical="center")
-            cell.font      = Font(name="Arial", bold=(w==2), color=fg, size=9)
-        ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
-
-
-# =============================================================================
-#  SHEET 2 — FULL AUDIT
-# =============================================================================
-
-def build_full_audit(wb, rows):
-    ws = wb.create_sheet("📋 Full Audit")
-    ws.sheet_view.showGridLines = False
-
-    COLS = [
-        # (Header label,               key,                  width, center?)
-        ("Sr.",                        "sr",                 5,     True),
-        ("Project ID",                 "id",                 10,    True),
-        ("Full Path",                  "path",               38,    False),
-        ("Project Name",               "name",               25,    False),
-        ("Namespace / Group",          "namespace",          28,    False),
-        ("Description",                "description",        30,    False),
-        ("Visibility",                 "visibility",         11,    True),
-        ("Default Branch",             "default_branch",     14,    True),
-        ("Empty Repo",                 "empty",              10,    True),
-        ("Archived",                   "archived",           10,    True),
-        # ── Repository ──
-        ("Repo Size",                  "repo_size",          12,    True),
-        ("LFS Enabled",                "lfs_enabled",        11,    True),
-        ("LFS Size",                   "lfs_size",           11,    True),
-        # ── Branches / Tags ──
-        ("Branches",                   "branches",           10,    True),
-        ("Tags",                       "tags",               8,     True),
-        ("Protected Branches",         "protected_branches", 18,    True),
-        # ── Merge Requests ──
-        ("MRs Open",                   "mrs_open",           10,    True),
-        ("MRs Merged",                 "mrs_merged",         11,    True),
-        ("MRs Closed",                 "mrs_closed",         11,    True),
-        # ── Issues ──
-        ("Issues Open",                "issues_open",        12,    True),
-        ("Issues Closed",              "issues_closed",      13,    True),
-        # ── Epics / Milestones / Labels ──
-        ("Group Epics",                "group_epics",        12,    True),
-        ("Milestones",                 "milestones",         12,    True),
-        ("Labels",                     "labels",             9,     True),
-        # ── CI/CD ──
-        ("CI/CD Enabled",              "ci_enabled",         13,    True),
-        ("CI Config Path",             "ci_config",          28,    False),
-        ("Shared Runners",             "shared_runners",     14,    True),
-        ("Auto DevOps",                "auto_devops",        12,    True),
-        ("Pipelines (total)",          "pipelines",          14,    True),
-        # ── Features ──
-        ("Container Registry",         "container_registry", 16,    True),
-        ("Packages Enabled",           "packages",           14,    True),
-        ("Wiki Enabled",               "wiki",               12,    True),
-        ("Issues Feature",             "issues_feature",     13,    True),
-        ("Snippets",                   "snippets",           10,    True),
-        ("Releases",                   "releases",           10,    True),
-        ("Environments",               "environments",       13,    True),
-        # ── Access ──
-        ("Members",                    "members",            10,    True),
-        ("Webhooks",                   "webhooks",           10,    True),
-        ("Deploy Keys",                "deploy_keys",        12,    True),
-        ("Mirror",                     "mirror",             9,     True),
-        ("Merge Method",               "merge_method",       14,    True),
-        ("Pipeline Required for MR",   "pipeline_required",  20,    True),
-        # ── Activity ──
-        ("Created Date",               "created",            13,    True),
-        ("Last Activity",              "last_activity",      13,    True),
-        ("Days Inactive",              "days_inactive",      13,    True),
-        # ── Migration ──
-        ("Migration Risk",             "risk",               14,    True),
-        ("Migration Notes",            "migration_notes",    60,    False),
-        ("HTTP URL",                   "http_url",           45,    False),
-    ]
-
-    # Section separator colours for header groups
-    SEC_REPO    = "FF1A5276"
-    SEC_VCS     = "FF117A65"
-    SEC_MR      = "FF7D3C98"
-    SEC_ISSUE   = "FF922B21"
-    SEC_EPIC    = "FF784212"
-    SEC_CICD    = "FF1F618D"
-    SEC_FEAT    = "FF1E8449"
-    SEC_ACCESS  = "FF515A5A"
-    SEC_ACTIV   = "FF2C3E50"
-    SEC_MIG     = "FFB7350D"
-
-    SEC_MAP = {
-        "sr":                 C_HEADER_DARK,
-        "id":                 C_HEADER_DARK,
-        "path":               C_HEADER_DARK,
-        "name":               C_HEADER_DARK,
-        "namespace":          C_HEADER_DARK,
-        "description":        C_HEADER_DARK,
-        "visibility":         C_HEADER_DARK,
-        "default_branch":     C_HEADER_DARK,
-        "empty":              C_HEADER_DARK,
-        "archived":           C_HEADER_DARK,
-        "repo_size":          SEC_REPO,
-        "lfs_enabled":        SEC_REPO,
-        "lfs_size":           SEC_REPO,
-        "branches":           SEC_VCS,
-        "tags":               SEC_VCS,
-        "protected_branches": SEC_VCS,
-        "mrs_open":           SEC_MR,
-        "mrs_merged":         SEC_MR,
-        "mrs_closed":         SEC_MR,
-        "issues_open":        SEC_ISSUE,
-        "issues_closed":      SEC_ISSUE,
-        "group_epics":        SEC_EPIC,
-        "milestones":         SEC_EPIC,
-        "labels":             SEC_EPIC,
-        "ci_enabled":         SEC_CICD,
-        "ci_config":          SEC_CICD,
-        "shared_runners":     SEC_CICD,
-        "auto_devops":        SEC_CICD,
-        "pipelines":          SEC_CICD,
-        "container_registry": SEC_FEAT,
-        "packages":           SEC_FEAT,
-        "wiki":               SEC_FEAT,
-        "issues_feature":     SEC_FEAT,
-        "snippets":           SEC_FEAT,
-        "releases":           SEC_FEAT,
-        "environments":       SEC_FEAT,
-        "members":            SEC_ACCESS,
-        "webhooks":           SEC_ACCESS,
-        "deploy_keys":        SEC_ACCESS,
-        "mirror":             SEC_ACCESS,
-        "merge_method":       SEC_ACCESS,
-        "pipeline_required":  SEC_ACCESS,
-        "created":            SEC_ACTIV,
-        "last_activity":      SEC_ACTIV,
-        "days_inactive":      SEC_ACTIV,
-        "risk":               SEC_MIG,
-        "migration_notes":    SEC_MIG,
-        "http_url":           SEC_MIG,
-    }
-
-    # Section label row (row 1)
-    SECTION_SPANS = [
-        ("Project Identity",        1,  10),
-        ("Repository",             11,  13),
-        ("Branches & Tags",        14,  16),
-        ("Merge Requests",         17,  19),
-        ("Issues",                 20,  21),
-        ("Epics / Milestones",     22,  24),
-        ("CI / CD",                25,  29),
-        ("Features",               30,  36),
-        ("Access & Config",        37,  42),
-        ("Activity",               43,  45),
-        ("Migration",              46,  48),
-    ]
-    SEC_BG = [C_HEADER_DARK, SEC_REPO, SEC_VCS, SEC_MR, SEC_ISSUE,
-              SEC_EPIC, SEC_CICD, SEC_FEAT, SEC_ACCESS, SEC_ACTIV, SEC_MIG]
-
-    ws.row_dimensions[1].height = 20
-    ws.row_dimensions[2].height = 40
-    for idx, (label, c1, c2) in enumerate(SECTION_SPANS):
-        ws.merge_cells(start_row=1, start_column=c1, end_row=1, end_column=c2)
-        cell = ws.cell(row=1, column=c1, value=label)
-        cell.font      = Font(name="Arial", bold=True, color=C_WHITE, size=9)
-        cell.fill      = PatternFill("solid", start_color=SEC_BG[idx], fgColor=SEC_BG[idx])
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border    = BORDER_THIN
-
-    # Column headers row 2
-    for col_idx, (label, key, width, _) in enumerate(COLS, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=label)
-        bg   = SEC_MAP.get(key, C_HEADER_DARK)
-        cell.font      = Font(name="Arial", bold=True, color=C_WHITE, size=9)
-        cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-        cell.alignment = Alignment(horizontal="center", vertical="center",
-                                   wrap_text=True)
-        cell.border    = BORDER_THIN
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    # Data rows
-    for row_idx, r in enumerate(rows, start=3):
-        tint = (row_idx % 2 == 0)
-        bg   = C_HEADER_LIGHT if tint else C_WHITE
-        r["sr"] = row_idx - 2
-
-        for col_idx, (_, key, _, centred) in enumerate(COLS, start=1):
-            val  = r.get(key, "")
-            cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.border    = BORDER_THIN
-            cell.font      = body_font()
-            cell.alignment = Alignment(
-                horizontal="center" if centred else "left",
-                vertical="center")
-
-            # Risk column special colouring
-            if key == "risk":
-                rf, rft = risk_fill_font(val)
-                cell.fill = rf
-                cell.font = rft
-            elif key in ("mrs_open", "issues_open") and isinstance(val, int) and val > 0:
-                cell.fill = PatternFill("solid", start_color="FFFDE8E8", fgColor="FFFDE8E8")
-                cell.font = Font(name="Arial", bold=True, color="FF9B0000", size=9)
-            elif key in ("branches", "tags", "pipelines") and isinstance(val, int) and val > 0:
-                cell.fill = PatternFill("solid", start_color="FFE8F4FD", fgColor="FFE8F4FD")
-            elif key in ("ci_enabled", "lfs_enabled", "mirror",
-                         "container_registry", "packages") and val == "Yes":
-                cell.fill = PatternFill("solid", start_color="FFFFF3CD", fgColor="FFFFF3CD")
-                cell.font = Font(name="Arial", bold=True, color="FF7D5A00", size=9)
-            else:
-                cell.fill = PatternFill("solid", start_color=bg, fgColor=bg)
-
-        ws.row_dimensions[row_idx].height = 16
-
-    autofilter(ws, f"A2:{get_column_letter(len(COLS))}2")
-    freeze(ws, "C3")
-
-
-# =============================================================================
-#  SHEET 3 — MIGRATION PLAN (checklist)
-# =============================================================================
-
-def build_migration_plan(wb, rows_by_risk):
-    ws = wb.create_sheet("🚀 Migration Plan")
-    ws.sheet_view.showGridLines = False
-
-    COLS = [
-        ("Sr.",              "sr",               5,  True),
-        ("Full Path",        "path",             40, False),
-        ("Risk",             "risk",             10, True),
-        ("Visibility",       "visibility",       11, True),
-        ("Repo Size",        "repo_size",        12, True),
-        ("Branches",         "branches",         10, True),
-        ("Open MRs",         "mrs_open",         10, True),
-        ("Open Issues",      "issues_open",      12, True),
-        ("Pipelines",        "pipelines",        10, True),
-        ("CI/CD",            "ci_enabled",       9,  True),
-        ("LFS",              "lfs_enabled",      8,  True),
-        ("Container Reg.",   "container_registry",13,True),
-        ("Packages",         "packages",         10, True),
-        ("Webhooks",         "webhooks",         10, True),
-        ("Deploy Keys",      "deploy_keys",      12, True),
-        ("Environments",     "environments",     13, True),
-        ("Mirror",           "mirror",           9,  True),
-        ("Last Activity",    "last_activity",    13, True),
-        ("Days Inactive",    "days_inactive",    13, True),
-        ("Migration Notes",  "migration_notes",  55, False),
-        # Tracker columns — left blank for team to fill
-        ("Migration Status", "_status",          18, True),
-        ("Migrated By",      "_by",              16, True),
-        ("Migration Date",   "_date",            14, True),
-        ("Verified By",      "_verified",        14, True),
-        ("Remarks",          "_remarks",         30, False),
-    ]
-
-    # Title
-    ws.merge_cells(f"A1:{get_column_letter(len(COLS))}1")
-    t = ws["A1"]
-    t.value     = f"Migration Plan — {TARGET_GROUP or 'All Projects'} | {datetime.now().strftime('%Y-%m-%d')}"
-    t.font      = Font(name="Arial", bold=True, color=C_WHITE, size=12)
-    t.fill      = PatternFill("solid", start_color=C_HEADER_DARK, fgColor=C_HEADER_DARK)
-    t.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 28
-
-    # Header row
-    ws.row_dimensions[2].height = 35
-    for col_idx, (label, key, width, _) in enumerate(COLS, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=label)
-        bg   = "FF566573" if key.startswith("_") else C_HEADER_DARK
-        cell.font      = Font(name="Arial", bold=True, color=C_WHITE, size=9)
-        cell.fill      = PatternFill("solid", start_color=bg, fgColor=bg)
-        cell.alignment = Alignment(horizontal="center", vertical="center",
-                                   wrap_text=True)
-        cell.border    = BORDER_THIN
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    # Data rows
-    for row_idx, r in enumerate(rows_by_risk, start=3):
-        r["sr"] = row_idx - 2
-        risk    = r.get("risk", "LOW")
-        rf, _   = risk_fill_font(risk)
-
-        for col_idx, (_, key, _, centred) in enumerate(COLS, start=1):
-            val  = r.get(key, "") if not key.startswith("_") else ""
-            cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.border    = BORDER_THIN
-            cell.alignment = Alignment(
-                horizontal="center" if centred else "left",
-                vertical="center")
-
-            if key == "risk":
-                cell.fill = rf
-                cell.font = Font(name="Arial", bold=True,
-                                 color=risk_fill_font(risk)[1].color, size=9)
-            elif key.startswith("_"):
-                # Tracker columns — light yellow background as "fill me" hint
-                cell.fill = PatternFill("solid",
-                                        start_color="FFFFF9C4",
-                                        fgColor="FFFFF9C4")
-                cell.font = body_font()
-            elif key in ("mrs_open", "issues_open") and isinstance(val, int) and val > 0:
-                cell.fill = PatternFill("solid", start_color="FFFDE8E8", fgColor="FFFDE8E8")
-                cell.font = Font(name="Arial", bold=True, color="FF9B0000", size=9)
-            else:
-                tint = (row_idx % 2 == 0)
-                bg   = C_HEADER_LIGHT if tint else C_WHITE
-                cell.fill = PatternFill("solid", start_color=bg, fgColor=bg)
-                cell.font = body_font()
-
-        ws.row_dimensions[row_idx].height = 16
-
-    autofilter(ws, f"A2:{get_column_letter(len(COLS))}2")
-    freeze(ws, "B3")
-
-    # Legend note at bottom
-    note_row = len(rows_by_risk) + 4
-    ws.merge_cells(f"A{note_row}:{get_column_letter(len(COLS))}{note_row}")
-    nc = ws.cell(row=note_row, column=1,
-                 value="ℹ  Yellow columns (Migration Status → Remarks) are tracker fields — fill these in as each repository is migrated.")
-    nc.font      = Font(name="Arial", italic=True, color="FF5D6D7E", size=9)
-    nc.alignment = left_align()
-
-
-# =============================================================================
-#  SHEET 4 — CI/CD Repos
-# =============================================================================
-
-def build_cicd_sheet(wb, rows):
-    ws  = wb.create_sheet("⚙️ CI-CD Repos")
-    ws.sheet_view.showGridLines = False
-    cicd_rows = [r for r in rows if r["ci_enabled"] == "Yes"]
-
-    COLS = [
-        ("Sr.",             "sr",               5,  True),
-        ("Full Path",       "path",             40, False),
-        ("Risk",            "risk",             10, True),
-        ("CI Config Path",  "ci_config",        35, False),
-        ("Shared Runners",  "shared_runners",   14, True),
-        ("Auto DevOps",     "auto_devops",      12, True),
-        ("Pipelines",       "pipelines",        12, True),
-        ("Container Reg.",  "container_registry",14,True),
-        ("Packages",        "packages",         10, True),
-        ("Environments",    "environments",     14, True),
-        ("Open MRs",        "mrs_open",         10, True),
-        ("Pipeline Req.",   "pipeline_required",14, True),
-        ("HTTP URL",        "http_url",         45, False),
-    ]
-
-    ws.merge_cells(f"A1:{get_column_letter(len(COLS))}1")
-    t = ws["A1"]
-    t.value     = f"CI/CD Enabled Repositories ({len(cicd_rows)}) — Require Pipeline Review Before Migration"
-    t.font      = Font(name="Arial", bold=True, color=C_WHITE, size=11)
-    SEC_CICD    = "FF1F618D"
-    t.fill      = PatternFill("solid", start_color=SEC_CICD, fgColor=SEC_CICD)
-    t.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 26
-
-    ws.row_dimensions[2].height = 35
-    for col_idx, (label, _, width, _) in enumerate(COLS, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=label)
-        cell.font      = Font(name="Arial", bold=True, color=C_WHITE, size=9)
-        cell.fill      = PatternFill("solid", start_color="FF1F618D", fgColor="FF1F618D")
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border    = BORDER_THIN
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    for row_idx, r in enumerate(cicd_rows, start=3):
-        r["sr"] = row_idx - 2
-        tint = (row_idx % 2 == 0)
-        bg   = "FFD6EAF8" if tint else C_WHITE
-        for col_idx, (_, key, _, centred) in enumerate(COLS, start=1):
-            val  = r.get(key, "")
-            cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.border    = BORDER_THIN
-            cell.alignment = Alignment(horizontal="center" if centred else "left",
-                                       vertical="center")
-            if key == "risk":
-                rf, rft = risk_fill_font(val)
-                cell.fill = rf; cell.font = rft
-            else:
-                cell.fill = PatternFill("solid", start_color=bg, fgColor=bg)
-                cell.font = body_font()
-        ws.row_dimensions[row_idx].height = 16
-
-    autofilter(ws, f"A2:{get_column_letter(len(COLS))}2")
-    freeze(ws, "B3")
-
-
-# =============================================================================
-#  SHEET 5 — Open Items
-# =============================================================================
-
-def build_open_items(wb, rows):
-    ws = wb.create_sheet("🔴 Open Items")
-    ws.sheet_view.showGridLines = False
-    open_rows = [r for r in rows
-                 if r["mrs_open"] > 0 or r["issues_open"] > 0]
-
-    COLS = [
-        ("Sr.",              "sr",            5,  True),
-        ("Full Path",        "path",          40, False),
-        ("Risk",             "risk",          10, True),
-        ("Open MRs",         "mrs_open",      10, True),
-        ("Merged MRs",       "mrs_merged",    11, True),
-        ("Closed MRs",       "mrs_closed",    11, True),
-        ("Open Issues",      "issues_open",   12, True),
-        ("Closed Issues",    "issues_closed", 13, True),
-        ("Group Epics",      "group_epics",   12, True),
-        ("Milestones",       "milestones",    12, True),
-        ("Labels",           "labels",        10, True),
-        ("Last Activity",    "last_activity", 14, True),
-        ("HTTP URL",         "http_url",      45, False),
-    ]
-
-    ws.merge_cells(f"A1:{get_column_letter(len(COLS))}1")
-    t = ws["A1"]
-    t.value     = (f"Repos with Open MRs or Issues ({len(open_rows)}) "
-                   f"— Author Attribution Risk During Migration")
-    t.font      = Font(name="Arial", bold=True, color=C_WHITE, size=11)
-    t.fill      = PatternFill("solid", start_color="FF922B21", fgColor="FF922B21")
-    t.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 26
-
-    ws.row_dimensions[2].height = 35
-    for col_idx, (label, _, width, _) in enumerate(COLS, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=label)
-        cell.font      = Font(name="Arial", bold=True, color=C_WHITE, size=9)
-        cell.fill      = PatternFill("solid", start_color="FF922B21", fgColor="FF922B21")
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border    = BORDER_THIN
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    for row_idx, r in enumerate(open_rows, start=3):
-        r["sr"] = row_idx - 2
-        tint = (row_idx % 2 == 0)
-        bg   = "FFFDE8E8" if tint else C_WHITE
-        for col_idx, (_, key, _, centred) in enumerate(COLS, start=1):
-            val  = r.get(key, "")
-            cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.border    = BORDER_THIN
-            cell.alignment = Alignment(horizontal="center" if centred else "left",
-                                       vertical="center")
-            if key == "risk":
-                rf, rft = risk_fill_font(val)
-                cell.fill = rf; cell.font = rft
-            elif key in ("mrs_open", "issues_open") and isinstance(val, int) and val > 0:
-                cell.fill = PatternFill("solid", start_color="FFFFC7CE", fgColor="FFFFC7CE")
-                cell.font = Font(name="Arial", bold=True, color="FF9B0000", size=9)
-            else:
-                cell.fill = PatternFill("solid", start_color=bg, fgColor=bg)
-                cell.font = body_font()
-        ws.row_dimensions[row_idx].height = 16
-
-    autofilter(ws, f"A2:{get_column_letter(len(COLS))}2")
-    freeze(ws, "B3")
-
-
-# =============================================================================
-#  MAIN
-# =============================================================================
 
 if __name__ == "__main__":
-    projects = fetch_all_projects()
-    counts   = fetch_per_project_counts(projects)
-    build_workbook(projects, counts)
-
-    print("\n" + "=" * 65)
-    print("  DONE")
-    print(f"  Output : {OUTPUT_FILE}")
-    print("  Sheets :")
-    print("    📊 Dashboard       — Summary metrics and risk breakdown")
-    print("    📋 Full Audit      — Every repo × every artifact count")
-    print("    🚀 Migration Plan  — Checklist sorted by risk (fill tracker cols)")
-    print("    ⚙️  CI-CD Repos     — Only repos with CI/CD pipelines")
-    print("    🔴 Open Items      — Repos with open MRs or Issues")
-    print()
-    print("  READ-ONLY: No changes were made to GitLab.")
-    print("=" * 65)
+    main()
