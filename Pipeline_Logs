@@ -1,1 +1,71 @@
-What does it means in gitlab setting : Allow contribution mapping to administrators
+[osuser@bastion gitlab-export]$ cat export_gitlab.py
+import urllib.request
+import json
+import csv
+import ssl
+
+GITLAB_URL = "https://gitlab.epay.sbi"
+TOKEN = ""
+
+headers = {
+    "PRIVATE-TOKEN": TOKEN
+}
+
+ssl_context = ssl._create_unverified_context()
+
+# ----------------------------------------
+# API CALL FUNCTION
+# ----------------------------------------
+def api_get(url):
+    req = urllib.request.Request(url)
+
+    for k, v in headers.items():
+        req.add_header(k, v)
+
+    response = urllib.request.urlopen(
+        req,
+        context=ssl_context
+    )
+
+    return json.loads(response.read())
+
+
+# ----------------------------------------
+# GET ALL PROJECTS
+# ----------------------------------------
+projects = api_get(
+    f"{GITLAB_URL}/api/v4/projects?per_page=100"
+)
+
+# ----------------------------------------
+# EXPORT PROJECTS CSV
+# ----------------------------------------
+with open("projects.csv", "w", newline="") as csvfile:
+
+    writer = csv.writer(csvfile)
+
+    writer.writerow([
+        "Project ID",
+        "Project Name",
+        "Namespace",
+        "Visibility",
+        "Merge Method",
+        "Shared Runners",
+        "Security Enabled",
+        "Request Access"
+    ])
+
+    for p in projects:
+
+        writer.writerow([
+            p.get("id"),
+            p.get("name"),
+            p.get("path_with_namespace"),
+            p.get("visibility"),
+            p.get("merge_method"),
+            p.get("shared_runners_enabled"),
+            p.get("security_and_compliance_enabled"),
+            p.get("request_access_enabled")
+        ])
+
+print("projects.csv generated successfully")
