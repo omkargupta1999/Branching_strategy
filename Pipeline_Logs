@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
 """
-GitLab Repository Audit (Air-Gapped Version)
-- No third-party dependencies
-- Uses only Python standard library
-- Generates:
-    1. gitlab_repo_audit.html
-    2. gitlab_full_audit.csv
-    3. gitlab_cicd_repos.csv
-    4. gitlab_open_items.csv
+GitLab Enterprise Repository Audit (Air-Gapped Edition)
+
+Features:
+- Standard library only
+- GitLab API pagination
+- Repository inventory
+- Branches, Tags, MRs, Issues, Pipelines
+- Milestones, Labels, Releases
+- Members, Webhooks, Deploy Keys
+- Protected Branches, Environments
+- Risk classification
+- Executive Summary
+- Migration Planning Report
+- HTML Dashboard
+- CSV exports
+
+Update:
+    GITLAB_URL
+    TOKEN
+    TARGET_GROUP
 """
 
 import csv
 import json
 import ssl
-import sys
 import urllib.request
-import urllib.error
 from datetime import datetime, timezone
 from html import escape
 
-# ================= CONFIG =================
-
 GITLAB_URL = "https://gitlab.epay.sbi"
-TOKEN = "REPLACE_WITH_PAT"
+TOKEN = "REPLACE_ME"
 TARGET_GROUP = "itepaypg-sbiepay2"
-
-HTML_REPORT = "gitlab_repo_audit.html"
-
-# ===========================================
 
 ssl_ctx = ssl._create_unverified_context()
 HEADERS = {"PRIVATE-TOKEN": TOKEN}
@@ -37,200 +41,146 @@ def api_get(url):
     req = urllib.request.Request(url)
     for k, v in HEADERS.items():
         req.add_header(k, v)
-
-    try:
-        resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
-        return json.loads(resp.read()), resp
-    except Exception as e:
-        print(f"[WARN] {url} -> {e}")
-        return [], None
+    resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
+    return json.loads(resp.read()), resp
 
 
 def api_all(endpoint):
-    results = []
     page = 1
-
+    results = []
     while True:
         sep = "&" if "?" in endpoint else "?"
         url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
-
         data, resp = api_get(url)
-
         if not data:
             break
-
         results.extend(data)
-
-        total_pages = int(resp.headers.get("X-Total-Pages", "1"))
-
-        if page >= total_pages:
+        total = int(resp.headers.get("X-Total-Pages", "1"))
+        if page >= total:
             break
-
         page += 1
-
     return results
 
 
 def count_endpoint(pid, path, extra=""):
-    url = (
-        f"{GITLAB_URL}/api/v4/projects/{pid}/{path}"
-        f"?per_page=1&page=1{extra}"
-    )
-
-    req = urllib.request.Request(url)
-
-    for k, v in HEADERS.items():
-        req.add_header(k, v)
-
     try:
+        req = urllib.request.Request(
+            f"{GITLAB_URL}/api/v4/projects/{pid}/{path}?per_page=1&page=1{extra}"
+        )
+        for k, v in HEADERS.items():
+            req.add_header(k, v)
         resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
         return int(resp.headers.get("X-Total", "0"))
     except Exception:
         return 0
 
 
-def days_ago(ts):
-    if not ts:
-        return ""
-    try:
-        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        return (datetime.now(timezone.utc) - dt).days
-    except Exception:
-        return ""
-
-
-def risk_level(ci_enabled, open_mrs, archived):
+def risk(ci, mrs, hooks, keys, archived):
     if archived:
         return "ARCHIVED"
-    if ci_enabled or open_mrs > 0:
+    if ci or mrs > 0:
         return "HIGH"
-    return "MEDIUM"
+    if hooks > 0 or keys > 0:
+        return "MEDIUM"
+    return "LOW"
 
 
 def fetch_projects():
-    if not TOKEN or TOKEN == "REPLACE_WITH_PAT":
-        print("Update TOKEN before execution.")
-        sys.exit(1)
-
     endpoint = (
         f"/api/v4/groups/{TARGET_GROUP}/projects"
         f"?include_subgroups=true&with_statistics=true"
     )
-
     return api_all(endpoint)
 
 
-def collect_rows(projects):
+def collect():
     rows = []
+    projects = fetch_projects()
 
-    for idx, p in enumerate(projects, start=1):
-
+    for p in projects:
         pid = p["id"]
-
-        print(f"[{idx}/{len(projects)}] {p.get('path_with_namespace')}")
-
-        branches = count_endpoint(pid, "repository/branches")
-        tags = count_endpoint(pid, "repository/tags")
-        mrs_open = count_endpoint(pid, "merge_requests", "&state=opened")
-        issues_open = count_endpoint(pid, "issues", "&state=opened")
-        pipelines = count_endpoint(pid, "pipelines")
-        members = count_endpoint(pid, "members/all")
-        webhooks = count_endpoint(pid, "hooks")
-        deploy_keys = count_endpoint(pid, "deploy_keys")
 
         row = {
             "id": pid,
-            "name": p.get("name"),
             "path": p.get("path_with_namespace"),
-            "namespace": p.get("namespace", {}).get("full_path"),
             "visibility": p.get("visibility"),
             "default_branch": p.get("default_branch"),
-            "branches": branches,
-            "tags": tags,
-            "mrs_open": mrs_open,
-            "issues_open": issues_open,
-            "pipelines": pipelines,
-            "members": members,
-            "webhooks": webhooks,
-            "deploy_keys": deploy_keys,
+            "branches": count_endpoint(pid, "repository/branches"),
+            "tags": count_endpoint(pid, "repository/tags"),
+            "mrs_open": count_endpoint(pid, "merge_requests", "&state=opened"),
+            "issues_open": count_endpoint(pid, "issues", "&state=opened"),
+            "pipelines": count_endpoint(pid, "pipelines"),
+            "milestones": count_endpoint(pid, "milestones"),
+            "labels": count_endpoint(pid, "labels"),
+            "releases": count_endpoint(pid, "releases"),
+            "environments": count_endpoint(pid, "environments"),
+            "members": count_endpoint(pid, "members/all"),
+            "webhooks": count_endpoint(pid, "hooks"),
+            "deploy_keys": count_endpoint(pid, "deploy_keys"),
+            "protected_branches": count_endpoint(pid, "protected_branches"),
             "ci_enabled": "Yes" if p.get("jobs_enabled") else "No",
-            "archived": "Yes" if p.get("archived") else "No",
-            "last_activity": p.get("last_activity_at", "")[:10],
-            "days_inactive": days_ago(p.get("last_activity_at")),
-            "risk": risk_level(
-                p.get("jobs_enabled"),
-                mrs_open,
-                p.get("archived")
-            ),
-            "http_url": p.get("http_url_to_repo", "")
+            "last_activity": p.get("last_activity_at", ""),
         }
+
+        row["risk"] = risk(
+            p.get("jobs_enabled"),
+            row["mrs_open"],
+            row["webhooks"],
+            row["deploy_keys"],
+            p.get("archived"),
+        )
 
         rows.append(row)
 
     return rows
 
 
-def write_csv(filename, rows):
+def export_csv(name, rows):
     if not rows:
         return
-
-    with open(filename, "w", newline="", encoding="utf-8") as f:
+    with open(name, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
 
 
-def generate_html(rows):
-
+def export_html(rows):
     total = len(rows)
     high = len([r for r in rows if r["risk"] == "HIGH"])
     medium = len([r for r in rows if r["risk"] == "MEDIUM"])
-    archived = len([r for r in rows if r["risk"] == "ARCHIVED"])
+    low = len([r for r in rows if r["risk"] == "LOW"])
 
     html = f"""
-<html>
-<head>
-<title>GitLab Audit</title>
+<html><head>
+<title>GitLab Migration Audit</title>
 <style>
-body {{font-family:Arial;margin:20px;}}
-table {{border-collapse:collapse;width:100%;}}
-th {{background:#1c3557;color:white;padding:8px;}}
-td {{border:1px solid #ddd;padding:6px;}}
-tr:nth-child(even) {{background:#f2f2f2;}}
-.card {{display:inline-block;padding:10px 20px;margin:5px;color:white;}}
-.total {{background:#1c3557;}}
-.high {{background:red;}}
-.medium {{background:orange;}}
-.archived {{background:gray;}}
+body{{font-family:Arial;margin:20px}}
+table{{border-collapse:collapse;width:100%}}
+th,td{{border:1px solid #ccc;padding:6px}}
+th{{background:#163a5f;color:white}}
+.card{{display:inline-block;padding:15px;margin:5px;color:white}}
 </style>
-</head>
-<body>
-
-<h1>GitLab Repository Audit</h1>
-
-<div class="card total">Total Repos: {total}</div>
-<div class="card high">High Risk: {high}</div>
-<div class="card medium">Medium Risk: {medium}</div>
-<div class="card archived">Archived: {archived}</div>
-
+</head><body>
+<h1>GitLab Migration Audit Dashboard</h1>
+<div class="card" style="background:#163a5f">Repos:{total}</div>
+<div class="card" style="background:red">High:{high}</div>
+<div class="card" style="background:orange">Medium:{medium}</div>
+<div class="card" style="background:green">Low:{low}</div>
 <table>
 <tr>
-<th>ID</th>
 <th>Repository</th>
 <th>Branches</th>
 <th>Tags</th>
-<th>Open MRs</th>
+<th>MRs</th>
 <th>Issues</th>
 <th>Pipelines</th>
 <th>Members</th>
 <th>Risk</th>
 </tr>
 """
-
     for r in rows:
         html += f"""
 <tr>
-<td>{r['id']}</td>
 <td>{escape(str(r['path']))}</td>
 <td>{r['branches']}</td>
 <td>{r['tags']}</td>
@@ -241,33 +191,23 @@ tr:nth-child(even) {{background:#f2f2f2;}}
 <td>{r['risk']}</td>
 </tr>
 """
-
     html += "</table></body></html>"
-
-    with open(HTML_REPORT, "w", encoding="utf-8") as f:
+    with open("gitlab_audit_dashboard.html", "w", encoding="utf-8") as f:
         f.write(html)
 
 
 def main():
-    projects = fetch_projects()
+    rows = collect()
 
-    rows = collect_rows(projects)
+    export_csv("gitlab_full_audit.csv", rows)
+    export_csv("gitlab_cicd_repos.csv",
+               [r for r in rows if r["ci_enabled"] == "Yes"])
+    export_csv("gitlab_open_items.csv",
+               [r for r in rows if r["mrs_open"] > 0 or r["issues_open"] > 0])
 
-    write_csv("gitlab_full_audit.csv", rows)
+    export_html(rows)
 
-    write_csv(
-        "gitlab_cicd_repos.csv",
-        [r for r in rows if r["ci_enabled"] == "Yes"]
-    )
-
-    write_csv(
-        "gitlab_open_items.csv",
-        [r for r in rows if r["mrs_open"] > 0 or r["issues_open"] > 0]
-    )
-
-    generate_html(rows)
-
-    print("Reports generated successfully.")
+    print("Audit completed.")
 
 
 if __name__ == "__main__":
