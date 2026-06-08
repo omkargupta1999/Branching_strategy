@@ -1,71 +1,95 @@
-[osuser@bastion gitlab-export]$ cat export_gitlab.py
 import urllib.request
 import json
 import csv
 import ssl
 
+# ----------------------------------------
+# CONFIGURATION
+# ----------------------------------------
 GITLAB_URL = "https://gitlab.epay.sbi"
-TOKEN = ""
+TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx"  # Admin token required
 
-headers = {
-    "PRIVATE-TOKEN": TOKEN
-}
-
+headers = {"PRIVATE-TOKEN": TOKEN}
 ssl_context = ssl._create_unverified_context()
 
 # ----------------------------------------
-# API CALL FUNCTION
+# API CALL FUNCTION (with pagination)
 # ----------------------------------------
-def api_get(url):
-    req = urllib.request.Request(url)
-
-    for k, v in headers.items():
-        req.add_header(k, v)
-
-    response = urllib.request.urlopen(
-        req,
-        context=ssl_context
-    )
-
-    return json.loads(response.read())
-
+def api_get_all(endpoint):
+    results = []
+    page = 1
+    while True:
+        sep = "&" if "?" in endpoint else "?"
+        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
+        req = urllib.request.Request(url)
+        for k, v in headers.items():
+            req.add_header(k, v)
+        response = urllib.request.urlopen(req, context=ssl_context)
+        data = json.loads(response.read())
+        if not data:
+            break
+        results.extend(data)
+        total_pages = response.headers.get("X-Total-Pages")
+        if total_pages and page >= int(total_pages):
+            break
+        page += 1
+    return results
 
 # ----------------------------------------
-# GET ALL PROJECTS
+# FETCH ALL USERS
 # ----------------------------------------
-projects = api_get(
-    f"{GITLAB_URL}/api/v4/projects?per_page=100"
-)
+print("Fetching all users...")
+users = api_get_all("/api/v4/users")
+print(f"  Total users fetched: {len(users)}")
 
 # ----------------------------------------
-# EXPORT PROJECTS CSV
+# SPLIT INTO TWO GROUPS
 # ----------------------------------------
-with open("projects.csv", "w", newline="") as csvfile:
+with_public_email    = [u for u in users if u.get("public_email")]
+without_public_email = [u for u in users if not u.get("public_email")]
 
-    writer = csv.writer(csvfile)
+print(f"  With public_email   : {len(with_public_email)}")
+print(f"  Without public_email: {len(without_public_email)}")
 
-    writer.writerow([
-        "Project ID",
-        "Project Name",
-        "Namespace",
-        "Visibility",
-        "Merge Method",
-        "Shared Runners",
-        "Security Enabled",
-        "Request Access"
-    ])
+# ----------------------------------------
+# CSV COLUMNS
+# ----------------------------------------
+COLUMNS = [
+    "ID", "Username", "Name", "State",
+    "Public Email", "Primary Email (Admin)",
+    "Identities (LDAP/OAuth)", "Is Admin", "Bot", "Created At"
+]
 
-    for p in projects:
+def write_csv(filename, userlist):
+    with open(filename, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(COLUMNS)
+        for u in userlist:
+            identities = u.get("identities", [])
+            identities_str = " | ".join(
+                f"{i.get('provider')}:{i.get('extern_uid')}"
+                for i in identities
+            ) if identities else ""
 
-        writer.writerow([
-            p.get("id"),
-            p.get("name"),
-            p.get("path_with_namespace"),
-            p.get("visibility"),
-            p.get("merge_method"),
-            p.get("shared_runners_enabled"),
-            p.get("security_and_compliance_enabled"),
-            p.get("request_access_enabled")
-        ])
+            writer.writerow([
+                u.get("id"),
+                u.get("username"),
+                u.get("name"),
+                u.get("state"),
+                u.get("public_email") or "",
+                u.get("email") or "",          # admin-visible primary email
+                identities_str,
+                u.get("is_admin") or u.get("admin"),
+                u.get("bot"),
+                u.get("created_at"),
+            ])
 
-print("projects.csv generated successfully")
+# ----------------------------------------
+# WRITE TWO SEPARATE CSV FILES
+# ----------------------------------------
+write_csv("users_with_public_email.csv",    with_public_email)
+write_csv("users_without_public_email.csv", without_public_email)
+
+print("\nDone!")
+print("  users_with_public_email.csv    -> users who SET their public email")
+print("  users_without_public_email.csv -> users who did NOT set public email")
