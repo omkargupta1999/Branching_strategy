@@ -1,309 +1,202 @@
-#!/usr/bin/env python3
-
-import urllib.request
-import urllib.error
-import json
-import ssl
-from collections import defaultdict
-from datetime import datetime
-
-# ==========================================================
-# CONFIGURATION
-# ==========================================================
-
-GITLAB_URL = "https://gitlab.epay.sbi"
-
-TOKEN = "YOUR_PAT_TOKEN"
-
-GROUP_PATH = "itepaypg-sbiepay2"
-
-OUTPUT_FILE = "gitlab_group_repo_report.txt"
-
-# ==========================================================
-
-ssl_ctx = ssl._create_unverified_context()
-
-HEADERS = {
-    "PRIVATE-TOKEN": TOKEN
-}
-
-# ==========================================================
-
-def api_get(url):
-
-    req = urllib.request.Request(url)
-
-    for k, v in HEADERS.items():
-        req.add_header(k, v)
-
-    response = urllib.request.urlopen(
-        req,
-        context=ssl_ctx
-    )
-
-    return json.loads(response.read()), response
-
-
-# ==========================================================
-
-def get_all_projects():
-
-    projects = []
-
-    page = 1
-
-    while True:
-
-        url = (
-            f"{GITLAB_URL}/api/v4/groups/{GROUP_PATH}/projects"
-            f"?include_subgroups=true"
-            f"&per_page=100"
-            f"&page={page}"
-        )
-
-        data, resp = api_get(url)
-
-        if not data:
-            break
-
-        projects.extend(data)
-
-        total_pages = int(
-            resp.headers.get(
-                "X-Total-Pages",
-                "1"
-            )
-        )
-
-        if page >= total_pages:
-            break
-
-        page += 1
-
-    return projects
-
-
-# ==========================================================
-
-def get_project_size(project_id):
-
-    try:
-
-        url = (
-            f"{GITLAB_URL}/api/v4/projects/"
-            f"{project_id}?statistics=true"
-        )
-
-        data, _ = api_get(url)
-
-        stats = data.get("statistics", {})
-
-        return int(
-            stats.get(
-                "repository_size",
-                0
-            )
-        )
-
-    except Exception:
-
-        return 0
-
-
-# ==========================================================
-
-def format_size(kb):
-
-    if kb >= 1048576:
-        return f"{kb / 1048576:.2f} GB"
-
-    if kb >= 1024:
-        return f"{kb / 1024:.2f} MB"
-
-    return f"{kb} KB"
-
-
-# ==========================================================
-
-print("\nFetching repositories...\n")
-
-projects = get_all_projects()
-
-print(f"Repositories Found : {len(projects)}")
-
-groups = defaultdict(list)
-
-overall_size = 0
-
-largest_repo_name = ""
-largest_repo_size = 0
-
-# ==========================================================
-# Collect Data
-# ==========================================================
-
-for count, project in enumerate(projects, start=1):
-
-    print(
-        f"[{count}/{len(projects)}] "
-        f"{project['path_with_namespace']}"
-    )
-
-    project_id = project["id"]
-
-    full_path = project["path_with_namespace"]
-
-    repo_name = full_path.split("/")[-1]
-
-    subgroup = "/".join(
-        full_path.split("/")[:-1]
-    )
-
-    repo_size_kb = get_project_size(project_id)
-
-    overall_size += repo_size_kb
-
-    if repo_size_kb > largest_repo_size:
-
-        largest_repo_size = repo_size_kb
-        largest_repo_name = full_path
-
-    groups[subgroup].append({
-        "repo_name": repo_name,
-        "repo_size": repo_size_kb
-    })
-
-# ==========================================================
-# Write Report
-# ==========================================================
-
-with open(
-    OUTPUT_FILE,
-    "w",
-    encoding="utf-8"
-) as report:
-
-    report.write(
-        "=" * 100 + "\n"
-    )
-
-    report.write(
-        "GitLab Repository Storage Report\n"
-    )
-
-    report.write(
-        "=" * 100 + "\n"
-    )
-
-    report.write(
-        f"Generated : {datetime.now()}\n"
-    )
-
-    report.write(
-        f"Group     : {GROUP_PATH}\n\n"
-    )
-
-    total_groups = len(groups)
-
-    # ======================================================
-
-    for subgroup in sorted(groups.keys()):
-
-        repos = groups[subgroup]
-
-        repos.sort(
-            key=lambda x: x["repo_size"],
-            reverse=True
-        )
-
-        report.write(
-            "\n" + "=" * 100 + "\n"
-        )
-
-        report.write(
-            f"GROUP : {subgroup}\n"
-        )
-
-        report.write(
-            "=" * 100 + "\n\n"
-        )
-
-        report.write(
-            "{:<5} {:<60} {:>15}\n".format(
-                "No",
-                "Repository",
-                "Size"
-            )
-        )
-
-        report.write(
-            "-" * 100 + "\n"
-        )
-
-        group_size = 0
-
-        for idx, repo in enumerate(
-            repos,
-            start=1
-        ):
-
-            group_size += repo["repo_size"]
-
-            report.write(
-                "{:<5} {:<60} {:>15}\n".format(
-                    idx,
-                    repo["repo_name"],
-                    format_size(
-                        repo["repo_size"]
-                    )
-                )
-            )
-
-        report.write(
-            "-" * 100 + "\n"
-        )
-
-        report.write(
-            f"Group Repository Count : {len(repos)}\n"
-        )
-
-        report.write(
-            f"Group Total Size       : {format_size(group_size)}\n"
-        )
-
-    # ======================================================
-
-    report.write(
-        "\n\n" + "=" * 100 + "\n"
-    )
-
-    report.write(
-        "OVERALL SUMMARY\n"
-    )
-
-    report.write(
-        "=" * 100 + "\n"
-    )
-
-    report.write(
-        f"Total Groups        : {total_groups}\n"
-    )
-
-    report.write(
-        f"Total Repositories  : {len(projects)}\n"
-    )
-
-    report.write(
-        f"Total Storage       : {format_size(overall_size)}\n"
-    )
-
-    report.write(
-        f"Largest Repository  : {largest_repo_name}\n"
-    )
-
-    report.write(
-        f"Largest Repo Size   : {format_size(largest_repo_size)}\n"
-    )
-
-print("\nDone")
-print(f"Report Generated : {OUTPUT_FILE}")
+[osuser@bastion LDAP]$ cat gitlab_repo_size_report.txt
+====================================================================================================
+GitLab Repository Storage Report
+====================================================================================================
+Generated : 2026-06-09 14:53:02.660855
+Group     : epay
+
+
+====================================================================================================
+GROUP : epay
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     testci                                                             204.50 GB
+2     documentation                                                       67.89 GB
+3     epay_java_utilities                                                 47.33 GB
+4     testgemfire-package-registry                                        12.40 GB
+5     epay_offline_scheduler_jobs                                          3.65 MB
+6     merchantsupport                                                      2.97 MB
+7     npm-package-registry                                                 2.96 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 7
+Group Total Size       : 332.13 GB
+
+====================================================================================================
+GROUP : epay/api-postman-collection
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     transaction-api-collection                                           9.22 MB
+2     payment-service                                                      6.67 MB
+3     merchant-api-collection                                              4.75 MB
+4     epay_key_management                                                  2.97 MB
+5     epay_postman_collection                                                 0 KB
+6     traning_videos                                                          0 KB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 6
+Group Total Size       : 23.61 MB
+
+====================================================================================================
+GROUP : epay/application/backend
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     epay_admin_service                                                   3.53 GB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 1
+Group Total Size       : 3.53 GB
+
+====================================================================================================
+GROUP : epay/application/config
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     epay_backend_config                                                  4.99 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 1
+Group Total Size       : 4.99 MB
+
+====================================================================================================
+GROUP : epay/devops
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     deployment                                                         457.67 GB
+2     ci-templates                                                       269.30 GB
+3     centralized-logging-loki                                            12.88 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 3
+Group Total Size       : 726.98 GB
+
+====================================================================================================
+GROUP : epay/frontends
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     epay_transaction_fe                                                378.28 GB
+2     epay_merchant_integration_doc_next                                 103.20 GB
+3     epay_merchant_fe                                                    18.17 GB
+4     epay_merchant_integration_doc                                       11.77 GB
+5     epay_website                                                         5.68 GB
+6     epay_admin_fe                                                        4.86 GB
+7     epay_merchant_simulator                                              2.37 GB
+8     epay_perf_simulator                                                295.77 MB
+9     epay_maintenance_fe                                                 20.18 MB
+10    Configs                                                              7.20 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 10
+Group Total Size       : 524.65 GB
+
+====================================================================================================
+GROUP : epay/infra/devops
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     ci-templates                                                        63.70 MB
+2     deployment                                                          14.92 MB
+3     epay-automation                                                     11.96 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 3
+Group Total Size       : 90.58 MB
+
+====================================================================================================
+GROUP : epay/merchant-simulator
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     merchant_simulator_react_native                                     28.01 GB
+2     merchant_api_simulator_php                                          23.42 GB
+3     java-utility-api-simulator                                          14.60 GB
+4     merchant_simulator_go                                               10.59 GB
+5     javautilitysimulator                                                 5.05 GB
+6     merchant_simulator_ios                                               4.28 GB
+7     merchant_api_simulator_dotnet                                        2.73 GB
+8     merchant_simulator_android                                           1.25 GB
+9     merchant_simulator_flutter                                         962.96 MB
+10    merchant_api_simulator_capacitor                                   441.30 MB
+11    java_utility_order_hash_simulator                                  187.76 MB
+12    merchant_api_simulator_python                                        4.54 MB
+13    merchant_simulator_cordova                                           2.97 MB
+14    merchant_api_simulator_nodejs                                        1.77 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 14
+Group Total Size       : 91.49 GB
+
+====================================================================================================
+GROUP : epay/microservices
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     epay_payment_service                                               583.95 GB
+2     epay_transaction_service                                           121.13 GB
+3     epay_admin_service                                                  90.14 GB
+4     epay_stubs_service                                                  70.53 GB
+5     epay_key_managment                                                  38.39 GB
+6     epay_merchant_service                                                8.24 GB
+7     epay_integration_service                                             7.16 GB
+8     epay_refund_service                                                  6.66 GB
+9     epay_reports_service                                                 4.77 GB
+10    epay_gateway_pooling                                                 3.66 GB
+11    epay_gateway_pooling_old                                             3.58 GB
+12    epay_admin_portal_service                                            3.54 GB
+13    epay_communication_service                                           2.87 GB
+14    epay_operations_service                                              2.57 GB
+15    transaction_job_service                                             58.75 MB
+16    Configs                                                              5.27 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 16
+Group Total Size       : 947.25 GB
+
+====================================================================================================
+GROUP : epay/qa-automation
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     transaction                                                         89.42 GB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 1
+Group Total Size       : 89.42 GB
+
+====================================================================================================
+GROUP : epay/sdks
+====================================================================================================
+
+No    Repository                                                              Size
+----------------------------------------------------------------------------------------------------
+1     epay_transaction_sdk_android                                        27.35 GB
+2     epay_transaction_sdk_java                                           12.28 GB
+3     epay_transaction_sdk_react_native                                    8.30 GB
+4     epay_transaction_sdk_ios                                             2.52 GB
+5     epay_transaction_sdk_capacitor                                       2.45 GB
+6     epay_transaction_sdk_flutter                                         1.20 GB
+7     epay_transaction_sdk_php                                           367.82 MB
+8     epay_transaction_sdk_dotnet                                        267.29 MB
+9     sbiepay_transaction_sdk_android                                    118.24 MB
+10    epay_transaction_sdk_golang                                         99.75 MB
+11    epay_transaction_sdk_python                                         42.46 MB
+12    epay_transaction_sdk_cordova                                        17.47 MB
+13    epay_transaction_sdk_nodejs                                          1.94 MB
+----------------------------------------------------------------------------------------------------
+Group Repository Count : 13
+Group Total Size       : 55.00 GB
+
+
+====================================================================================================
+OVERALL SUMMARY
+====================================================================================================
+Total Groups        : 11
+Total Repositories  : 75
+Total Storage       : 2770.58 GB
+Largest Repository  : epay/microservices/epay_payment_service
+Largest Repo Size   : 583.95 GB
