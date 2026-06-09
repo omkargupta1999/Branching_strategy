@@ -1,3 +1,339 @@
-curl -I \
-  --header "PRIVATE-TOKEN: <PAT>" \
-  "https://gitlab.epay.sbi/api/v4/projects/20/export/download"
+#!/usr/bin/env python3
+
+import urllib.request
+import urllib.error
+import json
+import ssl
+import csv
+import sys
+
+# =====================================================
+# CONFIGURATION
+# =====================================================
+
+GITLAB_URL = "https://gitlab.epay.sbi"
+TOKEN = "YOUR_PAT_TOKEN"
+GROUP_PATH = "epay"
+
+TXT_FILE = "gitlab_repo_hierarchy_report.txt"
+CSV_FILE = "gitlab_repo_hierarchy_report.csv"
+
+# =====================================================
+# SSL CONFIG
+# =====================================================
+
+ssl_ctx = ssl._create_unverified_context()
+
+HEADERS = {
+    "PRIVATE-TOKEN": TOKEN
+}
+
+# =====================================================
+# API HELPER
+# =====================================================
+
+def api_get(url):
+
+    req = urllib.request.Request(url)
+
+    for key, value in HEADERS.items():
+        req.add_header(key, value)
+
+    response = urllib.request.urlopen(
+        req,
+        context=ssl_ctx
+    )
+
+    return json.loads(response.read()), response
+
+
+# =====================================================
+# CONVERT BYTES TO MB
+# =====================================================
+
+def bytes_to_mb(size_bytes):
+
+    return round(
+        float(size_bytes) / (1024 * 1024),
+        2
+    )
+
+
+# =====================================================
+# FETCH ALL PROJECTS
+# =====================================================
+
+def get_all_projects():
+
+    projects = []
+
+    page = 1
+
+    while True:
+
+        url = (
+            f"{GITLAB_URL}/api/v4/groups/{GROUP_PATH}/projects"
+            f"?include_subgroups=true"
+            f"&per_page=100"
+            f"&page={page}"
+        )
+
+        data, response = api_get(url)
+
+        if not data:
+            break
+
+        projects.extend(data)
+
+        total_pages = int(
+            response.headers.get(
+                "X-Total-Pages",
+                "1"
+            )
+        )
+
+        if page >= total_pages:
+            break
+
+        page += 1
+
+    return projects
+
+
+# =====================================================
+# FETCH REPOSITORY SIZE
+# =====================================================
+
+def get_repository_size(project_id):
+
+    try:
+
+        url = (
+            f"{GITLAB_URL}/api/v4/projects/"
+            f"{project_id}?statistics=true"
+        )
+
+        data, _ = api_get(url)
+
+        stats = data.get(
+            "statistics",
+            {}
+        )
+
+        return stats.get(
+            "repository_size",
+            0
+        )
+
+    except Exception as exc:
+
+        print(
+            f"Failed to fetch size for "
+            f"project {project_id}: {exc}"
+        )
+
+        return 0
+
+
+# =====================================================
+# MAIN
+# =====================================================
+
+def main():
+
+    if not TOKEN:
+
+        print("PAT Token is missing.")
+        sys.exit(1)
+
+    print("\nFetching repositories...\n")
+
+    projects = get_all_projects()
+
+    print(
+        f"Repositories Found : "
+        f"{len(projects)}"
+    )
+
+    rows = []
+
+    total_size_bytes = 0
+
+    for index, project in enumerate(
+        projects,
+        start=1
+    ):
+
+        full_path = project.get(
+            "path_with_namespace",
+            ""
+        )
+
+        print(
+            f"[{index}/{len(projects)}] "
+            f"{full_path}"
+        )
+
+        repo_size_bytes = get_repository_size(
+            project["id"]
+        )
+
+        total_size_bytes += repo_size_bytes
+
+        path_parts = full_path.split("/")
+
+        group = ""
+
+        subgroup = ""
+
+        sub_subgroup = ""
+
+        repo_name = ""
+
+        if len(path_parts) >= 1:
+            group = path_parts[0]
+
+        if len(path_parts) >= 2:
+            subgroup = path_parts[1]
+
+        if len(path_parts) >= 4:
+            sub_subgroup = path_parts[2]
+
+        repo_name = path_parts[-1]
+
+        rows.append([
+            group,
+            subgroup,
+            sub_subgroup,
+            repo_name,
+            bytes_to_mb(repo_size_bytes)
+        ])
+
+    rows.sort(
+        key=lambda row: (
+            row[0],
+            row[1],
+            row[2],
+            row[3]
+        )
+    )
+
+    # =================================================
+    # CSV REPORT
+    # =================================================
+
+    with open(
+        CSV_FILE,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as csvfile:
+
+        writer = csv.writer(csvfile)
+
+        writer.writerow([
+            "Group",
+            "Sub Group",
+            "Sub Sub Group",
+            "Repository Name",
+            "Repository Size (MB)"
+        ])
+
+        writer.writerows(rows)
+
+    # =================================================
+    # TXT REPORT
+    # =================================================
+
+    with open(
+        TXT_FILE,
+        "w",
+        encoding="utf-8"
+    ) as txtfile:
+
+        txtfile.write(
+            "=" * 140 + "\n"
+        )
+
+        txtfile.write(
+            "GitLab Repository Hierarchy Report\n"
+        )
+
+        txtfile.write(
+            "=" * 140 + "\n\n"
+        )
+
+        txtfile.write(
+            "{:<20} {:<25} {:<25} {:<45} {:>15}\n".format(
+                "Group",
+                "Sub Group",
+                "Sub Sub Group",
+                "Repository Name",
+                "Repository Size (MB)"
+            )
+        )
+
+        txtfile.write(
+            "-" * 140 + "\n"
+        )
+
+        current_group = None
+        current_subgroup = None
+
+        for row in rows:
+
+            if current_group != row[0]:
+
+                txtfile.write("\n")
+
+                current_group = row[0]
+                current_subgroup = None
+
+            if current_subgroup != row[1]:
+
+                txtfile.write("\n")
+
+                current_subgroup = row[1]
+
+            txtfile.write(
+                "{:<20} {:<25} {:<25} {:<45} {:>15.2f}\n".format(
+                    row[0],
+                    row[1],
+                    row[2],
+                    row[3],
+                    row[4]
+                )
+            )
+
+        txtfile.write(
+            "\n" + "-" * 140 + "\n"
+        )
+
+        txtfile.write(
+            f"Total Repositories : "
+            f"{len(rows)}\n"
+        )
+
+        txtfile.write(
+            f"Total Repository Size (MB) : "
+            f"{bytes_to_mb(total_size_bytes):.2f}\n"
+        )
+
+        txtfile.write(
+            f"Total Repository Size (GB) : "
+            f"{bytes_to_mb(total_size_bytes) / 1024:.2f}\n"
+        )
+
+    print("\nCompleted Successfully")
+
+    print(
+        f"TXT Report : {TXT_FILE}"
+    )
+
+    print(
+        f"CSV Report : {CSV_FILE}"
+    )
+
+
+if __name__ == "__main__":
+    main()
