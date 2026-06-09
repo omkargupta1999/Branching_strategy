@@ -1,87 +1,320 @@
-Below is our Full GitLab Group Hierarchy :
+#!/usr/bin/env python3
+"""
+=============================================================================
+ Script      : fetch_repo_tree.py
+ Purpose     : Fetch all repository names and their full paths from GitLab
+               and display them in a structured tree format.
 
-ITEPAYPG-SBIePay2 
-		>  Infra  [Subgroup]
-			> DevOps  [Sub-subgroup]
-				 cicd-templates
-				 deployment
-		> Application  [Subgroup —NEW parent ]
-			> Backend  [Sub-subgroup]
-				 Epay_Admin_Service
-				 Epay_Bridge_Service
-				 Epay_Admin_Portal_Service
-				 
-				 
-And we have 13 LDAP groups as mentioned in master documents and sharing the complete setup and settings which group have what access and for which repo as below.
+ READ-ONLY   : ONLY HTTP GET requests. Zero writes to GitLab.
 
-Step 1 — LDAP Group Links (0/3)
+ Dependencies: NONE — Python standard library only (no pip required)
+               Works on Python 3.6+ / RHEL air-gapped environment.
 
-Link 3 global groups at top-level  ------  (all repos inherit read access)
+ Output      :
+   Console   — Live tree printed to terminal
+   repo_tree_<timestamp>.txt  — Tree structure (plain text)
+   repo_list_<timestamp>.csv  — Flat list with path details
 
-epay-gitlab-reporter → Reporter
-epay-gitlab-planner → Planner
-epay-gitlab-vendor-pm → Reporter
+ Usage       :
+   1. Set TOKEN and TARGET_GROUP below.
+   2. python3 fetch_repo_tree.py
+=============================================================================
+"""
 
+import urllib.request
+import urllib.error
+import json
+import csv
+import ssl
+import sys
+import os
+from datetime import datetime
 
-Link 4 groups at Infra › DevOps subgroup
+# =============================================================================
+#  CONFIGURATION — Edit only this block
+# =============================================================================
 
-epay-gitlab-bank-infra-owner → Owner
-epay-gitlab-bank-infra-maintainer → Maintainer
-epay-gitlab-vendor-infra-maintainer → Maintainer
-epay-gitlab-vendor-infra-developer → Developer
+GITLAB_URL   = "https://gitlab.epay.sbi"   # Source GitLab instance
+TOKEN        = ""                            # Admin PAT (glpat-...)
 
-Link 6 groups at Application subgroup
+# Set to your group path to scope, or "" for ALL projects instance-wide
+TARGET_GROUP = "itepaypg-sbiepay2"
 
-epay-gitlab-bank-app-owner → Owner
-epay-gitlab-bank-app-maintainer → Maintainer
-epay-gitlab-vendor-app-maintainer → Maintainer
-epay-gitlab-vendor-release-manager → Developer
-epay-gitlab-vendor-app-lead → Developer
-epay-gitlab-vendor-app-developer → Developer
+# =============================================================================
+#  SETUP
+# =============================================================================
 
-Step 2 — Push Rules (1/2) 
+if not TOKEN:
+    print("[ERROR] TOKEN is not set. Fill in your admin Personal Access Token.")
+    sys.exit(1)
 
-Application subgroup — all 4 push rules
-Branch name | Commit message | Author email | Prohibited files → covers all 55 repos
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+HEADERS   = {"PRIVATE-TOKEN": TOKEN}
+ssl_ctx   = ssl._create_unverified_context()
 
-Step 3 — Protected Branch Rules (3/6)
+# =============================================================================
+#  API HELPERS — GET ONLY
+# =============================================================================
 
-
-Application repos — protect main
-Allowed to push: No one | Allowed to merge: epay-gitlab-bank-app-maintainer + epay-gitlab-bank-app-owner | Unprotect: nobody
-
-Application repos — protect develop
-Allowed to push: No one | Allowed to merge: epay-gitlab-vendor-app-lead
-
-Application repos — protect release/* (wildcard)
-Allowed to push: No one | Allowed to merge: epay-gitlab-vendor-app-maintainer
-
-Step 4 — MR Approval Rules (Application repos) (0/6)
-📍 Application subgroup › Settings › Merge requests › Approval rules (set once — all 55 repos inherit)
-Each rule targets a single LDAP group. All rules are separate — no combined counts.
-
-Flow 1 & 4.3a: feature/* or bugfix/* → develop
-Rule: 'Lead Approval' | Target: develop | Group: epay-gitlab-vendor-app-lead | Required: 1
-
-Flow 2 & 4.3b: develop or bugfix/* → release/*
-Rule A: 'Release Gate – Lead' | Group: epay-gitlab-vendor-app-lead | Required: 1
-Rule B: 'Release Gate – Architect' | Group: epay-gitlab-vendor-app-maintainer | Required: 1
-
-Flow 4: release/* → main (Production)
-Rule 1: Vendor Architect Sign-off → epay-gitlab-vendor-app-maintainer | 1
-Rule 2: Vendor PM Approval (CAB gate) → epay-gitlab-vendor-pm | 1
-Rule 3: Bank Maintainer Approval → epay-gitlab-bank-app-maintainer | 1
-Rule 4: Bank PM Final Gate → epay-gitlab-bank-app-owner | 1
-
-Flow 5: hotfix/* → main (same 4 rules as Flow 4)
-Same 4 rules as release→main. Lead NOT required (SLA < 1hr). Hotfix branch created from prod tag, not develop.
-Enable: Pipelines must succeed before merge
-Settings › Merge requests → 'Pipelines must succeed' ✅ Group-level setting — broken code cannot enter any protected branch (§5 best practices)
+def api_get(url):
+    """Single HTTP GET. No data= body = never a POST."""
+    req = urllib.request.Request(url)      # GET — no data parameter
+    for k, v in HEADERS.items():
+        req.add_header(k, v)
+    try:
+        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        return json.loads(resp.read()), resp
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("\n[ERROR] 401 Unauthorized — TOKEN invalid or empty.")
+            sys.exit(1)
+        if e.code == 403:
+            print("\n[ERROR] 403 Forbidden — token lacks admin scope.")
+            sys.exit(1)
+        if e.code == 404:
+            print(f"\n[ERROR] 404 Not Found — check TARGET_GROUP value.")
+            sys.exit(1)
+        return [], None
+    except Exception as e:
+        print(f"\n[WARN] {url} — {e}")
+        return [], None
 
 
+def api_all(endpoint):
+    """Paginate all pages of a GET endpoint. Returns full list."""
+    results, page = [], 1
+    while True:
+        sep  = "&" if "?" in endpoint else "?"
+        url  = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
+        data, resp = api_get(url)
+        if not data:
+            break
+        results.extend(data)
+        if resp:
+            try:
+                total = int(resp.headers.get("X-Total-Pages", "1"))
+                if page >= total:
+                    break
+            except ValueError:
+                break
+        page += 1
+    return results
 
-We have multiple repo inside ITEPAYPG-SBIePay2>application>backend> all the application repo , wo here we have to add the protected branch rules and MR approval rules 
-using the python script...so i want you to please prepare a script using which we can apply all of the above rule to one of the repo first and test it so later we can do the same for all other repo.
 
-Please make sure it should not impact any other things or it should make the chnages only the given repo only.
+# =============================================================================
+#  FETCH PROJECTS
+# =============================================================================
 
+print("=" * 65)
+print("  GitLab Repository Tree")
+print(f"  Source : {GITLAB_URL}")
+print(f"  Group  : {TARGET_GROUP or 'ALL (instance-wide)'}")
+print("=" * 65)
+print()
+
+if TARGET_GROUP:
+    ep = (f"/api/v4/groups/{TARGET_GROUP}/projects"
+          f"?include_subgroups=true&with_statistics=false")
+else:
+    ep = "/api/v4/projects"
+
+print("Fetching repositories ...")
+projects = api_all(ep)
+
+if not projects:
+    print("[ERROR] No projects returned. Check TOKEN and TARGET_GROUP.")
+    sys.exit(1)
+
+print(f"  → {len(projects)} repositories found.\n")
+
+# =============================================================================
+#  BUILD NAMESPACE TREE
+#  Structure:  { "group/subgroup": [ {id, name, path, ...}, ... ] }
+# =============================================================================
+
+tree = {}   # namespace_path -> list of projects
+
+for p in projects:
+    ns = p.get("namespace", {}).get("full_path", "unknown")
+    if ns not in tree:
+        tree[ns] = []
+    tree[ns].append({
+        "id":            p.get("id"),
+        "name":          p.get("name", ""),
+        "path":          p.get("path", ""),
+        "full_path":     p.get("path_with_namespace", ""),
+        "visibility":    p.get("visibility", ""),
+        "default_branch":p.get("default_branch") or "N/A",
+        "archived":      p.get("archived", False),
+        "empty":         p.get("empty_repo", False),
+        "last_activity": (p.get("last_activity_at") or "")[:10],
+        "http_url":      p.get("http_url_to_repo", ""),
+        "ssh_url":       p.get("ssh_url_to_repo", ""),
+        "description":   (p.get("description") or "").strip(),
+    })
+
+# Sort namespaces and repos within each namespace
+sorted_ns = sorted(tree.keys())
+for ns in sorted_ns:
+    tree[ns].sort(key=lambda r: r["name"].lower())
+
+# =============================================================================
+#  RENDER TREE — Console + Text file
+# =============================================================================
+
+TREE_FILE = f"repo_tree_{TIMESTAMP}.txt"
+
+lines = []   # collected for both console and file
+
+def add(line=""):
+    lines.append(line)
+    print(line)
+
+
+# Header
+add("=" * 65)
+add(f"  GITLAB REPOSITORY TREE")
+add(f"  Source  : {GITLAB_URL}")
+add(f"  Group   : {TARGET_GROUP or 'ALL (instance-wide)'}")
+add(f"  Total   : {len(projects)} repositories")
+add(f"  Groups  : {len(sorted_ns)} namespaces")
+add(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+add("=" * 65)
+add()
+
+# Tree rendering
+for ns_idx, ns in enumerate(sorted_ns):
+    repos     = tree[ns]
+    is_last_ns = (ns_idx == len(sorted_ns) - 1)
+
+    # ── Namespace header ──────────────────────────────────────────
+    ns_connector = "└── " if is_last_ns else "├── "
+    add(f"{ns_connector}[{ns}]  ({len(repos)} repo{'s' if len(repos) != 1 else ''})")
+
+    ns_prefix = "    " if is_last_ns else "│   "
+
+    for repo_idx, r in enumerate(repos):
+        is_last_repo = (repo_idx == len(repos) - 1)
+        repo_connector = "└── " if is_last_repo else "├── "
+
+        # Flags
+        flags = []
+        if r["archived"]: flags.append("ARCHIVED")
+        if r["empty"]:    flags.append("EMPTY")
+        flag_str = f"  [{', '.join(flags)}]" if flags else ""
+
+        # Visibility icon
+        vis = {"public": "🌐", "internal": "🔒", "private": "🔐"}.get(
+            r["visibility"], "")
+
+        # Main repo line
+        add(f"{ns_prefix}{repo_connector}{r['name']}{flag_str}")
+
+        # Detail lines under each repo
+        repo_prefix = ns_prefix + ("    " if is_last_repo else "│   ")
+
+        add(f"{repo_prefix}├─ ID          : {r['id']}")
+        add(f"{repo_prefix}├─ Path        : {r['full_path']}")
+        add(f"{repo_prefix}├─ Branch      : {r['default_branch']}")
+        add(f"{repo_prefix}├─ Visibility  : {r['visibility']}")
+        add(f"{repo_prefix}├─ Last Active : {r['last_activity'] or 'N/A'}")
+        add(f"{repo_prefix}├─ HTTP URL    : {r['http_url']}")
+        add(f"{repo_prefix}└─ SSH URL     : {r['ssh_url']}")
+        if r["description"]:
+            add(f"{repo_prefix}   Description : {r['description'][:80]}")
+        add(f"{repo_prefix}")
+
+    add()
+
+# Footer summary
+add("=" * 65)
+add(f"  SUMMARY")
+add("=" * 65)
+add(f"  {'Total Repositories':<28}: {len(projects)}")
+add(f"  {'Total Namespaces':<28}: {len(sorted_ns)}")
+add(f"  {'Archived Repos':<28}: {sum(1 for p in projects if p.get('archived'))}")
+add(f"  {'Empty Repos':<28}: {sum(1 for p in projects if p.get('empty_repo'))}")
+add(f"  {'Private':<28}: {sum(1 for p in projects if p.get('visibility')=='private')}")
+add(f"  {'Internal':<28}: {sum(1 for p in projects if p.get('visibility')=='internal')}")
+add(f"  {'Public':<28}: {sum(1 for p in projects if p.get('visibility')=='public')}")
+add("=" * 65)
+add()
+
+# Namespace breakdown
+add("  REPOS PER NAMESPACE")
+add("-" * 65)
+for ns in sorted_ns:
+    count = len(tree[ns])
+    bar   = "█" * count
+    add(f"  {ns:<45} {count:>3}  {bar}")
+add()
+
+# Write tree to text file
+with open(TREE_FILE, "w", encoding="utf-8") as f:
+    f.write("\n".join(lines))
+
+print(f"  → {TREE_FILE} written.")
+
+# =============================================================================
+#  FLAT CSV — one row per repo
+# =============================================================================
+
+CSV_FILE = f"repo_list_{TIMESTAMP}.csv"
+
+CSV_HEADERS = [
+    "Sr.",
+    "Project ID",
+    "Repository Name",
+    "Full Path",
+    "Namespace / Group",
+    "Visibility",
+    "Default Branch",
+    "Last Activity",
+    "Archived",
+    "Empty Repo",
+    "Description",
+    "HTTP URL",
+    "SSH URL",
+]
+
+csv_rows = []
+sr = 1
+sr = 1
+for ns in sorted_ns:
+    for r in tree[ns]:
+        csv_rows.append([
+            sr,
+            r["id"],
+            r["name"],
+            r["full_path"],
+            ns,
+            r["visibility"],
+            r["default_branch"],
+            r["last_activity"],
+            "Yes" if r["archived"] else "No",
+            "Yes" if r["empty"]    else "No",
+            r["description"],
+            r["http_url"],
+            r["ssh_url"],
+        ])
+        sr += 1
+
+with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
+    w = csv.writer(f)
+    w.writerow(CSV_HEADERS)
+    w.writerows(csv_rows)
+
+print(f"  → {CSV_FILE} written.")
+
+# =============================================================================
+#  DONE
+# =============================================================================
+
+print()
+print("=" * 65)
+print("  OUTPUT FILES")
+print(f"  {TREE_FILE:<40} Tree structure")
+print(f"  {CSV_FILE:<40} Flat CSV list")
+print()
+print("  READ-ONLY: No changes made to GitLab.")
+print("=" * 65)
