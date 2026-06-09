@@ -1,51 +1,25 @@
 #!/usr/bin/env python3
 
-"""
-=========================================================
-GitLab Repository Size Report
-=========================================================
-
-Purpose:
-    Fetch all repositories from a GitLab group and
-    generate a repository size report.
-
-Features:
-    - Group + Subgroups
-    - Repository Path
-    - Repository Size
-    - Total Size Summary
-    - TXT Output
-    - Read Only (GET APIs only)
-    - No External Packages Required
-
-Python:
-    Python 3.6+
-
-=========================================================
-"""
-
 import urllib.request
 import urllib.error
 import json
 import ssl
-import sys
+from collections import defaultdict
 from datetime import datetime
 
-# =========================================================
+# ==========================================================
 # CONFIGURATION
-# =========================================================
+# ==========================================================
 
 GITLAB_URL = "https://gitlab.epay.sbi"
 
-TOKEN = "YOUR_PERSONAL_ACCESS_TOKEN"
+TOKEN = "YOUR_PAT_TOKEN"
 
 GROUP_PATH = "itepaypg-sbiepay2"
 
-OUTPUT_FILE = "gitlab_repo_size_report.txt"
+OUTPUT_FILE = "gitlab_group_repo_report.txt"
 
-# =========================================================
-# SSL
-# =========================================================
+# ==========================================================
 
 ssl_ctx = ssl._create_unverified_context()
 
@@ -53,44 +27,29 @@ HEADERS = {
     "PRIVATE-TOKEN": TOKEN
 }
 
-# =========================================================
-# API HELPERS
-# =========================================================
+# ==========================================================
 
 def api_get(url):
 
     req = urllib.request.Request(url)
 
-    for key, value in HEADERS.items():
-        req.add_header(key, value)
+    for k, v in HEADERS.items():
+        req.add_header(k, v)
 
-    try:
-        response = urllib.request.urlopen(
-            req,
-            context=ssl_ctx
-        )
+    response = urllib.request.urlopen(
+        req,
+        context=ssl_ctx
+    )
 
-        data = json.loads(response.read())
+    return json.loads(response.read()), response
 
-        return data, response
 
-    except urllib.error.HTTPError as e:
-
-        print(f"HTTP Error: {e.code}")
-        sys.exit(1)
-
-    except Exception as e:
-
-        print(f"Error: {e}")
-        sys.exit(1)
-
-# =========================================================
-# FETCH ALL PROJECTS
-# =========================================================
+# ==========================================================
 
 def get_all_projects():
 
     projects = []
+
     page = 1
 
     while True:
@@ -98,12 +57,11 @@ def get_all_projects():
         url = (
             f"{GITLAB_URL}/api/v4/groups/{GROUP_PATH}/projects"
             f"?include_subgroups=true"
-            f"&with_statistics=true"
             f"&per_page=100"
             f"&page={page}"
         )
 
-        data, response = api_get(url)
+        data, resp = api_get(url)
 
         if not data:
             break
@@ -111,7 +69,7 @@ def get_all_projects():
         projects.extend(data)
 
         total_pages = int(
-            response.headers.get(
+            resp.headers.get(
                 "X-Total-Pages",
                 "1"
             )
@@ -124,168 +82,228 @@ def get_all_projects():
 
     return projects
 
-# =========================================================
-# SIZE FORMATTER
-# =========================================================
 
-def format_size(kb):
+# ==========================================================
+
+def get_project_size(project_id):
 
     try:
 
-        kb = int(kb)
+        url = (
+            f"{GITLAB_URL}/api/v4/projects/"
+            f"{project_id}?statistics=true"
+        )
 
-        if kb >= 1048576:
-            return f"{kb / 1048576:.2f} GB"
+        data, _ = api_get(url)
 
-        elif kb >= 1024:
-            return f"{kb / 1024:.2f} MB"
+        stats = data.get("statistics", {})
 
-        else:
-            return f"{kb} KB"
+        return int(
+            stats.get(
+                "repository_size",
+                0
+            )
+        )
 
     except Exception:
-        return "0 KB"
 
-# =========================================================
-# MAIN
-# =========================================================
+        return 0
 
-def main():
 
-    if not TOKEN:
-        print("PAT Token not provided")
-        sys.exit(1)
+# ==========================================================
 
-    print("=" * 60)
-    print("GitLab Repository Size Report")
-    print("=" * 60)
+def format_size(kb):
 
-    print(f"GitLab URL : {GITLAB_URL}")
-    print(f"Group      : {GROUP_PATH}")
+    if kb >= 1048576:
+        return f"{kb / 1048576:.2f} GB"
 
-    print("\nFetching repositories...\n")
+    if kb >= 1024:
+        return f"{kb / 1024:.2f} MB"
 
-    projects = get_all_projects()
+    return f"{kb} KB"
 
-    print(f"Repositories Found : {len(projects)}")
 
-    total_size_kb = 0
+# ==========================================================
 
-    rows = []
+print("\nFetching repositories...\n")
 
-    for index, project in enumerate(projects, start=1):
+projects = get_all_projects()
 
-        path = project.get(
-            "path_with_namespace",
-            "N/A"
+print(f"Repositories Found : {len(projects)}")
+
+groups = defaultdict(list)
+
+overall_size = 0
+
+largest_repo_name = ""
+largest_repo_size = 0
+
+# ==========================================================
+# Collect Data
+# ==========================================================
+
+for count, project in enumerate(projects, start=1):
+
+    print(
+        f"[{count}/{len(projects)}] "
+        f"{project['path_with_namespace']}"
+    )
+
+    project_id = project["id"]
+
+    full_path = project["path_with_namespace"]
+
+    repo_name = full_path.split("/")[-1]
+
+    subgroup = "/".join(
+        full_path.split("/")[:-1]
+    )
+
+    repo_size_kb = get_project_size(project_id)
+
+    overall_size += repo_size_kb
+
+    if repo_size_kb > largest_repo_size:
+
+        largest_repo_size = repo_size_kb
+        largest_repo_name = full_path
+
+    groups[subgroup].append({
+        "repo_name": repo_name,
+        "repo_size": repo_size_kb
+    })
+
+# ==========================================================
+# Write Report
+# ==========================================================
+
+with open(
+    OUTPUT_FILE,
+    "w",
+    encoding="utf-8"
+) as report:
+
+    report.write(
+        "=" * 100 + "\n"
+    )
+
+    report.write(
+        "GitLab Repository Storage Report\n"
+    )
+
+    report.write(
+        "=" * 100 + "\n"
+    )
+
+    report.write(
+        f"Generated : {datetime.now()}\n"
+    )
+
+    report.write(
+        f"Group     : {GROUP_PATH}\n\n"
+    )
+
+    total_groups = len(groups)
+
+    # ======================================================
+
+    for subgroup in sorted(groups.keys()):
+
+        repos = groups[subgroup]
+
+        repos.sort(
+            key=lambda x: x["repo_size"],
+            reverse=True
         )
 
-        repo_size_kb = (
-            project.get("statistics", {})
-                   .get("repository_size", 0)
+        report.write(
+            "\n" + "=" * 100 + "\n"
         )
 
-        total_size_kb += repo_size_kb
+        report.write(
+            f"GROUP : {subgroup}\n"
+        )
 
-        rows.append(
-            (
-                index,
-                path,
-                format_size(repo_size_kb)
+        report.write(
+            "=" * 100 + "\n\n"
+        )
+
+        report.write(
+            "{:<5} {:<60} {:>15}\n".format(
+                "No",
+                "Repository",
+                "Size"
             )
         )
 
-    with open(
-        OUTPUT_FILE,
-        "w",
-        encoding="utf-8"
-    ) as report:
-
-        report.write("\n")
-        report.write("=" * 120 + "\n")
-        report.write("GitLab Repository Size Report\n")
-        report.write("=" * 120 + "\n")
-
         report.write(
-            f"Generated On : {datetime.now()}\n"
+            "-" * 100 + "\n"
         )
 
-        report.write(
-            f"GitLab URL   : {GITLAB_URL}\n"
-        )
+        group_size = 0
 
-        report.write(
-            f"Group        : {GROUP_PATH}\n"
-        )
+        for idx, repo in enumerate(
+            repos,
+            start=1
+        ):
 
-        report.write(
-            f"Repositories : {len(projects)}\n"
-        )
-
-        report.write(
-            f"Total Size   : {format_size(total_size_kb)}\n"
-        )
-
-        report.write("\n")
-
-        report.write(
-            "+" + "-" * 6 +
-            "+" + "-" * 80 +
-            "+" + "-" * 20 +
-            "+\n"
-        )
-
-        report.write(
-            "| {:<4} | {:<78} | {:<18} |\n".format(
-                "Sr",
-                "Repository Path",
-                "Repository Size"
-            )
-        )
-
-        report.write(
-            "+" + "-" * 6 +
-            "+" + "-" * 80 +
-            "+" + "-" * 20 +
-            "+\n"
-        )
-
-        for sr, repo_path, repo_size in rows:
+            group_size += repo["repo_size"]
 
             report.write(
-                "| {:<4} | {:<78} | {:<18} |\n".format(
-                    sr,
-                    repo_path[:78],
-                    repo_size
+                "{:<5} {:<60} {:>15}\n".format(
+                    idx,
+                    repo["repo_name"],
+                    format_size(
+                        repo["repo_size"]
+                    )
                 )
             )
 
         report.write(
-            "+" + "-" * 6 +
-            "+" + "-" * 80 +
-            "+" + "-" * 20 +
-            "+\n"
-        )
-
-        report.write("\n")
-
-        report.write(
-            f"TOTAL REPOSITORIES : {len(projects)}\n"
+            "-" * 100 + "\n"
         )
 
         report.write(
-            f"TOTAL SIZE         : {format_size(total_size_kb)}\n"
+            f"Group Repository Count : {len(repos)}\n"
         )
 
-    print("\nReport Generated Successfully")
-    print(f"Output File : {OUTPUT_FILE}")
-    print(f"Total Size  : {format_size(total_size_kb)}")
+        report.write(
+            f"Group Total Size       : {format_size(group_size)}\n"
+        )
 
-    print("\nCompleted Successfully.")
+    # ======================================================
 
-# =========================================================
-# START
-# =========================================================
+    report.write(
+        "\n\n" + "=" * 100 + "\n"
+    )
 
-if __name__ == "__main__":
-    main()
+    report.write(
+        "OVERALL SUMMARY\n"
+    )
+
+    report.write(
+        "=" * 100 + "\n"
+    )
+
+    report.write(
+        f"Total Groups        : {total_groups}\n"
+    )
+
+    report.write(
+        f"Total Repositories  : {len(projects)}\n"
+    )
+
+    report.write(
+        f"Total Storage       : {format_size(overall_size)}\n"
+    )
+
+    report.write(
+        f"Largest Repository  : {largest_repo_name}\n"
+    )
+
+    report.write(
+        f"Largest Repo Size   : {format_size(largest_repo_size)}\n"
+    )
+
+print("\nDone")
+print(f"Report Generated : {OUTPUT_FILE}")
