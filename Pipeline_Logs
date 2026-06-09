@@ -1,214 +1,919 @@
 #!/usr/bin/env python3
 """
-GitLab Enterprise Repository Audit (Air-Gapped Edition)
+=============================================================================
+ Script      : fetch_repos_audit.py
+ Purpose     : Fetch complete repository audit details from GitLab for
+               migration planning (gitlab.epay.sbi -> gitlab.sbi).
 
-Features:
-- Standard library only
-- GitLab API pagination
-- Repository inventory
-- Branches, Tags, MRs, Issues, Pipelines
-- Milestones, Labels, Releases
-- Members, Webhooks, Deploy Keys
-- Protected Branches, Environments
-- Risk classification
-- Executive Summary
-- Migration Planning Report
-- HTML Dashboard
-- CSV exports
+ READ-ONLY   : ONLY HTTP GET requests. Zero writes to GitLab.
 
-Update:
-    GITLAB_URL
-    TOKEN
-    TARGET_GROUP
+ Dependencies: NONE — Python standard library only (csv, json, ssl, urllib)
+               Tested on Python 3.6+ / RHEL air-gapped environment.
+
+ Output files (written to ./gitlab_audit_<timestamp>/ folder):
+   01_dashboard.csv          — Summary counts per metric
+   02_full_audit.csv         — Every repo x every artifact count
+   03_migration_plan.csv     — Checklist sorted HIGH > MEDIUM > LOW > ARCHIVED
+   04_cicd_repos.csv         — Only repos with CI/CD pipelines
+   05_open_items.csv         — Repos with open MRs or open Issues
+   06_branches_tags.csv      — Branch and tag counts per repo
+   07_access_config.csv      — Members, webhooks, deploy keys, protected branches
+   audit_report.html         — Single-file HTML report (open in browser, no internet)
+
+ Usage:
+   1. Set TOKEN and TARGET_GROUP below.
+   2. python3 fetch_repos_audit.py
+=============================================================================
 """
 
-import csv
-import json
-import ssl
 import urllib.request
+import urllib.error
+import json
+import csv
+import ssl
+import sys
+import os
 from datetime import datetime, timezone
-from html import escape
 
-GITLAB_URL = "https://gitlab.epay.sbi"
-TOKEN = "REPLACE_ME"
+# =============================================================================
+#  CONFIGURATION — Edit only this block
+# =============================================================================
+
+GITLAB_URL   = "https://gitlab.epay.sbi"   # Source GitLab instance
+TOKEN        = ""                            # Admin PAT (glpat-...)
+
+# Set to your group path to scope export, or "" for ALL projects instance-wide
 TARGET_GROUP = "itepaypg-sbiepay2"
 
-ssl_ctx = ssl._create_unverified_context()
-HEADERS = {"PRIVATE-TOKEN": TOKEN}
+# =============================================================================
+#  SETUP
+# =============================================================================
 
+if not TOKEN:
+    print("[ERROR] TOKEN is not set. Fill in your admin Personal Access Token.")
+    sys.exit(1)
+
+TIMESTAMP  = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUT_DIR    = f"gitlab_audit_{TIMESTAMP}"
+os.makedirs(OUT_DIR, exist_ok=True)
+
+HEADERS    = {"PRIVATE-TOKEN": TOKEN}
+ssl_ctx    = ssl._create_unverified_context()
+
+RISK_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "ARCHIVED": 3}
+
+# =============================================================================
+#  API HELPERS — GET ONLY
+# =============================================================================
 
 def api_get(url):
-    req = urllib.request.Request(url)
+    """Single GET request. Returns (data, response). Never sends data body."""
+    req = urllib.request.Request(url)          # No data= arg = GET method
     for k, v in HEADERS.items():
         req.add_header(k, v)
-    resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
-    return json.loads(resp.read()), resp
+    try:
+        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        return json.loads(resp.read()), resp
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("\n[ERROR] 401 Unauthorized — TOKEN is empty or invalid.")
+            sys.exit(1)
+        if e.code == 403:
+            print("\n[ERROR] 403 Forbidden — token lacks admin scope.")
+            sys.exit(1)
+        if e.code == 404:
+            return [], None
+        return [], None
+    except Exception as e:
+        print(f"\n[WARN] Request failed: {url} — {e}")
+        return [], None
 
 
-def api_all(endpoint):
-    page = 1
-    results = []
+def api_all(endpoint, extra=""):
+    """Paginate all pages of a GET endpoint. Returns full list."""
+    results, page = [], 1
     while True:
-        sep = "&" if "?" in endpoint else "?"
-        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
+        sep  = "&" if "?" in endpoint else "?"
+        url  = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}{extra}"
         data, resp = api_get(url)
         if not data:
             break
         results.extend(data)
-        total = int(resp.headers.get("X-Total-Pages", "1"))
-        if page >= total:
-            break
+        if resp:
+            total_pages = resp.headers.get("X-Total-Pages", "1")
+            try:
+                if page >= int(total_pages):
+                    break
+            except ValueError:
+                break
         page += 1
     return results
 
 
-def count_endpoint(pid, path, extra=""):
+def count_only(pid, path, extra=""):
+    """
+    Fetch only X-Total header from a list endpoint (per_page=1).
+    This avoids downloading full payloads — just the count.
+    GET-only.
+    """
+    url = (f"{GITLAB_URL}/api/v4/projects/{pid}/{path}"
+           f"?per_page=1&page=1{extra}")
+    req = urllib.request.Request(url)          # GET — no data body
+    for k, v in HEADERS.items():
+        req.add_header(k, v)
     try:
-        req = urllib.request.Request(
-            f"{GITLAB_URL}/api/v4/projects/{pid}/{path}?per_page=1&page=1{extra}"
-        )
-        for k, v in HEADERS.items():
-            req.add_header(k, v)
-        resp = urllib.request.urlopen(req, context=ssl_ctx, timeout=60)
-        return int(resp.headers.get("X-Total", "0"))
+        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        val  = resp.headers.get("X-Total", "0")
+        return int(val) if str(val).isdigit() else 0
     except Exception:
         return 0
 
 
-def risk(ci, mrs, hooks, keys, archived):
-    if archived:
-        return "ARCHIVED"
-    if ci or mrs > 0:
-        return "HIGH"
-    if hooks > 0 or keys > 0:
-        return "MEDIUM"
+# =============================================================================
+#  UTILITIES
+# =============================================================================
+
+def safe(val, default=""):
+    return val if val not in (None, "", [], {}) else default
+
+
+def yn(val):
+    if val is True:  return "Yes"
+    if val is False: return "No"
+    return ""
+
+
+def fmt_kb(kb):
+    if kb in (None, "", 0): return "0 KB"
+    try:
+        kb = int(kb)
+        if kb >= 1048576: return f"{kb/1048576:.1f} GB"
+        if kb >= 1024:    return f"{kb/1024:.1f} MB"
+        return f"{kb} KB"
+    except Exception:
+        return str(kb)
+
+
+def to_date(ts):
+    return ts[:10] if ts else ""
+
+
+def days_ago(ts):
+    if not ts: return ""
+    try:
+        dt    = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        delta = datetime.now(timezone.utc) - dt
+        return str(delta.days)
+    except Exception:
+        return ""
+
+
+def risk_level(p, open_mrs):
+    if p.get("archived"):            return "ARCHIVED"
+    if p.get("jobs_enabled"):        return "HIGH"
+    if int(open_mrs) > 0:            return "HIGH"
+    if (p.get("issues_enabled") or
+        p.get("wiki_enabled")    or
+        p.get("packages_enabled")):  return "MEDIUM"
     return "LOW"
 
 
-def fetch_projects():
-    endpoint = (
-        f"/api/v4/groups/{TARGET_GROUP}/projects"
-        f"?include_subgroups=true&with_statistics=true"
-    )
-    return api_all(endpoint)
+def migration_notes(p, c):
+    notes = []
+    if c["mrs_open"] > 0:
+        notes.append(f"{c['mrs_open']} open MR(s) — author attribution risk")
+    if p.get("lfs_enabled"):
+        notes.append("LFS — objects need separate migration")
+    if p.get("mirror"):
+        notes.append("Mirror config — re-setup post-migration")
+    if p.get("container_registry_enabled"):
+        notes.append("Container images — re-push to new registry")
+    if p.get("packages_enabled") and c["releases"] > 0:
+        notes.append("Package registry data migration needed")
+    if p.get("ci_config_path"):
+        notes.append(f"Custom CI path: {p['ci_config_path']}")
+    elif p.get("jobs_enabled"):
+        notes.append("Review .gitlab-ci.yml — check hardcoded registry/template paths")
+    if c["webhooks"] > 0:
+        notes.append(f"{c['webhooks']} webhook(s) — re-configure post-migration")
+    if c["deploy_keys"] > 0:
+        notes.append(f"{c['deploy_keys']} deploy key(s) — re-add post-migration")
+    if c["environments"] > 0:
+        notes.append(f"{c['environments']} environment(s) — re-configure")
+    if p.get("archived"):
+        notes.append("Archived — confirm if migration is needed")
+    if p.get("empty_repo"):
+        notes.append("Empty repository")
+    return " | ".join(notes) if notes else "Standard migration"
 
 
-def collect():
-    rows = []
-    projects = fetch_projects()
-
-    for p in projects:
-        pid = p["id"]
-
-        row = {
-            "id": pid,
-            "path": p.get("path_with_namespace"),
-            "visibility": p.get("visibility"),
-            "default_branch": p.get("default_branch"),
-            "branches": count_endpoint(pid, "repository/branches"),
-            "tags": count_endpoint(pid, "repository/tags"),
-            "mrs_open": count_endpoint(pid, "merge_requests", "&state=opened"),
-            "issues_open": count_endpoint(pid, "issues", "&state=opened"),
-            "pipelines": count_endpoint(pid, "pipelines"),
-            "milestones": count_endpoint(pid, "milestones"),
-            "labels": count_endpoint(pid, "labels"),
-            "releases": count_endpoint(pid, "releases"),
-            "environments": count_endpoint(pid, "environments"),
-            "members": count_endpoint(pid, "members/all"),
-            "webhooks": count_endpoint(pid, "hooks"),
-            "deploy_keys": count_endpoint(pid, "deploy_keys"),
-            "protected_branches": count_endpoint(pid, "protected_branches"),
-            "ci_enabled": "Yes" if p.get("jobs_enabled") else "No",
-            "last_activity": p.get("last_activity_at", ""),
-        }
-
-        row["risk"] = risk(
-            p.get("jobs_enabled"),
-            row["mrs_open"],
-            row["webhooks"],
-            row["deploy_keys"],
-            p.get("archived"),
-        )
-
-        rows.append(row)
-
-    return rows
+def write_csv(filename, headers, rows):
+    path = os.path.join(OUT_DIR, filename)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(headers)
+        w.writerows(rows)
+    return path
 
 
-def export_csv(name, rows):
-    if not rows:
-        return
-    with open(name, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+def progress(current, total, label=""):
+    bar_len  = 30
+    filled   = int(bar_len * current / total) if total else 0
+    bar      = "█" * filled + "░" * (bar_len - filled)
+    pct      = int(100 * current / total) if total else 0
+    print(f"  [{bar}] {pct:>3}%  {current}/{total}  {label:<40}", end="\r")
 
 
-def export_html(rows):
-    total = len(rows)
-    high = len([r for r in rows if r["risk"] == "HIGH"])
-    medium = len([r for r in rows if r["risk"] == "MEDIUM"])
-    low = len([r for r in rows if r["risk"] == "LOW"])
+# =============================================================================
+#  STEP 1 — FETCH PROJECTS
+# =============================================================================
 
-    html = f"""
-<html><head>
-<title>GitLab Migration Audit</title>
+print("=" * 65)
+print("  GitLab Repository Audit — Migration Planning")
+print(f"  Source  : {GITLAB_URL}")
+print(f"  Group   : {TARGET_GROUP or 'ALL (instance-wide)'}")
+print(f"  Output  : ./{OUT_DIR}/")
+print("  Deps    : Python stdlib only — no pip packages needed")
+print("=" * 65)
+
+print("\n[1/3] Fetching project list ...")
+
+if TARGET_GROUP:
+    ep = (f"/api/v4/groups/{TARGET_GROUP}/projects"
+          f"?include_subgroups=true&with_statistics=true")
+else:
+    ep = "/api/v4/projects?with_statistics=true"
+
+projects = api_all(ep)
+print(f"       → {len(projects)} projects found.\n")
+
+if not projects:
+    print("[ERROR] No projects returned. Check TOKEN and TARGET_GROUP.")
+    sys.exit(1)
+
+# =============================================================================
+#  STEP 2 — PER-PROJECT ARTIFACT COUNTS
+# =============================================================================
+
+print("[2/3] Fetching artifact counts per project (GET-only) ...")
+print("      Each project: branches, tags, MRs, issues, pipelines,")
+print("      releases, environments, milestones, labels, snippets,")
+print("      deploy keys, webhooks, members, protected branches.\n")
+
+all_counts = {}
+total_proj = len(projects)
+
+for idx, p in enumerate(projects, start=1):
+    pid  = p["id"]
+    name = p.get("path_with_namespace", str(pid))
+    progress(idx, total_proj, name[-40:])
+
+    c = {
+        # Version control
+        "branches":           count_only(pid, "repository/branches"),
+        "tags":               count_only(pid, "repository/tags"),
+        "protected_branches": count_only(pid, "protected_branches"),
+
+        # Merge Requests
+        "mrs_open":           count_only(pid, "merge_requests", "&state=opened"),
+        "mrs_merged":         count_only(pid, "merge_requests", "&state=merged"),
+        "mrs_closed":         count_only(pid, "merge_requests", "&state=closed"),
+
+        # Issues
+        "issues_open":        count_only(pid, "issues", "&state=opened"),
+        "issues_closed":      count_only(pid, "issues", "&state=closed"),
+
+        # Planning
+        "milestones":         count_only(pid, "milestones"),
+        "labels":             count_only(pid, "labels"),
+
+        # CI/CD
+        "pipelines":          count_only(pid, "pipelines"),
+        "environments":       count_only(pid, "environments"),
+        "releases":           count_only(pid, "releases"),
+
+        # Misc
+        "snippets":           count_only(pid, "snippets"),
+        "deploy_keys":        count_only(pid, "deploy_keys"),
+        "webhooks":           count_only(pid, "hooks"),
+        "members":            count_only(pid, "members/all"),
+
+        # Epics — group level (filled below)
+        "group_epics":        0,
+    }
+    all_counts[pid] = c
+
+print(f"\n\n       → Counts collected for {len(all_counts)} projects.")
+
+# Group-level epics
+if TARGET_GROUP:
+    print(f"       Fetching group epics for: {TARGET_GROUP} ...")
+    epics = api_all(f"/api/v4/groups/{TARGET_GROUP}/epics")
+    epic_count = len(epics)
+    for pid in all_counts:
+        all_counts[pid]["group_epics"] = epic_count
+    print(f"       → {epic_count} group epics found.")
+
+# =============================================================================
+#  STEP 3 — BUILD ENRICHED ROWS
+# =============================================================================
+
+enriched = []
+for p in projects:
+    pid   = p["id"]
+    stats = p.get("statistics") or {}
+    c     = all_counts.get(pid, {k: 0 for k in [
+        "branches","tags","protected_branches","mrs_open","mrs_merged",
+        "mrs_closed","issues_open","issues_closed","milestones","labels",
+        "pipelines","environments","releases","snippets","deploy_keys",
+        "webhooks","members","group_epics"]})
+
+    risk  = risk_level(p, c["mrs_open"])
+    notes = migration_notes(p, c)
+
+    enriched.append({
+        # Identity
+        "id":           pid,
+        "name":         safe(p.get("name")),
+        "path":         safe(p.get("path_with_namespace")),
+        "namespace":    safe(p.get("namespace", {}).get("full_path")),
+        "description":  safe(p.get("description")),
+        "visibility":   safe(p.get("visibility")),
+        "default_branch": safe(p.get("default_branch"), "N/A"),
+        "empty":        yn(p.get("empty_repo")),
+        "archived":     yn(p.get("archived")),
+        "created":      to_date(p.get("created_at")),
+        "last_activity":to_date(p.get("last_activity_at")),
+        "days_inactive":days_ago(p.get("last_activity_at")),
+
+        # Size
+        "repo_size":    fmt_kb(stats.get("repository_size")),
+        "lfs_enabled":  yn(p.get("lfs_enabled")),
+        "lfs_size":     fmt_kb(stats.get("lfs_objects_size")),
+
+        # VCS
+        "branches":           c["branches"],
+        "tags":               c["tags"],
+        "protected_branches": c["protected_branches"],
+
+        # MRs
+        "mrs_open":     c["mrs_open"],
+        "mrs_merged":   c["mrs_merged"],
+        "mrs_closed":   c["mrs_closed"],
+
+        # Issues
+        "issues_open":  c["issues_open"],
+        "issues_closed":c["issues_closed"],
+
+        # Planning
+        "group_epics":  c["group_epics"],
+        "milestones":   c["milestones"],
+        "labels":       c["labels"],
+
+        # CI/CD
+        "ci_enabled":   yn(p.get("jobs_enabled")),
+        "ci_config":    safe(p.get("ci_config_path"), ".gitlab-ci.yml (default)"),
+        "shared_runners": yn(p.get("shared_runners_enabled")),
+        "auto_devops":  yn(p.get("auto_devops_enabled")),
+        "pipelines":    c["pipelines"],
+        "environments": c["environments"],
+        "releases":     c["releases"],
+
+        # Features
+        "container_registry": yn(p.get("container_registry_enabled")),
+        "packages":     yn(p.get("packages_enabled")),
+        "wiki":         yn(p.get("wiki_enabled")),
+        "issues_feature": yn(p.get("issues_enabled")),
+        "snippets":     c["snippets"],
+
+        # Access
+        "members":      c["members"],
+        "webhooks":     c["webhooks"],
+        "deploy_keys":  c["deploy_keys"],
+        "mirror":       yn(p.get("mirror")),
+        "merge_method": safe(p.get("merge_method")),
+        "pipeline_required": yn(p.get("only_allow_merge_if_pipeline_succeeds")),
+
+        # Migration
+        "risk":         risk,
+        "migration_notes": notes,
+
+        # URLs
+        "http_url":     safe(p.get("http_url_to_repo")),
+        "ssh_url":      safe(p.get("ssh_url_to_repo")),
+    })
+
+# Sorted copy for plan sheet
+enriched_by_risk = sorted(
+    enriched,
+    key=lambda r: (RISK_ORDER.get(r["risk"], 9), r["path"])
+)
+
+# =============================================================================
+#  STEP 3 — WRITE CSV FILES
+# =============================================================================
+
+print("\n[3/3] Writing output files ...")
+
+# ── 01_dashboard.csv ─────────────────────────────────────────────────────────
+total    = len(enriched)
+high     = sum(1 for r in enriched if r["risk"] == "HIGH")
+medium   = sum(1 for r in enriched if r["risk"] == "MEDIUM")
+low      = sum(1 for r in enriched if r["risk"] == "LOW")
+archived = sum(1 for r in enriched if r["risk"] == "ARCHIVED")
+
+dashboard_rows = [
+    ["Metric",                    "Count", "Notes"],
+    ["─── REPOSITORY COUNTS ───", "",      ""],
+    ["Total Repositories",         total,   ""],
+    ["HIGH Risk",                  high,    "CI/CD pipelines OR open MRs"],
+    ["MEDIUM Risk",                medium,  "Issues / Wiki / Packages enabled"],
+    ["LOW Risk",                   low,     "Simple repos"],
+    ["ARCHIVED",                   archived,"Verify if migration needed"],
+    ["─── ARTIFACT TOTALS ───",   "",       ""],
+    ["Total Open MRs",             sum(r["mrs_open"]     for r in enriched), "Author attribution risk"],
+    ["Total Merged MRs",           sum(r["mrs_merged"]   for r in enriched), ""],
+    ["Total Open Issues",          sum(r["issues_open"]  for r in enriched), ""],
+    ["Total Closed Issues",        sum(r["issues_closed"]for r in enriched), ""],
+    ["Group Epics",                enriched[0]["group_epics"] if enriched else 0, "Group-level"],
+    ["Total Milestones",           sum(r["milestones"]   for r in enriched), ""],
+    ["Total Labels",               sum(r["labels"]       for r in enriched), ""],
+    ["─── CI/CD ───",             "",      ""],
+    ["Repos with CI/CD",           sum(1 for r in enriched if r["ci_enabled"]=="Yes"), "HIGH risk — review before migration"],
+    ["Total Pipelines",            sum(r["pipelines"]    for r in enriched), ""],
+    ["Total Environments",         sum(r["environments"] for r in enriched), "Need re-configuration post-migration"],
+    ["Total Releases",             sum(r["releases"]     for r in enriched), ""],
+    ["─── FEATURES ───",          "",      ""],
+    ["Repos with Container Registry", sum(1 for r in enriched if r["container_registry"]=="Yes"), "Images need re-push to new registry"],
+    ["Repos with Package Registry",   sum(1 for r in enriched if r["packages"]=="Yes"),           "Package data migration needed"],
+    ["Repos with LFS",                sum(1 for r in enriched if r["lfs_enabled"]=="Yes"),        "LFS objects need separate migration"],
+    ["Repos with Mirror",             sum(1 for r in enriched if r["mirror"]=="Yes"),             "Re-setup post-migration"],
+    ["─── ACCESS ───",            "",      ""],
+    ["Total Webhooks",             sum(r["webhooks"]     for r in enriched), "Re-configure post-migration"],
+    ["Total Deploy Keys",          sum(r["deploy_keys"]  for r in enriched), "Re-add post-migration"],
+    ["Total Branches",             sum(r["branches"]     for r in enriched), ""],
+    ["Total Tags",                 sum(r["tags"]         for r in enriched), ""],
+    ["─── META ───",              "",      ""],
+    ["Source Instance",            GITLAB_URL,  ""],
+    ["Target Instance",            "gitlab.sbi",""],
+    ["Group Scope",                TARGET_GROUP or "All projects", ""],
+    ["Report Generated",           datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ""],
+]
+write_csv("01_dashboard.csv",
+          ["Metric", "Count", "Notes"],
+          dashboard_rows)
+print("       → 01_dashboard.csv")
+
+# ── 02_full_audit.csv ────────────────────────────────────────────────────────
+FULL_HEADERS = [
+    "Sr.", "Project ID", "Full Path", "Project Name", "Namespace",
+    "Description", "Visibility", "Default Branch", "Empty Repo", "Archived",
+    # Size
+    "Repo Size", "LFS Enabled", "LFS Size",
+    # VCS
+    "Branches", "Tags", "Protected Branches",
+    # MRs
+    "MRs Open", "MRs Merged", "MRs Closed",
+    # Issues
+    "Issues Open", "Issues Closed",
+    # Planning
+    "Group Epics", "Milestones", "Labels",
+    # CI/CD
+    "CI/CD Enabled", "CI Config Path", "Shared Runners", "Auto DevOps",
+    "Pipelines (Total)", "Environments", "Releases",
+    # Features
+    "Container Registry", "Packages", "Wiki", "Issues Feature", "Snippets",
+    # Access
+    "Members", "Webhooks", "Deploy Keys", "Mirror",
+    "Merge Method", "Pipeline Required for MR",
+    # Activity
+    "Created Date", "Last Activity", "Days Inactive",
+    # Migration
+    "Migration Risk", "Migration Notes",
+    # URLs
+    "HTTP URL", "SSH URL",
+]
+
+full_rows = []
+for sr, r in enumerate(enriched, start=1):
+    full_rows.append([
+        sr, r["id"], r["path"], r["name"], r["namespace"],
+        r["description"], r["visibility"], r["default_branch"],
+        r["empty"], r["archived"],
+        r["repo_size"], r["lfs_enabled"], r["lfs_size"],
+        r["branches"], r["tags"], r["protected_branches"],
+        r["mrs_open"], r["mrs_merged"], r["mrs_closed"],
+        r["issues_open"], r["issues_closed"],
+        r["group_epics"], r["milestones"], r["labels"],
+        r["ci_enabled"], r["ci_config"], r["shared_runners"], r["auto_devops"],
+        r["pipelines"], r["environments"], r["releases"],
+        r["container_registry"], r["packages"], r["wiki"],
+        r["issues_feature"], r["snippets"],
+        r["members"], r["webhooks"], r["deploy_keys"], r["mirror"],
+        r["merge_method"], r["pipeline_required"],
+        r["created"], r["last_activity"], r["days_inactive"],
+        r["risk"], r["migration_notes"],
+        r["http_url"], r["ssh_url"],
+    ])
+write_csv("02_full_audit.csv", FULL_HEADERS, full_rows)
+print("       → 02_full_audit.csv")
+
+# ── 03_migration_plan.csv ────────────────────────────────────────────────────
+PLAN_HEADERS = [
+    "Sr.", "Full Path", "Migration Risk", "Visibility", "Repo Size",
+    "Branches", "Open MRs", "Open Issues", "Pipelines",
+    "CI/CD", "LFS", "Container Registry", "Packages",
+    "Webhooks", "Deploy Keys", "Environments", "Mirror",
+    "Last Activity", "Days Inactive", "Migration Notes",
+    # ── Tracker columns (fill manually) ──
+    "Migration Status", "Migrated By", "Migration Date",
+    "Verified By", "Remarks",
+]
+
+plan_rows = []
+for sr, r in enumerate(enriched_by_risk, start=1):
+    plan_rows.append([
+        sr, r["path"], r["risk"], r["visibility"], r["repo_size"],
+        r["branches"], r["mrs_open"], r["issues_open"], r["pipelines"],
+        r["ci_enabled"], r["lfs_enabled"], r["container_registry"], r["packages"],
+        r["webhooks"], r["deploy_keys"], r["environments"], r["mirror"],
+        r["last_activity"], r["days_inactive"], r["migration_notes"],
+        "", "", "", "", "",  # tracker columns — blank
+    ])
+write_csv("03_migration_plan.csv", PLAN_HEADERS, plan_rows)
+print("       → 03_migration_plan.csv  (sorted HIGH > MEDIUM > LOW > ARCHIVED)")
+
+# ── 04_cicd_repos.csv ────────────────────────────────────────────────────────
+CICD_HEADERS = [
+    "Sr.", "Full Path", "Risk", "CI Config Path",
+    "Shared Runners", "Auto DevOps", "Pipelines (Total)",
+    "Container Registry", "Packages", "Environments",
+    "Open MRs", "Pipeline Required for MR", "HTTP URL",
+]
+cicd_rows = []
+for sr, r in enumerate([r for r in enriched if r["ci_enabled"] == "Yes"], start=1):
+    cicd_rows.append([
+        sr, r["path"], r["risk"], r["ci_config"],
+        r["shared_runners"], r["auto_devops"], r["pipelines"],
+        r["container_registry"], r["packages"], r["environments"],
+        r["mrs_open"], r["pipeline_required"], r["http_url"],
+    ])
+write_csv("04_cicd_repos.csv", CICD_HEADERS, cicd_rows)
+print(f"       → 04_cicd_repos.csv  ({len(cicd_rows)} repos with CI/CD)")
+
+# ── 05_open_items.csv ────────────────────────────────────────────────────────
+OPEN_HEADERS = [
+    "Sr.", "Full Path", "Risk",
+    "MRs Open", "MRs Merged", "MRs Closed",
+    "Issues Open", "Issues Closed",
+    "Group Epics", "Milestones",
+    "Last Activity", "HTTP URL",
+]
+open_rows = []
+for sr, r in enumerate(
+    [r for r in enriched if r["mrs_open"] > 0 or r["issues_open"] > 0],
+    start=1
+):
+    open_rows.append([
+        sr, r["path"], r["risk"],
+        r["mrs_open"], r["mrs_merged"], r["mrs_closed"],
+        r["issues_open"], r["issues_closed"],
+        r["group_epics"], r["milestones"],
+        r["last_activity"], r["http_url"],
+    ])
+write_csv("05_open_items.csv", OPEN_HEADERS, open_rows)
+print(f"       → 05_open_items.csv  ({len(open_rows)} repos with open MRs/Issues)")
+
+# ── 06_branches_tags.csv ─────────────────────────────────────────────────────
+VCS_HEADERS = [
+    "Sr.", "Full Path", "Default Branch", "Branches",
+    "Tags", "Protected Branches", "Risk", "Last Activity", "Archived",
+]
+vcs_rows = []
+for sr, r in enumerate(enriched, start=1):
+    vcs_rows.append([
+        sr, r["path"], r["default_branch"], r["branches"],
+        r["tags"], r["protected_branches"], r["risk"],
+        r["last_activity"], r["archived"],
+    ])
+write_csv("06_branches_tags.csv", VCS_HEADERS, vcs_rows)
+print("       → 06_branches_tags.csv")
+
+# ── 07_access_config.csv ─────────────────────────────────────────────────────
+ACCESS_HEADERS = [
+    "Sr.", "Full Path", "Risk", "Visibility",
+    "Members", "Webhooks", "Deploy Keys",
+    "Protected Branches", "Mirror", "Merge Method",
+    "Pipeline Required for MR", "HTTP URL",
+]
+access_rows = []
+for sr, r in enumerate(enriched, start=1):
+    access_rows.append([
+        sr, r["path"], r["risk"], r["visibility"],
+        r["members"], r["webhooks"], r["deploy_keys"],
+        r["protected_branches"], r["mirror"], r["merge_method"],
+        r["pipeline_required"], r["http_url"],
+    ])
+write_csv("07_access_config.csv", ACCESS_HEADERS, access_rows)
+print("       → 07_access_config.csv")
+
+
+# =============================================================================
+#  HTML REPORT — single file, no internet, no JS frameworks
+# =============================================================================
+
+def esc(val):
+    """HTML-escape a value for safe table output."""
+    return (str(val)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;"))
+
+
+def risk_badge(risk):
+    colours = {
+        "HIGH":     ("#FF4C4C", "#7B0000"),
+        "MEDIUM":   ("#FFA500", "#5C3300"),
+        "LOW":      ("#90EE90", "#1A4D1A"),
+        "ARCHIVED": ("#B0B0B0", "#3D3D3D"),
+    }
+    bg, fg = colours.get(risk, ("#eee", "#333"))
+    return (f'<span style="background:{bg};color:{fg};padding:2px 8px;'
+            f'border-radius:4px;font-weight:bold;font-size:11px;">{esc(risk)}</span>')
+
+
+def tbl(headers, rows, row_style_fn=None):
+    """Build an HTML table string."""
+    out = ['<div style="overflow-x:auto"><table>',
+           "<thead><tr>",
+           "".join(f"<th>{esc(h)}</th>" for h in headers),
+           "</tr></thead><tbody>"]
+    for i, row in enumerate(rows):
+        bg = "#f8f9fa" if i % 2 == 0 else "#ffffff"
+        out.append(f'<tr style="background:{bg}">')
+        for j, cell in enumerate(row):
+            val = cell
+            # Risk column — auto-detect by header or value
+            if (str(cell) in ("HIGH", "MEDIUM", "LOW", "ARCHIVED") and
+                    str(cell) in ("HIGH", "MEDIUM", "LOW", "ARCHIVED")):
+                val = risk_badge(str(cell))
+            elif isinstance(cell, int) and cell > 0 and j > 0:
+                val = f'<strong>{cell}</strong>'
+            else:
+                val = esc(str(cell))
+            out.append(f"<td>{val}</td>")
+        out.append("</tr>")
+    out.append("</tbody></table></div>")
+    return "".join(out)
+
+
+def stat_card(label, value, colour="#1C3557"):
+    return (f'<div class="card" style="border-top:4px solid {colour}">'
+            f'<div class="card-val">{esc(str(value))}</div>'
+            f'<div class="card-lbl">{esc(label)}</div>'
+            f'</div>')
+
+
+now_str   = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+cicd_list = [r for r in enriched if r["ci_enabled"] == "Yes"]
+open_list = [r for r in enriched if r["mrs_open"] > 0 or r["issues_open"] > 0]
+
+html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GitLab Repo Audit — {TARGET_GROUP or 'All Projects'}</title>
 <style>
-body{{font-family:Arial;margin:20px}}
-table{{border-collapse:collapse;width:100%}}
-th,td{{border:1px solid #ccc;padding:6px}}
-th{{background:#163a5f;color:white}}
-.card{{display:inline-block;padding:15px;margin:5px;color:white}}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:Arial,sans-serif;font-size:13px;background:#f0f4f8;color:#222}}
+header{{background:#1C3557;color:#fff;padding:18px 28px}}
+header h1{{font-size:20px;font-weight:700}}
+header p{{font-size:12px;opacity:.8;margin-top:4px}}
+nav{{background:#2E5F8A;display:flex;flex-wrap:wrap;gap:4px;padding:8px 28px}}
+nav a{{color:#fff;text-decoration:none;padding:5px 14px;border-radius:4px;
+       font-size:12px;background:rgba(255,255,255,.1)}}
+nav a:hover{{background:rgba(255,255,255,.25)}}
+.content{{padding:24px 28px}}
+.section{{margin-bottom:40px}}
+.section h2{{font-size:15px;font-weight:700;color:#1C3557;
+             border-bottom:2px solid #2E5F8A;padding-bottom:6px;margin-bottom:16px}}
+.cards{{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px}}
+.card{{background:#fff;border-radius:6px;padding:16px 20px;min-width:150px;
+       box-shadow:0 1px 3px rgba(0,0,0,.08)}}
+.card-val{{font-size:26px;font-weight:700;color:#1C3557}}
+.card-lbl{{font-size:11px;color:#666;margin-top:4px}}
+table{{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}}
+th{{background:#1C3557;color:#fff;padding:7px 10px;text-align:left;
+    font-weight:600;white-space:nowrap}}
+td{{padding:6px 10px;border-bottom:1px solid #e8ecef;vertical-align:middle}}
+tr:hover td{{background:#eaf2fb !important}}
+.badge-high{{background:#FF4C4C;color:#7B0000}}
+.badge-med{{background:#FFA500;color:#5C3300}}
+.badge-low{{background:#90EE90;color:#1A4D1A}}
+.badge-arch{{background:#B0B0B0;color:#3D3D3D}}
+.note{{font-size:11px;color:#555;background:#fffde7;border-left:3px solid #f9a825;
+       padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:16px}}
+.readonly-banner{{background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20;
+                  padding:10px 16px;border-radius:4px;margin-bottom:20px;
+                  font-size:12px;font-weight:600}}
 </style>
-</head><body>
-<h1>GitLab Migration Audit Dashboard</h1>
-<div class="card" style="background:#163a5f">Repos:{total}</div>
-<div class="card" style="background:red">High:{high}</div>
-<div class="card" style="background:orange">Medium:{medium}</div>
-<div class="card" style="background:green">Low:{low}</div>
-<table>
-<tr>
-<th>Repository</th>
-<th>Branches</th>
-<th>Tags</th>
-<th>MRs</th>
-<th>Issues</th>
-<th>Pipelines</th>
-<th>Members</th>
-<th>Risk</th>
-</tr>
-"""
-    for r in rows:
-        html += f"""
-<tr>
-<td>{escape(str(r['path']))}</td>
-<td>{r['branches']}</td>
-<td>{r['tags']}</td>
-<td>{r['mrs_open']}</td>
-<td>{r['issues_open']}</td>
-<td>{r['pipelines']}</td>
-<td>{r['members']}</td>
-<td>{r['risk']}</td>
-</tr>
-"""
-    html += "</table></body></html>"
-    with open("gitlab_audit_dashboard.html", "w", encoding="utf-8") as f:
-        f.write(html)
+</head>
+<body>
+<header>
+  <h1>GitLab Repository Audit Report</h1>
+  <p>Source: {esc(GITLAB_URL)} &nbsp;|&nbsp;
+     Group: {esc(TARGET_GROUP or 'All Projects')} &nbsp;|&nbsp;
+     Generated: {esc(now_str)}</p>
+</header>
+<nav>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#full">Full Audit</a>
+  <a href="#plan">Migration Plan</a>
+  <a href="#cicd">CI/CD Repos</a>
+  <a href="#open">Open Items</a>
+  <a href="#vcs">Branches &amp; Tags</a>
+  <a href="#access">Access &amp; Config</a>
+</nav>
+<div class="content">
 
+<div class="readonly-banner">
+  &#10003; READ-ONLY REPORT — No changes were made to GitLab.
+  All data collected via HTTP GET requests only.
+</div>
 
-def main():
-    rows = collect()
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="section" id="dashboard">
+<h2>&#128202; Dashboard — Summary</h2>
+<div class="cards">
+  {stat_card("Total Repositories",  total,   "#1C3557")}
+  {stat_card("HIGH Risk",           high,    "#FF4C4C")}
+  {stat_card("MEDIUM Risk",         medium,  "#FFA500")}
+  {stat_card("LOW Risk",            low,     "#90EE90")}
+  {stat_card("Archived",            archived,"#B0B0B0")}
+  {stat_card("Open MRs",            sum(r["mrs_open"]     for r in enriched), "#C0392B")}
+  {stat_card("Open Issues",         sum(r["issues_open"]  for r in enriched), "#C0392B")}
+  {stat_card("Group Epics",         enriched[0]["group_epics"] if enriched else 0, "#8E44AD")}
+  {stat_card("Repos with CI/CD",    len(cicd_list),        "#2471A3")}
+  {stat_card("Total Pipelines",     sum(r["pipelines"]    for r in enriched), "#2471A3")}
+  {stat_card("Total Environments",  sum(r["environments"] for r in enriched), "#117A65")}
+  {stat_card("Total Webhooks",      sum(r["webhooks"]     for r in enriched), "#784212")}
+  {stat_card("Total Deploy Keys",   sum(r["deploy_keys"]  for r in enriched), "#784212")}
+  {stat_card("Repos with LFS",      sum(1 for r in enriched if r["lfs_enabled"]=="Yes"), "#626567")}
+  {stat_card("Repos with Mirror",   sum(1 for r in enriched if r["mirror"]=="Yes"),      "#626567")}
+  {stat_card("Total Branches",      sum(r["branches"]     for r in enriched), "#1C3557")}
+</div>
+<div class="note">
+  <strong>Risk Legend:</strong>
+  &nbsp;<span style="background:#FF4C4C;color:#7B0000;padding:1px 8px;border-radius:3px;font-weight:bold">HIGH</span> — CI/CD pipelines present OR open MRs exist
+  &nbsp;<span style="background:#FFA500;color:#5C3300;padding:1px 8px;border-radius:3px;font-weight:bold">MEDIUM</span> — Issues / Wiki / Packages enabled
+  &nbsp;<span style="background:#90EE90;color:#1A4D1A;padding:1px 8px;border-radius:3px;font-weight:bold">LOW</span> — Simple repos
+  &nbsp;<span style="background:#B0B0B0;color:#3D3D3D;padding:1px 8px;border-radius:3px;font-weight:bold">ARCHIVED</span> — Archived
+</div>
+</div>
 
-    export_csv("gitlab_full_audit.csv", rows)
-    export_csv("gitlab_cicd_repos.csv",
-               [r for r in rows if r["ci_enabled"] == "Yes"])
-    export_csv("gitlab_open_items.csv",
-               [r for r in rows if r["mrs_open"] > 0 or r["issues_open"] > 0])
+<!-- ═══════════════ FULL AUDIT ═══════════════ -->
+<div class="section" id="full">
+<h2>&#128203; Full Audit — All Repositories</h2>
+<div class="note">All {total} repositories with complete artifact counts.
+  Columns: Identity | Repository | VCS | MRs | Issues | Epics | CI/CD | Features | Access | Migration</div>
+{tbl(
+    ["Sr","ID","Full Path","Name","Visibility","Default Branch",
+     "Repo Size","Branches","Tags","Protected Br.",
+     "MRs Open","MRs Merged","MRs Closed",
+     "Issues Open","Issues Closed",
+     "Epics","Milestones","Labels",
+     "CI/CD","Pipelines","Environments","Releases",
+     "Container Reg.","Packages","Wiki",
+     "Members","Webhooks","Deploy Keys","Mirror",
+     "LFS","Archived","Last Activity","Days Inactive","Risk"],
+    [[sr+1, r["id"], r["path"], r["name"], r["visibility"], r["default_branch"],
+      r["repo_size"], r["branches"], r["tags"], r["protected_branches"],
+      r["mrs_open"], r["mrs_merged"], r["mrs_closed"],
+      r["issues_open"], r["issues_closed"],
+      r["group_epics"], r["milestones"], r["labels"],
+      r["ci_enabled"], r["pipelines"], r["environments"], r["releases"],
+      r["container_registry"], r["packages"], r["wiki"],
+      r["members"], r["webhooks"], r["deploy_keys"], r["mirror"],
+      r["lfs_enabled"], r["archived"], r["last_activity"], r["days_inactive"],
+      r["risk"]]
+     for sr, r in enumerate(enriched)]
+)}
+</div>
 
-    export_html(rows)
+<!-- ═══════════════ MIGRATION PLAN ═══════════════ -->
+<div class="section" id="plan">
+<h2>&#128640; Migration Plan — Sorted by Risk</h2>
+<div class="note">Sorted: HIGH &rarr; MEDIUM &rarr; LOW &rarr; ARCHIVED.
+  Use 03_migration_plan.csv to track migration progress (fill the blank tracker columns).</div>
+{tbl(
+    ["Sr","Full Path","Risk","Repo Size","Branches","Open MRs","Open Issues",
+     "Pipelines","CI/CD","LFS","Container Reg.","Packages",
+     "Webhooks","Deploy Keys","Environments","Mirror",
+     "Last Activity","Days Inactive","Migration Notes"],
+    [[sr+1, r["path"], r["risk"], r["repo_size"], r["branches"],
+      r["mrs_open"], r["issues_open"], r["pipelines"],
+      r["ci_enabled"], r["lfs_enabled"], r["container_registry"], r["packages"],
+      r["webhooks"], r["deploy_keys"], r["environments"], r["mirror"],
+      r["last_activity"], r["days_inactive"], r["migration_notes"]]
+     for sr, r in enumerate(enriched_by_risk)]
+)}
+</div>
 
-    print("Audit completed.")
+<!-- ═══════════════ CI/CD REPOS ═══════════════ -->
+<div class="section" id="cicd">
+<h2>&#9881;&#65039; CI/CD Repositories ({len(cicd_list)})</h2>
+<div class="note">These repos have active pipelines. Review .gitlab-ci.yml for
+  hardcoded registry URLs and template paths before migration.</div>
+{tbl(
+    ["Sr","Full Path","Risk","CI Config Path","Shared Runners",
+     "Auto DevOps","Pipelines","Container Reg.","Packages",
+     "Environments","Open MRs","Pipeline Required for MR"],
+    [[sr+1, r["path"], r["risk"], r["ci_config"], r["shared_runners"],
+      r["auto_devops"], r["pipelines"], r["container_registry"], r["packages"],
+      r["environments"], r["mrs_open"], r["pipeline_required"]]
+     for sr, r in enumerate(cicd_list)]
+)}
+</div>
 
+<!-- ═══════════════ OPEN ITEMS ═══════════════ -->
+<div class="section" id="open">
+<h2>&#128308; Open Items — Author Attribution Risk ({len(open_list)})</h2>
+<div class="note">Repos with open MRs or Issues. Author identity must be
+  preserved during Direct Transfer migration.</div>
+{tbl(
+    ["Sr","Full Path","Risk","MRs Open","MRs Merged","MRs Closed",
+     "Issues Open","Issues Closed","Group Epics","Milestones","Last Activity"],
+    [[sr+1, r["path"], r["risk"],
+      r["mrs_open"], r["mrs_merged"], r["mrs_closed"],
+      r["issues_open"], r["issues_closed"],
+      r["group_epics"], r["milestones"], r["last_activity"]]
+     for sr, r in enumerate(open_list)]
+)}
+</div>
 
-if __name__ == "__main__":
-    main()
+<!-- ═══════════════ BRANCHES & TAGS ═══════════════ -->
+<div class="section" id="vcs">
+<h2>&#127795; Branches &amp; Tags</h2>
+{tbl(
+    ["Sr","Full Path","Default Branch","Branches","Tags",
+     "Protected Branches","Risk","Last Activity","Archived"],
+    [[sr+1, r["path"], r["default_branch"], r["branches"], r["tags"],
+      r["protected_branches"], r["risk"], r["last_activity"], r["archived"]]
+     for sr, r in enumerate(enriched)]
+)}
+</div>
+
+<!-- ═══════════════ ACCESS & CONFIG ═══════════════ -->
+<div class="section" id="access">
+<h2>&#128274; Access &amp; Configuration</h2>
+{tbl(
+    ["Sr","Full Path","Risk","Visibility","Members","Webhooks",
+     "Deploy Keys","Protected Branches","Mirror",
+     "Merge Method","Pipeline Required for MR"],
+    [[sr+1, r["path"], r["risk"], r["visibility"],
+      r["members"], r["webhooks"], r["deploy_keys"],
+      r["protected_branches"], r["mirror"],
+      r["merge_method"], r["pipeline_required"]]
+     for sr, r in enumerate(enriched)]
+)}
+</div>
+
+</div><!-- /content -->
+<footer style="text-align:center;padding:16px;font-size:11px;color:#888;
+               border-top:1px solid #ddd;margin-top:24px">
+  GitLab Repo Audit &nbsp;|&nbsp; {esc(GITLAB_URL)} &nbsp;|&nbsp;
+  Generated {esc(now_str)} &nbsp;|&nbsp; READ-ONLY
+</footer>
+</body></html>"""
+
+html_path = os.path.join(OUT_DIR, "audit_report.html")
+with open(html_path, "w", encoding="utf-8") as f:
+    f.write(html)
+print("       → audit_report.html  (open in any browser — no internet needed)")
+
+# =============================================================================
+#  FINAL SUMMARY
+# =============================================================================
+
+print()
+print("=" * 65)
+print(f"  DONE — all files written to: ./{OUT_DIR}/")
+print("=" * 65)
+print(f"  {'01_dashboard.csv':<35} Summary metrics")
+print(f"  {'02_full_audit.csv':<35} All repos x all artifact counts")
+print(f"  {'03_migration_plan.csv':<35} Checklist sorted by risk")
+print(f"  {'04_cicd_repos.csv':<35} {len(cicd_list)} repos with CI/CD")
+print(f"  {'05_open_items.csv':<35} {len(open_list)} repos with open MRs/Issues")
+print(f"  {'06_branches_tags.csv':<35} Branch and tag counts")
+print(f"  {'07_access_config.csv':<35} Members, webhooks, deploy keys")
+print(f"  {'audit_report.html':<35} Full report (open in browser)")
+print()
+print(f"  Repos total  : {total}")
+print(f"  HIGH risk    : {high}")
+print(f"  MEDIUM risk  : {medium}")
+print(f"  LOW risk     : {low}")
+print(f"  ARCHIVED     : {archived}")
+print()
+print("  READ-ONLY: Zero changes made to GitLab.")
+print("=" * 65)
