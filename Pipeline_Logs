@@ -1,10 +1,24 @@
-Take export of repository from old Gitlab using Administrator account 
-Do the Archive of that repository 
-Once export comppleted, download the exported tar files and give the name accordingly.
-Upload the exported Tar files on shared drive.
-Centralized team will download the tar files from the Shared drive.
-Using Administrator account they will start the import of that repo on centralized Gitlab.
-Once Import completed, Verify everything checklist (Branches, MR, Epics and commits etc)
-Update the .gitlab-ci.yaml of imported repo, like below to use the current CICD templates.
-Add the Push rules, MR Approval rule and made the require branch Protection rules.
-Verify the Pipelines 
+### GitLab Repository Migration – Plan of Action (POA)
+
+1. Take the repository export from the old GitLab using an Administrator account.
+2. Archive the repository to avoid any changes during migration.
+3. Once the export is completed, download the exported `.tar.gz` file and rename it as per the agreed naming convention.
+4. Upload the exported file to the designated shared drive.
+5. The Centralized GitLab Team will download the file from the shared drive.
+6. Import the repository into the centralized GitLab using an Administrator account.
+7. After import, verify all repository data, including:
+
+   * Branches
+   * Tags
+   * Commits and commit history
+   * Merge Requests (MRs)
+   * Issues / Epics (if applicable)
+   * CI/CD configuration
+8. Update the `.gitlab-ci.yml` file to use the latest centralized CI/CD templates.
+9. Configure repository governance settings:
+
+   * Push Rules
+   * Merge Request Approval Rules
+   * Branch Protection Rules
+10. Execute and validate the CI/CD pipelines.
+11. Perform final verification and obtain application owner sign-off.
