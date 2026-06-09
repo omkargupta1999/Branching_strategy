@@ -1,2 +1,44 @@
-[osuser@bastion LDAP]$ curl -k --header "PRIVATE-TOKEN: token" https://gitlab.sbi/api/v4/user
-{"message":"401 Unauthorized"}[osuser@bastion LDAP]$
+That confirms it — the token itself is being rejected by GitLab, before the script is ever involved. So this is purely a token problem, not a script problem.
+
+(Quick aside: in that curl you literally sent the word `token` as the value — `PRIVATE-TOKEN: token`. I'll assume that was you redacting the real value for the paste. If you actually ran it with the literal word `token`, that alone explains the 401 — re-run with the real `glpat-...` value.)
+
+Assuming you used the real token and still get 401, work through these in order:
+
+**1. Whitespace / hidden characters**
+If you pasted the token into a variable or file, a trailing newline or space breaks it. Test cleanly:
+```bash
+curl -k --header "PRIVATE-TOKEN: glpat-xxxxxxxxxxxx" https://gitlab.sbi/api/v4/user
+```
+Type it inline, no quotes around the token value beyond the header string.
+
+**2. Token actually saved / not expired / not revoked**
+In the GitLab UI under the Owner account → User Settings → Access Tokens, confirm:
+- The token is listed and **active** (not expired — check the expiry date)
+- It hasn't been auto-revoked (some bank GitLab instances have token lifetime policies that kill long-lived PATs)
+- The scopes show `api` and `read_api`
+
+**3. Right token, right host**
+Confirm the token was created on the GitLab instance at `https://gitlab.sbi` and not a different one (you've mentioned migrating between two 18.1.6-EE instances — a token from the *source* instance won't authenticate against the *target*, and vice versa). This is a very common cause in your exact setup.
+
+**4. Header name exact**
+It must be `PRIVATE-TOKEN` (for a PAT). If you accidentally used `Authorization: Bearer ...` format for a PAT that also works, but mixing them up causes 401. For a PAT, stick with `PRIVATE-TOKEN`.
+
+**5. Try the Bearer form as a cross-check**
+```bash
+curl -k --header "Authorization: Bearer glpat-xxxxxxxxxxxx" https://gitlab.sbi/api/v4/user
+```
+If Bearer works but `PRIVATE-TOKEN` doesn't (or vice versa), that tells us something about how the token/proxy is configured.
+
+**6. Proxy interference (your environment)**
+On the bastion, an egress/intercepting proxy can strip or rewrite auth headers. Check:
+```bash
+echo $http_proxy $https_proxy
+```
+If those are set and routing `gitlab.sbi` through a proxy that doesn't expect the header, you'll get a 401 from the proxy, not GitLab. Since `gitlab.sbi` is internal, it should bypass the proxy:
+```bash
+curl -k --noproxy gitlab.sbi --header "PRIVATE-TOKEN: glpat-xxxxxxxxxxxx" https://gitlab.sbi/api/v4/user
+```
+
+That last one is worth trying early given your air-gapped/proxy history — a `{"message":"401 Unauthorized"}` that looks like GitLab's own JSON usually means GitLab rejected it, but a proxy can return a similar-looking body.
+
+Most likely culprit given your context: **wrong instance** (source vs. target) or **expired/revoked under bank token policy**. Run the `--noproxy` curl with the real token and tell me what comes back.
