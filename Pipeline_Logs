@@ -1,3 +1,544 @@
-curl -k \
---header "PRIVATE-TOKEN: <PAT>" \
-"https://gitlab.epay.sbi/api/v4/projects/<project_id>?statistics=true"
+#!/usr/bin/env python3
+
+import urllib.request
+import urllib.error
+import json
+import ssl
+import csv
+import sys
+import time
+from collections import defaultdict
+from datetime import datetime
+
+# ==========================================================
+# CONFIGURATION
+# ==========================================================
+
+GITLAB_URL = "https://gitlab.epay.sbi"
+TOKEN = "YOUR_PAT_TOKEN"
+GROUP_PATH = "epay"
+
+TXT_REPORT = "gitlab_export_report.txt"
+CSV_REPORT = "gitlab_export_report.csv"
+
+# ==========================================================
+# SSL
+# ==========================================================
+
+ssl_ctx = ssl._create_unverified_context()
+
+HEADERS = {
+    "PRIVATE-TOKEN": TOKEN
+}
+
+# ==========================================================
+# API Helper
+# ==========================================================
+
+def api_get(url):
+
+    req = urllib.request.Request(url)
+
+    for key, value in HEADERS.items():
+        req.add_header(key, value)
+
+    response = urllib.request.urlopen(
+        req,
+        context=ssl_ctx
+    )
+
+    return json.loads(response.read()), response
+
+
+# ==========================================================
+# Human Readable Size
+# ==========================================================
+
+def format_size(size_bytes):
+
+    size_bytes = int(size_bytes)
+
+    if size_bytes >= 1024 ** 4:
+        return f"{size_bytes / (1024 ** 4):.2f} TB"
+
+    elif size_bytes >= 1024 ** 3:
+        return f"{size_bytes / (1024 ** 3):.2f} GB"
+
+    elif size_bytes >= 1024 ** 2:
+        return f"{size_bytes / (1024 ** 2):.2f} MB"
+
+    elif size_bytes >= 1024:
+        return f"{size_bytes / 1024:.2f} KB"
+
+    return f"{size_bytes} B"
+
+
+# ==========================================================
+# Fetch All Projects
+# ==========================================================
+
+def get_all_projects():
+
+    projects = []
+    page = 1
+
+    while True:
+
+        url = (
+            f"{GITLAB_URL}/api/v4/groups/{GROUP_PATH}/projects"
+            f"?include_subgroups=true"
+            f"&per_page=100"
+            f"&page={page}"
+        )
+
+        data, response = api_get(url)
+
+        if not data:
+            break
+
+        projects.extend(data)
+
+        total_pages = int(
+            response.headers.get(
+                "X-Total-Pages",
+                "1"
+            )
+        )
+
+        if page >= total_pages:
+            break
+
+        page += 1
+
+    return projects
+
+
+# ==========================================================
+# Project Statistics
+# ==========================================================
+
+def get_project_statistics(project_id):
+
+    url = (
+        f"{GITLAB_URL}/api/v4/projects/"
+        f"{project_id}?statistics=true"
+    )
+
+    try:
+
+        data, _ = api_get(url)
+
+        stats = data.get("statistics", {})
+
+        repository_size = stats.get(
+            "repository_size",
+            0
+        )
+
+        wiki_size = stats.get(
+            "wiki_size",
+            0
+        )
+
+        snippets_size = stats.get(
+            "snippets_size",
+            0
+        )
+
+        lfs_size = stats.get(
+            "lfs_objects_size",
+            0
+        )
+
+        storage_size = stats.get(
+            "storage_size",
+            0
+        )
+
+        artifacts_size = stats.get(
+            "job_artifacts_size",
+            0
+        )
+
+        uploads_size = stats.get(
+            "uploads_size",
+            0
+        )
+
+        export_size = (
+            repository_size
+            + wiki_size
+            + snippets_size
+            + lfs_size
+        )
+
+        return {
+            "repository_size": repository_size,
+            "lfs_size": lfs_size,
+            "storage_size": storage_size,
+            "artifacts_size": artifacts_size,
+            "uploads_size": uploads_size,
+            "export_size": export_size
+        }
+
+    except Exception as e:
+
+        print(
+            f"Failed to fetch statistics "
+            f"for project {project_id}: {e}"
+        )
+
+        return {
+            "repository_size": 0,
+            "lfs_size": 0,
+            "storage_size": 0,
+            "artifacts_size": 0,
+            "uploads_size": 0,
+            "export_size": 0
+        }
+
+
+# ==========================================================
+# Main
+# ==========================================================
+
+def main():
+
+    if not TOKEN:
+
+        print("PAT token is missing")
+        sys.exit(1)
+
+    print("\nFetching repositories...\n")
+
+    projects = get_all_projects()
+
+    print(
+        f"Repositories Found: "
+        f"{len(projects)}"
+    )
+
+    groups = defaultdict(list)
+
+    overall_export_size = 0
+    overall_storage_size = 0
+
+    largest_repo_name = ""
+    largest_export_size = 0
+
+    csv_rows = []
+
+    for index, project in enumerate(
+        projects,
+        start=1
+    ):
+
+        full_path = project.get(
+            "path_with_namespace",
+            "N/A"
+        )
+
+        print(
+            f"[{index}/{len(projects)}] "
+            f"{full_path}"
+        )
+
+        stats = get_project_statistics(
+            project["id"]
+        )
+
+        time.sleep(0.05)
+
+        overall_export_size += stats[
+            "export_size"
+        ]
+
+        overall_storage_size += stats[
+            "storage_size"
+        ]
+
+        if stats["export_size"] > largest_export_size:
+
+            largest_export_size = stats[
+                "export_size"
+            ]
+
+            largest_repo_name = full_path
+
+        repo_name = full_path.split("/")[-1]
+
+        group_path = "/".join(
+            full_path.split("/")[:-1]
+        )
+
+        repo_record = {
+
+            "repo_name": repo_name,
+
+            "full_path": full_path,
+
+            "repository_size":
+                stats["repository_size"],
+
+            "lfs_size":
+                stats["lfs_size"],
+
+            "export_size":
+                stats["export_size"],
+
+            "storage_size":
+                stats["storage_size"],
+
+            "artifacts_size":
+                stats["artifacts_size"],
+
+            "uploads_size":
+                stats["uploads_size"],
+
+            "last_activity":
+                project.get(
+                    "last_activity_at",
+                    ""
+                )[:10]
+        }
+
+        groups[group_path].append(
+            repo_record
+        )
+
+        csv_rows.append([
+            group_path,
+            repo_name,
+            full_path,
+            format_size(
+                stats["export_size"]
+            ),
+            format_size(
+                stats["repository_size"]
+            ),
+            format_size(
+                stats["lfs_size"]
+            ),
+            format_size(
+                stats["storage_size"]
+            ),
+            format_size(
+                stats["artifacts_size"]
+            ),
+            format_size(
+                stats["uploads_size"]
+            ),
+            repo_record["last_activity"]
+        ])
+
+    # ======================================================
+    # CSV REPORT
+    # ======================================================
+
+    with open(
+        CSV_REPORT,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as csvfile:
+
+        writer = csv.writer(csvfile)
+
+        writer.writerow([
+            "Group",
+            "Repository",
+            "Full Path",
+            "Export Size",
+            "Repository Size",
+            "LFS Size",
+            "Storage Size",
+            "Artifacts Size",
+            "Uploads Size",
+            "Last Activity"
+        ])
+
+        writer.writerows(csv_rows)
+
+    # ======================================================
+    # TXT REPORT
+    # ======================================================
+
+    with open(
+        TXT_REPORT,
+        "w",
+        encoding="utf-8"
+    ) as report:
+
+        report.write(
+            "=" * 160 + "\n"
+        )
+
+        report.write(
+            "GitLab Export Assessment Report\n"
+        )
+
+        report.write(
+            "=" * 160 + "\n"
+        )
+
+        report.write(
+            f"Generated On : "
+            f"{datetime.now()}\n"
+        )
+
+        report.write(
+            f"Group        : "
+            f"{GROUP_PATH}\n"
+        )
+
+        report.write(
+            f"Repositories : "
+            f"{len(projects)}\n\n"
+        )
+
+        for group_name in sorted(
+            groups.keys()
+        ):
+
+            repos = groups[group_name]
+
+            repos.sort(
+                key=lambda x:
+                x["export_size"],
+                reverse=True
+            )
+
+            group_export_size = 0
+            group_storage_size = 0
+
+            report.write(
+                "\n" + "=" * 160 + "\n"
+            )
+
+            report.write(
+                f"GROUP : {group_name}\n"
+            )
+
+            report.write(
+                "=" * 160 + "\n\n"
+            )
+
+            report.write(
+                "{:<4} {:<40} {:>12} {:>12} {:>12} {:>12} {:>12}\n".format(
+                    "No",
+                    "Repository",
+                    "Export",
+                    "Repo",
+                    "LFS",
+                    "Storage",
+                    "Uploads"
+                )
+            )
+
+            report.write(
+                "-" * 160 + "\n"
+            )
+
+            for idx, repo in enumerate(
+                repos,
+                start=1
+            ):
+
+                group_export_size += (
+                    repo["export_size"]
+                )
+
+                group_storage_size += (
+                    repo["storage_size"]
+                )
+
+                report.write(
+                    "{:<4} {:<40} {:>12} {:>12} {:>12} {:>12} {:>12}\n".format(
+                        idx,
+                        repo["repo_name"][:40],
+                        format_size(
+                            repo["export_size"]
+                        ),
+                        format_size(
+                            repo["repository_size"]
+                        ),
+                        format_size(
+                            repo["lfs_size"]
+                        ),
+                        format_size(
+                            repo["storage_size"]
+                        ),
+                        format_size(
+                            repo["uploads_size"]
+                        )
+                    )
+                )
+
+            report.write(
+                "-" * 160 + "\n"
+            )
+
+            report.write(
+                f"Group Repository Count : "
+                f"{len(repos)}\n"
+            )
+
+            report.write(
+                f"Group Export Size      : "
+                f"{format_size(group_export_size)}\n"
+            )
+
+            report.write(
+                f"Group Storage Size     : "
+                f"{format_size(group_storage_size)}\n"
+            )
+
+        report.write(
+            "\n\n" + "=" * 160 + "\n"
+        )
+
+        report.write(
+            "OVERALL SUMMARY\n"
+        )
+
+        report.write(
+            "=" * 160 + "\n"
+        )
+
+        report.write(
+            f"Total Groups        : "
+            f"{len(groups)}\n"
+        )
+
+        report.write(
+            f"Total Repositories  : "
+            f"{len(projects)}\n"
+        )
+
+        report.write(
+            f"Total Export Size   : "
+            f"{format_size(overall_export_size)}\n"
+        )
+
+        report.write(
+            f"Total Storage Size  : "
+            f"{format_size(overall_storage_size)}\n"
+        )
+
+        report.write(
+            f"Largest Repository  : "
+            f"{largest_repo_name}\n"
+        )
+
+        report.write(
+            f"Largest Export Size : "
+            f"{format_size(largest_export_size)}\n"
+        )
+
+    print("\nDone")
+    print(f"TXT Report : {TXT_REPORT}")
+    print(f"CSV Report : {CSV_REPORT}")
+
+
+if __name__ == "__main__":
+    main()
