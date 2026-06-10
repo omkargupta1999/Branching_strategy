@@ -1,78 +1,61 @@
-D:\Mr Om\Python_script>pwd
-'pwd' is not recognized as an internal or external command,
-operable program or batch file.
+Good progress — two things are clear:
 
-D:\Mr Om\Python_script>cd 
+1. **curl path error** — your folder has a space: `D:\Mr Om\` not `D:\Mr_Om\` — that's why file not found.
+2. **JFrog needs authentication** — 401 means credentials required.
 
-D:\Mr Om\Python_script>cd 
+---
 
-D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Local
+## Fix 1 — Correct the download path (space in folder name)
 
-D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Localc
+Use quotes around the full output path:
 
-D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Local\Microsoft\WindowsApps
+```cmd
+curl -k -o "D:\Mr Om\Python_script\python-installer.exe" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
+```
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>cd \Users\v1021577\AppData\Local\Microsoft\WindowsApps  
-The system cannot find the path specified.
+---
 
-D:\Mr Om\Python_script>cd \v1021577\AppData\Local\Microsoft\WindowsApps      
-The system cannot find the path specified.
+## Fix 2 — JFrog needs your credentials
 
-D:\Mr Om\Python_script>dir
- Volume in drive D has no label.
- Volume Serial Number is AA5A-453E
+Use your SBI LDAP credentials with curl `-u` flag:
 
- Directory of D:\Mr Om\Python_script
+```cmd
+curl -k -u "v1021577:YOUR_PASSWORD" -o "D:\Mr Om\Python_script\python-installer.exe" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
+```
 
-09-06-2026  16:47    <DIR>          .
-09-06-2026  11:15    <DIR>          ..
-10-06-2026  12:42            16,442 apply_repo_governance.py
-09-06-2026  11:53            40,314 fetch_repos_audit.py
-09-06-2026  11:53            10,792 fetch_repo_tree.py
-10-06-2026  11:16               177 Gitlab Tokken
-09-06-2026  11:29    <DIR>          gitlab_audit_20260609_112503
-10-06-2026  11:16            12,395 gitlab_export_report.py
-09-06-2026  16:47             7,018 nesvdefbv
-09-06-2026  14:44             6,399 repo_details.py
-09-06-2026  11:21             3,322 user-details.py
-               8 File(s)         96,859 bytes
-               3 Dir(s)  468,430,663,680 bytes free
+Replace `YOUR_PASSWORD` with your actual Windows/LDAP password.
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
+---
 
-curl: (23) client returned ERROR on write of 91 bytes
+## Step 3 — First check what Python versions exist in JFrog
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/python-3.11.9-amd64.exe"
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
+Before downloading, list what's actually available:
 
-curl: (23) client returned ERROR on write of 91 bytes
+```cmd
+curl -k -u "v1021577:YOUR_PASSWORD" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/"
+```
 
-D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python/3.11.9/python-3.11.9-amd64.exe"
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
+Share the output — it'll show the exact folder structure and available files so we pick the right path.
 
-curl: (23) client returned ERROR on write of 91 bytes
+---
 
-D:\Mr Om\Python_script>curl -k "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/" 2>nul
-{
-  "errors" : [ {
-    "status" : 401,
-    "message" : "Authentication is required"
-  } ]
-}
-D:\Mr Om\Python_script>
+## Meanwhile — quickest workaround right now
+
+You already have your scripts in `D:\Mr Om\Python_script\` and your bastion has Python 3.6 working. **Run the script from bastion** — that's the cleanest path while Python gets sorted on Windows:
+
+```bash
+# On bastion
+cd /your/script/folder
+python3 apply_repo_governance.py --dry-run
+```
+
+The script was written for Python 3.6+ on RHEL specifically for this reason. Windows is just a convenience — bastion is your actual execution environment for GitLab API calls anyway since it has network access to `gitlab.epay.sbi` and `gitlab.sbi`.
+
+---
+
+**Two things to do right now — pick whichever is faster:**
+
+| Option | Action |
+|---|---|
+| **Quick** | Run script from bastion — already works |
+| **Proper fix** | Run the JFrog `curl` with credentials, share the directory listing |
