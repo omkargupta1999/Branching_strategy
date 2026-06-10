@@ -46,11 +46,11 @@ from datetime import datetime
 #  CONFIGURATION — Edit only this block
 # =============================================================================
 
-GITLAB_URL     = "https://gitlab.epay.sbi"   # Target GitLab instance
-TOKEN          = ""                            # Maintainer/Owner PAT (glpat-...)
+GITLAB_URL     = "https://gitlab.sbi"   # Target GitLab instance
+TOKEN          = "token"                            # Maintainer/Owner PAT (glpat-...)
 
 # Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/Epay_Admin_Service"
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_kms_service"
 
 # =============================================================================
 #  SPEC — Do not edit unless the governance master doc changes
@@ -398,3 +398,28 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+================================================================== terminal Output error ====================
+
+
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --dry-run
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_kms_service
+  Mode    : DRY-RUN
+  Time    : 2026-06-10 17:38:47
+=================================================================
+
+[ERROR] Project not found: itepaypg-sbiepay2/application/backend/epay_kms_service
+
+D:\Mr Om\Python_script>
+
+D:\Mr Om\Python_script>
+
+please fix the above issue 
