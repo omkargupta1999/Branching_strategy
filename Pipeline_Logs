@@ -1,161 +1,140 @@
-D:\Mr Om\Python_script>python311\python.exe find_ldap_groups.py
-=================================================================
-  Searching all subgroups under: itepaypg-sbiepay2
-=================================================================
+All 15 LDAP groups found. The issue is the script searches by short name but they live under `itepaypg-sbiepay2/ldap-membership/`. One fix needed — update `GROUP_NAMES` to use the full paths.
 
-  Direct subgroups found: 2
+---
 
-  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
-  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
+## Fix — update `apply_repo_governance.py` in VS Code
 
-=================================================================
-  Searching by keyword: ldap, epay-gitlab, bank, vendor
-=================================================================
+Open `apply_repo_governance.py`, find this section:
 
-=================================================================
-  Checking itepaypg-sbiepay2 subgroups (all levels)
-=================================================================
+```python
+GROUP_NAMES = [
+    "epay-gitlab-bank-app-owner",
+    "epay-gitlab-bank-app-maintainer",
+    "epay-gitlab-vendor-app-maintainer",
+    "epay-gitlab-vendor-app-lead",
+    "epay-gitlab-vendor-pm",
+]
+```
 
-  All visible groups (16 total):
+Replace it with the full paths **exactly as found**:
 
-  ID=2783    name=IT-EPAY-PG-SBIePay2                                 path=itepaypg-sbiepay2
-  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
-  ID=2793    name=Backend                                             path=itepaypg-sbiepay2/application/backend
-  ID=3468    name=Config                                              path=itepaypg-sbiepay2/application/config
-  ID=5087    name=Frontend                                            path=itepaypg-sbiepay2/application/frontend
-  ID=2860    name=Merchant Integration Support                        path=itepaypg-sbiepay2/application/merchant-integration-support
-  ID=2835    name=MerchantSimulator                                   path=itepaypg-sbiepay2/application/merchantsimulator
-  ID=2850    name=Postman Collection                                  path=itepaypg-sbiepay2/application/postman-collection
-  ID=2856    name=Project Documents                                   path=itepaypg-sbiepay2/application/project-documents
-  ID=2836    name=QA Automation                                       path=itepaypg-sbiepay2/application/qa-automation
-  ID=2819    name=SDKs                                                path=itepaypg-sbiepay2/application/sdks
-  ID=2828    name=Mobile SDK                                          path=itepaypg-sbiepay2/application/sdks/mobile-sdk
-  ID=5391    name=Server SDK                                          path=itepaypg-sbiepay2/application/sdks/server-sdk
-  ID=2858    name=Utilities                                           path=itepaypg-sbiepay2/application/utilities
-  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
-  ID=2785    name=DevOps                                              path=itepaypg-sbiepay2/infra/devops
+```python
+GROUP_NAMES = [
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm",
+]
+```
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>python311\python.exe find_ldap_groups.py
-=================================================================
-  Searching all subgroups under: itepaypg-sbiepay2
-=================================================================
+Also update the `APPROVAL_RULES` and `PROTECTED_BRANCHES` sections — the `"group"` field values must also use full paths:
 
-  Direct subgroups found: 4
+Find:
+```python
+PROTECTED_BRANCHES = [
+    {"name": "main",
+     "merge_groups": ["epay-gitlab-bank-app-maintainer", "epay-gitlab-bank-app-owner"]},
+    {"name": "develop",
+     "merge_groups": ["epay-gitlab-vendor-app-lead"]},
+    {"name": "release/*",
+     "merge_groups": ["epay-gitlab-vendor-app-maintainer"]},
+]
+```
 
-  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
-  ID=4868    name=Application-bridge                                  path=itepaypg-sbiepay2/application-bridge
-  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
-  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
+Replace with:
+```python
+PROTECTED_BRANCHES = [
+    {"name": "main",
+     "merge_groups": [
+         "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer",
+         "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner"
+     ]},
+    {"name": "develop",
+     "merge_groups": [
+         "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead"
+     ]},
+    {"name": "release/*",
+     "merge_groups": [
+         "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer"
+     ]},
+]
+```
 
-=================================================================
-  Searching by keyword: ldap, epay-gitlab, bank, vendor
-=================================================================
+Find the `APPROVAL_RULES` section and replace all `"group"` values:
 
-  --- keyword: 'ldap' ---
-  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
-  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
-  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
-  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
-  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
-  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
-  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
-  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
-  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
-  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
-  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
-  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
-  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
-  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
-  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
+```python
+APPROVAL_RULES = [
+    {"name": "Lead Approval",
+     "branch": "develop",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead",
+     "required": 1},
 
-  --- keyword: 'epay-gitlab' ---
-  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
-  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
-  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
-  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
-  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
-  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
-  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
-  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
-  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
-  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
-  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
-  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
-  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
-  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
+    {"name": "Release Gate - Lead",
+     "branch": "release/*",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead",
+     "required": 1},
 
-  --- keyword: 'bank-app' ---
-  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
-  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
+    {"name": "Release Gate - Architect",
+     "branch": "release/*",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer",
+     "required": 1},
 
-  --- keyword: 'vendor-app' ---
-  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
-  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
+    {"name": "Vendor Architect Sign-off",
+     "branch": "main",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer",
+     "required": 1},
 
-  --- keyword: 'LDAP' ---
-  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
-  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
-  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
-  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
-  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
-  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
-  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
-  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
-  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
-  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
-  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
-  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
-  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
-  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
-  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
+    {"name": "Vendor PM Approval (CAB gate)",
+     "branch": "main",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm",
+     "required": 1},
 
-=================================================================
-  Checking itepaypg-sbiepay2 subgroups (all levels)
-=================================================================
+    {"name": "Bank Maintainer Approval",
+     "branch": "main",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer",
+     "required": 1},
 
-  All visible groups (37 total):
+    {"name": "Bank PM Final Gate",
+     "branch": "main",
+     "group": "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner",
+     "required": 1},
+]
+```
 
-  ID=2783    name=IT-EPAY-PG-SBIePay2                                 path=itepaypg-sbiepay2
-  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
-  ID=4868    name=Application-bridge                                  path=itepaypg-sbiepay2/application-bridge
-  ID=4869    name=Backend                                             path=itepaypg-sbiepay2/application-bridge/backend
-  ID=4914    name=Config                                              path=itepaypg-sbiepay2/application-bridge/config
-  ID=4915    name=Frontend                                            path=itepaypg-sbiepay2/application-bridge/frontend
-  ID=4913    name=Utilities                                           path=itepaypg-sbiepay2/application-bridge/utilities
-  ID=2793    name=Backend                                             path=itepaypg-sbiepay2/application/backend
-  ID=3468    name=Config                                              path=itepaypg-sbiepay2/application/config
-  ID=5087    name=Frontend                                            path=itepaypg-sbiepay2/application/frontend
-  ID=2860    name=Merchant Integration Support                        path=itepaypg-sbiepay2/application/merchant-integration-support
-  ID=2835    name=MerchantSimulator                                   path=itepaypg-sbiepay2/application/merchantsimulator
-  ID=2850    name=Postman Collection                                  path=itepaypg-sbiepay2/application/postman-collection
-  ID=2856    name=Project Documents                                   path=itepaypg-sbiepay2/application/project-documents
-  ID=2836    name=QA Automation                                       path=itepaypg-sbiepay2/application/qa-automation
-  ID=2819    name=SDKs                                                path=itepaypg-sbiepay2/application/sdks
-  ID=2828    name=Mobile SDK                                          path=itepaypg-sbiepay2/application/sdks/mobile-sdk
-  ID=5391    name=Server SDK                                          path=itepaypg-sbiepay2/application/sdks/server-sdk
-  ID=2858    name=Utilities                                           path=itepaypg-sbiepay2/application/utilities
-  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
-  ID=2785    name=DevOps                                              path=itepaypg-sbiepay2/infra/devops
-  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
-  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
-  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
-  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
-  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
-  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
-  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
-  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
-  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
-  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
-  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
-  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
-  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
-  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
-  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
+Save the file (`Ctrl + S`).
 
-D:\Mr Om\Python_script> 
+---
+
+## Run dry-run again:
+
+```cmd
+python311\python.exe apply_repo_governance.py --dry-run
+```
+
+**Expected output this time:**
+
+```
+Resolving GitLab groups (read-only)...
+  itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner       -> 4953
+  itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer  -> 4954
+  itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer-> 4955
+  itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead      -> 4956
+  itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm            -> 4962
+
+=== Step 3: Protected Branch Rules ===
+  [dry-run] DELETE ...
+  [dry-run] POST  ...
+  protected 'main'      | push: No one | merge: bank-app-maintainer, bank-app-owner
+  protected 'develop'   | push: No one | merge: vendor-app-lead
+  protected 'release/*' | push: No one | merge: vendor-app-maintainer
+
+=== Step 4: MR Approval Rules ===
+  [dry-run] POST ...
+  created 'Lead Approval' ...
+  ...
+
+Done. Scope was project id=2600 only.
+```
+
+Share the output and if dry-run looks correct we go live with `--apply`.
