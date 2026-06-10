@@ -2,11 +2,19 @@ D:\Mr Om\Python_script> python311\python.exe apply_repo_governance.py --dry-run
 =================================================================
   GitLab Repo Governance
   Target  : https://gitlab.sbi
-  Project : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_key_managment
+  Project : itepaypg-sbiepay2/application/backend/epay_key_managment
   Mode    : DRY-RUN
-  Time    : 2026-06-10 16:31:43
+  Time    : 2026-06-10 16:33:51
 =================================================================
 
-[ERROR] Project not found: https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_key_managment
+Resolved project -> id=2754  path=itepaypg-sbiepay2/application/backend/epay_key_managment
 
-D:\Mr Om\Python_script>
+Resolving GitLab groups (read-only)...
+
+[ERROR] These GitLab groups could not be resolved:
+   - epay-gitlab-bank-app-owner
+   - epay-gitlab-bank-app-maintainer
+   - epay-gitlab-vendor-app-maintainer
+   - epay-gitlab-vendor-app-lead
+   - epay-gitlab-vendor-pm
+Aborting without making any changes.
