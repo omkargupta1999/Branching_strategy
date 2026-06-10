@@ -1,71 +1,89 @@
-D:\Mr Om\Python_script>dir
- Volume in drive D has no label.
- Volume Serial Number is AA5A-453E
+Python is working perfectly. 🎉 The only issue now is the TOKEN.
 
- Directory of D:\Mr Om\Python_script
+---
 
-10-06-2026  16:21    <DIR>          .
-09-06-2026  11:15    <DIR>          ..
-10-06-2026  12:42            16,442 apply_repo_governance.py
-09-06-2026  11:53            40,314 fetch_repos_audit.py
-09-06-2026  11:53            10,792 fetch_repo_tree.py
-10-06-2026  11:16               177 Gitlab Tokken
-09-06-2026  11:29    <DIR>          gitlab_audit_20260609_112503
-10-06-2026  11:16            12,395 gitlab_export_report.py
-09-06-2026  16:47             7,018 nesvdefbv
-10-06-2026  16:21        32,991,581 python-3.11.9-amd64.zip
-10-06-2026  16:11               163 python-installer.exe
-09-06-2026  14:44             6,399 repo_details.py
-09-06-2026  11:21             3,322 user-details.py
-              10 File(s)     33,088,603 bytes
-               3 Dir(s)  468,397,666,304 bytes free
+## Why 401 — three possible reasons
 
-D:\Mr Om\Python_script>cd "D:\Mr Om\Python_script"
+| Reason | How to check |
+|---|---|
+| TOKEN is empty or has a typo in the script | Open `apply_repo_governance.py` in VS Code |
+| Token was created on `gitlab.epay.sbi` but script points to `gitlab.sbi` | Token must be from the same instance |
+| Token exists but lacks the right scope/role | Need `api` scope + Maintainer/Owner on that project |
 
-D:\Mr Om\Python_script>mkdir python311
+---
 
-D:\Mr Om\Python_script>tar -xf python-3.11.9-amd64.zip -C python311
+## Step 1 — Check the token in your script
 
-D:\Mr Om\Python_script>python311\python.exe --version
-Python 3.11.9
+Open `apply_repo_governance.py` in VS Code and find this line near the top:
 
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --dry-run
-=================================================================
-  GitLab Repo Governance
-  Target  : https://gitlab.sbi
-  Project : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_key_managment
-  Mode    : DRY-RUN
-  Time    : 2026-06-10 16:23:47
-=================================================================
+```python
+TOKEN = ""
+```
 
-[ERROR] 401 Unauthorized — TOKEN invalid or empty.
+If it's empty — that's your issue. Fill it in:
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --dry-run
-=================================================================
-  GitLab Repo Governance
-  Target  : https://gitlab.sbi
-  Project : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_key_managment
-  Mode    : DRY-RUN
-  Time    : 2026-06-10 16:23:51
-=================================================================
+```python
+TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx"
+```
 
-[ERROR] 401 Unauthorized — TOKEN invalid or empty.
+---
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --dry-run
-=================================================================
-  GitLab Repo Governance
-  Target  : https://gitlab.sbi
-  Project : https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_key_managment
-  Mode    : DRY-RUN
-  Time    : 2026-06-10 16:23:54
-=================================================================
+## Step 2 — Generate a new token on gitlab.sbi
 
-[ERROR] 401 Unauthorized — TOKEN invalid or empty.
+Since your script target is `https://gitlab.sbi`, the token **must** come from `gitlab.sbi` — not `gitlab.epay.sbi`.
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script> 
+**Do this:**
+
+1. Open browser → go to `https://gitlab.sbi`
+2. Log in with your LDAP credentials (`v1021577`)
+3. Click your **avatar** (top-right) → **Edit profile**
+4. Left sidebar → **Access Tokens**
+5. Click **Add new token**
+6. Fill in:
+
+| Field | Value |
+|---|---|
+| Token name | `governance-script` |
+| Expiration | 30 days from today |
+| Scopes | ✅ `api` |
+
+7. Click **Create personal access token**
+8. **Copy the token immediately** — it shows only once, starts with `glpat-`
+
+---
+
+## Step 3 — Verify the token works before running the script
+
+Run this in CMD to test the token directly:
+
+```cmd
+curl -k -H "PRIVATE-TOKEN: glpat-your-token-here" "https://gitlab.sbi/api/v4/user"
+```
+
+**Expected good response:**
+```json
+{"id": 178, "username": "v1021577", "name": "Omkar Gupta", ...}
+```
+
+**If you get 401 still** — token was copied incorrectly or created on wrong instance.
+
+---
+
+## Step 4 — Also verify you have the right role on that project
+
+```cmd
+curl -k -H "PRIVATE-TOKEN: glpat-your-token-here" "https://gitlab.sbi/api/v4/projects/itepaypg-sbiepay2%2Fapplication%2Fbackend%2Fepay_key_managment"
+```
+
+Check the response for:
+```json
+"permissions": {
+  "project_access": {"access_level": 40}
+}
+```
+
+`40` = Maintainer, `50` = Owner — either works. If it shows `30` (Developer) or lower, you won't be able to apply protected branch rules — ask Ranu Jain or Neeraj Durgapal (both admins) to either elevate your role or run the script.
+
+---
+
+**Share the output of the `curl` test in Step 3** and I'll confirm exactly what's wrong.
