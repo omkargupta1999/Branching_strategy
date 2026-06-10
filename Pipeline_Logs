@@ -1,76 +1,92 @@
-D:\Mr Om\Python_script>py --version
-********************************************************************************
-Installing Python 3.14.5.
-Downloading: ⏸️
-[ERROR] An error occurred. Please check any output above, or the log file, and try again.
-Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260610155705_21856.log
-If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
-To see all available commands, run 'py help'
-********************************************************************************
-[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
+Crystal clear now. The `python.exe` in `WindowsApps` is a **Microsoft Store stub** — it's not real Python, it just tries to download from internet and fails in air-gapped env.
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>where python 
-C:\Users\v1021577\AppData\Local\Microsoft\WindowsApps\python.exe
+**Root fix: disable the stub, then install Python from JFrog.**
 
-D:\Mr Om\Python_script>
+---
 
-D:\Mr Om\Python_script>
+## Step 1 — Disable the Microsoft Store Python stub (no admin needed)
 
-D:\Mr Om\Python_script>C:\Users\v1021577\AppData\Local\Microsoft\WindowsApps\python.exe --version
-********************************************************************************
-Installing Python 3.14.5.
-Downloading: ⏸️
-[ERROR] An error occurred. Please check any output above, or the log file, and try again.
-Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260610155800_26040.log
-If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
-To see all available commands, run 'py help'
-********************************************************************************
-[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
+```cmd
+cd %USERPROFILE%\AppData\Local\Microsoft\WindowsApps
+ren python.exe python.exe.bak
+ren python3.exe python3.exe.bak
+```
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>C:\Users\v1021577\AppData\Local\Microsoft\WindowsApps\python.exe --version
-********************************************************************************
-Installing Python 3.14.5.
-Downloading: ⏸️
-[ERROR] An error occurred. Please check any output above, or the log file, and try again.
-Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260610155825_19608.log
-If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
-To see all available commands, run 'py help'
-********************************************************************************
-[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
+This removes the fake stub without needing admin rights.
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
+---
 
+## Step 2 — Download Python offline installer from JFrog
 
+Run this in CMD — it downloads the Python installer directly from your JFrog:
 
+```cmd
+curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
+```
 
+If that path doesn't exist, try these alternate common JFrog paths:
 
+```cmd
+curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/python-3.11.9-amd64.exe"
+```
 
+```cmd
+curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python/3.11.9/python-3.11.9-amd64.exe"
+```
 
+---
 
+## Step 3 — Check what's actually in JFrog first
 
-_________________________________________ Jfrog python repo details
+Before downloading blindly, check what Python packages exist in your JFrog repo:
 
+```cmd
+curl -k "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/" 2>nul
+```
 
-itepaypg-sbiepay2-python-virtual
-General
-Info
+This will list the directory contents — share what you see and I'll give you the exact download path.
 
-Name:	
-itepaypg-sbiepay2-python-virtual
-Package Type:	
-PyPI
-Repository Path:	
-itepaypg-sbiepay2-python-virtual/
-File URL:	
-https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/
-Repository Layout:	
-simple-default
-Description:	
- 
-Virtual Repository Associations
+---
 
-Included Repositories
+## Step 4 — Install Python without admin (per-user install)
 
+Once you have `python-installer.exe`:
+
+```cmd
+python-installer.exe /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
+```
+
+Key flags explained:
+
+| Flag | Meaning |
+|---|---|
+| `InstallAllUsers=0` | Installs for your user only — **no admin needed** |
+| `PrependPath=1` | Adds Python to your PATH automatically |
+| `Include_test=0` | Skips test suite — smaller install |
+
+---
+
+## Step 5 — Verify after install
+
+Close CMD completely, reopen, then:
+
+```cmd
+python --version
+```
+
+Expected: `Python 3.11.9`
+
+---
+
+## If JFrog doesn't have Python installer
+
+Ask your colleague **Vishnu Gehlot** (he's on the same platform team) or your IT team to either:
+
+1. Upload `python-3.11.9-amd64.exe` to JFrog at path `itepaypg-sbiepay2-python-virtual/`
+2. OR copy the `.exe` from the bastion to your Windows machine via your internal file share
+
+The bastion already has Python 3.6 working — the installer must exist somewhere on your internal network.
+
+---
+
+**First thing to do right now — run Step 3** (the `curl` listing command) and share what it returns. That tells us exactly what's available in JFrog.
