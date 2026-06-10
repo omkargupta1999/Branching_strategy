@@ -1,8 +1,21 @@
-REM 1. Can the token read the project as expected? (should already work)
-curl -k --header "PRIVATE-TOKEN: <token>" "https://gitlab.sbi/api/v4/projects/2823" 
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py          
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_key_managment
+  Mode    : APPLY
+  Time    : 2026-06-10 19:01:32
+=================================================================
 
-REM 2. What access level does this token actually have ON THIS PROJECT?
-curl -k --header "PRIVATE-TOKEN: <token>" "https://gitlab.sbi/api/v4/projects/2823/members/all"
+Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
 
-REM 3. The exact call that's failing — delete protected branch 'main'
-curl -k --request DELETE --header "PRIVATE-TOKEN: <token>" "https://gitlab.sbi/api/v4/projects/2823/protected_branches/main"
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
+
+=== Step 3: Protected Branch Rules ===
+
+[ERROR] HTTP 400 on POST https://gitlab.sbi/api/v4/projects/2823/protected_branches -> {"error":"allowed_to_merge is invalid"}
