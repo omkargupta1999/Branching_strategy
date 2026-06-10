@@ -1,1 +1,74 @@
-https://sbionline.sharepoint.com/:f:/s/EPAY_VKG/IgDFK5xJZo5LS4kLzS0C2u0iATBfbQMCZlgdHcqmSXggb9E?e=CNc9Sz
+Clear picture now. The JFrog repo contains **PyPI packages** (those hex folders like `00/`, `0a/` etc. are PyPI cache structure) — **not a Python installer**. That's why the download is only 91/163 bytes — it's just an error HTML response, not an actual `.exe`.
+
+**This JFrog repo cannot give us Python itself.** We need a different approach.
+
+---
+
+## Fastest solution — embeddable Python (no install, no admin needed)
+
+There is an **embeddable zip** version of Python — no installer, no admin, just unzip and use. Get it from any internet machine and copy it over.
+
+**On any internet-connected machine, download this single file:**
+```
+https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.zip
+```
+Size: ~10 MB. Copy to `D:\Mr Om\Python_script\` via USB or internal share.
+
+---
+
+## Then on your Windows machine — 4 commands, done
+
+**Step 1 — Unzip it:**
+```cmd
+cd "D:\Mr Om\Python_script"
+mkdir python311
+tar -xf python-3.11.9-amd64.zip -C python311
+```
+
+> `tar` is built into Windows 10/11 — no tools needed.
+
+**Step 2 — Verify it works:**
+```cmd
+python311\python.exe --version
+```
+Expected: `Python 3.11.9`
+
+**Step 3 — Run your script directly with full path:**
+```cmd
+python311\python.exe apply_repo_governance.py --dry-run
+```
+
+That's it. No installation. No admin. No PATH changes needed.
+
+---
+
+## Alternative — copy Python from bastion to Windows
+
+Your bastion has Python 3.6 working. If you have a shared drive between bastion and Windows:
+
+```bash
+# On bastion — find where Python lives
+which python3
+# Usually: /usr/bin/python3 or /usr/local/bin/python3
+```
+
+But honestly the embeddable zip is cleaner and faster.
+
+---
+
+## Right now — two parallel actions
+
+| Action | Who |
+|---|---|
+| Ask Vishnu Gehlot or any colleague with internet access to download `python-3.11.9-amd64.zip` (~10MB) and share it on internal network | You |
+| Meanwhile — run the script from bastion now | You |
+
+**Running from bastion is the immediate path forward.** Your script has zero dependencies, already tested on RHEL Python 3.6. The Windows setup is a convenience — not a blocker.
+
+```bash
+# On bastion right now:
+cd /path/to/your/scripts
+python3 apply_repo_governance.py --dry-run
+```
+
+Share the dry-run output from bastion and we can proceed with the actual governance apply.
