@@ -1,100 +1,161 @@
-Now the picture is completely clear. The LDAP groups are **not visible** in your token's group search because they are nested inside `itepaypg-sbiepay2` as subgroups — and your token may not have visibility into them. Also the group names may be different from what the script expects.
+D:\Mr Om\Python_script>python311\python.exe find_ldap_groups.py
+=================================================================
+  Searching all subgroups under: itepaypg-sbiepay2
+=================================================================
 
----
+  Direct subgroups found: 2
 
-## Step 1 — Find the actual LDAP group names
+  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
+  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
 
-Run this to search inside your top-level group specifically:
+=================================================================
+  Searching by keyword: ldap, epay-gitlab, bank, vendor
+=================================================================
 
-```cmd
-python311\python.exe -c "import urllib.request,json,ssl; ssl_ctx=ssl._create_unverified_context(); req=urllib.request.Request('https://gitlab.sbi/api/v4/groups/itepaypg-sbiepay2/subgroups?per_page=100&all_available=true'); req.add_header('PRIVATE-TOKEN','glpat-zzGKdsrRgYsTuTSYsMtM'); resp=urllib.request.urlopen(req,context=ssl_ctx); [print(f'ID={g[chr(105)+chr(100)]:<6} path={g[chr(102)+chr(117)+chr(108)+chr(108)+chr(95)+chr(112)+chr(97)+chr(116)+chr(104)]}') for g in json.loads(resp.read())]"
-```
+=================================================================
+  Checking itepaypg-sbiepay2 subgroups (all levels)
+=================================================================
 
-Actually — save as a file, easier. In VS Code create `find_ldap_groups.py`:
+  All visible groups (16 total):
 
-```python
-import urllib.request, json, ssl
+  ID=2783    name=IT-EPAY-PG-SBIePay2                                 path=itepaypg-sbiepay2
+  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
+  ID=2793    name=Backend                                             path=itepaypg-sbiepay2/application/backend
+  ID=3468    name=Config                                              path=itepaypg-sbiepay2/application/config
+  ID=5087    name=Frontend                                            path=itepaypg-sbiepay2/application/frontend
+  ID=2860    name=Merchant Integration Support                        path=itepaypg-sbiepay2/application/merchant-integration-support
+  ID=2835    name=MerchantSimulator                                   path=itepaypg-sbiepay2/application/merchantsimulator
+  ID=2850    name=Postman Collection                                  path=itepaypg-sbiepay2/application/postman-collection
+  ID=2856    name=Project Documents                                   path=itepaypg-sbiepay2/application/project-documents
+  ID=2836    name=QA Automation                                       path=itepaypg-sbiepay2/application/qa-automation
+  ID=2819    name=SDKs                                                path=itepaypg-sbiepay2/application/sdks
+  ID=2828    name=Mobile SDK                                          path=itepaypg-sbiepay2/application/sdks/mobile-sdk
+  ID=5391    name=Server SDK                                          path=itepaypg-sbiepay2/application/sdks/server-sdk
+  ID=2858    name=Utilities                                           path=itepaypg-sbiepay2/application/utilities
+  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
+  ID=2785    name=DevOps                                              path=itepaypg-sbiepay2/infra/devops
 
-GITLAB_URL = "https://gitlab.sbi"
-TOKEN      = "glpat-zzGKdsrRgYsTuTSYsMtM"
-TOP_GROUP  = "itepaypg-sbiepay2"
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>python311\python.exe find_ldap_groups.py
+=================================================================
+  Searching all subgroups under: itepaypg-sbiepay2
+=================================================================
 
-ssl_ctx = ssl._create_unverified_context()
+  Direct subgroups found: 4
 
-def get(url):
-    req = urllib.request.Request(url)
-    req.add_header("PRIVATE-TOKEN", TOKEN)
-    resp = urllib.request.urlopen(req, context=ssl_ctx)
-    return json.loads(resp.read())
+  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
+  ID=4868    name=Application-bridge                                  path=itepaypg-sbiepay2/application-bridge
+  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
+  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
 
-# Search all subgroups recursively
-print("=" * 65)
-print(f"  Searching all subgroups under: {TOP_GROUP}")
-print("=" * 65)
+=================================================================
+  Searching by keyword: ldap, epay-gitlab, bank, vendor
+=================================================================
 
-url = f"{GITLAB_URL}/api/v4/groups/{TOP_GROUP}/subgroups?per_page=100&all_available=true"
-subgroups = get(url)
+  --- keyword: 'ldap' ---
+  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
+  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
+  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
+  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
+  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
+  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
+  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
+  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
+  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
+  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
+  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
+  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
+  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
+  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
+  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
+  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
 
-print(f"\n  Direct subgroups found: {len(subgroups)}\n")
-for g in subgroups:
-    print(f"  ID={g['id']:<6}  name={g['name']:<50}  path={g['full_path']}")
+  --- keyword: 'epay-gitlab' ---
+  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
+  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
+  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
+  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
+  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
+  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
+  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
+  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
+  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
+  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
+  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
+  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
+  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
+  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
+  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
 
-# Also search by keyword
-print("\n" + "=" * 65)
-print("  Searching by keyword: ldap, epay-gitlab, bank, vendor")
-print("=" * 65)
+  --- keyword: 'bank-app' ---
+  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
+  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
 
-for keyword in ["ldap", "epay-gitlab", "bank-app", "vendor-app", "LDAP"]:
-    url = f"{GITLAB_URL}/api/v4/groups?search={keyword}&per_page=50"
-    results = get(url)
-    if results:
-        print(f"\n  --- keyword: '{keyword}' ---")
-        for g in results:
-            print(f"  ID={g['id']:<6}  name={g['name']:<50}  path={g['full_path']}")
+  --- keyword: 'vendor-app' ---
+  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
+  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
+  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
 
-# Also check LDAP-membership group specifically
-print("\n" + "=" * 65)
-print("  Checking itepaypg-sbiepay2 subgroups (all levels)")
-print("=" * 65)
+  --- keyword: 'LDAP' ---
+  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
+  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
+  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
+  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
+  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
+  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
+  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
+  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
+  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
+  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
+  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
+  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
+  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
+  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
+  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
+  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
 
-url2 = f"{GITLAB_URL}/api/v4/groups?per_page=100&all_available=true"
-req2 = urllib.request.Request(url2)
-req2.add_header("PRIVATE-TOKEN", TOKEN)
-resp2 = urllib.request.urlopen(req2, context=ssl_ctx)
-all_groups = json.loads(resp2.read())
+=================================================================
+  Checking itepaypg-sbiepay2 subgroups (all levels)
+=================================================================
 
-print(f"\n  All visible groups ({len(all_groups)} total):\n")
-for g in sorted(all_groups, key=lambda x: x.get("full_path", "")):
-    print(f"  ID={g['id']:<6}  name={g['name']:<50}  path={g['full_path']}")
-```
+  All visible groups (37 total):
 
-Run it:
-```cmd
-python311\python.exe find_ldap_groups.py
-```
+  ID=2783    name=IT-EPAY-PG-SBIePay2                                 path=itepaypg-sbiepay2
+  ID=2791    name=Application                                         path=itepaypg-sbiepay2/application
+  ID=4868    name=Application-bridge                                  path=itepaypg-sbiepay2/application-bridge
+  ID=4869    name=Backend                                             path=itepaypg-sbiepay2/application-bridge/backend
+  ID=4914    name=Config                                              path=itepaypg-sbiepay2/application-bridge/config
+  ID=4915    name=Frontend                                            path=itepaypg-sbiepay2/application-bridge/frontend
+  ID=4913    name=Utilities                                           path=itepaypg-sbiepay2/application-bridge/utilities
+  ID=2793    name=Backend                                             path=itepaypg-sbiepay2/application/backend
+  ID=3468    name=Config                                              path=itepaypg-sbiepay2/application/config
+  ID=5087    name=Frontend                                            path=itepaypg-sbiepay2/application/frontend
+  ID=2860    name=Merchant Integration Support                        path=itepaypg-sbiepay2/application/merchant-integration-support
+  ID=2835    name=MerchantSimulator                                   path=itepaypg-sbiepay2/application/merchantsimulator
+  ID=2850    name=Postman Collection                                  path=itepaypg-sbiepay2/application/postman-collection
+  ID=2856    name=Project Documents                                   path=itepaypg-sbiepay2/application/project-documents
+  ID=2836    name=QA Automation                                       path=itepaypg-sbiepay2/application/qa-automation
+  ID=2819    name=SDKs                                                path=itepaypg-sbiepay2/application/sdks
+  ID=2828    name=Mobile SDK                                          path=itepaypg-sbiepay2/application/sdks/mobile-sdk
+  ID=5391    name=Server SDK                                          path=itepaypg-sbiepay2/application/sdks/server-sdk
+  ID=2858    name=Utilities                                           path=itepaypg-sbiepay2/application/utilities
+  ID=2784    name=Infra                                               path=itepaypg-sbiepay2/infra
+  ID=2785    name=DevOps                                              path=itepaypg-sbiepay2/infra/devops
+  ID=4949    name=LDAP-membership                                     path=itepaypg-sbiepay2/ldap-membership
+  ID=4954    name=epay-gitlab-bank-app-maintainer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer
+  ID=4953    name=epay-gitlab-bank-app-owner                          path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
+  ID=4960    name=epay-gitlab-bank-infra-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-maintainer
+  ID=4959    name=epay-gitlab-bank-infra-owner                        path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-infra-owner
+  ID=4952    name=epay-gitlab-planner                                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner
+  ID=4951    name=epay-gitlab-reporter                                path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter
+  ID=4965    name=epay-gitlab-techm-app-developer                     path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-developer
+  ID=4964    name=epay-gitlab-techm-app-maintainer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-techm-app-maintainer
+  ID=4957    name=epay-gitlab-vendor-app-developer                    path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer
+  ID=4956    name=epay-gitlab-vendor-app-lead                         path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
+  ID=4955    name=epay-gitlab-vendor-app-maintainer                   path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer
+  ID=4958    name=epay-gitlab-vendor-infra-developer                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-developer
+  ID=4961    name=epay-gitlab-vendor-infra-maintainer                 path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-infra-maintainer
+  ID=4962    name=epay-gitlab-vendor-pm                               path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm
+  ID=4950    name=epay-gitlab-vendor-release-manager                  path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager
 
----
-
-## What we expect to find
-
-Based on what you described — LDAP groups created under `itepaypg-sbiepay2 > LDAP-membership` — the actual paths are probably something like:
-
-```
-itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner
-itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead
-...
-```
-
-Once we see the actual paths from the output, I will update **exactly these lines** in `apply_repo_governance.py`:
-
-```python
-GROUP_NAMES = [
-    "epay-gitlab-bank-app-owner",        # ← will update to actual path
-    "epay-gitlab-bank-app-maintainer",   # ← will update to actual path
-    "epay-gitlab-vendor-app-maintainer", # ← will update to actual path
-    "epay-gitlab-vendor-app-lead",       # ← will update to actual path
-    "epay-gitlab-vendor-pm",             # ← will update to actual path
-]
-```
-
-Share the output of `find_ldap_groups.py` and I'll give you the exact fix in one go.
+D:\Mr Om\Python_script> 
