@@ -1,26 +1,88 @@
-import urllib.request, json, ssl
+D:\Mr Om\Python_script>python311\python.exe test.py --dry-run
+Total groups found: 16
 
-GITLAB_URL = "https://gitlab.sbi"
-TOKEN      = "glpat-zzGKdsrRgYsTuTSYsMtM"
+  ID=2783    name=IT-EPAY-PG-SBIePay2                            path=itepaypg-sbiepay2
+  ID=2791    name=Application                                    path=itepaypg-sbiepay2/application
+  ID=2793    name=Backend                                        path=itepaypg-sbiepay2/application/backend
+  ID=3468    name=Config                                         path=itepaypg-sbiepay2/application/config
+  ID=5087    name=Frontend                                       path=itepaypg-sbiepay2/application/frontend
+  ID=2860    name=Merchant Integration Support                   path=itepaypg-sbiepay2/application/merchant-integration-support
+  ID=2835    name=MerchantSimulator                              path=itepaypg-sbiepay2/application/merchantsimulator
+  ID=2850    name=Postman Collection                             path=itepaypg-sbiepay2/application/postman-collection
+  ID=2856    name=Project Documents                              path=itepaypg-sbiepay2/application/project-documents
+  ID=2836    name=QA Automation                                  path=itepaypg-sbiepay2/application/qa-automation
+  ID=2819    name=SDKs                                           path=itepaypg-sbiepay2/application/sdks
+  ID=2828    name=Mobile SDK                                     path=itepaypg-sbiepay2/application/sdks/mobile-sdk
+  ID=5391    name=Server SDK                                     path=itepaypg-sbiepay2/application/sdks/server-sdk
+  ID=2858    name=Utilities                                      path=itepaypg-sbiepay2/application/utilities
+  ID=2784    name=Infra                                          path=itepaypg-sbiepay2/infra
+  ID=2785    name=DevOps                                         path=itepaypg-sbiepay2/infra/devops
 
-ssl_ctx = ssl._create_unverified_context()
-page    = 1
-groups  = []
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>python311\python.exe test.py          
+Total groups found: 16
 
-while True:
-    url = f"{GITLAB_URL}/api/v4/groups?per_page=100&page={page}&all_available=true"
-    req = urllib.request.Request(url)
-    req.add_header("PRIVATE-TOKEN", TOKEN)
-    resp = urllib.request.urlopen(req, context=ssl_ctx)
-    data = json.loads(resp.read())
-    if not data:
-        break
-    groups.extend(data)
-    if page >= int(resp.headers.get("X-Total-Pages", "1")):
-        break
-    page += 1
+  ID=2783    name=IT-EPAY-PG-SBIePay2                            path=itepaypg-sbiepay2
+  ID=2791    name=Application                                    path=itepaypg-sbiepay2/application
+  ID=2793    name=Backend                                        path=itepaypg-sbiepay2/application/backend
+  ID=3468    name=Config                                         path=itepaypg-sbiepay2/application/config
+  ID=5087    name=Frontend                                       path=itepaypg-sbiepay2/application/frontend
+  ID=2860    name=Merchant Integration Support                   path=itepaypg-sbiepay2/application/merchant-integration-support
+  ID=2835    name=MerchantSimulator                              path=itepaypg-sbiepay2/application/merchantsimulator
+  ID=2850    name=Postman Collection                             path=itepaypg-sbiepay2/application/postman-collection
+  ID=2856    name=Project Documents                              path=itepaypg-sbiepay2/application/project-documents
+  ID=2836    name=QA Automation                                  path=itepaypg-sbiepay2/application/qa-automation
+  ID=2819    name=SDKs                                           path=itepaypg-sbiepay2/application/sdks
+  ID=2828    name=Mobile SDK                                     path=itepaypg-sbiepay2/application/sdks/mobile-sdk
+  ID=5391    name=Server SDK                                     path=itepaypg-sbiepay2/application/sdks/server-sdk
+  ID=2858    name=Utilities                                      path=itepaypg-sbiepay2/application/utilities
+  ID=2784    name=Infra                                          path=itepaypg-sbiepay2/infra
+  ID=2785    name=DevOps                                         path=itepaypg-sbiepay2/infra/devops
 
-print(f"Total groups found: {len(groups)}")
-print()
-for g in sorted(groups, key=lambda x: x.get("full_path", "")):
-    print(f"  ID={g['id']:<6}  name={g['name']:<45}  path={g['full_path']}")
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script> python311\python.exe apply_repo_governance.py --dry-run
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_admin_service
+  Mode    : DRY-RUN
+  Time    : 2026-06-10 16:50:50
+=================================================================
+
+Resolved project -> id=2600  path=itepaypg-sbiepay2/application/backend/epay_admin_service
+
+Resolving GitLab groups (read-only)...
+
+[ERROR] These GitLab groups could not be resolved:
+   - epay-gitlab-bank-app-owner
+   - epay-gitlab-bank-app-maintainer
+   - epay-gitlab-vendor-app-maintainer
+   - epay-gitlab-vendor-app-lead
+   - epay-gitlab-vendor-pm
+Aborting without making any changes.
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script> python311\python.exe apply_repo_governance.py --dry-run
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_admin_service
+  Mode    : DRY-RUN
+  Time    : 2026-06-10 16:51:04
+=================================================================
+
+Resolved project -> id=2600  path=itepaypg-sbiepay2/application/backend/epay_admin_service
+
+Resolving GitLab groups (read-only)...
+
+[ERROR] These GitLab groups could not be resolved:
+   - epay-gitlab-bank-app-owner
+   - epay-gitlab-bank-app-maintainer
+   - epay-gitlab-vendor-app-maintainer
+   - epay-gitlab-vendor-app-lead
+   - epay-gitlab-vendor-pm
+Aborting without making any changes.
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script> 
