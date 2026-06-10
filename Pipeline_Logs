@@ -1,10 +1,81 @@
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --dry-run
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_key_managment
+  Mode    : DRY-RUN
+  Time    : 2026-06-10 18:48:15
+=================================================================
+
+Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
+
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
+
+=== Step 3: Protected Branch Rules ===
+  'main' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/main
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "main", "push_access_level": 0, "allow_force_push": "false", "allowed_to_merge[0][group_id]": 4954, "allowed_to_merge[1][group_id]": 4953}
+  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner
+  'develop' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/develop
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "develop", "push_access_level": 0, "allow_force_push": "false", "allowed_to_merge[0][group_id]": 4956}
+  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead
+  'release/*' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/release%2F%2A
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "release/*", "push_access_level": 0, "allow_force_push": "false", "allowed_to_merge[0][group_id]": 4955}
+  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-maintainer
+
+=== Step 4: MR Approval Rules ===
+  [reconcile] would delete any existing rule not in spec (dry-run cannot list live rules reliably; see real run)
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Lead Approval", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4956], "protected_branch_ids[]": ["<pb-id:develop>"]}
+  created 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Release Gate - Lead", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4956], "protected_branch_ids[]": ["<pb-id:release/*>"]}
+  created 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Release Gate - Architect", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4955], "protected_branch_ids[]": ["<pb-id:release/*>"]}
+  created 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Vendor Architect Sign-off", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4955], "protected_branch_ids[]": ["<pb-id:main>"]}
+  created 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Vendor PM Approval (CAB gate)", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4962], "protected_branch_ids[]": ["<pb-id:main>"]}
+  created 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Bank Maintainer Approval", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4954], "protected_branch_ids[]": ["<pb-id:main>"]}
+  created 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Bank PM Final Gate", "approvals_required": 1, "rule_type": "regular", "group_ids[]": [4953], "protected_branch_ids[]": ["<pb-id:main>"]}
+  created 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
+
+=== Step 5: Project Settings ===
+    [dry-run] PUT https://gitlab.sbi/api/v4/projects/2823
+              payload: {"only_allow_merge_if_pipeline_succeeds": "true"}
+  'Pipelines must succeed before merge' = enabled
+
+Done. Scope was project id=2823 only.
+
+  -> governance_epay_key_managment_20260610_184815.txt written.
+  READ-ONLY: no changes made to GitLab.
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
 D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py          
 =================================================================
   GitLab Repo Governance
   Target  : https://gitlab.sbi
   Project : itepaypg-sbiepay2/application/backend/epay_key_managment
   Mode    : APPLY
-  Time    : 2026-06-10 18:34:46
+  Time    : 2026-06-10 18:48:31
 =================================================================
 
 Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
@@ -22,3 +93,7 @@ Validating GitLab group IDs (read-only)...
 [ERROR] 403 Forbidden — token lacks scope/role on this project.
 
 D:\Mr Om\Python_script>
+
+
+Here i am using the token account with owner access and api access ...............
+
