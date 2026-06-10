@@ -1,92 +1,78 @@
-Crystal clear now. The `python.exe` in `WindowsApps` is a **Microsoft Store stub** — it's not real Python, it just tries to download from internet and fails in air-gapped env.
+D:\Mr Om\Python_script>pwd
+'pwd' is not recognized as an internal or external command,
+operable program or batch file.
 
-**Root fix: disable the stub, then install Python from JFrog.**
+D:\Mr Om\Python_script>cd 
 
----
+D:\Mr Om\Python_script>cd 
 
-## Step 1 — Disable the Microsoft Store Python stub (no admin needed)
+D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Local
 
-```cmd
-cd %USERPROFILE%\AppData\Local\Microsoft\WindowsApps
-ren python.exe python.exe.bak
-ren python3.exe python3.exe.bak
-```
+D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Localc
 
-This removes the fake stub without needing admin rights.
+D:\Mr Om\Python_script>cd C:\Users\v1021577\AppData\Local\Microsoft\WindowsApps
 
----
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>cd \Users\v1021577\AppData\Local\Microsoft\WindowsApps  
+The system cannot find the path specified.
 
-## Step 2 — Download Python offline installer from JFrog
+D:\Mr Om\Python_script>cd \v1021577\AppData\Local\Microsoft\WindowsApps      
+The system cannot find the path specified.
 
-Run this in CMD — it downloads the Python installer directly from your JFrog:
+D:\Mr Om\Python_script>dir
+ Volume in drive D has no label.
+ Volume Serial Number is AA5A-453E
 
-```cmd
-curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
-```
+ Directory of D:\Mr Om\Python_script
 
-If that path doesn't exist, try these alternate common JFrog paths:
+09-06-2026  16:47    <DIR>          .
+09-06-2026  11:15    <DIR>          ..
+10-06-2026  12:42            16,442 apply_repo_governance.py
+09-06-2026  11:53            40,314 fetch_repos_audit.py
+09-06-2026  11:53            10,792 fetch_repo_tree.py
+10-06-2026  11:16               177 Gitlab Tokken
+09-06-2026  11:29    <DIR>          gitlab_audit_20260609_112503
+10-06-2026  11:16            12,395 gitlab_export_report.py
+09-06-2026  16:47             7,018 nesvdefbv
+09-06-2026  14:44             6,399 repo_details.py
+09-06-2026  11:21             3,322 user-details.py
+               8 File(s)         96,859 bytes
+               3 Dir(s)  468,430,663,680 bytes free
 
-```cmd
-curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/python-3.11.9-amd64.exe"
-```
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python-3.11.9-amd64.exe"
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
 
-```cmd
-curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python/3.11.9/python-3.11.9-amd64.exe"
-```
+curl: (23) client returned ERROR on write of 91 bytes
 
----
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/python-3.11.9-amd64.exe"
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
 
-## Step 3 — Check what's actually in JFrog first
+curl: (23) client returned ERROR on write of 91 bytes
 
-Before downloading blindly, check what Python packages exist in your JFrog repo:
+D:\Mr Om\Python_script>curl -k -o D:\Mr_Om\Python_script\python-installer.exe "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/packages/python/3.11.9/python-3.11.9-amd64.exe"
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0Warning: Failed to open the file D:\Mr_Om\Python_script\python-installer.exe: The system cannot find the file specified.
 
-```cmd
-curl -k "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/" 2>nul
-```
+curl: (23) client returned ERROR on write of 91 bytes
 
-This will list the directory contents — share what you see and I'll give you the exact download path.
-
----
-
-## Step 4 — Install Python without admin (per-user install)
-
-Once you have `python-installer.exe`:
-
-```cmd
-python-installer.exe /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
-```
-
-Key flags explained:
-
-| Flag | Meaning |
-|---|---|
-| `InstallAllUsers=0` | Installs for your user only — **no admin needed** |
-| `PrependPath=1` | Adds Python to your PATH automatically |
-| `Include_test=0` | Skips test suite — smaller install |
-
----
-
-## Step 5 — Verify after install
-
-Close CMD completely, reopen, then:
-
-```cmd
-python --version
-```
-
-Expected: `Python 3.11.9`
-
----
-
-## If JFrog doesn't have Python installer
-
-Ask your colleague **Vishnu Gehlot** (he's on the same platform team) or your IT team to either:
-
-1. Upload `python-3.11.9-amd64.exe` to JFrog at path `itepaypg-sbiepay2-python-virtual/`
-2. OR copy the `.exe` from the bastion to your Windows machine via your internal file share
-
-The bastion already has Python 3.6 working — the installer must exist somewhere on your internal network.
-
----
-
-**First thing to do right now — run Step 3** (the `curl` listing command) and share what it returns. That tells us exactly what's available in JFrog.
+D:\Mr Om\Python_script>curl -k "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-python-virtual/" 2>nul
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Authentication is required"
+  } ]
+}
+D:\Mr Om\Python_script>
