@@ -1,19 +1,26 @@
-D:\Mr Om\Python_script>python311\python.exe -c "import urllib.request, json, sslGITLAB_URL = 'https://gitlab.sbi'TOKEN = 'glpat-zzGKdsrRgYsTuTSYsMtM'ssl_ctx = ssl._create_unverified_context()page = 1all_groups = []while True:    url = f'{GITLAB_URL}/api/v4/groups?per_page=100&page={page}&all_available=true'    req = urllib.request.Request(url)    req.add_header('PRIVATE-TOKEN', TOKEN)    resp = urllib.request.urlopen(req, context=ssl_ctx)    data = json.loads(resp.read())    if not data: break    all_groups.extend(data)    if page >= int(resp.headers.get('X-Total-Pages','1')): break    page += 1print(f'Total groups found: {len(all_groups)}')print()for g in sorted(all_groups, key=lambda x: x.get('full_path','')):    print(f'  ID={g[\"id\"]:<6} path={g[\"full_path\"]}')
-  File "<string>", line 1
-    import urllib.request, json, sslGITLAB_URL = 'https://gitlab.sbi'TOKEN = 'glpat-zzGKdsrRgYsTuTSYsMtM'ssl_ctx = ssl._create_unverified_context()page = 1all_groups = []while True:    url = f'{GITLAB_URL}/api/v4/groups?per_page=100&page={page}&all_available=true'    req = urllib.request.Request(url)    req.add_header('PRIVATE-TOKEN', TOKEN)    resp = urllib.request.urlopen(req, context=ssl_ctx)    data = json.loads(resp.read())    if not data: break    all_groups.extend(data)    if page >= int(resp.headers.get('X-Total-Pages','1')): break    page += 1print(f'Total groups found: {len(all_groups)}')print()for g in sorted(all_groups, key=lambda x: x.get('full_path','')):    print(f'  ID={g["id"]:<6} path={g["full_path"]}')
-                                                                                                                                                          ^
-SyntaxError: invalid decimal literal
+import urllib.request, json, ssl
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>for g in sorted(all_groups, key=lambda x: x.get('full_path','')):
-D:\Mr Om\Python_script>vi test.py
-'vi' is not recognized as an internal or external command,
-operable program or batch file.
+GITLAB_URL = "https://gitlab.sbi"
+TOKEN      = "glpat-zzGKdsrRgYsTuTSYsMtM"
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
+ssl_ctx = ssl._create_unverified_context()
+page    = 1
+groups  = []
+
+while True:
+    url = f"{GITLAB_URL}/api/v4/groups?per_page=100&page={page}&all_available=true"
+    req = urllib.request.Request(url)
+    req.add_header("PRIVATE-TOKEN", TOKEN)
+    resp = urllib.request.urlopen(req, context=ssl_ctx)
+    data = json.loads(resp.read())
+    if not data:
+        break
+    groups.extend(data)
+    if page >= int(resp.headers.get("X-Total-Pages", "1")):
+        break
+    page += 1
+
+print(f"Total groups found: {len(groups)}")
+print()
+for g in sorted(groups, key=lambda x: x.get("full_path", "")):
+    print(f"  ID={g['id']:<6}  name={g['name']:<45}  path={g['full_path']}")
