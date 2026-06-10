@@ -1,10 +1,10 @@
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --verify 
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py          
 =================================================================
   GitLab Repo Governance
   Target  : https://gitlab.sbi
   Project : itepaypg-sbiepay2/application/backend/epay_key_managment
-  Mode    : VERIFY
-  Time    : 2026-06-10 18:33:44
+  Mode    : APPLY
+  Time    : 2026-06-10 18:34:46
 =================================================================
 
 Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
@@ -16,17 +16,9 @@ Validating GitLab group IDs (read-only)...
   epay-gitlab-vendor-app-lead -> 4956
   epay-gitlab-vendor-pm -> 4962
 
-=== VERIFY (read-only) ===
-Protected branches:
-  main: push=[{'id': 2756, 'access_level': 40, 'access_level_description': 'Maintainers', 'deploy_key_id': None, 'user_id': None, 'group_id': None}] | merge groups=[]
-  develop: push=[{'id': 2757, 'access_level': 40, 'access_level_description': 'Maintainers', 'deploy_key_id': None, 'user_id': None, 'group_id': None}] | merge groups=[]
-  release/*: push=[{'id': 2758, 'access_level': 40, 'access_level_description': 'Maintainers', 'deploy_key_id': None, 'user_id': None, 'group_id': None}] | merge groups=[]
-Approval rules:
-  Approver Rule- develop: required=1 | groups=[] | branches=['develop']
-  Release Approvals: required=1 | groups=[] | branches=['release/*']
-Pipelines must succeed: False
+=== Step 3: Protected Branch Rules ===
+  'main' already protected -> deleting to re-apply cleanly
 
-Done. Scope was project id=2823 only.
+[ERROR] 403 Forbidden — token lacks scope/role on this project.
 
-  -> governance_epay_key_managment_20260610_183344.txt written.
-  READ-ONLY: no changes made to GitLab.
+D:\Mr Om\Python_script>
