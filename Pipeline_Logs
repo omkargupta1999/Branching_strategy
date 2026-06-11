@@ -1,37 +1,183 @@
-You're absolutely right to push back on that — I was too quick to blame the token type. Let me look at the actual evidence instead of theorizing.
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --batch repos_to_apply.txt --dry-run
+=================================================================
+  BATCH MODE — 2 repos — FAIL-STOP on first error
+  File: repos_to_apply.txt
+=================================================================
 
-You're correct: push rules **worked on this exact repo (2823)** in your run at 12:34 today. The verify showed both regexes persisted. If the token type were the problem, it would have failed *then* too. So my "wrong token type" explanation doesn't fit the facts.
+#################################################################
+#  BATCH 1/2: 2823
+#################################################################
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : 2823
+  Mode    : DRY-RUN
+  Time    : 2026-06-11 15:28:49
+=================================================================
 
-Let me reconsider what actually changed between the working run and now:
+Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
 
-**The working run (12:34):** single-repo mode, push rules created and confirmed.
-**Now (14:58):** batch mode, 403 on the push_rule GET.
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
 
-Same repo, same script logic for Step 2, roughly two hours apart. The two things that could differ:
+=== Step 1: Group Invites (project share) ===
+  'epay-gitlab-bank-app-owner' already shared at level 50 -> skip
+  'epay-gitlab-bank-app-maintainer' already shared at level 40 -> skip
+  'epay-gitlab-vendor-app-maintainer' already shared at level 40 -> skip
+  'epay-gitlab-vendor-release-manager' already shared at level 30 -> skip
+  'epay-gitlab-vendor-app-lead' already shared at level 30 -> skip
+  'epay-gitlab-vendor-app-developer' already shared at level 30 -> skip
+  'epay-gitlab-vendor-pm' already shared at level 20 -> skip
 
-1. **The token changed between 12:34 and 14:58.** When you replaced the script file with the batch version, the `TOKEN` field came blank (`TOKEN = ""`) and you re-pasted a token. If what you pasted now differs from what was there at 12:34 — even by a trailing space, or a different token entirely — that fully explains it. The 12:34 token worked; the 14:58 token 403s. **This is the most likely cause given the timeline.**
+=== Step 2: Push Rules ===
+    [dry-run] would update push rules
+    branch_name_regex   : ^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
+    commit_message_regex: ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
 
-2. **A token expiry/policy kicked in** in those two hours (some bank instances expire tokens aggressively, or an admin policy revoked it).
+=== Step 3: Protected Branch Rules ===
+  'main' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/main
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "main", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4954}, {"group_id": 4953}]}
+  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner
+  'develop' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/develop
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "develop", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4956}]}
+  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead
+  'release/*' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/release%2F%2A
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
+              payload: {"name": "release/*", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4955}]}
+  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-maintainer
 
-Both point to the **token value currently in the script being different from the one that worked at 12:34** — not the token *type*. You had a working token. The question is whether the script still has that same working value.
+=== Step 4: MR Approval Rules ===
+  [reconcile] would delete any existing rule not in spec (dry-run cannot list live rules reliably; see real run)
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Lead Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:develop>"]}
+  created 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Release Gate - Lead", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:release/*>"]}
+  created 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Release Gate - Architect", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:release/*>"]}
+  created 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Vendor Architect Sign-off", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Vendor PM Approval (CAB gate)", "approvals_required": 1, "rule_type": "regular", "group_ids": [4962], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Bank Maintainer Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4954], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
+              payload: {"name": "Bank PM Final Gate", "approvals_required": 1, "rule_type": "regular", "group_ids": [4953], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
 
-So before creating anything new, let's verify whether the *currently pasted* token is the same one that worked. Two quick checks:
+=== Step 5: Project Settings ===
+    [dry-run] PUT https://gitlab.sbi/api/v4/projects/2823
+              payload: {"only_allow_merge_if_pipeline_succeeds": "true"}
+  'Pipelines must succeed before merge' = enabled
 
-**Check 1 — does the current token work for ANY write-ish call, or is it 403 everywhere?**
-```bat
-curl -k -i --header "PRIVATE-TOKEN: <current-token>" "https://gitlab.sbi/api/v4/user"
-```
-- `200` with your user JSON → token is valid and authenticates fine.
-- `401` → token is expired/invalid (regenerate).
+Done. Scope was project id=2823 only.
 
-**Check 2 — the actual permission, on this project:**
-```bat
-curl -k -i --header "PRIVATE-TOKEN: <current-token>" "https://gitlab.sbi/api/v4/projects/2823/members/all"
-```
-Look for the token-user's `access_level`. If it's 40 or 50, the token has the role; if push_rule still 403s with a valid 40/50 token, then it's genuinely something else.
+#################################################################
+#  BATCH 2/2: 2600
+#################################################################
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : 2600
+  Mode    : DRY-RUN
+  Time    : 2026-06-11 15:28:52
+=================================================================
 
-Here's the thing I should have asked first: **is the token in the script right now byte-for-byte the same as the one you used at 12:34?** If you're not sure — and you said you're not — the simplest test is to **paste the 12:34 token back in** (if you still have it) and re-run. If it works, mystery solved: the current value was wrong.
+Resolved project -> id=2600  path=itepaypg-sbiepay2/application/backend/epay_admin_service
 
-If you genuinely can't tell which token was the working one, then yes — creating a fresh personal access token (the steps I gave) is the clean reset. But that's a *recovery* step, not because the token *type* was wrong. The type was fine at 12:34 and would be fine now with the same value.
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
 
-Run Check 1 (`/api/v4/user`) and tell me the status — that instantly distinguishes "expired/invalid token" (401) from "valid token, permission issue" (200 but 403 on push_rule). That's the fork that decides whether you regenerate or dig deeper.
+=== Step 1: Group Invites (project share) ===
+  'epay-gitlab-bank-app-owner' already shared at level 50 -> skip
+  'epay-gitlab-bank-app-maintainer' already shared at level 40 -> skip
+  'epay-gitlab-vendor-app-maintainer' already shared at level 40 -> skip
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
+              payload: {"group_id": 4950, "group_access": 30}
+  shared 'epay-gitlab-vendor-release-manager' (id=4950) at access level 30
+  'epay-gitlab-vendor-app-lead' already shared at level 30 -> skip
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
+              payload: {"group_id": 4957, "group_access": 30}
+  shared 'epay-gitlab-vendor-app-developer' (id=4957) at access level 30
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
+              payload: {"group_id": 4962, "group_access": 20}
+  shared 'epay-gitlab-vendor-pm' (id=4962) at access level 20
+
+=== Step 2: Push Rules ===
+    [dry-run] would update push rules
+    branch_name_regex   : ^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
+    commit_message_regex: ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
+
+=== Step 3: Protected Branch Rules ===
+  'main' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/main
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
+              payload: {"name": "main", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4954}, {"group_id": 4953}]}
+  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner
+  'develop' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/develop
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
+              payload: {"name": "develop", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4956}]}
+  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead
+  'release/*' already protected -> deleting to re-apply cleanly
+    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/release%2F%2A
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
+              payload: {"name": "release/*", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4955}]}
+  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-maintainer
+
+=== Step 4: MR Approval Rules ===
+  [reconcile] would delete any existing rule not in spec (dry-run cannot list live rules reliably; see real run)
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Lead Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:develop>"]}
+  created 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Release Gate - Lead", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:release/*>"]}
+  created 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Release Gate - Architect", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:release/*>"]}
+  created 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Vendor Architect Sign-off", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Vendor PM Approval (CAB gate)", "approvals_required": 1, "rule_type": "regular", "group_ids": [4962], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Bank Maintainer Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4954], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
+    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
+              payload: {"name": "Bank PM Final Gate", "approvals_required": 1, "rule_type": "regular", "group_ids": [4953], "protected_branch_ids": ["<pb-id:main>"]}
+  created 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
+
+=== Step 5: Project Settings ===
+    [dry-run] PUT https://gitlab.sbi/api/v4/projects/2600
+              payload: {"only_allow_merge_if_pipeline_succeeds": "true"}
+  'Pipelines must succeed before merge' = enabled
+
+Done. Scope was project id=2600 only.
+
+=================================================================
+  BATCH COMPLETE — 2/2 repos succeeded
+=================================================================
+  OK  itepaypg-sbiepay2/application/backend/epay_key_managment (id=2823)
+  OK  itepaypg-sbiepay2/application/backend/epay_admin_service (id=2600)
+
+  -> governance_BATCH_20260611_152849.txt written (consolidated batch audit log).
