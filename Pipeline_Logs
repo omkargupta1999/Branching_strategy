@@ -1,16 +1,1 @@
-D:\Mr Om\Python_script>curl -k -i --request POST --header "PRIVATE-TOKEN: " ^  "https://gitlab.sbi/api/v4/projects/2823/push_rules" ^  --data "branch_name_regex=^(main|develop)$"
-HTTP/1.1 404 Not Found
-Server: nginx
-Date: Thu, 11 Jun 2026 06:54:41 GMT
-Content-Type: application/json
-Content-Length: 25
-Connection: keep-alive
-Cache-Control: no-cache
-Nel: {"max_age": 0}
-Vary: Origin
-X-Content-Type-Options: nosniff
-X-Frame-Options: SAMEORIGIN
-X-Gitlab-Meta: {"correlation_id":"01KTTQCB2MT1VZQJZ2EVAWHK21","version":"1"}
-X-Request-Id: 01KTTQCB2MT1VZQJZ2EVAWHK21
-X-Runtime: 0.012751
-Strict-Transport-Security: max-age=63072000
+curl -k -i --request POST --header "PRIVATE-TOKEN: glpat-yourrealtoken" "https://gitlab.sbi/api/v4/projects/2823/push_rules" --data "branch_name_regex=^(main|develop)$"
