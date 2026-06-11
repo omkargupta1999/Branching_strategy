@@ -1,3 +1,42 @@
+Getting below error while trying to run the below script to gitlab.fyi token have owner access of that group..
+
+
+D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py
+=================================================================
+  GitLab Repo Governance
+  Target  : https://gitlab.sbi
+  Project : itepaypg-sbiepay2/application/backend/epay_key_managment
+  Mode    : APPLY
+  Time    : 2026-06-11 11:19:01
+=================================================================
+
+Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
+
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
+
+=== Step 3: Protected Branch Rules ===
+
+[ERROR] HTTP 422 on POST https://gitlab.sbi/api/v4/projects/2823/protected_branches -> {"message":["Merge access levels group does not have access to the project"]}
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+
+
+
+
+
+
+
+
+=============================================================================================================================================================================
+
+
 #!/usr/bin/env python3
 """
 =============================================================================
@@ -46,11 +85,11 @@ from datetime import datetime
 #  CONFIGURATION — Edit only this block
 # =============================================================================
 
-GITLAB_URL     = "https://gitlab.epay.sbi"   # Target GitLab instance
-TOKEN          = ""                            # Maintainer/Owner PAT (glpat-...)
+GITLAB_URL     = "https://gitlab.sbi"   # Target GitLab instance
+TOKEN          = ""                       # Maintainer/Owner PAT (glpat-...)
 
 # Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/Epay_Admin_Service"
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_key_managment"
 
 # =============================================================================
 #  SPEC — Do not edit unless the governance master doc changes
