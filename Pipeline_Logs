@@ -128,13 +128,18 @@ def lvl(n):
     return "{} ({})".format(n, ACCESS_LEVELS.get(n, "Custom/Unknown"))
 
 
+def _username_is_bot(uname):
+    """True if a username looks like a GitLab bot/service account."""
+    uname = uname or ""
+    return uname.startswith("group_") or uname.startswith("project_") \
+        or "_bot_" in uname
+
+
 def is_bot(member):
     """Heuristic: GitLab bots/service accounts."""
     if member.get("bot"):
         return True
-    uname = (member.get("username") or "")
-    return uname.startswith("group_") or uname.startswith("project_") \
-        or "_bot_" in uname
+    return _username_is_bot(member.get("username"))
 
 
 # ---------------------------------------------------------------------------
@@ -150,43 +155,84 @@ def get_direct_members(token, project_id):
     """
     /projects/:id/members  -> DIRECT members only (the 'Direct member by *' set).
     Does NOT include inherited or shared-group members.
+    NOTE: the LIST endpoint omits 'created_by'; we enrich per-member below.
     """
     return api_get(token, "projects/{}/members".format(project_id))
+
+
+def get_member_detail(token, project_id, user_id):
+    """
+    /projects/:id/members/:user_id -> single direct member, INCLUDING the
+    'created_by' object (who added them). Returns the dict, or {} on error.
+    """
+    try:
+        return api_get(token, "projects/{}/members/{}".format(project_id, user_id))
+    except RuntimeError:
+        return {}
 
 
 def list_direct_members(token, project_id):
     members = get_direct_members(token, project_id)
     members.sort(key=lambda m: (-m.get("access_level", 0), m.get("username", "")))
 
-    print("\n" + "=" * 74)
-    print("DIRECT MEMBERS of project id={}".format(project_id))
-    print("=" * 74)
-    print("{:<3} {:<28} {:<14} {:<10} {}".format(
-        "#", "username", "role", "kind", "name"))
-    print("-" * 74)
+    print("\nEnriching {} members with 'added by' (created_by) data...".format(len(members)))
+    print("(one extra API call per member -- please wait)\n")
 
-    removable, skipped = [], []
-    for i, m in enumerate(members, 1):
+    # Enrich each member with created_by via the single-member endpoint.
+    enriched = []
+    for m in members:
+        detail = get_member_detail(token, project_id, m["id"])
+        m["_created_by"] = detail.get("created_by")  # dict or None
+        enriched.append(m)
+
+    print("=" * 90)
+    print("DIRECT MEMBERS of project id={}".format(project_id))
+    print("=" * 90)
+    print("{:<3} {:<26} {:<11} {:<8} {:<26} {}".format(
+        "#", "username", "role", "kind", "added_by", "name"))
+    print("-" * 90)
+
+    removable, kept = [], []
+    for i, m in enumerate(enriched, 1):
         bot = is_bot(m)
-        kind = "BOT/SVC" if bot else "human"
-        print("{:<3} @{:<27} {:<14} {:<10} {}".format(
+        cb = m.get("_created_by") or {}
+        cb_user = cb.get("username")
+        cb_is_human = bool(cb_user) and not _username_is_bot(cb_user)
+
+        # Decide: remove only if THIS member is human AND was added by a human.
+        if bot and SKIP_BOTS:
+            target = False
+            reason = "BOT/SVC (kept)"
+        elif cb_is_human:
+            target = True
+            reason = "by @{}".format(cb_user)
+        elif cb_user:
+            target = False
+            reason = "by @{} (bot, kept)".format(cb_user)
+        else:
+            target = False
+            reason = "system/LDAP (kept)"
+
+        print("{:<3} @{:<25} {:<11} {:<8} {:<26} {}".format(
             i,
             m.get("username", "?"),
             ACCESS_LEVELS.get(m.get("access_level", 0), "?"),
-            kind,
+            "BOT" if bot else "human",
+            reason[:26],
             m.get("name", "?"),
         ))
-        if bot and SKIP_BOTS:
-            skipped.append(m)
-        else:
-            removable.append(m)
 
-    print("-" * 74)
-    print("Total direct members : {}".format(len(members)))
-    print("Will target for removal: {}".format(len(removable)))
-    print("Protected (bot/svc, kept): {}".format(len(skipped)))
-    print("=" * 74)
-    return removable, skipped
+        if target:
+            removable.append(m)
+        else:
+            kept.append(m)
+
+    print("-" * 90)
+    print("Total direct members      : {}".format(len(members)))
+    print("TARGET (added by a human) : {}".format(len(removable)))
+    print("KEPT (system/LDAP/bot)    : {}".format(len(kept)))
+    print("=" * 90)
+    return removable, kept
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +308,7 @@ def main():
         sys.exit(3)
 
     # Phase 1
-    removable, _skipped = list_direct_members(token, pid)
+    removable, _kept = list_direct_members(token, pid)
 
     if not removable:
         print("\nNothing to remove. Exiting.")
