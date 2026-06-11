@@ -177,6 +177,27 @@ def get_project_shared_groups(token, project_id):
     return []
 
 
+def get_group_ldap_links(token, group_id):
+    """
+    LDAP group links attached DIRECTLY to this group (EE only).
+    A grant that looks 'DIRECT' but is actually LDAP-driven will correspond
+    to one of these. Returns [] if endpoint unavailable / no links / no perm.
+    """
+    try:
+        return api_get(token, "groups/{}/ldap_group_links".format(group_id))
+    except RuntimeError:
+        # 404 (no links) or 403 (insufficient perm) -- non-fatal for the audit
+        return []
+
+
+def get_group_shared_with(token, group_id):
+    """Other groups this group has been shared with (group-to-group share)."""
+    g = api_get(token, "groups/{}".format(group_id))
+    if isinstance(g, dict):
+        return g.get("shared_with_groups", []) or []
+    return []
+
+
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
@@ -209,14 +230,26 @@ def report_group(token, group, depth):
     else:
         print(pad + "        (no members)")
 
-    # projects directly under this group
-    for proj in get_group_projects(token, gid):
-        report_project(token, proj, depth + 1)
+    # LDAP group links attached at THIS level -- the source of LDAP-driven grants
+    for link in get_group_ldap_links(token, gid):
+        cn = link.get("cn") or link.get("filter") or "?"
+        prov = link.get("provider", "?")
+        acc = link.get("group_access", 0)
+        print("{p}        [LDAP-LINK] cn={cn} provider={prov}  ->  {acc}".format(
+            p=pad, cn=cn, prov=prov, acc=lvl(acc)))
 
-    # recurse subgroups
+    # Group-to-group shares landing at this group
+    for sg in get_group_shared_with(token, gid):
+        print("{p}        [SHARED-GROUP] {name} (id={gid})  ->  {acc}".format(
+            p=pad,
+            name=sg.get("group_full_path", sg.get("group_name", "?")),
+            gid=sg.get("group_id"),
+            acc=lvl(sg.get("group_access_level", 0)),
+        ))
+
+    # recurse subgroups (subgroups endpoint already returns full_path + id)
     for sub in get_subgroups(token, gid):
-        full_sub = get_group(token, sub["id"])  # full obj for full_path
-        report_group(token, full_sub, depth + 1)
+        report_group(token, sub, depth + 1)
 
 
 def report_project(token, proj, depth):
@@ -277,7 +310,7 @@ def trace_user(token, root_group, username):
                     bucket = "direct" if m["id"] in pdir else "inherited"
                     hits[bucket].append(("PROJECT", proj["path_with_namespace"], m.get("access_level", 0)))
         for sub in get_subgroups(token, gid):
-            walk_group(get_group(token, sub["id"]), depth + 1)
+            walk_group(sub, depth + 1)
 
     walk_group(root_group, 0)
 
