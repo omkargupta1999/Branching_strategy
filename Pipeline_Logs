@@ -1,11 +1,3 @@
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --batch repos_to_apply.txt --dry-run
-usage: apply_repo_governance.py [-h] [--project PROJECT] [--dry-run] [--verify]
-apply_repo_governance.py: error: unrecognized arguments: --batch repos_to_apply.txt
-
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>type 
-D:\Mr Om\Python_script>type apply_repo_governance.py 
 #!/usr/bin/env python3
 """
 =============================================================================
@@ -21,7 +13,7 @@ D:\Mr Om\Python_script>type apply_repo_governance.py
                NAMES -> numeric IDs. No group/subgroup endpoint is ever
                written to, so nothing leaks to the other repos.
 
- Dependencies: NONE ΓÇö Python standard library only (no pip required)
+ Dependencies: NONE — Python standard library only (no pip required)
                Works on Python 3.6+ / RHEL air-gapped environment.
 
  Modes       :
@@ -30,8 +22,8 @@ D:\Mr Om\Python_script>type apply_repo_governance.py
    --verify   Read current state only. No changes.
 
  Output      :
-   Console   ΓÇö Live log printed to terminal
-   governance_<repo>_<timestamp>.txt ΓÇö Full run log
+   Console   — Live log printed to terminal
+   governance_<repo>_<timestamp>.txt — Full run log
 
  Usage       :
    1. Set TOKEN, GITLAB_URL, TARGET_PROJECT below (or pass --project).
@@ -51,17 +43,17 @@ import argparse
 from datetime import datetime
 
 # =============================================================================
-#  CONFIGURATION ΓÇö Edit only this block
+#  CONFIGURATION — Edit only this block
 # =============================================================================
 
-GITLAB_URL     = "https://gitlab.sbi"   # Target GitLab instance
-TOKEN          = ""                       # Maintainer/Owner PAT (glpat-...)
+GITLAB_URL     = "https://gitlab.epay.sbi"   # Target GitLab instance
+TOKEN          = ""                            # Maintainer/Owner PAT (glpat-...)
 
 # Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_key_managment"
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/Epay_Admin_Service"
 
 # =============================================================================
-#  SPEC ΓÇö Do not edit unless the governance master doc changes
+#  SPEC — Do not edit unless the governance master doc changes
 # =============================================================================
 
 # GitLab access-level integers
@@ -82,7 +74,7 @@ GROUP_IDS = {
     "epay-gitlab-vendor-pm":             4962,
 }
 
-# Step 1 ΓÇö Group invites (project share). GitLab requires a group to be a
+# Step 1 — Group invites (project share). GitLab requires a group to be a
 # MEMBER of the project before it can be used in a protected-branch merge rule
 # (else: 422 "Merge access levels group does not have access to the project").
 # This mirrors the manual process: invite group -> assign role -> then protect.
@@ -104,7 +96,7 @@ GROUP_INVITES = [
     {"name": "epay-gitlab-vendor-pm",              "id": 4962, "access": REPORTER_LVL},
 ]
 
-# Step 2 ΓÇö Push rules (project-level: POST/PUT /projects/:id/push_rule).
+# Step 2 — Push rules (project-level: POST/PUT /projects/:id/push_rule).
 # branch_name_regex enforces the allowed branch naming scheme; commit_message_regex
 # enforces Conventional-Commits + EPAY ticket suffix. Raw strings so backslashes
 # are passed to GitLab verbatim (Re2 syntax on the server side).
@@ -118,7 +110,7 @@ PUSH_RULES = {
         r"(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$",
 }
 
-# Step 3 ΓÇö Protected branches.  push = No one ; merge = listed groups only.
+# Step 3 — Protected branches.  push = No one ; merge = listed groups only.
 PROTECTED_BRANCHES = [
     {"name": "main",
      "merge_groups": ["epay-gitlab-bank-app-maintainer", "epay-gitlab-bank-app-owner"]},
@@ -128,7 +120,7 @@ PROTECTED_BRANCHES = [
      "merge_groups": ["epay-gitlab-vendor-app-maintainer"]},
 ]
 
-# Step 4 ΓÇö MR approval rules (project-level, Ultimate). One group per rule.
+# Step 4 — MR approval rules (project-level, Ultimate). One group per rule.
 #   Flow 5 (hotfix/* -> main) reuses the SAME 4 'main' rules (hotfix MRs also
 #   target main), so no separate hotfix rules are needed. Lead absent from
 #   main => "Lead NOT required for hotfix" is satisfied.
@@ -197,10 +189,10 @@ def _request(method, url, data=None, dry_run=False, as_json=False):
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")
         if e.code == 401:
-            log("\n[ERROR] 401 Unauthorized ΓÇö TOKEN invalid or empty.")
+            log("\n[ERROR] 401 Unauthorized — TOKEN invalid or empty.")
             sys.exit(1)
         if e.code == 403:
-            log("\n[ERROR] 403 Forbidden ΓÇö token lacks scope/role on this project.")
+            log("\n[ERROR] 403 Forbidden — token lacks scope/role on this project.")
             sys.exit(1)
         if e.code == 404:
             return None   # let callers treat 404 as 'not found'
@@ -215,7 +207,7 @@ def api_get(path, params=None):
     return _request("GET", url)
 
 def api_get_all(path, params=None):
-    """Paginated GET ΓÇö returns the full list across pages."""
+    """Paginated GET — returns the full list across pages."""
     results, page = [], 1
     base = f"{GITLAB_URL}/api/v4{path}"
     while True:
@@ -296,7 +288,7 @@ def resolve_groups(_unused=None):
     return resolved
 
 # =============================================================================
-#  STEP 1 ΓÇö GROUP INVITES (project share)
+#  STEP 1 — GROUP INVITES (project share)
 # =============================================================================
 
 def apply_group_invites(pid, dry_run):
@@ -320,7 +312,7 @@ def apply_group_invites(pid, dry_run):
         log(f"  shared '{name}' (id={gid}) at access level {lvl}")
 
 # =============================================================================
-#  STEP 2 ΓÇö PUSH RULES
+#  STEP 2 — PUSH RULES
 # =============================================================================
 
 def apply_push_rules(pid, dry_run):
@@ -365,7 +357,7 @@ def apply_push_rules(pid, dry_run):
                      and after.get("commit_message_regex") == PUSH_RULES["commit_message_regex"])
 
     if persisted:
-        log(f"  {verb} push rules ΓÇö CONFIRMED on read-back")
+        log(f"  {verb} push rules — CONFIRMED on read-back")
         log(f"    branch_name_regex   : {after.get('branch_name_regex')}")
         log(f"    commit_message_regex: {after.get('commit_message_regex')}")
     else:
@@ -376,7 +368,7 @@ def apply_push_rules(pid, dry_run):
             "this instance; see notes.")
 
 # =============================================================================
-#  STEP 3 ΓÇö PROTECTED BRANCHES
+#  STEP 3 — PROTECTED BRANCHES
 # =============================================================================
 
 def get_protected_branch(pid, name):
@@ -417,7 +409,7 @@ def apply_protected_branches(pid, groups, dry_run):
         log(f"  protected '{name}' | push: No one | merge: {', '.join(spec['merge_groups'])}")
 
 # =============================================================================
-#  STEP 4 ΓÇö MR APPROVAL RULES
+#  STEP 4 — MR APPROVAL RULES
 # =============================================================================
 
 def apply_approval_rules(pid, groups, dry_run):
@@ -483,12 +475,14 @@ def apply_approval_rules(pid, groups, dry_run):
         log(f"  {verb} '{rule['name']}' -> '{branch}' | group {rule['group']} | required {rule['required']}")
 
 # =============================================================================
-#  STEP 5 ΓÇö PROJECT SETTING
+#  STEP 5 — PROJECT SETTING
 # =============================================================================
 
 def apply_project_settings(pid, dry_run):
     log("\n=== Step 5: Project Settings ===")
-    api_put(f"/projects/{pid}", data={"only_allow_merge_if_pipeline_succeeds": "true"},
+    # §3.12: pipelines must succeed before merge.
+    api_put(f"/projects/{pid}",
+            data={"only_allow_merge_if_pipeline_succeeds": "true"},
             dry_run=dry_run)
     log("  'Pipelines must succeed before merge' = enabled")
 
@@ -544,25 +538,19 @@ def verify(pid, groups):
 #  MAIN
 # =============================================================================
 
-def main():
-    ap = argparse.ArgumentParser(description="Apply protected branches + MR "
-                                 "approval rules to a SINGLE GitLab repo.")
-    ap.add_argument("--project", default=TARGET_PROJECT,
-                    help="Full project path (overrides TARGET_PROJECT)")
-    ap.add_argument("--dry-run", action="store_true", help="Show writes; change nothing")
-    ap.add_argument("--verify",  action="store_true", help="Read current state only")
-    args = ap.parse_args()
-
-    mode = "VERIFY" if args.verify else ("DRY-RUN" if args.dry_run else "APPLY")
+def run_one(project, mode_verify, mode_dry_run):
+    """Apply (or verify/dry-run) governance on ONE project. Returns (pid, ppath).
+       On any API error the underlying calls sys.exit(1) -> fail-stop."""
+    mode = "VERIFY" if mode_verify else ("DRY-RUN" if mode_dry_run else "APPLY")
     log("=" * 65)
     log("  GitLab Repo Governance")
     log(f"  Target  : {GITLAB_URL}")
-    log(f"  Project : {args.project}")
+    log(f"  Project : {project}")
     log(f"  Mode    : {mode}")
     log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     log("=" * 65)
 
-    pid, ppath = resolve_project(args.project)
+    pid, ppath = resolve_project(project)
     log(f"\nResolved project -> id={pid}  path={ppath}")
 
     log("\nValidating GitLab group IDs (read-only)...")
@@ -570,23 +558,93 @@ def main():
     for n, i in groups.items():
         log(f"  {n} -> {i}")
 
-    if args.verify:
+    if mode_verify:
         verify(pid, groups)
     else:
-        apply_group_invites(pid, args.dry_run)
-        apply_push_rules(pid, args.dry_run)
-        apply_protected_branches(pid, groups, args.dry_run)
-        apply_approval_rules(pid, groups, args.dry_run)
-        apply_project_settings(pid, args.dry_run)
-        if not args.dry_run:
+        apply_group_invites(pid, mode_dry_run)
+        apply_push_rules(pid, mode_dry_run)
+        apply_protected_branches(pid, groups, mode_dry_run)
+        apply_approval_rules(pid, groups, mode_dry_run)
+        apply_project_settings(pid, mode_dry_run)
+        if not mode_dry_run:
             verify(pid, groups)
 
     log(f"\nDone. Scope was project id={pid} only.")
+    return pid, ppath
+
+
+def load_batch_file(path):
+    """Read project IDs/paths, one per line. Blank lines and #comments ignored."""
+    ids = []
+    with open(path, encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            # Strip any inline comment so annotated lines like
+            # "2823    # itepaypg-sbiepay2/.../epay_admin_service" work too.
+            # We take the first whitespace- or #-delimited token as the ID/path.
+            token = line.split("#", 1)[0].strip().split()[0]
+            if token:
+                ids.append(token)
+    return ids
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Apply governance to one repo, or "
+                                 "many via --batch (fail-stop on first error).")
+    ap.add_argument("--project", default=TARGET_PROJECT,
+                    help="Full project path or numeric ID (single-repo mode)")
+    ap.add_argument("--batch", metavar="FILE",
+                    help="Path to a text file of project IDs/paths, one per line "
+                         "(# comments allowed). Runs each in order; STOPS on first error.")
+    ap.add_argument("--dry-run", action="store_true", help="Show writes; change nothing")
+    ap.add_argument("--verify",  action="store_true", help="Read current state only")
+    args = ap.parse_args()
+
+    # ---------------- BATCH MODE ----------------
+    if args.batch:
+        targets = load_batch_file(args.batch)
+        if not targets:
+            print(f"[ERROR] No project IDs found in {args.batch}")
+            sys.exit(1)
+        total = len(targets)
+        done = []   # (project, pid, path) successfully completed
+        print("=" * 65)
+        print(f"  BATCH MODE — {total} repos — FAIL-STOP on first error")
+        print(f"  File: {args.batch}")
+        print("=" * 65)
+        for idx, project in enumerate(targets, 1):
+            log("")
+            log("#" * 65)
+            log(f"#  BATCH {idx}/{total}: {project}")
+            log("#" * 65)
+            # If any step fails, the API helper sys.exit(1)s here -> batch halts.
+            pid, ppath = run_one(project, args.verify, args.dry_run)
+            done.append((project, pid, ppath))
+
+        # Reached here only if ALL succeeded.
+        log("")
+        log("=" * 65)
+        log(f"  BATCH COMPLETE — {len(done)}/{total} repos succeeded")
+        log("=" * 65)
+        for project, pid, ppath in done:
+            log(f"  OK  {ppath} (id={pid})")
+
+        out_file = f"governance_BATCH_{TIMESTAMP}.txt"
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(_log_lines))
+        print(f"\n  -> {out_file} written (consolidated batch audit log).")
+        return
+
+    # ---------------- SINGLE-REPO MODE ----------------
+    pid, ppath = run_one(args.project, args.verify, args.dry_run)
 
     out_file = f"governance_{ppath.split('/')[-1]}_{TIMESTAMP}.txt"
     with open(out_file, "w", encoding="utf-8") as f:
         f.write("\n".join(_log_lines))
     print(f"\n  -> {out_file} written.")
+    mode = "VERIFY" if args.verify else ("DRY-RUN" if args.dry_run else "APPLY")
     if mode == "APPLY":
         print("  Changes were limited to the single project above.")
     else:
@@ -595,11 +653,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>type repos_to_apply.txt
-# Clean IDs-only list (no inline comments) ΓÇö safe for --batch.
-# Prune by deleting whole lines.
-
-2600
-2823
