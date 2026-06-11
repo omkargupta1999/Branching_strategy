@@ -1,183 +1,346 @@
-D:\Mr Om\Python_script>python311\python.exe apply_repo_governance.py --batch repos_to_apply.txt --dry-run
-=================================================================
-  BATCH MODE — 2 repos — FAIL-STOP on first error
-  File: repos_to_apply.txt
-=================================================================
+#!/usr/bin/env python3
+"""
+audit_access_tree.py
+====================
 
-#################################################################
-#  BATCH 1/2: 2823
-#################################################################
-=================================================================
-  GitLab Repo Governance
-  Target  : https://gitlab.sbi
-  Project : 2823
-  Mode    : DRY-RUN
-  Time    : 2026-06-11 15:28:49
-=================================================================
+Walks an entire GitLab group hierarchy and reports, for every subgroup and
+project, exactly who has access -- distinguishing DIRECT members from
+INHERITED ones (and, for projects, members inherited from ancestor groups).
 
-Resolved project -> id=2823  path=itepaypg-sbiepay2/application/backend/epay_key_managment
+Purpose: pinpoint *where* a group/user grant actually lives so you can revoke
+it at the correct source instead of chasing it across child repos.
 
-Validating GitLab group IDs (read-only)...
-  epay-gitlab-bank-app-owner -> 4953
-  epay-gitlab-bank-app-maintainer -> 4954
-  epay-gitlab-vendor-app-maintainer -> 4955
-  epay-gitlab-vendor-app-lead -> 4956
-  epay-gitlab-vendor-pm -> 4962
+House style: Python standard library ONLY (urllib, json, getpass). No pip.
+Secrets prompted at runtime. Idempotent / read-only -- this script never
+modifies anything.
 
-=== Step 1: Group Invites (project share) ===
-  'epay-gitlab-bank-app-owner' already shared at level 50 -> skip
-  'epay-gitlab-bank-app-maintainer' already shared at level 40 -> skip
-  'epay-gitlab-vendor-app-maintainer' already shared at level 40 -> skip
-  'epay-gitlab-vendor-release-manager' already shared at level 30 -> skip
-  'epay-gitlab-vendor-app-lead' already shared at level 30 -> skip
-  'epay-gitlab-vendor-app-developer' already shared at level 30 -> skip
-  'epay-gitlab-vendor-pm' already shared at level 20 -> skip
+GitLab access_level reference:
+    0   No access
+   10   Guest
+   20   Reporter
+   30   Developer
+   40   Maintainer
+   50   Owner
+"""
 
-=== Step 2: Push Rules ===
-    [dry-run] would update push rules
-    branch_name_regex   : ^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
-    commit_message_regex: ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
+import json
+import sys
+import ssl
+import getpass
+import urllib.request
+import urllib.parse
+import urllib.error
 
-=== Step 3: Protected Branch Rules ===
-  'main' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/main
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
-              payload: {"name": "main", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4954}, {"group_id": 4953}]}
-  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner
-  'develop' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/develop
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
-              payload: {"name": "develop", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4956}]}
-  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead
-  'release/*' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2823/protected_branches/release%2F%2A
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/protected_branches
-              payload: {"name": "release/*", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4955}]}
-  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-maintainer
+# ---------------------------------------------------------------------------
+# Configuration -- edit these two, or accept the prompts at runtime.
+# ---------------------------------------------------------------------------
 
-=== Step 4: MR Approval Rules ===
-  [reconcile] would delete any existing rule not in spec (dry-run cannot list live rules reliably; see real run)
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Lead Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:develop>"]}
-  created 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Release Gate - Lead", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:release/*>"]}
-  created 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Release Gate - Architect", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:release/*>"]}
-  created 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Vendor Architect Sign-off", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Vendor PM Approval (CAB gate)", "approvals_required": 1, "rule_type": "regular", "group_ids": [4962], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Bank Maintainer Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4954], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2823/approval_rules
-              payload: {"name": "Bank PM Final Gate", "approvals_required": 1, "rule_type": "regular", "group_ids": [4953], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
+# Path-only (NOT a full URL). For the screenshot this is the top-level group.
+ROOT_GROUP = "itepaypg-sbiepay2"
 
-=== Step 5: Project Settings ===
-    [dry-run] PUT https://gitlab.sbi/api/v4/projects/2823
-              payload: {"only_allow_merge_if_pipeline_succeeds": "true"}
-  'Pipelines must succeed before merge' = enabled
+# Base API URL of THIS instance. No trailing slash. Must match the PAT's instance.
+GITLAB_BASE = "https://gitlab.sbi"
 
-Done. Scope was project id=2823 only.
+# Set to False ONLY if the instance uses an internal CA your Python doesn't
+# trust and you cannot point REQUESTS_CA_BUNDLE / SSL_CERT_FILE at it.
+VERIFY_TLS = True
 
-#################################################################
-#  BATCH 2/2: 2600
-#################################################################
-=================================================================
-  GitLab Repo Governance
-  Target  : https://gitlab.sbi
-  Project : 2600
-  Mode    : DRY-RUN
-  Time    : 2026-06-11 15:28:52
-=================================================================
+ACCESS_LEVELS = {
+    0: "No access",
+    5: "Minimal",
+    10: "Guest",
+    20: "Reporter",
+    30: "Developer",
+    40: "Maintainer",
+    50: "Owner",
+}
 
-Resolved project -> id=2600  path=itepaypg-sbiepay2/application/backend/epay_admin_service
 
-Validating GitLab group IDs (read-only)...
-  epay-gitlab-bank-app-owner -> 4953
-  epay-gitlab-bank-app-maintainer -> 4954
-  epay-gitlab-vendor-app-maintainer -> 4955
-  epay-gitlab-vendor-app-lead -> 4956
-  epay-gitlab-vendor-pm -> 4962
+# ---------------------------------------------------------------------------
+# Low-level HTTP helpers
+# ---------------------------------------------------------------------------
 
-=== Step 1: Group Invites (project share) ===
-  'epay-gitlab-bank-app-owner' already shared at level 50 -> skip
-  'epay-gitlab-bank-app-maintainer' already shared at level 40 -> skip
-  'epay-gitlab-vendor-app-maintainer' already shared at level 40 -> skip
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
-              payload: {"group_id": 4950, "group_access": 30}
-  shared 'epay-gitlab-vendor-release-manager' (id=4950) at access level 30
-  'epay-gitlab-vendor-app-lead' already shared at level 30 -> skip
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
-              payload: {"group_id": 4957, "group_access": 30}
-  shared 'epay-gitlab-vendor-app-developer' (id=4957) at access level 30
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/share
-              payload: {"group_id": 4962, "group_access": 20}
-  shared 'epay-gitlab-vendor-pm' (id=4962) at access level 20
+def _ssl_context():
+    if VERIFY_TLS:
+        return ssl.create_default_context()
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
-=== Step 2: Push Rules ===
-    [dry-run] would update push rules
-    branch_name_regex   : ^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
-    commit_message_regex: ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$
 
-=== Step 3: Protected Branch Rules ===
-  'main' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/main
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
-              payload: {"name": "main", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4954}, {"group_id": 4953}]}
-  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner
-  'develop' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/develop
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
-              payload: {"name": "develop", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4956}]}
-  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead
-  'release/*' already protected -> deleting to re-apply cleanly
-    [dry-run] DELETE https://gitlab.sbi/api/v4/projects/2600/protected_branches/release%2F%2A
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/protected_branches
-              payload: {"name": "release/*", "allow_force_push": false, "push_access_level": 0, "allowed_to_merge": [{"group_id": 4955}]}
-  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-maintainer
+def api_get(token, path, params=None):
+    """
+    GET /api/v4/<path>. Transparently follows GitLab keyset/offset pagination
+    via the Link header and returns the concatenated list (or single dict).
+    """
+    if params is None:
+        params = {}
+    params.setdefault("per_page", 100)
 
-=== Step 4: MR Approval Rules ===
-  [reconcile] would delete any existing rule not in spec (dry-run cannot list live rules reliably; see real run)
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Lead Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:develop>"]}
-  created 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Release Gate - Lead", "approvals_required": 1, "rule_type": "regular", "group_ids": [4956], "protected_branch_ids": ["<pb-id:release/*>"]}
-  created 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Release Gate - Architect", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:release/*>"]}
-  created 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Vendor Architect Sign-off", "approvals_required": 1, "rule_type": "regular", "group_ids": [4955], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Vendor PM Approval (CAB gate)", "approvals_required": 1, "rule_type": "regular", "group_ids": [4962], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Bank Maintainer Approval", "approvals_required": 1, "rule_type": "regular", "group_ids": [4954], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
-    [dry-run] POST https://gitlab.sbi/api/v4/projects/2600/approval_rules
-              payload: {"name": "Bank PM Final Gate", "approvals_required": 1, "rule_type": "regular", "group_ids": [4953], "protected_branch_ids": ["<pb-id:main>"]}
-  created 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
+    url = "{base}/api/v4/{path}?{qs}".format(
+        base=GITLAB_BASE.rstrip("/"),
+        path=path.lstrip("/"),
+        qs=urllib.parse.urlencode(params),
+    )
 
-=== Step 5: Project Settings ===
-    [dry-run] PUT https://gitlab.sbi/api/v4/projects/2600
-              payload: {"only_allow_merge_if_pipeline_succeeds": "true"}
-  'Pipelines must succeed before merge' = enabled
+    results = []
+    ctx = _ssl_context()
 
-Done. Scope was project id=2600 only.
+    while url:
+        req = urllib.request.Request(url, method="GET")
+        req.add_header("PRIVATE-TOKEN", token)
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+                body = resp.read().decode("utf-8")
+                data = json.loads(body) if body else []
+                if isinstance(data, list):
+                    results.extend(data)
+                else:
+                    return data  # single object endpoint
+                # pagination via Link header
+                link = resp.headers.get("Link", "")
+                url = _next_link(link)
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")
+            raise RuntimeError(
+                "HTTP {code} on {u}\n  -> {d}".format(code=e.code, u=url, d=detail)
+            )
+        except urllib.error.URLError as e:
+            raise RuntimeError("Network/TLS error on {u}\n  -> {r}".format(u=url, r=e.reason))
 
-=================================================================
-  BATCH COMPLETE — 2/2 repos succeeded
-=================================================================
-  OK  itepaypg-sbiepay2/application/backend/epay_key_managment (id=2823)
-  OK  itepaypg-sbiepay2/application/backend/epay_admin_service (id=2600)
+    return results
 
-  -> governance_BATCH_20260611_152849.txt written (consolidated batch audit log).
+
+def _next_link(link_header):
+    """Extract the rel="next" URL from an RFC 5988 Link header, or None."""
+    if not link_header:
+        return None
+    for part in link_header.split(","):
+        segs = part.split(";")
+        if len(segs) < 2:
+            continue
+        url_part = segs[0].strip().lstrip("<").rstrip(">")
+        for seg in segs[1:]:
+            if 'rel="next"' in seg:
+                return url_part
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Domain helpers
+# ---------------------------------------------------------------------------
+
+def lvl(n):
+    return "{:>2} {}".format(n, ACCESS_LEVELS.get(n, "Custom/Unknown"))
+
+
+def get_group(token, group_ref):
+    enc = urllib.parse.quote(str(group_ref), safe="")
+    return api_get(token, "groups/{}".format(enc))
+
+
+def get_subgroups(token, group_id):
+    return api_get(token, "groups/{}/subgroups".format(group_id))
+
+
+def get_group_projects(token, group_id):
+    # include_subgroups=False: we recurse the tree ourselves so each project
+    # is listed under its true parent rather than flattened to the root.
+    return api_get(token, "groups/{}/projects".format(group_id),
+                   {"include_subgroups": "false", "with_shared": "false"})
+
+
+def get_group_members_all(token, group_id):
+    """All members INCLUDING inherited from ancestor groups."""
+    return api_get(token, "groups/{}/members/all".format(group_id))
+
+
+def get_group_members_direct(token, group_id):
+    """Only members added DIRECTLY to this group."""
+    return api_get(token, "groups/{}/members".format(group_id))
+
+
+def get_project_members_all(token, project_id):
+    return api_get(token, "projects/{}/members/all".format(project_id))
+
+
+def get_project_members_direct(token, project_id):
+    return api_get(token, "projects/{}/members".format(project_id))
+
+
+def get_project_shared_groups(token, project_id):
+    """Groups the project has been shared with (group-invited-to-project)."""
+    proj = api_get(token, "projects/{}".format(project_id))
+    if isinstance(proj, dict):
+        return proj.get("shared_with_groups", []) or []
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Reporting
+# ---------------------------------------------------------------------------
+
+def member_line(m, direct_ids):
+    """Format one member; mark DIRECT vs INHERITED using direct_ids set."""
+    uid = m.get("id")
+    name = m.get("name", "?")
+    username = m.get("username", "?")
+    access = m.get("access_level", 0)
+    tag = "DIRECT   " if uid in direct_ids else "INHERITED"
+    return "        [{tag}] {name} (@{user})  ->  {acc}".format(
+        tag=tag, name=name, user=username, acc=lvl(access)
+    )
+
+
+def report_group(token, group, depth):
+    pad = "  " * depth
+    gid = group["id"]
+    print("{p}GROUP  {full}  (id={gid})".format(
+        p=pad, full=group["full_path"], gid=gid))
+
+    all_m = get_group_members_all(token, gid)
+    direct_m = get_group_members_direct(token, gid)
+    direct_ids = {m["id"] for m in direct_m}
+
+    if all_m:
+        for m in sorted(all_m, key=lambda x: (-x.get("access_level", 0), x.get("username", ""))):
+            print(pad + member_line(m, direct_ids))
+    else:
+        print(pad + "        (no members)")
+
+    # projects directly under this group
+    for proj in get_group_projects(token, gid):
+        report_project(token, proj, depth + 1)
+
+    # recurse subgroups
+    for sub in get_subgroups(token, gid):
+        full_sub = get_group(token, sub["id"])  # full obj for full_path
+        report_group(token, full_sub, depth + 1)
+
+
+def report_project(token, proj, depth):
+    pad = "  " * depth
+    pid = proj["id"]
+    print("{p}PROJECT  {full}  (id={pid})".format(
+        p=pad, full=proj["path_with_namespace"], pid=pid))
+
+    all_m = get_project_members_all(token, pid)
+    direct_m = get_project_members_direct(token, pid)
+    direct_ids = {m["id"] for m in direct_m}
+
+    if all_m:
+        for m in sorted(all_m, key=lambda x: (-x.get("access_level", 0), x.get("username", ""))):
+            print(pad + member_line(m, direct_ids))
+    else:
+        print(pad + "        (no members)")
+
+    shared = get_project_shared_groups(token, pid)
+    for sg in shared:
+        print("{p}        [SHARED-GROUP] {name} (id={gid})  ->  {acc}".format(
+            p=pad,
+            name=sg.get("group_full_path", sg.get("group_name", "?")),
+            gid=sg.get("group_id"),
+            acc=lvl(sg.get("group_access_level", 0)),
+        ))
+
+
+# ---------------------------------------------------------------------------
+# Focused lookup: trace one user across the whole tree
+# ---------------------------------------------------------------------------
+
+def trace_user(token, root_group, username):
+    """
+    Walk the tree and print every place `username` appears, flagged DIRECT
+    or INHERITED. The DIRECT hits are the grants you actually need to remove.
+    """
+    print("\n" + "=" * 70)
+    print("TRACE for user @{u} -- DIRECT hits are the real source grants".format(u=username))
+    print("=" * 70)
+
+    hits = {"direct": [], "inherited": []}
+
+    def walk_group(group, depth):
+        gid = group["id"]
+        all_m = get_group_members_all(token, gid)
+        direct_ids = {m["id"] for m in get_group_members_direct(token, gid)}
+        for m in all_m:
+            if m.get("username") == username:
+                bucket = "direct" if m["id"] in direct_ids else "inherited"
+                hits[bucket].append(("GROUP", group["full_path"], m.get("access_level", 0)))
+        for proj in get_group_projects(token, gid):
+            pid = proj["id"]
+            pall = get_project_members_all(token, pid)
+            pdir = {x["id"] for x in get_project_members_direct(token, pid)}
+            for m in pall:
+                if m.get("username") == username:
+                    bucket = "direct" if m["id"] in pdir else "inherited"
+                    hits[bucket].append(("PROJECT", proj["path_with_namespace"], m.get("access_level", 0)))
+        for sub in get_subgroups(token, gid):
+            walk_group(get_group(token, sub["id"]), depth + 1)
+
+    walk_group(root_group, 0)
+
+    print("\n-- DIRECT grants (REMOVE THESE to revoke access) --")
+    if hits["direct"]:
+        for kind, path, acc in hits["direct"]:
+            print("   {k:8} {p}  ->  {a}".format(k=kind, p=path, a=lvl(acc)))
+    else:
+        print("   (none -- all access is inherited; remove at the parent group below)")
+
+    print("\n-- INHERITED grants (consequences of the above; do NOT touch these) --")
+    if hits["inherited"]:
+        for kind, path, acc in hits["inherited"]:
+            print("   {k:8} {p}  ->  {a}".format(k=kind, p=path, a=lvl(acc)))
+    else:
+        print("   (none)")
+    print("=" * 70)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    print("GitLab Access Tree Auditor (read-only)")
+    print("Instance: {}".format(GITLAB_BASE))
+    print("Root group: {}".format(ROOT_GROUP))
+    print("-" * 70)
+
+    token = getpass.getpass("GitLab PAT (api scope, hidden input): ").strip()
+    if not token:
+        print("No token provided. Aborting.")
+        sys.exit(1)
+
+    # sanity check the token + instance match before walking the whole tree
+    try:
+        me = api_get(token, "user")
+        print("Authenticated as: @{u} (id={i})\n".format(
+            u=me.get("username"), i=me.get("id")))
+    except RuntimeError as e:
+        print("AUTH/CONNECT FAILED:\n  {}".format(e))
+        print("\nCommon causes:")
+        print("  * PAT belongs to a DIFFERENT instance than GITLAB_BASE")
+        print("  * PAT lacks 'api' (or at least 'read_api') scope")
+        print("  * GITLAB_BASE wrong / proxy intercepting TLS / internal CA untrusted")
+        sys.exit(2)
+
+    try:
+        root = get_group(token, ROOT_GROUP)
+    except RuntimeError as e:
+        print("Could not resolve root group '{}':\n  {}".format(ROOT_GROUP, e))
+        print("Make sure ROOT_GROUP is the PATH (e.g. 'itepaypg-sbiepay2'), not a URL.")
+        sys.exit(3)
+
+    print("FULL ACCESS TREE")
+    print("=" * 70)
+    report_group(token, root, 0)
+
+    # Optional focused trace.
+    target = input("\nTrace a specific username? (blank to skip): ").strip()
+    if target:
+        trace_user(token, root, target)
+
+
+if __name__ == "__main__":
+    main()
