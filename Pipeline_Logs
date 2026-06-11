@@ -1,86 +1,281 @@
-Dear Team,
+#!/usr/bin/env python3
+"""
+=============================================================================
+ Script      : list_repos_for_governance.py
+ Purpose     : List every repository under the Application subgroup (and its
+               sub-subgroups: Backend, Frontends, SDKs, MerchantSimulator,
+               QA, Postman, etc.) so you can prune the ones you DON'T want and
+               feed the rest to apply_repo_governance.py --batch.
 
-As part of our migration to the new GitLab instance (gitlab.sbi), we have rolled out a standardized set of governance rules across all SBIePay application repositories. These rules are now LIVE. Please read this carefully before your next push or merge request, as your existing habits from the old GitLab may now be rejected.
+ READ-ONLY   : ONLY HTTP GET requests. Zero writes to GitLab.
 
-====================================================
-1. BRANCH NAMING — enforced on branch creation
-====================================================
-Branches that do not match the approved pattern will be REJECTED on push. Allowed branch names:
+ Dependencies: NONE — Python standard library only (no pip required).
+               Python 3.6+ / RHEL air-gapped. Mirrors fetch_repo_tree.py style.
 
-  main
-  develop
-  release/<major>.<minor>.<patch>     e.g. release/1.5.0
-  feature/EPAY-<id>-<short-desc>        e.g. feature/EPAY-1234-upi-autopay
-  bugfix/EPAY-<id>-<short-desc>         e.g. bugfix/EPAY-1299-fix-mandate
-  hotfix/<major>.<minor>.<patch>        e.g. hotfix/1.5.1
+ Output      :
+   Console                         — grouped, readable listing
+   repos_to_apply_<timestamp>.txt  — ready for --batch (IDs, one per line,
+                                     each prefixed with the path as a #comment
+                                     so you can see what you're pruning)
+   repos_all_<timestamp>.csv       — full detail (ID, path, namespace, etc.)
 
-Rules:
- - Use lowercase letters, numbers, and hyphens only in the description part.
- - feature and bugfix branches MUST include the EPAY Jira ID.
- - release and hotfix branches use the version number (no description).
+ Usage       :
+   1. Set GITLAB_URL, TOKEN, APPLICATION_GROUP below.
+   2. python3 list_repos_for_governance.py
+   3. Open repos_to_apply_<timestamp>.txt, delete the repos you don't want,
+      rename to repos_to_apply.txt, then:
+        python3 apply_repo_governance.py --batch repos_to_apply.txt --dry-run
+=============================================================================
+"""
 
-WILL BE REJECTED:
-  feature/login                (missing EPAY id)
-  feature/EPAY-123-Add_Login    (uppercase + underscore)
-  release/1.5                  (not full X.Y.Z)
-  my-test-branch               (not an approved type)
+import urllib.request
+import urllib.error
+import urllib.parse
+import json
+import csv
+import ssl
+import sys
+from datetime import datetime
 
-====================================================
-2. COMMIT MESSAGES — enforced on every commit
-====================================================
-Format:  <type>(<scope>): <subject> EPAY-<id>
+# =============================================================================
+#  CONFIGURATION — Edit only this block
+# =============================================================================
 
- - <type> is one of: feat, fix, docs, style, refactor, perf, test, chore
- - <scope> is optional, lowercase, in parentheses
- - <subject> must be 10 to 100 characters
- - The message MUST end with the EPAY Jira ID
+GITLAB_URL        = "https://gitlab.sbi"                     # Target instance
+TOKEN             = ""                                        # Owner/Maintainer PAT
+APPLICATION_GROUP = "itepaypg-sbiepay2/application"          # Application subgroup path
 
-VALID examples:
-  feat(auth): add login flow for users EPAY-123
-  fix: correct null pointer on refund EPAY-1299
-  chore(ci): bump pipeline image version EPAY-42
+# Sub-subgroup name fragments to EXCLUDE from the governance list by default.
+# Config repos use CODEOWNERS (not this script); adjust as you see fit.
+# Matching is on the namespace full_path (case-insensitive substring).
+EXCLUDE_NAMESPACE_CONTAINS = [
+    "/config",   # Application/Config -> CODEOWNERS, different mechanism
+]
 
-WILL BE REJECTED:
-  update stuff                          (no type, no EPAY id)
-  feat: short EPAY-1                     (subject under 10 chars)
-  feat(auth): add login flow            (missing EPAY id)
+# Also exclude individual archived or empty repos from the apply list?
+EXCLUDE_ARCHIVED = True
+EXCLUDE_EMPTY    = True
 
-Tip: configure a local commit template so you don't forget the format.
+# =============================================================================
+#  SETUP
+# =============================================================================
 
-====================================================
-3. PROTECTED BRANCHES — no direct push
-====================================================
-main, develop, and release/* are protected. You CANNOT push to them directly. All changes must arrive via a Merge Request that passes approvals and the pipeline.
+if not TOKEN:
+    print("[ERROR] TOKEN is not set. Fill in your Owner/Maintainer PAT.")
+    sys.exit(1)
 
- - main      : merge by Bank App Maintainer / Owner only
- - develop   : merge by Vendor App Lead
- - release/* : merge by Vendor App Architect
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+HEADERS   = {"PRIVATE-TOKEN": TOKEN}
+ssl_ctx   = ssl._create_unverified_context()
 
-feature/*, bugfix/*, and hotfix/* remain open for you to push freely.
+# =============================================================================
+#  API HELPERS — GET ONLY
+# =============================================================================
 
-====================================================
-4. MERGE REQUEST APPROVALS
-====================================================
-Approvals depend on the TARGET branch:
+def api_get(url):
+    req = urllib.request.Request(url)
+    for k, v in HEADERS.items():
+        req.add_header(k, v)
+    try:
+        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        return json.loads(resp.read()), resp
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("\n[ERROR] 401 Unauthorized — TOKEN invalid or empty.")
+            sys.exit(1)
+        if e.code == 403:
+            print("\n[ERROR] 403 Forbidden — token lacks scope.")
+            sys.exit(1)
+        if e.code == 404:
+            print("\n[ERROR] 404 Not Found — check APPLICATION_GROUP value.")
+            sys.exit(1)
+        return [], None
+    except Exception as e:
+        print(f"\n[WARN] {url} — {e}")
+        return [], None
 
- - feature or bugfix --> develop : 1 approval (Lead)
- - develop or bugfix --> release/* : 2 approvals (Lead + Architect)
- - release --> main : 4 approvals (Architect + Vendor PM + Bank Maintainer + Bank PM)
- - hotfix --> main : same 4 approvals; hotfix MR description must include the Jira incident ID
 
-The pipeline must pass before any MR can be merged. The source branch is deleted automatically after merge.
+def api_all(endpoint):
+    """Paginate all pages of a GET endpoint."""
+    results, page = [], 1
+    while True:
+        sep = "&" if "?" in endpoint else "?"
+        url = f"{GITLAB_URL}{endpoint}{sep}per_page=100&page={page}"
+        data, resp = api_get(url)
+        if not data:
+            break
+        results.extend(data)
+        if resp:
+            try:
+                if page >= int(resp.headers.get("X-Total-Pages", "1")):
+                    break
+            except ValueError:
+                break
+        page += 1
+    return results
 
-====================================================
-WHAT YOU NEED TO DO
-====================================================
- - Rename any in-progress local branches to match the new pattern before pushing.
- - Adopt the commit message format immediately.
- - Raise MRs instead of pushing to protected branches.
+# =============================================================================
+#  FETCH
+# =============================================================================
 
-If a push is rejected, the error message will tell you which rule failed. For questions or genuine exceptions, contact the DevSecOps team.
+print("=" * 65)
+print("  Application Repos — Governance Rollout List")
+print(f"  Source : {GITLAB_URL}")
+print(f"  Group  : {APPLICATION_GROUP}  (incl. all sub-subgroups)")
+print("=" * 65)
+print()
 
-Thank you for helping keep the SBIePay platform audit-compliant.
+enc_group = urllib.parse.quote(APPLICATION_GROUP, safe="")
+endpoint  = (f"/api/v4/groups/{enc_group}/projects"
+             f"?include_subgroups=true&with_statistics=false&archived=false")
 
-Regards,
-DevSecOps Team
-SBIePay Platform Engineering
+print("Fetching repositories ...")
+projects = api_all(endpoint)
+if not projects:
+    print("[ERROR] No projects returned. Check TOKEN / APPLICATION_GROUP.")
+    sys.exit(1)
+
+print(f"  -> {len(projects)} repositories found under the Application subgroup.\n")
+
+# =============================================================================
+#  CLASSIFY: included vs excluded (and why)
+# =============================================================================
+
+included = []   # dicts to apply governance to
+excluded = []   # dicts skipped, with reason
+
+for p in projects:
+    ns       = p.get("namespace", {}).get("full_path", "")
+    full     = p.get("path_with_namespace", "")
+    archived = p.get("archived", False)
+    empty    = p.get("empty_repo", False)
+
+    reason = None
+    low_ns = ns.lower()
+    for frag in EXCLUDE_NAMESPACE_CONTAINS:
+        if frag.lower() in low_ns:
+            reason = f"namespace excluded ({frag})"
+            break
+    if reason is None and EXCLUDE_ARCHIVED and archived:
+        reason = "archived"
+    if reason is None and EXCLUDE_EMPTY and empty:
+        reason = "empty repo"
+
+    row = {
+        "id":   p.get("id"),
+        "name": p.get("name", ""),
+        "path": full,
+        "ns":   ns,
+        "archived": archived,
+        "empty": empty,
+    }
+    if reason:
+        row["reason"] = reason
+        excluded.append(row)
+    else:
+        included.append(row)
+
+# Sort by namespace then name for readability
+included.sort(key=lambda r: (r["ns"], r["name"].lower()))
+excluded.sort(key=lambda r: (r["ns"], r["name"].lower()))
+
+# =============================================================================
+#  CONSOLE OUTPUT — grouped by namespace
+# =============================================================================
+
+def print_grouped(rows, title):
+    print(f"\n{title} ({len(rows)})")
+    print("-" * 65)
+    current_ns = None
+    for r in rows:
+        if r["ns"] != current_ns:
+            current_ns = r["ns"]
+            print(f"\n  [{current_ns}]")
+        extra = f"  ({r.get('reason')})" if r.get("reason") else ""
+        print(f"    {r['id']:<6} {r['name']}{extra}")
+
+print_grouped(included, "WILL BE INCLUDED in governance rollout")
+print_grouped(excluded, "EXCLUDED by default (review these)")
+
+# =============================================================================
+#  WRITE repos_to_apply_<ts>.txt  (ready for --batch, prune by deleting lines)
+# =============================================================================
+
+APPLY_FILE = f"repos_to_apply_{TIMESTAMP}.txt"
+with open(APPLY_FILE, "w", encoding="utf-8") as f:
+    f.write("# SBIePay application repos — batch input for apply_repo_governance.py\n")
+    f.write("# One project ID per line. Lines starting with # are ignored.\n")
+    f.write(f"# Generated {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} "
+            f"from {APPLICATION_GROUP}\n")
+    f.write("#\n")
+    f.write("# To REMOVE a repo from the rollout: delete its line (or add a # in front).\n")
+    f.write("# The path after each ID is a comment to help you identify it.\n")
+    f.write("#\n\n")
+
+    current_ns = None
+    for r in included:
+        if r["ns"] != current_ns:
+            current_ns = r["ns"]
+            f.write(f"\n# --- {current_ns} ---\n")
+        # ID first (what the batch reads), path as trailing comment.
+        f.write(f"{r['id']}    # {r['path']}\n")
+
+    if excluded:
+        f.write("\n\n# ============================================================\n")
+        f.write("# EXCLUDED by default — uncomment a line to INCLUDE that repo\n")
+        f.write("# ============================================================\n")
+        for r in excluded:
+            f.write(f"# {r['id']}    # {r['path']}  ({r.get('reason')})\n")
+
+print(f"\n  -> {APPLY_FILE} written (edit this, then use with --batch).")
+
+# Note: apply_repo_governance.py's batch reader splits on the first token, so a
+# trailing "    # path" comment on the SAME line would be read as part of the ID.
+# To keep it robust, we ALSO write a clean IDs-only file with no inline comments.
+
+CLEAN_FILE = f"repos_to_apply_CLEAN_{TIMESTAMP}.txt"
+with open(CLEAN_FILE, "w", encoding="utf-8") as f:
+    f.write("# Clean IDs-only list (no inline comments) — safe for --batch.\n")
+    f.write("# Prune by deleting whole lines.\n\n")
+    for r in included:
+        f.write(f"{r['id']}\n")
+print(f"  -> {CLEAN_FILE} written (IDs only — use THIS one with --batch).")
+
+# =============================================================================
+#  WRITE full CSV
+# =============================================================================
+
+CSV_FILE = f"repos_all_{TIMESTAMP}.csv"
+with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
+    w = csv.writer(f)
+    w.writerow(["Status", "Project ID", "Name", "Full Path", "Namespace",
+                "Archived", "Empty", "Exclude Reason"])
+    for r in included:
+        w.writerow(["INCLUDE", r["id"], r["name"], r["path"], r["ns"],
+                    "Yes" if r["archived"] else "No",
+                    "Yes" if r["empty"] else "No", ""])
+    for r in excluded:
+        w.writerow(["EXCLUDE", r["id"], r["name"], r["path"], r["ns"],
+                    "Yes" if r["archived"] else "No",
+                    "Yes" if r["empty"] else "No", r.get("reason", "")])
+print(f"  -> {CSV_FILE} written (full detail).")
+
+# =============================================================================
+#  SUMMARY
+# =============================================================================
+
+print()
+print("=" * 65)
+print("  SUMMARY")
+print(f"  {'Included (will apply)':<30}: {len(included)}")
+print(f"  {'Excluded (review)':<30}: {len(excluded)}")
+print(f"  {'Total under Application':<30}: {len(projects)}")
+print("=" * 65)
+print("\n  NEXT STEPS")
+print(f"  1. Review {CLEAN_FILE} — delete any repos you don't want.")
+print( "  2. Rename it to repos_to_apply.txt")
+print( "  3. python3 apply_repo_governance.py --batch repos_to_apply.txt --dry-run")
+print( "  4. Then run without --dry-run to apply.")
+print()
+print("  READ-ONLY: No changes were made to GitLab.")
+print("=" * 65)
