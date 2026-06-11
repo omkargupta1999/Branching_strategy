@@ -98,16 +98,21 @@ GROUP_INVITES = [
 
 # Step 2 — Push rules (project-level: POST/PUT /projects/:id/push_rule).
 # branch_name_regex enforces the allowed branch naming scheme; commit_message_regex
-# enforces Conventional-Commits + EPAY ticket suffix. Raw strings so backslashes
-# are passed to GitLab verbatim (Re2 syntax on the server side).
+# enforces the format: TICKET|CC|type: subject
+#   TICKET = 3 uppercase letters + '-' + 3 digits   (e.g. EPA-123)
+#   CC     = 2 uppercase letters                      (e.g. IN)
+#   type   = feat|fix|docs|style|refactor|perf|test|chore
+#   then ': ' followed by a non-empty subject
+# The pipes are LITERAL characters in the commit message (escaped \| ).
+# Raw strings so backslashes pass to GitLab verbatim (Re2 syntax server-side).
 PUSH_RULES = {
     "branch_name_regex":
         r"^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|"
         r"feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|"
         r"hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$",
     "commit_message_regex":
-        r"^(feat|fix|docs|style|refactor|perf|test|chore)"
-        r"(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$",
+        r"^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|"
+        r"(feat|fix|docs|style|refactor|perf|test|chore): .+$",
 }
 
 # Step 3 — Protected branches.  push = No one ; merge = listed groups only.
