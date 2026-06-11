@@ -1,589 +1,86 @@
-#!/usr/bin/env python3
-"""
-=============================================================================
- Script      : apply_repo_governance.py
- Purpose     : Apply Protected Branch Rules (Step 3) and MR Approval Rules
-               (Step 4) + 'Pipelines must succeed' to a SINGLE GitLab repo,
-               for the SBIePay ePay Platform (ITEPAYPG-SBIePay2).
-
-               Run this on ONE repo to test, then reuse for the rest.
-
- SCOPE       : Every WRITE call targets /projects/<resolved-id>/... ONLY.
-               Group lookups are READ-ONLY (GET) to resolve GitLab group
-               NAMES -> numeric IDs. No group/subgroup endpoint is ever
-               written to, so nothing leaks to the other repos.
-
- Dependencies: NONE — Python standard library only (no pip required)
-               Works on Python 3.6+ / RHEL air-gapped environment.
-
- Modes       :
-   (default)  Apply changes, then auto-verify.
-   --dry-run  Print every write that WOULD happen. No changes.
-   --verify   Read current state only. No changes.
-
- Output      :
-   Console   — Live log printed to terminal
-   governance_<repo>_<timestamp>.txt — Full run log
-
- Usage       :
-   1. Set TOKEN, GITLAB_URL, TARGET_PROJECT below (or pass --project).
-   2. python3 apply_repo_governance.py
-      python3 apply_repo_governance.py --dry-run
-      python3 apply_repo_governance.py --verify
-=============================================================================
-"""
-
-import urllib.request
-import urllib.error
-import urllib.parse
-import json
-import ssl
-import sys
-import argparse
-from datetime import datetime
-
-# =============================================================================
-#  CONFIGURATION — Edit only this block
-# =============================================================================
-
-GITLAB_URL     = "https://gitlab.sbi"   # Target GitLab instance
-TOKEN          = "token"                       # Maintainer/Owner PAT (glpat-...)
-
-# Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_key_managment"
-
-# =============================================================================
-#  SPEC — Do not edit unless the governance master doc changes
-# =============================================================================
-
-# GitLab access-level integers
-NO_ACCESS  = 0    # "No one"
-DEVELOPER  = 30
-MAINTAINER = 40
-
-# GitLab group NAME -> numeric ID map.
-# IDs taken directly from find_ldap_groups.py discovery output. The groups
-# live under itepaypg-sbiepay2/ldap-membership/. Hardcoding the IDs avoids the
-# fragile GET /groups?search= lookup (which did not match reliably on this
-# 18.1.6-EE instance). To onboard a new instance, re-run discovery and update.
-GROUP_IDS = {
-    "epay-gitlab-bank-app-owner":        4953,
-    "epay-gitlab-bank-app-maintainer":   4954,
-    "epay-gitlab-vendor-app-maintainer": 4955,
-    "epay-gitlab-vendor-app-lead":       4956,
-    "epay-gitlab-vendor-pm":             4962,
-}
-
-# Step 1 — Group invites (project share). GitLab requires a group to be a
-# MEMBER of the project before it can be used in a protected-branch merge rule
-# (else: 422 "Merge access levels group does not have access to the project").
-# This mirrors the manual process: invite group -> assign role -> then protect.
-# Format: group_id -> access_level. IDs from find_ldap_groups.py discovery.
-OWNER_LVL      = 50
-MAINTAINER_LVL = 40
-DEVELOPER_LVL  = 30
-REPORTER_LVL   = 20
-
-GROUP_INVITES = [
-    {"name": "epay-gitlab-bank-app-owner",         "id": 4953, "access": OWNER_LVL},
-    {"name": "epay-gitlab-bank-app-maintainer",    "id": 4954, "access": MAINTAINER_LVL},
-    {"name": "epay-gitlab-vendor-app-maintainer",  "id": 4955, "access": MAINTAINER_LVL},
-    {"name": "epay-gitlab-vendor-release-manager", "id": 4950, "access": DEVELOPER_LVL},
-    {"name": "epay-gitlab-vendor-app-lead",        "id": 4956, "access": DEVELOPER_LVL},
-    {"name": "epay-gitlab-vendor-app-developer",   "id": 4957, "access": DEVELOPER_LVL},
-    # vendor-pm is used by Step 4 approval rules (not a Step-1 app link); invite
-    # as Reporter (its top-level spec role) so it's a project member too.
-    {"name": "epay-gitlab-vendor-pm",              "id": 4962, "access": REPORTER_LVL},
-]
-
-# Step 2 — Push rules (project-level: POST/PUT /projects/:id/push_rule).
-# branch_name_regex enforces the allowed branch naming scheme; commit_message_regex
-# enforces Conventional-Commits + EPAY ticket suffix. Raw strings so backslashes
-# are passed to GitLab verbatim (Re2 syntax on the server side).
-PUSH_RULES = {
-    "branch_name_regex":
-        r"^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|"
-        r"feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|"
-        r"hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$",
-    "commit_message_regex":
-        r"^(feat|fix|docs|style|refactor|perf|test|chore)"
-        r"(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$",
-}
-
-# Step 3 — Protected branches.  push = No one ; merge = listed groups only.
-PROTECTED_BRANCHES = [
-    {"name": "main",
-     "merge_groups": ["epay-gitlab-bank-app-maintainer", "epay-gitlab-bank-app-owner"]},
-    {"name": "develop",
-     "merge_groups": ["epay-gitlab-vendor-app-lead"]},
-    {"name": "release/*",
-     "merge_groups": ["epay-gitlab-vendor-app-maintainer"]},
-]
-
-# Step 4 — MR approval rules (project-level, Ultimate). One group per rule.
-#   Flow 5 (hotfix/* -> main) reuses the SAME 4 'main' rules (hotfix MRs also
-#   target main), so no separate hotfix rules are needed. Lead absent from
-#   main => "Lead NOT required for hotfix" is satisfied.
-APPROVAL_RULES = [
-    {"name": "Lead Approval",                "branch": "develop",   "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Gate - Lead",          "branch": "release/*", "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Gate - Architect",     "branch": "release/*", "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor Architect Sign-off",    "branch": "main",      "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor PM Approval (CAB gate)","branch": "main",      "group": "epay-gitlab-vendor-pm",             "required": 1},
-    {"name": "Bank Maintainer Approval",     "branch": "main",      "group": "epay-gitlab-bank-app-maintainer",   "required": 1},
-    {"name": "Bank PM Final Gate",           "branch": "main",      "group": "epay-gitlab-bank-app-owner",        "required": 1},
-]
-
-# =============================================================================
-#  SETUP
-# =============================================================================
-
-if not TOKEN:
-    print("[ERROR] TOKEN is not set. Fill in your Maintainer/Owner PAT.")
-    sys.exit(1)
-
-TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-HEADERS   = {"PRIVATE-TOKEN": TOKEN}
-ssl_ctx   = ssl._create_unverified_context()
-
-# Collected log lines (console + file)
-_log_lines = []
-
-def log(line=""):
-    _log_lines.append(line)
-    print(line)
-
-# =============================================================================
-#  API HELPERS
-# =============================================================================
-
-def _request(method, url, data=None, dry_run=False, as_json=False):
-    """One HTTP call. data dict -> form-urlencoded body, OR JSON body when
-       as_json=True (needed for nested arrays like allowed_to_merge that the
-       form-encoded bracket syntax does not reliably express on 18.x).
-       Honours dry_run for writes."""
-    is_write = method in ("POST", "PUT", "DELETE")
-    if is_write and dry_run:
-        log(f"    [dry-run] {method} {url}")
-        if data:
-            log(f"              payload: {json.dumps(data)}")
-        return {"__dry_run__": True}
-
-    body = None
-    req_headers = dict(HEADERS)
-    if data is not None:
-        if as_json:
-            body = json.dumps(data).encode()
-            req_headers["Content-Type"] = "application/json"
-        else:
-            body = urllib.parse.urlencode(data, doseq=True).encode()
-            req_headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-    req = urllib.request.Request(url, data=body, method=method)
-    for k, v in req_headers.items():
-        req.add_header(k, v)
-    try:
-        resp = urllib.request.urlopen(req, context=ssl_ctx)
-        raw = resp.read().decode()
-        return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")
-        if e.code == 401:
-            log("\n[ERROR] 401 Unauthorized — TOKEN invalid or empty.")
-            sys.exit(1)
-        if e.code == 403:
-            log("\n[ERROR] 403 Forbidden — token lacks scope/role on this project.")
-            sys.exit(1)
-        if e.code == 404:
-            return None   # let callers treat 404 as 'not found'
-        log(f"\n[ERROR] HTTP {e.code} on {method} {url} -> {detail}")
-        sys.exit(1)
-
-
-def api_get(path, params=None):
-    url = f"{GITLAB_URL}/api/v4{path}"
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    return _request("GET", url)
-
-def api_get_all(path, params=None):
-    """Paginated GET — returns the full list across pages."""
-    results, page = [], 1
-    base = f"{GITLAB_URL}/api/v4{path}"
-    while True:
-        q = dict(params or {})
-        q.update({"per_page": 100, "page": page})
-        url = base + "?" + urllib.parse.urlencode(q)
-        req = urllib.request.Request(url)
-        for k, v in HEADERS.items():
-            req.add_header(k, v)
-        try:
-            resp = urllib.request.urlopen(req, context=ssl_ctx)
-            data = json.loads(resp.read())
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
-                log(f"\n[ERROR] HTTP {e.code} fetching {url}")
-                sys.exit(1)
-            break
-        if not data:
-            break
-        results.extend(data)
-        try:
-            if page >= int(resp.headers.get("X-Total-Pages", "1")):
-                break
-        except ValueError:
-            break
-        page += 1
-    return results
-
-def api_post(path, data=None, dry_run=False, as_json=False):
-    return _request("POST", f"{GITLAB_URL}/api/v4{path}", data=data,
-                    dry_run=dry_run, as_json=as_json)
-
-def api_put(path, data=None, dry_run=False, as_json=False):
-    return _request("PUT", f"{GITLAB_URL}/api/v4{path}", data=data,
-                    dry_run=dry_run, as_json=as_json)
-
-def api_delete(path, dry_run=False):
-    return _request("DELETE", f"{GITLAB_URL}/api/v4{path}", dry_run=dry_run)
-
-# =============================================================================
-#  RESOLUTION
-# =============================================================================
-
-def resolve_project(full_path):
-    # Accept either a numeric project ID or a full path.
-    ident = str(full_path).strip()
-    if ident.isdigit():
-        enc = ident
-    else:
-        enc = urllib.parse.quote(ident, safe="")
-    proj = api_get(f"/projects/{enc}")
-    if not proj:
-        log(f"\n[ERROR] Project not found: {full_path}")
-        log("  Tip: pass the numeric project ID instead of the path, e.g.")
-        log("       --project 2754")
-        log("  Or copy the exact 'Full Path' from your repo_list CSV "
-            "(paths are case-sensitive).")
-        sys.exit(1)
-    return proj["id"], proj["path_with_namespace"]
-
-def resolve_groups(_unused=None):
-    """Validate each hardcoded group ID exists & is visible (READ-ONLY).
-       Returns the same name->id map. Aborts if any ID is unreachable."""
-    resolved, missing = {}, []
-    for name, gid in GROUP_IDS.items():
-        g = api_get(f"/groups/{gid}")
-        if g and g.get("id") == gid:
-            resolved[name] = gid
-        else:
-            missing.append(f"{name} (id={gid})")
-    if missing:
-        log("\n[ERROR] These GitLab groups could not be reached by ID:")
-        for m in missing:
-            log(f"   - {m}")
-        log("Aborting without making any changes. Re-run find_ldap_groups.py "
-            "and update GROUP_IDS if IDs have changed on this instance.")
-        sys.exit(2)
-    return resolved
-
-# =============================================================================
-#  STEP 1 — GROUP INVITES (project share)
-# =============================================================================
-
-def apply_group_invites(pid, dry_run):
-    log("\n=== Step 1: Group Invites (project share) ===")
-    # Existing shared groups on the project, to make this idempotent.
-    proj = api_get(f"/projects/{pid}")
-    shared = {g.get("group_id"): g.get("group_access_level")
-              for g in (proj.get("shared_with_groups", []) if proj else [])}
-
-    for inv in GROUP_INVITES:
-        gid, lvl, name = inv["id"], inv["access"], inv["name"]
-        if shared.get(gid) == lvl:
-            log(f"  '{name}' already shared at level {lvl} -> skip")
-            continue
-        if gid in shared:
-            # Re-share at the correct level: unshare then share.
-            api_delete(f"/projects/{pid}/share/{gid}", dry_run=dry_run)
-        api_post(f"/projects/{pid}/share",
-                 data={"group_id": gid, "group_access": lvl},
-                 dry_run=dry_run, as_json=True)
-        log(f"  shared '{name}' (id={gid}) at access level {lvl}")
-
-# =============================================================================
-#  STEP 2 — PUSH RULES
-# =============================================================================
-
-def apply_push_rules(pid, dry_run):
-    log("\n=== Step 2: Push Rules ===")
-    existing = api_get(f"/projects/{pid}/push_rule")
-    if dry_run:
-        verb = "update" if existing else "create"
-        log(f"    [dry-run] would {verb} push rules")
-        log(f"    branch_name_regex   : {PUSH_RULES['branch_name_regex']}")
-        log(f"    commit_message_regex: {PUSH_RULES['commit_message_regex']}")
-        return
-
-    if existing:
-        resp = api_put(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=True)
-        verb = "updated"
-    else:
-        resp = api_post(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=True)
-        verb = "created"
-
-    # Read back to CONFIRM the write actually persisted (the create endpoint
-    # can return 2xx without persisting on some 18.x configs). Trust the
-    # read-back, not the POST response.
-    after = api_get(f"/projects/{pid}/push_rule")
-    persisted = (after
-                 and after.get("branch_name_regex") == PUSH_RULES["branch_name_regex"]
-                 and after.get("commit_message_regex") == PUSH_RULES["commit_message_regex"])
-
-    # Fallback: push_rules is a flat-field endpoint; some 18.x builds only
-    # accept form-encoded (not JSON) here. If JSON didn't persist, retry as form.
-    if not persisted:
-        log("  [info] JSON write did not persist; retrying form-encoded ...")
-        existing2 = api_get(f"/projects/{pid}/push_rule")
-        if existing2:
-            resp = api_put(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=False)
-            verb = "updated"
-        else:
-            resp = api_post(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=False)
-            verb = "created"
-        after = api_get(f"/projects/{pid}/push_rule")
-        persisted = (after
-                     and after.get("branch_name_regex") == PUSH_RULES["branch_name_regex"]
-                     and after.get("commit_message_regex") == PUSH_RULES["commit_message_regex"])
-
-    if persisted:
-        log(f"  {verb} push rules — CONFIRMED on read-back")
-        log(f"    branch_name_regex   : {after.get('branch_name_regex')}")
-        log(f"    commit_message_regex: {after.get('commit_message_regex')}")
-    else:
-        log("  [WARN] push rules did NOT persist as expected.")
-        log(f"    POST/PUT response: {json.dumps(resp) if resp else 'empty'}")
-        log(f"    read-back: {json.dumps(after) if after else 'none'}")
-        log("    -> push rules may require a different endpoint/permission on "
-            "this instance; see notes.")
-
-# =============================================================================
-#  STEP 3 — PROTECTED BRANCHES
-# =============================================================================
-
-def get_protected_branch(pid, name):
-    enc = urllib.parse.quote(name, safe="")
-    return api_get(f"/projects/{pid}/protected_branches/{enc}")
-
-def get_protected_branch_id(pid, name):
-    """Resolve a protected branch's numeric ID reliably, including wildcard
-       names like 'release/*'. The single-name GET endpoint is unreliable for
-       wildcards on 18.1.x, so list all protected branches and match by name."""
-    for pb in (api_get_all(f"/projects/{pid}/protected_branches") or []):
-        if pb.get("name") == name:
-            return pb.get("id")
-    return None
-
-def apply_protected_branches(pid, groups, dry_run):
-    log("\n=== Step 3: Protected Branch Rules ===")
-    for spec in PROTECTED_BRANCHES:
-        name = spec["name"]
-        enc  = urllib.parse.quote(name, safe="")
-        if get_protected_branch_id(pid, name) is not None:
-            log(f"  '{name}' already protected -> deleting to re-apply cleanly")
-            api_delete(f"/projects/{pid}/protected_branches/{enc}", dry_run=dry_run)
-
-        # push_access_level 0 = "No one" (an empty allowed_to_push array is
-        # interpreted by GitLab as the default Maintainers level, NOT nobody,
-        # so we set the level explicitly). allowed_to_merge stays a group array.
-        data = {
-            "name": name,
-            "allow_force_push": False,
-            "push_access_level": NO_ACCESS,   # 0 = No one
-            "allowed_to_merge": [{"group_id": groups[gname]}
-                                 for gname in spec["merge_groups"]],
-        }
-
-        api_post(f"/projects/{pid}/protected_branches", data=data,
-                 dry_run=dry_run, as_json=True)
-        log(f"  protected '{name}' | push: No one | merge: {', '.join(spec['merge_groups'])}")
-
-# =============================================================================
-#  STEP 4 — MR APPROVAL RULES
-# =============================================================================
-
-def apply_approval_rules(pid, groups, dry_run):
-    log("\n=== Step 4: MR Approval Rules ===")
-    # protected-branch name -> id (needed to target a rule at a branch)
-    pb_ids = {}
-    for spec in PROTECTED_BRANCHES:
-        if dry_run:
-            pb_ids[spec["name"]] = f"<pb-id:{spec['name']}>"
-        else:
-            pb_ids[spec["name"]] = get_protected_branch_id(pid, spec["name"])
-
-    existing = {} if dry_run else {
-        r["name"]: r for r in (api_get_all(f"/projects/{pid}/approval_rules") or [])
-    }
-
-    # --- Reconcile: delete any approval rule whose name is NOT in our spec ---
-    # Keeps the repo's final state EXACTLY the 7 spec rules (no orphans from
-    # earlier manual/UI config or prior script versions). GitLab's built-in
-    # 'Any approver' default rule (rule_type 'any_approver') is left untouched.
-    spec_names = {r["name"] for r in APPROVAL_RULES}
-    if dry_run:
-        log("  [reconcile] would delete any existing rule not in spec "
-            "(dry-run cannot list live rules reliably; see real run)")
-    else:
-        for name, r in existing.items():
-            if name in spec_names:
-                continue
-            if r.get("rule_type") == "any_approver":
-                continue  # don't remove GitLab's default fallback rule
-            api_delete(f"/projects/{pid}/approval_rules/{r['id']}", dry_run=dry_run)
-            log(f"  [reconcile] deleted non-spec rule '{name}' (id={r['id']})")
-        # Refresh after deletions so we don't try to PUT a just-deleted rule.
-        existing = {
-            r["name"]: r for r in (api_get_all(f"/projects/{pid}/approval_rules") or [])
-        }
-
-    for rule in APPROVAL_RULES:
-        branch = rule["branch"]
-        pbid   = pb_ids.get(branch)
-        if pbid is None and not dry_run:
-            log(f"  SKIP '{rule['name']}' (target branch '{branch}' not protected)")
-            continue
-
-        data = {
-            "name": rule["name"],
-            "approvals_required": rule["required"],
-            "rule_type": "regular",
-            "group_ids": [groups[rule["group"]]],
-        }
-        if pbid is not None:
-            data["protected_branch_ids"] = [pbid]
-
-        prev = existing.get(rule["name"])
-        if prev:
-            api_put(f"/projects/{pid}/approval_rules/{prev['id']}", data=data,
-                    dry_run=dry_run, as_json=True)
-            verb = "updated"
-        else:
-            api_post(f"/projects/{pid}/approval_rules", data=data,
-                     dry_run=dry_run, as_json=True)
-            verb = "created"
-        log(f"  {verb} '{rule['name']}' -> '{branch}' | group {rule['group']} | required {rule['required']}")
-
-# =============================================================================
-#  STEP 5 — PROJECT SETTING
-# =============================================================================
-
-def apply_project_settings(pid, dry_run):
-    log("\n=== Step 5: Project Settings ===")
-    api_put(f"/projects/{pid}", data={"only_allow_merge_if_pipeline_succeeds": "true"},
-            dry_run=dry_run)
-    log("  'Pipelines must succeed before merge' = enabled")
-
-# =============================================================================
-#  VERIFY
-# =============================================================================
-
-def verify(pid, groups):
-    log("\n=== VERIFY (read-only) ===")
-    id_to_name = {v: k for k, v in groups.items()}
-    invite_name = {inv["id"]: inv["name"] for inv in GROUP_INVITES}
-
-    log("Shared groups (project members):")
-    proj0 = api_get(f"/projects/{pid}")
-    for g in (proj0.get("shared_with_groups", []) if proj0 else []):
-        gid = g.get("group_id")
-        log(f"  {invite_name.get(gid, g.get('group_name', gid))}: "
-            f"access level {g.get('group_access_level')}")
-
-    log("Protected branches:")
-    pb_by_name = {pb.get("name"): pb
-                  for pb in (api_get_all(f"/projects/{pid}/protected_branches") or [])}
-    for spec in PROTECTED_BRANCHES:
-        pb = pb_by_name.get(spec["name"])
-        if not pb:
-            log(f"  MISSING: {spec['name']}")
-            continue
-        push  = pb.get("push_access_levels", [])
-        merge = pb.get("merge_access_levels", [])
-        push_ok = bool(push) and all(p.get("access_level") == NO_ACCESS for p in push)
-        merge_grp = [id_to_name.get(m.get("group_id"), m.get("group_id"))
-                     for m in merge if m.get("group_id")]
-        log(f"  {spec['name']}: push={'No one' if push_ok else push} | merge groups={merge_grp}")
-
-    log("Approval rules:")
-    for r in (api_get_all(f"/projects/{pid}/approval_rules") or []):
-        grp      = [id_to_name.get(g.get("id"), g.get("name")) for g in r.get("groups", [])]
-        branches = [b.get("name") for b in r.get("protected_branches", [])]
-        log(f"  {r.get('name')}: required={r.get('approvals_required')} | groups={grp} | branches={branches}")
-
-    proj = api_get(f"/projects/{pid}")
-    log(f"Pipelines must succeed: {proj.get('only_allow_merge_if_pipeline_succeeds')}")
-
-    log("Push rules:")
-    pr = api_get(f"/projects/{pid}/push_rule")
-    if pr:
-        log(f"  branch_name_regex   : {pr.get('branch_name_regex')}")
-        log(f"  commit_message_regex: {pr.get('commit_message_regex')}")
-    else:
-        log("  MISSING: no push rules set")
-
-# =============================================================================
-#  MAIN
-# =============================================================================
-
-def main():
-    ap = argparse.ArgumentParser(description="Apply protected branches + MR "
-                                 "approval rules to a SINGLE GitLab repo.")
-    ap.add_argument("--project", default=TARGET_PROJECT,
-                    help="Full project path (overrides TARGET_PROJECT)")
-    ap.add_argument("--dry-run", action="store_true", help="Show writes; change nothing")
-    ap.add_argument("--verify",  action="store_true", help="Read current state only")
-    args = ap.parse_args()
-
-    mode = "VERIFY" if args.verify else ("DRY-RUN" if args.dry_run else "APPLY")
-    log("=" * 65)
-    log("  GitLab Repo Governance")
-    log(f"  Target  : {GITLAB_URL}")
-    log(f"  Project : {args.project}")
-    log(f"  Mode    : {mode}")
-    log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    log("=" * 65)
-
-    pid, ppath = resolve_project(args.project)
-    log(f"\nResolved project -> id={pid}  path={ppath}")
-
-    log("\nValidating GitLab group IDs (read-only)...")
-    groups = resolve_groups()
-    for n, i in groups.items():
-        log(f"  {n} -> {i}")
-
-    if args.verify:
-        verify(pid, groups)
-    else:
-        apply_group_invites(pid, args.dry_run)
-        apply_push_rules(pid, args.dry_run)
-        apply_protected_branches(pid, groups, args.dry_run)
-        apply_approval_rules(pid, groups, args.dry_run)
-        apply_project_settings(pid, args.dry_run)
-        if not args.dry_run:
-            verify(pid, groups)
-
-    log(f"\nDone. Scope was project id={pid} only.")
-
-    out_file = f"governance_{ppath.split('/')[-1]}_{TIMESTAMP}.txt"
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(_log_lines))
-    print(f"\n  -> {out_file} written.")
-    if mode == "APPLY":
-        print("  Changes were limited to the single project above.")
-    else:
-        print("  READ-ONLY: no changes made to GitLab.")
-
-
-if __name__ == "__main__":
-    main()
+Dear Team,
+
+As part of our migration to the new GitLab instance (gitlab.sbi), we have rolled out a standardized set of governance rules across all SBIePay application repositories. These rules are now LIVE. Please read this carefully before your next push or merge request, as your existing habits from the old GitLab may now be rejected.
+
+====================================================
+1. BRANCH NAMING — enforced on branch creation
+====================================================
+Branches that do not match the approved pattern will be REJECTED on push. Allowed branch names:
+
+  main
+  develop
+  release/<major>.<minor>.<patch>     e.g. release/1.5.0
+  feature/EPAY-<id>-<short-desc>        e.g. feature/EPAY-1234-upi-autopay
+  bugfix/EPAY-<id>-<short-desc>         e.g. bugfix/EPAY-1299-fix-mandate
+  hotfix/<major>.<minor>.<patch>        e.g. hotfix/1.5.1
+
+Rules:
+ - Use lowercase letters, numbers, and hyphens only in the description part.
+ - feature and bugfix branches MUST include the EPAY Jira ID.
+ - release and hotfix branches use the version number (no description).
+
+WILL BE REJECTED:
+  feature/login                (missing EPAY id)
+  feature/EPAY-123-Add_Login    (uppercase + underscore)
+  release/1.5                  (not full X.Y.Z)
+  my-test-branch               (not an approved type)
+
+====================================================
+2. COMMIT MESSAGES — enforced on every commit
+====================================================
+Format:  <type>(<scope>): <subject> EPAY-<id>
+
+ - <type> is one of: feat, fix, docs, style, refactor, perf, test, chore
+ - <scope> is optional, lowercase, in parentheses
+ - <subject> must be 10 to 100 characters
+ - The message MUST end with the EPAY Jira ID
+
+VALID examples:
+  feat(auth): add login flow for users EPAY-123
+  fix: correct null pointer on refund EPAY-1299
+  chore(ci): bump pipeline image version EPAY-42
+
+WILL BE REJECTED:
+  update stuff                          (no type, no EPAY id)
+  feat: short EPAY-1                     (subject under 10 chars)
+  feat(auth): add login flow            (missing EPAY id)
+
+Tip: configure a local commit template so you don't forget the format.
+
+====================================================
+3. PROTECTED BRANCHES — no direct push
+====================================================
+main, develop, and release/* are protected. You CANNOT push to them directly. All changes must arrive via a Merge Request that passes approvals and the pipeline.
+
+ - main      : merge by Bank App Maintainer / Owner only
+ - develop   : merge by Vendor App Lead
+ - release/* : merge by Vendor App Architect
+
+feature/*, bugfix/*, and hotfix/* remain open for you to push freely.
+
+====================================================
+4. MERGE REQUEST APPROVALS
+====================================================
+Approvals depend on the TARGET branch:
+
+ - feature or bugfix --> develop : 1 approval (Lead)
+ - develop or bugfix --> release/* : 2 approvals (Lead + Architect)
+ - release --> main : 4 approvals (Architect + Vendor PM + Bank Maintainer + Bank PM)
+ - hotfix --> main : same 4 approvals; hotfix MR description must include the Jira incident ID
+
+The pipeline must pass before any MR can be merged. The source branch is deleted automatically after merge.
+
+====================================================
+WHAT YOU NEED TO DO
+====================================================
+ - Rename any in-progress local branches to match the new pattern before pushing.
+ - Adopt the commit message format immediately.
+ - Raise MRs instead of pushing to protected branches.
+
+If a push is rejected, the error message will tell you which rule failed. For questions or genuine exceptions, contact the DevSecOps team.
+
+Thank you for helping keep the SBIePay platform audit-compliant.
+
+Regards,
+DevSecOps Team
+SBIePay Platform Engineering
