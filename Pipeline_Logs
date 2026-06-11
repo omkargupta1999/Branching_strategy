@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 """
-audit_access_tree.py
-====================
+remove_direct_members.py
+========================
 
-Walks an entire GitLab group hierarchy and reports, for every subgroup and
-project, exactly who has access -- distinguishing DIRECT members from
-INHERITED ones (and, for projects, members inherited from ancestor groups).
+Phase 1 (LIST):   Fetch and display EVERY direct member of a single project,
+                  showing the "added by" source and role -- this is the
+                  "Direct member by *" set you see in the GitLab UI.
 
-Purpose: pinpoint *where* a group/user grant actually lives so you can revoke
-it at the correct source instead of chasing it across child repos.
+Phase 2 (REMOVE): After you review the list, the script asks for an explicit
+                  typed confirmation before deleting. Nothing is removed
+                  unless you type the confirmation phrase. Inherited members
+                  and shared-group members are NEVER touched (they are not
+                  direct members and won't appear in the list).
 
-House style: Python standard library ONLY (urllib, json, getpass). No pip.
-Secrets prompted at runtime. Idempotent / read-only -- this script never
-modifies anything.
+House style: Python standard library ONLY. Secrets via getpass.
 
-GitLab access_level reference:
-    0   No access
-   10   Guest
-   20   Reporter
-   30   Developer
-   40   Maintainer
-   50   Owner
+DEFAULTS:
+  * DRY_RUN = True  -> lists only, removes NOTHING, even if you confirm.
+    Set DRY_RUN = False to enable actual deletion (still gated by typed confirm).
+  * Bots/service accounts are listed but EXCLUDED from removal by default
+    (SKIP_BOTS = True) so you don't delete CI_BOT_TOKEN etc. by accident.
+
+access_level: 10 Guest / 20 Reporter / 30 Developer / 40 Maintainer / 50 Owner
 """
 
 import json
@@ -32,32 +33,28 @@ import urllib.parse
 import urllib.error
 
 # ---------------------------------------------------------------------------
-# Configuration -- edit these two, or accept the prompts at runtime.
+# Configuration
 # ---------------------------------------------------------------------------
 
-# Path-only (NOT a full URL). For the screenshot this is the top-level group.
-ROOT_GROUP = "itepaypg-sbiepay2"
+GITLAB_BASE = "https://gitlab.sbi"          # must match the PAT's instance
 
-# Base API URL of THIS instance. No trailing slash. Must match the PAT's instance.
-GITLAB_BASE = "https://gitlab.sbi"
+# Project PATH (namespace/.../project). NOT a URL, NOT a numeric id here.
+TARGET_PROJECT = "itepaypg-sbiepay2/infra/devops/ci-templates"
 
-# Set to False ONLY if the instance uses an internal CA your Python doesn't
-# trust and you cannot point REQUESTS_CA_BUNDLE / SSL_CERT_FILE at it.
-VERIFY_TLS = True
+DRY_RUN = True          # True = never deletes. Set False to allow deletion.
+SKIP_BOTS = True        # True = keep bot/service-account direct members.
+VERIFY_TLS = True       # False only if internal CA untrusted and no CA bundle.
+
+CONFIRM_PHRASE = "REMOVE"   # you must type this exactly to proceed in Phase 2.
 
 ACCESS_LEVELS = {
-    0: "No access",
-    5: "Minimal",
-    10: "Guest",
-    20: "Reporter",
-    30: "Developer",
-    40: "Maintainer",
-    50: "Owner",
+    0: "No access", 5: "Minimal", 10: "Guest", 20: "Reporter",
+    30: "Developer", 40: "Maintainer", 50: "Owner",
 }
 
 
 # ---------------------------------------------------------------------------
-# Low-level HTTP helpers
+# HTTP helpers
 # ---------------------------------------------------------------------------
 
 def _ssl_context():
@@ -69,51 +66,51 @@ def _ssl_context():
     return ctx
 
 
-def api_get(token, path, params=None):
-    """
-    GET /api/v4/<path>. Transparently follows GitLab keyset/offset pagination
-    via the Link header and returns the concatenated list (or single dict).
-    """
+def _request(token, method, path, params=None):
     if params is None:
         params = {}
     params.setdefault("per_page", 100)
-
     url = "{base}/api/v4/{path}?{qs}".format(
         base=GITLAB_BASE.rstrip("/"),
         path=path.lstrip("/"),
         qs=urllib.parse.urlencode(params),
     )
-
     results = []
     ctx = _ssl_context()
-
     while url:
-        req = urllib.request.Request(url, method="GET")
+        req = urllib.request.Request(url, method=method)
         req.add_header("PRIVATE-TOKEN", token)
         try:
             with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+                if method == "DELETE":
+                    return resp.status  # 204 on success
                 body = resp.read().decode("utf-8")
                 data = json.loads(body) if body else []
                 if isinstance(data, list):
                     results.extend(data)
                 else:
-                    return data  # single object endpoint
-                # pagination via Link header
+                    return data
                 link = resp.headers.get("Link", "")
                 url = _next_link(link)
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")
-            raise RuntimeError(
-                "HTTP {code} on {u}\n  -> {d}".format(code=e.code, u=url, d=detail)
-            )
+            raise RuntimeError("HTTP {c} on {m} {u}\n  -> {d}".format(
+                c=e.code, m=method, u=url, d=detail))
         except urllib.error.URLError as e:
-            raise RuntimeError("Network/TLS error on {u}\n  -> {r}".format(u=url, r=e.reason))
-
+            raise RuntimeError("Network/TLS error on {u}\n  -> {r}".format(
+                u=url, r=e.reason))
     return results
 
 
+def api_get(token, path, params=None):
+    return _request(token, "GET", path, params)
+
+
+def api_delete(token, path):
+    return _request(token, "DELETE", path)
+
+
 def _next_link(link_header):
-    """Extract the rel="next" URL from an RFC 5988 Link header, or None."""
     if not link_header:
         return None
     for part in link_header.split(","):
@@ -127,207 +124,107 @@ def _next_link(link_header):
     return None
 
 
-# ---------------------------------------------------------------------------
-# Domain helpers
-# ---------------------------------------------------------------------------
-
 def lvl(n):
-    return "{:>2} {}".format(n, ACCESS_LEVELS.get(n, "Custom/Unknown"))
+    return "{} ({})".format(n, ACCESS_LEVELS.get(n, "Custom/Unknown"))
 
 
-def get_group(token, group_ref):
-    enc = urllib.parse.quote(str(group_ref), safe="")
-    return api_get(token, "groups/{}".format(enc))
+def is_bot(member):
+    """Heuristic: GitLab bots/service accounts."""
+    if member.get("bot"):
+        return True
+    uname = (member.get("username") or "")
+    return uname.startswith("group_") or uname.startswith("project_") \
+        or "_bot_" in uname
 
 
-def get_subgroups(token, group_id):
-    return api_get(token, "groups/{}/subgroups".format(group_id))
+# ---------------------------------------------------------------------------
+# Phase 1 -- LIST
+# ---------------------------------------------------------------------------
+
+def get_project(token, project_path):
+    enc = urllib.parse.quote(project_path, safe="")
+    return api_get(token, "projects/{}".format(enc))
 
 
-def get_group_projects(token, group_id):
-    # include_subgroups=False: we recurse the tree ourselves so each project
-    # is listed under its true parent rather than flattened to the root.
-    return api_get(token, "groups/{}/projects".format(group_id),
-                   {"include_subgroups": "false", "with_shared": "false"})
-
-
-def get_group_members_all(token, group_id):
-    """All members INCLUDING inherited from ancestor groups."""
-    return api_get(token, "groups/{}/members/all".format(group_id))
-
-
-def get_group_members_direct(token, group_id):
-    """Only members added DIRECTLY to this group."""
-    return api_get(token, "groups/{}/members".format(group_id))
-
-
-def get_project_members_all(token, project_id):
-    return api_get(token, "projects/{}/members/all".format(project_id))
-
-
-def get_project_members_direct(token, project_id):
+def get_direct_members(token, project_id):
+    """
+    /projects/:id/members  -> DIRECT members only (the 'Direct member by *' set).
+    Does NOT include inherited or shared-group members.
+    """
     return api_get(token, "projects/{}/members".format(project_id))
 
 
-def get_project_shared_groups(token, project_id):
-    """Groups the project has been shared with (group-invited-to-project)."""
-    proj = api_get(token, "projects/{}".format(project_id))
-    if isinstance(proj, dict):
-        return proj.get("shared_with_groups", []) or []
-    return []
+def list_direct_members(token, project_id):
+    members = get_direct_members(token, project_id)
+    members.sort(key=lambda m: (-m.get("access_level", 0), m.get("username", "")))
 
+    print("\n" + "=" * 74)
+    print("DIRECT MEMBERS of project id={}".format(project_id))
+    print("=" * 74)
+    print("{:<3} {:<28} {:<14} {:<10} {}".format(
+        "#", "username", "role", "kind", "name"))
+    print("-" * 74)
 
-def get_group_ldap_links(token, group_id):
-    """
-    LDAP group links attached DIRECTLY to this group (EE only).
-    A grant that looks 'DIRECT' but is actually LDAP-driven will correspond
-    to one of these. Returns [] if endpoint unavailable / no links / no perm.
-    """
-    try:
-        return api_get(token, "groups/{}/ldap_group_links".format(group_id))
-    except RuntimeError:
-        # 404 (no links) or 403 (insufficient perm) -- non-fatal for the audit
-        return []
-
-
-def get_group_shared_with(token, group_id):
-    """Other groups this group has been shared with (group-to-group share)."""
-    g = api_get(token, "groups/{}".format(group_id))
-    if isinstance(g, dict):
-        return g.get("shared_with_groups", []) or []
-    return []
-
-
-# ---------------------------------------------------------------------------
-# Reporting
-# ---------------------------------------------------------------------------
-
-def member_line(m, direct_ids):
-    """Format one member; mark DIRECT vs INHERITED using direct_ids set."""
-    uid = m.get("id")
-    name = m.get("name", "?")
-    username = m.get("username", "?")
-    access = m.get("access_level", 0)
-    tag = "DIRECT   " if uid in direct_ids else "INHERITED"
-    return "        [{tag}] {name} (@{user})  ->  {acc}".format(
-        tag=tag, name=name, user=username, acc=lvl(access)
-    )
-
-
-def report_group(token, group, depth):
-    pad = "  " * depth
-    gid = group["id"]
-    print("{p}GROUP  {full}  (id={gid})".format(
-        p=pad, full=group["full_path"], gid=gid))
-
-    all_m = get_group_members_all(token, gid)
-    direct_m = get_group_members_direct(token, gid)
-    direct_ids = {m["id"] for m in direct_m}
-
-    if all_m:
-        for m in sorted(all_m, key=lambda x: (-x.get("access_level", 0), x.get("username", ""))):
-            print(pad + member_line(m, direct_ids))
-    else:
-        print(pad + "        (no members)")
-
-    # LDAP group links attached at THIS level -- the source of LDAP-driven grants
-    for link in get_group_ldap_links(token, gid):
-        cn = link.get("cn") or link.get("filter") or "?"
-        prov = link.get("provider", "?")
-        acc = link.get("group_access", 0)
-        print("{p}        [LDAP-LINK] cn={cn} provider={prov}  ->  {acc}".format(
-            p=pad, cn=cn, prov=prov, acc=lvl(acc)))
-
-    # Group-to-group shares landing at this group
-    for sg in get_group_shared_with(token, gid):
-        print("{p}        [SHARED-GROUP] {name} (id={gid})  ->  {acc}".format(
-            p=pad,
-            name=sg.get("group_full_path", sg.get("group_name", "?")),
-            gid=sg.get("group_id"),
-            acc=lvl(sg.get("group_access_level", 0)),
+    removable, skipped = [], []
+    for i, m in enumerate(members, 1):
+        bot = is_bot(m)
+        kind = "BOT/SVC" if bot else "human"
+        print("{:<3} @{:<27} {:<14} {:<10} {}".format(
+            i,
+            m.get("username", "?"),
+            ACCESS_LEVELS.get(m.get("access_level", 0), "?"),
+            kind,
+            m.get("name", "?"),
         ))
+        if bot and SKIP_BOTS:
+            skipped.append(m)
+        else:
+            removable.append(m)
 
-    # recurse subgroups (subgroups endpoint already returns full_path + id)
-    for sub in get_subgroups(token, gid):
-        report_group(token, sub, depth + 1)
-
-
-def report_project(token, proj, depth):
-    pad = "  " * depth
-    pid = proj["id"]
-    print("{p}PROJECT  {full}  (id={pid})".format(
-        p=pad, full=proj["path_with_namespace"], pid=pid))
-
-    all_m = get_project_members_all(token, pid)
-    direct_m = get_project_members_direct(token, pid)
-    direct_ids = {m["id"] for m in direct_m}
-
-    if all_m:
-        for m in sorted(all_m, key=lambda x: (-x.get("access_level", 0), x.get("username", ""))):
-            print(pad + member_line(m, direct_ids))
-    else:
-        print(pad + "        (no members)")
-
-    shared = get_project_shared_groups(token, pid)
-    for sg in shared:
-        print("{p}        [SHARED-GROUP] {name} (id={gid})  ->  {acc}".format(
-            p=pad,
-            name=sg.get("group_full_path", sg.get("group_name", "?")),
-            gid=sg.get("group_id"),
-            acc=lvl(sg.get("group_access_level", 0)),
-        ))
+    print("-" * 74)
+    print("Total direct members : {}".format(len(members)))
+    print("Will target for removal: {}".format(len(removable)))
+    print("Protected (bot/svc, kept): {}".format(len(skipped)))
+    print("=" * 74)
+    return removable, skipped
 
 
 # ---------------------------------------------------------------------------
-# Focused lookup: trace one user across the whole tree
+# Phase 2 -- REMOVE (gated)
 # ---------------------------------------------------------------------------
 
-def trace_user(token, root_group, username):
-    """
-    Walk the tree and print every place `username` appears, flagged DIRECT
-    or INHERITED. The DIRECT hits are the grants you actually need to remove.
-    """
-    print("\n" + "=" * 70)
-    print("TRACE for user @{u} -- DIRECT hits are the real source grants".format(u=username))
-    print("=" * 70)
+def remove_members(token, project_id, removable):
+    if DRY_RUN:
+        print("\nDRY_RUN is ON -> no deletions performed.")
+        print("To actually remove, set DRY_RUN = False at the top of the script.")
+        return
 
-    hits = {"direct": [], "inherited": []}
+    print("\nYou are about to REMOVE {} direct members from project id={}.".format(
+        len(removable), project_id))
+    print("This is PERMANENT (members can be re-invited later if needed).")
+    ans = input("Type '{}' to proceed, anything else to abort: ".format(
+        CONFIRM_PHRASE)).strip()
+    if ans != CONFIRM_PHRASE:
+        print("Aborted. Nothing removed.")
+        return
 
-    def walk_group(group, depth):
-        gid = group["id"]
-        all_m = get_group_members_all(token, gid)
-        direct_ids = {m["id"] for m in get_group_members_direct(token, gid)}
-        for m in all_m:
-            if m.get("username") == username:
-                bucket = "direct" if m["id"] in direct_ids else "inherited"
-                hits[bucket].append(("GROUP", group["full_path"], m.get("access_level", 0)))
-        for proj in get_group_projects(token, gid):
-            pid = proj["id"]
-            pall = get_project_members_all(token, pid)
-            pdir = {x["id"] for x in get_project_members_direct(token, pid)}
-            for m in pall:
-                if m.get("username") == username:
-                    bucket = "direct" if m["id"] in pdir else "inherited"
-                    hits[bucket].append(("PROJECT", proj["path_with_namespace"], m.get("access_level", 0)))
-        for sub in get_subgroups(token, gid):
-            walk_group(sub, depth + 1)
+    ok, fail = 0, 0
+    for m in removable:
+        uid = m["id"]
+        uname = m.get("username", "?")
+        try:
+            status = api_delete(token, "projects/{}/members/{}".format(project_id, uid))
+            if status in (200, 204):
+                print("  removed @{} (id={})".format(uname, uid))
+                ok += 1
+            else:
+                print("  unexpected status {} for @{}".format(status, uname))
+                fail += 1
+        except RuntimeError as e:
+            print("  FAILED @{}: {}".format(uname, e))
+            fail += 1
 
-    walk_group(root_group, 0)
-
-    print("\n-- DIRECT grants (REMOVE THESE to revoke access) --")
-    if hits["direct"]:
-        for kind, path, acc in hits["direct"]:
-            print("   {k:8} {p}  ->  {a}".format(k=kind, p=path, a=lvl(acc)))
-    else:
-        print("   (none -- all access is inherited; remove at the parent group below)")
-
-    print("\n-- INHERITED grants (consequences of the above; do NOT touch these) --")
-    if hits["inherited"]:
-        for kind, path, acc in hits["inherited"]:
-            print("   {k:8} {p}  ->  {a}".format(k=kind, p=path, a=lvl(acc)))
-    else:
-        print("   (none)")
-    print("=" * 70)
+    print("\nDone. Removed: {}  Failed: {}".format(ok, fail))
 
 
 # ---------------------------------------------------------------------------
@@ -335,44 +232,44 @@ def trace_user(token, root_group, username):
 # ---------------------------------------------------------------------------
 
 def main():
-    print("GitLab Access Tree Auditor (read-only)")
-    print("Instance: {}".format(GITLAB_BASE))
-    print("Root group: {}".format(ROOT_GROUP))
-    print("-" * 70)
+    print("GitLab Direct-Member Remover")
+    print("Instance : {}".format(GITLAB_BASE))
+    print("Project  : {}".format(TARGET_PROJECT))
+    print("DRY_RUN  : {}   SKIP_BOTS : {}".format(DRY_RUN, SKIP_BOTS))
+    print("-" * 74)
 
     token = getpass.getpass("GitLab PAT (api scope, hidden input): ").strip()
     if not token:
-        print("No token provided. Aborting.")
+        print("No token. Aborting.")
         sys.exit(1)
 
-    # sanity check the token + instance match before walking the whole tree
     try:
         me = api_get(token, "user")
-        print("Authenticated as: @{u} (id={i})\n".format(
-            u=me.get("username"), i=me.get("id")))
+        print("Authenticated as: @{} (id={})".format(
+            me.get("username"), me.get("id")))
     except RuntimeError as e:
-        print("AUTH/CONNECT FAILED:\n  {}".format(e))
-        print("\nCommon causes:")
-        print("  * PAT belongs to a DIFFERENT instance than GITLAB_BASE")
-        print("  * PAT lacks 'api' (or at least 'read_api') scope")
-        print("  * GITLAB_BASE wrong / proxy intercepting TLS / internal CA untrusted")
+        print("AUTH FAILED:\n  {}".format(e))
         sys.exit(2)
 
     try:
-        root = get_group(token, ROOT_GROUP)
-    except RuntimeError as e:
-        print("Could not resolve root group '{}':\n  {}".format(ROOT_GROUP, e))
-        print("Make sure ROOT_GROUP is the PATH (e.g. 'itepaypg-sbiepay2'), not a URL.")
+        proj = get_project(token, TARGET_PROJECT)
+        pid = proj["id"]
+        print("Resolved project: {} (id={})".format(
+            proj.get("path_with_namespace"), pid))
+    except (RuntimeError, KeyError) as e:
+        print("Could not resolve project '{}':\n  {}".format(TARGET_PROJECT, e))
+        print("Ensure TARGET_PROJECT is the PATH, not a URL, and PAT can see it.")
         sys.exit(3)
 
-    print("FULL ACCESS TREE")
-    print("=" * 70)
-    report_group(token, root, 0)
+    # Phase 1
+    removable, _skipped = list_direct_members(token, pid)
 
-    # Optional focused trace.
-    target = input("\nTrace a specific username? (blank to skip): ").strip()
-    if target:
-        trace_user(token, root, target)
+    if not removable:
+        print("\nNothing to remove. Exiting.")
+        return
+
+    # Phase 2 (gated by DRY_RUN + typed confirmation)
+    remove_members(token, pid, removable)
 
 
 if __name__ == "__main__":
