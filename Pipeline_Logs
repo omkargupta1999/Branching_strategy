@@ -45,6 +45,10 @@ DRY_RUN = True          # True = never deletes. Set False to allow deletion.
 SKIP_BOTS = True        # True = keep bot/service-account direct members.
 VERIFY_TLS = True       # False only if internal CA untrusted and no CA bundle.
 
+# Only members at these access_levels are eligible for removal.
+# 30 = Developer, 20 = Reporter. Add 40 (Maintainer) / 10 (Guest) if needed.
+REMOVE_ROLES = {30, 20}
+
 CONFIRM_PHRASE = "REMOVE"   # you must type this exactly to proceed in Phase 2.
 
 ACCESS_LEVELS = {
@@ -195,23 +199,24 @@ def list_direct_members(token, project_id):
     removable, kept = [], []
     for i, m in enumerate(enriched, 1):
         bot = is_bot(m)
+        access = m.get("access_level", 0)
         cb = m.get("_created_by") or {}
         cb_user = cb.get("username")
         cb_is_human = bool(cb_user) and not _username_is_bot(cb_user)
 
-        # Decide: remove only if THIS member is human AND was added by a human.
+        # Remove only if: human member, added by a human, AND role is in scope.
         if bot and SKIP_BOTS:
             target = False
             reason = "BOT/SVC (kept)"
-        elif cb_is_human:
+        elif not cb_is_human:
+            target = False
+            reason = "by @{} (bot, kept)".format(cb_user) if cb_user else "system/LDAP (kept)"
+        elif access not in REMOVE_ROLES:
+            target = False
+            reason = "by @{} [role kept]".format(cb_user)
+        else:
             target = True
             reason = "by @{}".format(cb_user)
-        elif cb_user:
-            target = False
-            reason = "by @{} (bot, kept)".format(cb_user)
-        else:
-            target = False
-            reason = "system/LDAP (kept)"
 
         print("{:<3} @{:<25} {:<11} {:<8} {:<26} {}".format(
             i,
@@ -227,10 +232,12 @@ def list_direct_members(token, project_id):
         else:
             kept.append(m)
 
+    role_names = ", ".join(sorted(
+        ACCESS_LEVELS.get(r, str(r)) for r in REMOVE_ROLES))
     print("-" * 90)
-    print("Total direct members      : {}".format(len(members)))
-    print("TARGET (added by a human) : {}".format(len(removable)))
-    print("KEPT (system/LDAP/bot)    : {}".format(len(kept)))
+    print("Total direct members         : {}".format(len(members)))
+    print("TARGET (human-added, role in [{}]) : {}".format(role_names, len(removable)))
+    print("KEPT (other role/system/LDAP/bot)  : {}".format(len(kept)))
     print("=" * 90)
     return removable, kept
 
@@ -282,6 +289,8 @@ def main():
     print("Instance : {}".format(GITLAB_BASE))
     print("Project  : {}".format(TARGET_PROJECT))
     print("DRY_RUN  : {}   SKIP_BOTS : {}".format(DRY_RUN, SKIP_BOTS))
+    print("REMOVE_ROLES : {}".format(
+        ", ".join(sorted(ACCESS_LEVELS.get(r, str(r)) for r in REMOVE_ROLES))))
     print("-" * 74)
 
     token = getpass.getpass("GitLab PAT (api scope, hidden input): ").strip()
