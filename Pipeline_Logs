@@ -1,37 +1,228 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
-
-ARG ENV
-ARG VERSION
-
-ENV ENV=$ENV
-ENV VERSION=$VERSION
-
-COPY ./epaycert.cer  /tmp
-COPY ./sms.cer  /tmp
-
-COPY build/libs/epay_reports_service-${VERSION}.jar .
-
-ENTRYPOINT sh -c 'java -jar "epay_reports_service-$VERSION.jar"'
-
-USER root
-
-RUN mkdir -p /home/default/merchantreports && \
-    chmod 777 -R /home/default/merchantreports
-
-# On UBI9 openjdk-21-runtime, cacerts lives at /etc/pki/java/cacerts.
-# /usr/lib/jvm/java-21/lib/security/cacerts does NOT exist in runtime images.
-# We resolve the real path dynamically so this works across any minor version bump.
-RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
-    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts && \
-    echo "Using cacerts at: $CACERTS" && \
-    yes | keytool -import -trustcacerts \
-      -file /tmp/epaycert.cer \
-      -keystore "$CACERTS" \
-      -alias S3_EPAY_CERT \
-      -storepass changeit && \
-    yes | keytool -import -trustcacerts \
-      -file /tmp/sms.cer \
-      -keystore "$CACERTS" \
-      -alias DEV_EPAY_SMS \
-      -storepass changeit
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-zfogph9mk-project-2831-concurrent-1 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:02
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_reports_service/.git/
+Created fresh repository.
+Checking out ff8207a7 as detached HEAD (ref is refs/merge-requests/629/head)...
+Skipping Git submodules setup
+Downloading artifacts
+00:03
+Downloading artifacts for build (1099914)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1099914 responseStatus=200 OK token=eyJraWQiO
+Downloading artifacts for test (1099915)...
+Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1099915 responseStatus=200 OK token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:34
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+$ update-ca-trust extract
+$ mkdir -p ~/.jfrog/security/certs
+$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
+$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+time="2026-06-12T09:06:24Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+Login Succeeded!
+$ jf config add \ # collapsed multi-line command
+09:06:25 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+$ jf config use "$JF_SERVER_ID"
+09:06:25 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+$ jf config show
+Server ID:			epay-server
+JFrog Platform URL:		https://artifactory.jfrog.sbi/
+Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
+Distribution URL:		https://artifactory.jfrog.sbi/distribution/
+Xray URL:			https://artifactory.jfrog.sbi/xray/
+Mission Control URL:		https://artifactory.jfrog.sbi/mc/
+Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
+User:				[MASKED]
+Access token:			***
+Default:			true
+$ echo "VERSION=$VERSION" # collapsed multi-line command
+VERSION=mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7
+Backend build detected
+total 145120
+-rw-r--r-- 1 1001 root    695309 Jun 12 09:04 epay_reports_service-mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7-plain.jar
+-rw-r--r-- 1 1001 root 147905088 Jun 12 09:04 epay_reports_service-mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7.jar
+Generated Tag.. mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7
+Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_reports_service:mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7
+time="2026-06-12T09:06:25Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+STEP 1/12: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907
+Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907...
+Getting image source signatures
+Copying blob sha256:b95d8360a05528c2eb44ff248a3d7d7783f642b3f20079082ce3d5cf82fea3e8
+Copying blob sha256:58f90a41708411e01ec9627558717a0a857cc5fcbb414f301be68ba9bdc7e517
+Copying config sha256:9703c8f5fa7f54460389c6b12bb18cabce137d125a31456293a196a2a684ad77
+Writing manifest to image destination
+STEP 2/12: ARG ENV
+--> 3828cbf3296b
+STEP 3/12: ARG VERSION
+--> e399f230eaf5
+STEP 4/12: ENV ENV=$ENV
+--> f88bf9e3ca67
+STEP 5/12: ENV VERSION=$VERSION
+--> dc35d109013e
+STEP 6/12: COPY ./epaycert.cer  /tmp
+--> 14547797a45a
+STEP 7/12: COPY ./sms.cer  /tmp
+--> f997b605afe4
+STEP 8/12: COPY build/libs/epay_reports_service-${VERSION}.jar .
+--> e01a521cdbb0
+STEP 9/12: ENTRYPOINT sh -c 'java -jar "epay_reports_service-$VERSION.jar"'
+--> 4b0b2765bdb9
+STEP 10/12: USER root
+--> 74bc1180a7f2
+STEP 11/12: RUN mkdir -p /home/default/merchantreports &&     chmod 777 -R /home/default/merchantreports
+--> 1bbef8ae676a
+STEP 12/12: RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) &&     [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts &&     echo "Using cacerts at: $CACERTS" &&     yes | keytool -import -trustcacerts       -file /tmp/epaycert.cer       -keystore "$CACERTS"       -alias S3_EPAY_CERT       -storepass changeit &&     yes | keytool -import -trustcacerts       -file /tmp/sms.cer       -keystore "$CACERTS"       -alias DEV_EPAY_SMS       -storepass changeit
+Using cacerts at: /etc/pki/java/cacerts
+Warning: use -cacerts option to access cacerts keystore
+Owner: CN=s3store-A9cl2-dr.bank.sbi, OU=Meghdoot, O=SBI, ST=TELANGANA, C=IN
+Issuer: CN=SBI-PROD-RCA, DC=AD, DC=SBI
+Serial number: 1a00194fe14bc0d43441d83f27000000194fe1
+Valid from: Tue Mar 11 05:03:51 UTC 2025 until: Thu Mar 11 05:03:51 UTC 2027
+Certificate fingerprints:
+	 SHA1: BE:42:55:29:DE:F7:27:C7:80:81:04:8F:F5:54:0F:FA:05:21:7E:80
+	 SHA256: 24:92:20:A8:59:E4:38:A2:93:41:B8:1C:28:D9:36:2E:0B:33:1B:24:16:47:07:6E:13:23:EA:E0:0D:4B:96:64
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 3
+Extensions: 
+#1: ObjectId: 1.3.6.1.4.1.311.21.10 Criticality=false
+0000: 30 18 30 0A 06 08 2B 06   01 05 05 07 03 01 30 0A  0.0...+.......0.
+0010: 06 08 2B 06 01 05 05 07   03 02                    ..+.......
+#2: ObjectId: 1.3.6.1.4.1.311.21.7 Criticality=false
+0000: 30 2D 06 25 2B 06 01 04   01 82 37 15 08 86 81 9C  0-.%+.....7.....
+0010: 5C 83 C7 80 5B 83 F5 91   37 84 E0 81 66 B3 EA 64  \...[...7...f..d
+0020: 6A 86 E8 D0 0D 83 81 ED   09 02 01 64 02 01 15     j..........d...
+#3: ObjectId: 1.3.6.1.5.5.7.1.1 Criticality=false
+AuthorityInfoAccess [
+  [
+   accessMethod: caIssuers
+   accessLocation: URIName: ldap:///CN=SBI-PROD-RCA,CN=AIA,CN=Public%20Key%20Services,CN=Services,CN=Configuration,DC=AD,DC=SBI?cACertificate?base?objectClass=certificationAuthority
+]
+]
+#4: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: 37 9A 20 74 30 5E 24 FD   1F E5 BF AE FF 00 F4 6B  7. t0^$........k
+0010: 15 75 9F B0                                        .u..
+]
+]
+#5: ObjectId: 2.5.29.31 Criticality=false
+CRLDistributionPoints [
+  [DistributionPoint:
+     [URIName: ldap:///CN=SBI-PROD-RCA,CN=SBIROOTCAPROD,CN=CDP,CN=Public%20Key%20Services,CN=Services,CN=Configuration,DC=AD,DC=SBI?certificateRevocationList?base?objectClass=cRLDistributionPoint]
+]]
+#6: ObjectId: 2.5.29.37 Criticality=false
+ExtendedKeyUsages [
+  serverAuth
+  clientAuth
+]
+#7: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  DigitalSignature
+  Key_Encipherment
+]
+#8: ObjectId: 2.5.29.17 Criticality=true
+SubjectAlternativeName [
+  DNSName: s3store-A9cl2-dr.bank.sbi
+  IPAddress: 10.176.58.214
+  IPAddress: 10.176.58.215
+  IPAddress: 10.176.58.216
+  IPAddress: 10.176.58.217
+  IPAddress: 10.176.58.218
+  IPAddress: 10.176.58.219
+  IPAddress: 10.176.58.220
+  IPAddress: 10.176.58.221
+  IPAddress: 10.176.58.222
+  IPAddress: 10.176.58.223
+  IPAddress: 10.176.58.224
+]
+#9: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 64 52 3F 61 73 3F B3 70   67 F1 84 5B 12 26 DD ED  dR?as?.pg..[.&..
+0010: 47 C4 A2 28                                        G..(
+]
+]
+Trust this certificate? [no]:  Certificate was added to keystore
+Warning: use -cacerts option to access cacerts keystore
+Owner: CN=SBI-PROD-RCA, DC=AD, DC=SBI
+Issuer: CN=SBI-PROD-RCA, DC=AD, DC=SBI
+Serial number: 4c0313589c4855aa442593721858fa0e
+Valid from: Wed Feb 08 06:55:49 UTC 2017 until: Thu Feb 08 07:05:47 UTC 2057
+Certificate fingerprints:
+	 SHA1: 00:35:2F:F3:0F:A5:A3:06:66:5A:07:62:26:C2:DF:8A:D3:3A:5B:99
+	 SHA256: 6B:E9:B4:74:E5:4D:3B:4C:68:5D:ED:B5:00:E3:28:9A:7D:48:E6:13:5C:75:BB:F9:D3:76:04:FA:F4:B1:D9:FD
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 3
+Extensions: 
+#1: ObjectId: 1.3.6.1.4.1.311.20.2 Criticality=false
+0000: 1E 04 00 43 00 41                                  ...C.A
+#2: ObjectId: 1.3.6.1.4.1.311.21.1 Criticality=false
+0000: 02 01 00                                           ...
+#3: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen: no limit
+]
+#4: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  DigitalSignature
+  Key_CertSign
+  Crl_Sign
+]
+#5: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 37 9A 20 74 30 5E 24 FD   1F E5 BF AE FF 00 F4 6B  7. t0^$........k
+0010: 15 75 9F B0                                        .u..
+]
+]
+Trust this certificate? [no]:  Certificate was added to keystore
+COMMIT artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_reports_service:mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7
+--> d0fd8af11c8b
+Successfully tagged artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_reports_service:mr-feature-epay-000-remove-git-plugin-develop-629-ff8207a7
+d0fd8af11c8b8d01066f78c70949d8514812bbc7039e59be98b431ea2bf3e67a
+time="2026-06-12T09:06:54Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
+Copying blob sha256:edfa5fd7a14b12ce4e8754f05c2162708bae024790a5c4d9d53d6372749a0860
+Copying blob sha256:3cdb291102ade8b4d5946c203b168cff755c51f5aeec8a487ccdbd20a1e75dc2
+Copying blob sha256:91647e9b9db28aff458363ab11a8be65f86757562da00a2f9a515212ca870f8f
+Copying blob sha256:f4ee93458234ca27380d95243827958904412f8946bfbf2f298fde1347a2f309
+Copying blob sha256:863a96491fa1eb143dd1df951ef65bb994f165889fe9594b74ebb0b968d383a8
+Copying blob sha256:3886466528816d0d9cda84bf8469c595e00e3f3e1f100eb9e9911aff3eb25dfc
+Copying config sha256:d0fd8af11c8b8d01066f78c70949d8514812bbc7039e59be98b431ea2bf3e67a
+Writing manifest to image destination
+Image built and saved to epay_reports_service.tar
+Uploading artifacts for successful job
+00:17
+Uploading artifacts...
+*.tar: found 1 matching artifact files and directories 
+Uploading artifacts as "archive" to coordinator... 201 Created  id=1099916 responseStatus=201 Created token=eyJraWQiO
+Uploading artifacts...
+image.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1099916 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:00
+Job succeeded
