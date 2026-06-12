@@ -1,31 +1,357 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
+#!/usr/bin/env python3
+"""
+=============================================================================
+ Script      : fetch_backend_members.py
+ Purpose     : Fetch all members of every repo under
+               itepaypg-sbiepay2/application/backend on gitlab.sbi
+               with their role, source (direct / inherited / LDAP group)
+               and output a clean report.
 
-ARG ENV
-ARG VERSION
+ READ-ONLY   : Only HTTP GET requests. Zero changes to GitLab.
+ Dependencies: Python stdlib only — no pip required.
+ Usage       : python311\python.exe fetch_backend_members.py
+=============================================================================
+"""
 
-ENV ENV=$ENV
-ENV VERSION=$VERSION
+import urllib.request
+import urllib.parse
+import urllib.error
+import json
+import ssl
+import csv
+import os
+from datetime import datetime
 
-# FIX 1: Relative path (no leading /)
-COPY build/libs/epay_merchant_service-${VERSION}.jar .
+# =============================================================================
+#  CONFIGURATION
+# =============================================================================
 
-ENTRYPOINT sh -c 'java -jar "epay_merchant_service-$VERSION.jar"'
+GITLAB_URL   = "https://gitlab.sbi"
+TOKEN        = "glpat-zzGKdsrRgYsTuTSYsMtM"   # your token
+BACKEND_GROUP= "itepaypg-sbiepay2/application/backend"
 
-COPY ./sms.cer /tmp
+TIMESTAMP    = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUT_CSV      = f"backend_members_{TIMESTAMP}.csv"
+OUT_TXT      = f"backend_members_{TIMESTAMP}.txt"
 
-USER root
+# =============================================================================
+#  ROLE MAP
+# =============================================================================
 
-RUN mkdir -p /home/default/merchantreports && \
-    chmod 777 -R /home/default/merchantreports
+ROLE = {
+    10: "Guest",
+    20: "Reporter",
+    30: "Developer",
+    40: "Maintainer",
+    50: "Owner",
+}
 
-# FIX 2: Removed "RUN cd ..." (no-op in Dockerfile, path doesn't exist anyway)
-# FIX 3: Dynamic cacerts resolution — openjdk-21-runtime (UBI9) uses /etc/pki/java/cacerts
-# FIX 4: -noprompt suppresses verbose certificate dump in build logs
-RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
-    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/sms.cer \
-      -keystore "$CACERTS" \
-      -alias DEV_EPAY_SMS \
-      -storepass changeit
+# =============================================================================
+#  SETUP
+# =============================================================================
+
+ssl_ctx = ssl._create_unverified_context()
+HEADERS = {"PRIVATE-TOKEN": TOKEN}
+lines   = []   # collected for txt report
+
+def log(line=""):
+    lines.append(line)
+    print(line)
+
+# =============================================================================
+#  API HELPERS — GET ONLY
+# =============================================================================
+
+def api_get(path, params=None):
+    url = f"{GITLAB_URL}/api/v4{path}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url)
+    for k, v in HEADERS.items():
+        req.add_header(k, v)
+    try:
+        resp = urllib.request.urlopen(req, context=ssl_ctx)
+        return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            log("[ERROR] 401 Unauthorized — check TOKEN.")
+            raise SystemExit(1)
+        if e.code == 404:
+            return []
+        return []
+    except Exception as e:
+        log(f"[WARN] {path} — {e}")
+        return []
+
+
+def api_all(path, params=None):
+    """Paginate through all pages — GET only."""
+    results, page = [], 1
+    while True:
+        p = dict(params or {})
+        p.update({"per_page": 100, "page": page})
+        url  = f"{GITLAB_URL}/api/v4{path}?" + urllib.parse.urlencode(p)
+        req  = urllib.request.Request(url)
+        for k, v in HEADERS.items():
+            req.add_header(k, v)
+        try:
+            resp = urllib.request.urlopen(req, context=ssl_ctx)
+            data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                log("[ERROR] 401 Unauthorized.")
+                raise SystemExit(1)
+            break
+        if not data:
+            break
+        results.extend(data)
+        try:
+            if page >= int(resp.headers.get("X-Total-Pages", "1")):
+                break
+        except ValueError:
+            break
+        page += 1
+    return results
+
+# =============================================================================
+#  FETCH PROJECTS IN BACKEND GROUP
+# =============================================================================
+
+def get_backend_projects():
+    enc      = urllib.parse.quote(BACKEND_GROUP, safe="")
+    projects = api_all(f"/groups/{enc}/projects",
+                       {"include_subgroups": "false"})
+    return sorted(projects, key=lambda p: p.get("name", "").lower())
+
+# =============================================================================
+#  FETCH MEMBERS
+# =============================================================================
+
+def get_direct_members(pid):
+    """Direct members only — assigned explicitly on this project."""
+    members = api_all(f"/projects/{pid}/members")
+    for m in members:
+        m["_source"] = "Direct"
+    return members
+
+
+def get_all_members(pid):
+    """
+    All members including inherited (from group) and LDAP-synced.
+    This endpoint returns everyone who has access.
+    """
+    members = api_all(f"/projects/{pid}/members/all")
+    return members
+
+
+def get_group_members(group_path):
+    """Members of a specific LDAP group."""
+    enc = urllib.parse.quote(group_path, safe="")
+    return api_all(f"/groups/{enc}/members")
+
+
+def get_project_groups(pid):
+    """
+    Shared groups linked to this project.
+    Shows which LDAP groups have been shared/invited to this project.
+    """
+    return api_all(f"/projects/{pid}/groups")
+
+# =============================================================================
+#  LDAP GROUPS to check
+# =============================================================================
+
+LDAP_GROUPS = [
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-owner",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-bank-app-maintainer",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-developer",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-release-manager",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-pm",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-reporter",
+    "itepaypg-sbiepay2/ldap-membership/epay-gitlab-planner",
+]
+
+# =============================================================================
+#  BUILD LDAP GROUP MEMBERSHIP MAP
+#  { user_id : [group_name, group_name, ...] }
+# =============================================================================
+
+def build_ldap_map():
+    log("  Building LDAP group membership map ...")
+    ldap_map = {}   # user_id -> list of group names they belong to
+    group_role_map = {}  # group_path -> access_level granted to project
+
+    for gpath in LDAP_GROUPS:
+        gname   = gpath.split("/")[-1]
+        members = get_group_members(gpath)
+        for m in members:
+            uid = m.get("id")
+            if uid not in ldap_map:
+                ldap_map[uid] = []
+            ldap_map[uid].append(gname)
+        log(f"    {gname:<45} {len(members)} members")
+
+    return ldap_map
+
+# =============================================================================
+#  MAIN REPORT
+# =============================================================================
+
+def main():
+    log("=" * 65)
+    log("  Backend Repository Member Report")
+    log(f"  Source  : {GITLAB_URL}")
+    log(f"  Group   : {BACKEND_GROUP}")
+    log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log("  READ-ONLY — no changes made to GitLab")
+    log("=" * 65)
+
+    # ── Fetch backend projects ───────────────────────────────────────────────
+    log("\n[1/3] Fetching backend repositories ...")
+    projects = get_backend_projects()
+    log(f"       → {len(projects)} repositories found.\n")
+
+    if not projects:
+        log("[ERROR] No projects found. Check TOKEN and BACKEND_GROUP.")
+        raise SystemExit(1)
+
+    for p in projects:
+        log(f"  • {p['path_with_namespace']}")
+
+    # ── Build LDAP map ───────────────────────────────────────────────────────
+    log("\n[2/3] Fetching LDAP group memberships ...")
+    ldap_map = build_ldap_map()
+
+    # ── Fetch members per project ────────────────────────────────────────────
+    log("\n[3/3] Fetching members per repository ...")
+
+    all_rows  = []   # for CSV
+    seen_uids = {}   # deduplicate per project
+
+    for project in projects:
+        pid   = project["id"]
+        pname = project["path_with_namespace"]
+        ppath = project["path"]
+
+        log(f"\n{'─' * 65}")
+        log(f"  Repository : {pname}")
+        log(f"  Project ID : {pid}")
+        log(f"{'─' * 65}")
+
+        # Get all members (direct + inherited)
+        all_members   = get_all_members(pid)
+        direct_ids    = {m["id"] for m in get_direct_members(pid)}
+
+        # Get shared groups (LDAP groups invited to this project)
+        shared_groups = get_project_groups(pid)
+        shared_group_names = {
+            g.get("full_path", ""): ROLE.get(
+                g.get("group_access_level",
+                      g.get("access_level", 0)), "Unknown")
+            for g in shared_groups
+        }
+
+        log(f"\n  Shared/Invited LDAP Groups ({len(shared_groups)}):")
+        if shared_groups:
+            for g in shared_groups:
+                role_lvl = g.get("group_access_level",
+                                  g.get("access_level", 0))
+                log(f"    • {g.get('full_path',''):<55} "
+                    f"Role: {ROLE.get(role_lvl, str(role_lvl))}")
+        else:
+            log("    (none directly shared — access via parent group inheritance)")
+
+        log(f"\n  Members ({len(all_members)}):")
+        log(f"  {'ID':<8} {'Username':<25} {'Name':<30} "
+            f"{'Role':<14} {'Source':<20} {'LDAP Groups'}")
+        log(f"  {'─'*8} {'─'*25} {'─'*30} "
+            f"{'─'*14} {'─'*20} {'─'*40}")
+
+        seen_uids[pid] = set()
+
+        for m in sorted(all_members,
+                        key=lambda x: x.get("access_level", 0),
+                        reverse=True):
+            uid      = m.get("id")
+            if uid in seen_uids[pid]:
+                continue
+            seen_uids[pid].add(uid)
+
+            username = m.get("username", "")
+            name     = m.get("name", "")
+            role_lvl = m.get("access_level", 0)
+            role     = ROLE.get(role_lvl, str(role_lvl))
+            is_bot   = m.get("bot", False)
+
+            # Determine source
+            if is_bot:
+                source = "Bot / System"
+            elif uid in direct_ids:
+                source = "Direct"
+            else:
+                source = "Inherited (Group)"
+
+            # LDAP groups this user belongs to
+            user_ldap = ldap_map.get(uid, [])
+            ldap_str  = ", ".join(user_ldap) if user_ldap else "—"
+
+            log(f"  {str(uid):<8} {username:<25} {name:<30} "
+                f"{role:<14} {source:<20} {ldap_str}")
+
+            all_rows.append({
+                "Repository":       pname,
+                "Project ID":       pid,
+                "User ID":          uid,
+                "Username":         username,
+                "Name":             name,
+                "Role":             role,
+                "Access Level":     role_lvl,
+                "Source":           source,
+                "Bot":              "Yes" if is_bot else "No",
+                "LDAP Groups":      ldap_str,
+                "State":            m.get("state", ""),
+                "Avatar URL":       m.get("avatar_url", ""),
+                "Web URL":          m.get("web_url", ""),
+            })
+
+    # ── Write CSV ────────────────────────────────────────────────────────────
+    CSV_HEADERS = [
+        "Repository", "Project ID", "User ID", "Username", "Name",
+        "Role", "Access Level", "Source", "Bot",
+        "LDAP Groups", "State", "Web URL",
+    ]
+
+    with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_HEADERS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(all_rows)
+
+    # ── Write TXT ────────────────────────────────────────────────────────────
+    with open(OUT_TXT, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    # ── Summary ──────────────────────────────────────────────────────────────
+    log("\n" + "=" * 65)
+    log("  SUMMARY")
+    log("=" * 65)
+    log(f"  Repositories scanned : {len(projects)}")
+    log(f"  Total member records : {len(all_rows)}")
+    log(f"  Unique roles found   : "
+        f"{', '.join(sorted(set(r['Role'] for r in all_rows)))}")
+    log(f"  Direct members       : "
+        f"{sum(1 for r in all_rows if r['Source'] == 'Direct')}")
+    log(f"  Inherited members    : "
+        f"{sum(1 for r in all_rows if r['Source'] == 'Inherited (Group)')}")
+    log(f"  Bot accounts         : "
+        f"{sum(1 for r in all_rows if r['Bot'] == 'Yes')}")
+    log(f"\n  Output files:")
+    log(f"    {OUT_CSV}")
+    log(f"    {OUT_TXT}")
+    log(f"\n  READ-ONLY: No changes made to GitLab.")
+    log("=" * 65)
+
+
+if __name__ == "__main__":
+    main()
