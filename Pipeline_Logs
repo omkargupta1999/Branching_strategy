@@ -1,110 +1,11 @@
+# NOTE: Fixes applied:
+#   1. COPY path changed from absolute (/build/libs/) to relative (build/libs/)
+#   2. JAR artifact name corrected: epay_reporting_service -> epay_reports_service
+#   3. ENTRYPOINT jar name corrected to match above
 
-Search visible log output
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2831-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:07
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_reports_service/.git/
-Created fresh repository.
-Checking out 307ef0f7 as detached HEAD (ref is refs/merge-requests/629/head)...
-Skipping Git submodules setup
-Downloading artifacts
-00:04
-Downloading artifacts for build (1099753)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1099753 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for test (1099754)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1099754 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:21
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ mkdir -p ~/.jfrog/security/certs
-$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-08:06:06 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-08:06:06 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ jf config show
-Server ID:			epay-server
-JFrog Platform URL:		https://artifactory.jfrog.sbi/
-Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
-Distribution URL:		https://artifactory.jfrog.sbi/distribution/
-Xray URL:			https://artifactory.jfrog.sbi/xray/
-Mission Control URL:		https://artifactory.jfrog.sbi/mc/
-Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
-User:				[MASKED]
-Access token:			***
-Default:			true
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7
-Backend build detected
-total 145120
--rw-r--r-- 1 1001 root    695309 Jun 12 08:03 epay_reports_service-mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7-plain.jar
--rw-r--r-- 1 1001 root 147905088 Jun 12 08:03 epay_reports_service-mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7.jar
-Generated Tag.. mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7
-Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_reports_service:mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7
-STEP 1/18: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907
-Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907...
-Getting image source signatures
-Copying blob sha256:58f90a41708411e01ec9627558717a0a857cc5fcbb414f301be68ba9bdc7e517
-Copying blob sha256:b95d8360a05528c2eb44ff248a3d7d7783f642b3f20079082ce3d5cf82fea3e8
-Copying config sha256:9703c8f5fa7f54460389c6b12bb18cabce137d125a31456293a196a2a684ad77
-Writing manifest to image destination
-STEP 2/18: ARG ENV
---> 3afea94dc7f9
-STEP 3/18: ARG VERSION
---> bc94744d23a8
-STEP 4/18: ENV ENV=$ENV
---> 2eeaaee01db5
-STEP 5/18: ENV VERSION=$VERSION
---> 59627dff0b4f
-STEP 6/18: COPY ./epaycert.cer  /tmp
---> fe88090c4596
-STEP 7/18: COPY ./sms.cer  /tmp
---> 3642c05b7815
-STEP 8/18: COPY /build/libs/epay_reporting_service-${VERSION}.jar .
-Error: building at STEP "COPY /build/libs/epay_reporting_service-${VERSION}.jar .": checking on sources under "/builds/itepaypg-sbiepay2/application/backend/epay_reports_service": copier: stat: "/build/libs/epay_reporting_service-mr-feature-epay-000-remove-git-plugin-develop-629-307ef0f7.jar": no such file or directory
-Uploading artifacts for failed job
-00:02
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1099755 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-========================================================
-
-#FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.22-1.1753981268
 ARG BASE_IMAGE_DEV_ENV
 FROM ${BASE_IMAGE_DEV_ENV}
+
 ARG ENV
 ARG VERSION
 
@@ -114,87 +15,25 @@ ENV VERSION=$VERSION
 COPY ./epaycert.cer  /tmp
 COPY ./sms.cer  /tmp
 
-COPY /build/libs/epay_reporting_service-${VERSION}.jar .
-ENTRYPOINT sh -c 'java -jar "epay_reporting_service-$VERSION.jar"'
+# FIX 1: Relative path (no leading /)
+# FIX 2: Artifact name corrected from epay_reporting_service -> epay_reports_service
+COPY build/libs/epay_reports_service-${VERSION}.jar .
+
+# FIX 3: ENTRYPOINT jar name corrected to match
+ENTRYPOINT sh -c 'java -jar "epay_reports_service-$VERSION.jar"'
 
 COPY ./sms.cer  /tmp
+
 USER root
 RUN mkdir -p /home/default/merchantreports
 RUN chmod 777 -R /home/default/merchantreports
 RUN cd /usr/lib/jvm/java-21/bin
-RUN yes | keytool -import -trustcacerts -file /tmp/epaycert.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias S3_EPAY_CERT -storepass changeit
+RUN yes | keytool -import -trustcacerts -file /tmp/epaycert.cer \
+      -keystore /usr/lib/jvm/java-21/lib/security/cacerts \
+      -alias S3_EPAY_CERT -storepass changeit
+
 USER 0
 RUN cd /usr/lib/jvm/java-21/bin
-RUN yes | keytool -import -trustcacerts -file /tmp/sms.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias DEV_EPAY_SMS -storepass changeit
-
-===================================================== Image_build Configuration:++++++++++++
-
-# ci/image/image.build.yml  |  Stage: image-build
-# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
-# Image pushed in image.push.yml after image-scan and image-attest stages complete.
-
-include:
-  - local: ci/image/image.podman.setup.yml
-
-.image_build:
-  extends: .setup_jfrog_podman
-  stage: image-build
-  allow_failure: false
-  script:
-    - |
-      echo "VERSION=$VERSION"
-
-      # CHANGE: support both backend + frontend
-      if [ -d "build/libs" ]; then
-        echo "Backend build detected"
-        ls -l build/libs
-      elif [ -d "dist" ]; then
-        echo "Frontend build detected"
-        ls -l dist
-      elif [ -f "app.py" ]; then
-        echo "Python app detected"
-        ls -l app.py
-      elif [ -d "vendor" ]; then
-        echo "PHP build detected"
-        echo "Vendor packages: $(ls vendor | wc -l)"
-      else
-        echo "No build output found"
-        exit 1
-      fi
-
-      TAG="$VERSION"
-      echo "Generated Tag.. ${TAG}"
-      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
-      echo "Image: $COMPUTED_IMAGE_TAG"
-      echo "TAG=${TAG}" >> image.env
-      echo "VERSION=$VERSION" >> image.env
-      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
-      echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
-      echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV" >> image.env
-
-      podman build \
-        -t "$COMPUTED_IMAGE_TAG" \
-        -f Dockerfile \
-        --build-arg ENV=$ENV \
-        --build-arg VERSION=$TAG \
-        --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
-        --tls-verify=false
-      TAR_NAME="$CI_PROJECT_NAME.tar"
-      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
-      echo "Image built and saved to $TAR_NAME"
-      echo "TAR_NAME=$TAR_NAME" >> image.env
-    # - echo "IMAGE_FULL=$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" >> image.env
-    # - echo "✅ Build complete — NOT pushed yet. Awaiting scan + sign."
-  artifacts:
-    paths:
-      - "*.tar"
-    reports:
-      dotenv: image.env
-    expire_in: 1 day
-
-image:build:
-  extends: .image_build
-
-
-----------------------------
-
+RUN yes | keytool -import -trustcacerts -file /tmp/sms.cer \
+      -keystore /usr/lib/jvm/java-21/lib/security/cacerts \
+      -alias DEV_EPAY_SMS -storepass changeit
