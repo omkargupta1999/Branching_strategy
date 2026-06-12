@@ -1,133 +1,35 @@
-#FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1755674728
 ARG BASE_IMAGE_DEV_ENV
 FROM ${BASE_IMAGE_DEV_ENV}
+
 ARG ENV
 ARG VERSION
+
 ENV ENV=$ENV
 ENV VERSION=$VERSION
 ENV JAVA_OPTS="--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
-COPY /build/libs/epay_operations_service-${VERSION}.jar .
+
+# FIX 1: Relative path (no leading /)
+COPY build/libs/epay_operations_service-${VERSION}.jar .
+
 ENTRYPOINT sh -c 'java $JAVA_OPTS -jar "epay_operations_service-$VERSION.jar"'
-#ENTRYPOINT ["java", "$JAVA_OPTS", "-jar", "epay_operations_service-$VERSION.jar"]
-COPY ./sms.cer  /tmp
-COPY ./epaycert.cer  /tmp
-RUN ls -lrth /tmp/
-USER 0
-RUN cd /usr/lib/jvm/java-21/bin
-RUN yes | keytool -import -trustcacerts -file /tmp/sms.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias DEV_EPAY_SMS -storepass changeit
-RUN yes | keytool -import -trustcacerts -file /tmp/epaycert.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias S3_EPAY_CERT -storepass changeit
 
+COPY ./sms.cer     /tmp
+COPY ./epaycert.cer /tmp
 
+USER root
 
-=========================== getting this erorr ================
-
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-zfogph9mk-project-2833-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:02
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_operations_service/.git/
-Created fresh repository.
-Checking out e41abf56 as detached HEAD (ref is develop)...
-Skipping Git submodules setup
-Downloading artifacts
-00:06
-Downloading artifacts for build (1100655)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1100655 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for test (1100656)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1100656 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:28
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ mkdir -p ~/.jfrog/security/certs
-$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-06-12T10:17:32Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-10:17:33 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-10:17:33 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ jf config show
-Server ID:			epay-server
-JFrog Platform URL:		https://artifactory.jfrog.sbi/
-Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
-Distribution URL:		https://artifactory.jfrog.sbi/distribution/
-Xray URL:			https://artifactory.jfrog.sbi/xray/
-Mission Control URL:		https://artifactory.jfrog.sbi/mc/
-Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
-User:				[MASKED]
-Access token:			***
-Default:			true
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=dev-e41abf56
-Backend build detected
-total 336784
--rw-r--r-- 1 1001 root    462077 Jun 12 10:14 epay_operations_service-dev-e41abf56-plain.jar
--rw-r--r-- 1 1001 root 344403422 Jun 12 10:14 epay_operations_service-dev-e41abf56.jar
-Generated Tag.. dev-e41abf56
-Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_operations_service:dev-e41abf56
-time="2026-06-12T10:17:33Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-STEP 1/15: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907
-Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907...
-Getting image source signatures
-Copying blob sha256:58f90a41708411e01ec9627558717a0a857cc5fcbb414f301be68ba9bdc7e517
-Copying blob sha256:b95d8360a05528c2eb44ff248a3d7d7783f642b3f20079082ce3d5cf82fea3e8
-Copying config sha256:9703c8f5fa7f54460389c6b12bb18cabce137d125a31456293a196a2a684ad77
-Writing manifest to image destination
-STEP 2/15: ARG ENV
---> fe7f37c586f0
-STEP 3/15: ARG VERSION
---> 6d25b4b0f5d2
-STEP 4/15: ENV ENV=$ENV
---> 23cb77d32ec6
-STEP 5/15: ENV VERSION=$VERSION
---> a674770a718b
-STEP 6/15: ENV JAVA_OPTS="--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
---> cf74528e3381
-STEP 7/15: COPY /build/libs/epay_operations_service-${VERSION}.jar .
---> 83837d0e042c
-STEP 8/15: ENTRYPOINT sh -c 'java $JAVA_OPTS -jar "epay_operations_service-$VERSION.jar"'
---> 5bd8641c1bbd
-STEP 9/15: COPY ./sms.cer  /tmp
---> b27326c4d167
-STEP 10/15: COPY ./epaycert.cer  /tmp
---> bdc719270bf0
-STEP 11/15: RUN ls -lrth /tmp/
-total 8.0K
--rw-rw-rw- 1 root root 1.3K Jun 12 10:17 sms.cer
--rw-rw-rw- 1 root root 3.4K Jun 12 10:17 epaycert.cer
---> 141cef5e770f
-STEP 12/15: USER 0
---> 4b466e34d133
-STEP 13/15: RUN cd /usr/lib/jvm/java-21/bin
-/bin/sh: line 1: cd: /usr/lib/jvm/java-21/bin: No such file or directory
-Error: building at STEP "RUN cd /usr/lib/jvm/java-21/bin": while running runtime: exit status 1
-Uploading artifacts for failed job
-00:00
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1100657 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+# FIX 2: Removed pointless "RUN cd /usr/lib/jvm/java-21/bin" — no-op per shell, path doesn't exist
+# FIX 3: Dynamic cacerts resolution — openjdk-21-runtime (UBI9) uses /etc/pki/java/cacerts
+# FIX 4: -noprompt suppresses verbose certificate dump in build logs
+RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
+    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
+    keytool -import -trustcacerts -noprompt \
+      -file /tmp/sms.cer \
+      -keystore "$CACERTS" \
+      -alias DEV_EPAY_SMS \
+      -storepass changeit && \
+    keytool -import -trustcacerts -noprompt \
+      -file /tmp/epaycert.cer \
+      -keystore "$CACERTS" \
+      -alias S3_EPAY_CERT \
+      -storepass changeit
