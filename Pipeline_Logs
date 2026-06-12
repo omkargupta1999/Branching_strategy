@@ -1,35 +1,31 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
+**Subject: Clarification Required on Direct Memberships Preserved After Project Import and LDAP Group Access**
 
-ARG ENV
-ARG VERSION
+Dear GitLab Support Team,
 
-ENV ENV=$ENV
-ENV VERSION=$VERSION
-ENV JAVA_OPTS="--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+We recently migrated approximately 55 repositories from our legacy GitLab instance to a new GitLab Ultimate 18.1.6-EE instance using the project Export/Import process.
 
-# FIX 1: Relative path (no leading /)
-COPY build/libs/epay_operations_service-${VERSION}.jar .
+In the source GitLab, user access was managed through direct project memberships. In the target GitLab, we have implemented an LDAP-based RBAC model where access is granted through LDAP group links at the subgroup level.
 
-ENTRYPOINT sh -c 'java $JAVA_OPTS -jar "epay_operations_service-$VERSION.jar"'
+After the migration, all direct project memberships from the source instance were preserved in the target instance. As a result, users now have both:
 
-COPY ./sms.cer     /tmp
-COPY ./epaycert.cer /tmp
+* Direct project membership (imported from the old instance)
+* LDAP group-based access (new access model)
 
-USER root
+Could you please clarify the following:
 
-# FIX 2: Removed pointless "RUN cd /usr/lib/jvm/java-21/bin" — no-op per shell, path doesn't exist
-# FIX 3: Dynamic cacerts resolution — openjdk-21-runtime (UBI9) uses /etc/pki/java/cacerts
-# FIX 4: -noprompt suppresses verbose certificate dump in build logs
-RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
-    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/sms.cer \
-      -keystore "$CACERTS" \
-      -alias DEV_EPAY_SMS \
-      -storepass changeit && \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/epaycert.cer \
-      -keystore "$CACERTS" \
-      -alias S3_EPAY_CERT \
-      -storepass changeit
+1. When a user has both direct project membership and inherited group access, how does GitLab determine the effective permission level? Is the highest access level always used?
+
+2. If we remove all imported direct project members and retain only LDAP-group-based access:
+
+   * Will Issues, Merge Requests, comments, commits, pipeline history, artifacts, and assignments remain unaffected?
+   * Are there any known risks or side effects?
+
+Our goal is to make LDAP groups the single source of truth for repository access and safely remove legacy direct memberships.
+
+Thank you for your guidance.
+
+Kind Regards,
+
+**[Your Name]**
+**DevSecOps / Platform Engineering Team**
+**SBIePay**
