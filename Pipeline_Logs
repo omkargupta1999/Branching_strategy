@@ -1,161 +1,37 @@
-#!/usr/bin/env python3
+D:\Mr Om\Python_script>python311\python.exe tbs.py                  
 
-import urllib.request
-import urllib.parse
-import json
-import ssl
-
-GITLAB_URL = "https://gitlab.sbi"
-TOKEN = "YOUR_TOKEN"
-
-USERNAME = "affected_username"
-PROJECT_PATH = "itepaypg-sbiepay2/application/backend/epay-admin-services"
-
-HEADERS = {"PRIVATE-TOKEN": TOKEN}
-ssl_ctx = ssl._create_unverified_context()
-
-
-def api_get(path):
-    url = f"{GITLAB_URL}/api/v4{path}"
-
-    req = urllib.request.Request(url)
-
-    for k, v in HEADERS.items():
-        req.add_header(k, v)
-
-    resp = urllib.request.urlopen(req, context=ssl_ctx)
-
-    return json.loads(resp.read())
-
-
-def get_user():
-    users = api_get(
-        f"/users?username={urllib.parse.quote(USERNAME)}"
-    )
-
-    if not users:
-        raise Exception(f"User {USERNAME} not found")
-
-    return users[0]
-
-
-def get_project():
-    encoded = urllib.parse.quote(PROJECT_PATH, safe="")
+==============================
+PROJECT DETAILS
+==============================
+Traceback (most recent call last):
+  File "D:\Mr Om\Python_script\tbs.py", line 78, in <module>
+    project = get_project()
+              ^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\tbs.py", line 44, in get_project
     return api_get(f"/projects/{encoded}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\tbs.py", line 26, in api_get
+    resp = urllib.request.urlopen(req, context=ssl_ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 525, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 634, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 563, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "D:\Mr Om\Python_script\python311\Lib\urllib\request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found
 
-
-def get_members(project_id):
-    return api_get(
-        f"/projects/{project_id}/members/all"
-    )
-
-
-def get_direct_members(project_id):
-    return api_get(
-        f"/projects/{project_id}/members"
-    )
-
-
-def get_shared_groups(project_id):
-    return api_get(
-        f"/projects/{project_id}/groups"
-    )
-
-
-ROLE = {
-    10: "Guest",
-    20: "Reporter",
-    30: "Developer",
-    40: "Maintainer",
-    50: "Owner"
-}
-
-
-print("\n==============================")
-print("PROJECT DETAILS")
-print("==============================")
-
-project = get_project()
-
-project_id = project["id"]
-
-print("Project :", project["path_with_namespace"])
-print("Project ID :", project_id)
-print("Visibility :", project["visibility"])
-
-print("\n==============================")
-print("SHARED GROUPS")
-print("==============================")
-
-groups = get_shared_groups(project_id)
-
-if not groups:
-    print("No shared groups found")
-
-for g in groups:
-
-    role = ROLE.get(
-        g.get(
-            "group_access_level",
-            g.get("access_level", 0)
-        ),
-        "Unknown"
-    )
-
-    print(
-        f"{g.get('full_path')} "
-        f"=> {role}"
-    )
-
-print("\n==============================")
-print("USER CHECK")
-print("==============================")
-
-user = get_user()
-
-uid = user["id"]
-
-print("Username :", user["username"])
-print("Name     :", user["name"])
-print("User ID  :", uid)
-
-direct_members = get_direct_members(project_id)
-effective_members = get_members(project_id)
-
-direct_ids = {m["id"] for m in direct_members}
-
-user_direct = False
-user_effective = False
-
-for m in effective_members:
-
-    if m["id"] == uid:
-
-        user_effective = True
-
-        role = ROLE.get(
-            m["access_level"],
-            str(m["access_level"])
-        )
-
-        print("\nEffective Access Found")
-        print("Role :", role)
-
-        if uid in direct_ids:
-            print("Source : Direct Member")
-        else:
-            print("Source : Inherited")
-
-if uid in direct_ids:
-    user_direct = True
-
-print("\nSummary")
-print("---------------------")
-print("Direct Member    :", user_direct)
-print("Effective Access :", user_effective)
-
-if not user_effective:
-    print(
-        "\nROOT CAUSE: User has no access "
-        "to this project."
-    )
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
