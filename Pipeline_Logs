@@ -37,6 +37,12 @@
    --verify   Post-cleanup read-only check — shows remaining direct members.
 
  Usage:
+   # Test on ONE backend repo first (recommended):
+   python remove_direct_members.py --repo itepaypg-sbiepay2/application/backend/epay_key_managment
+   python remove_direct_members.py --repo <path> --execute
+   python remove_direct_members.py --repo <path> --verify
+
+   # Then roll out to ALL backend repos:
    python remove_direct_members.py              # Audit only (safe)
    python remove_direct_members.py --execute    # Audit + Remove
    python remove_direct_members.py --verify     # Post-removal check
@@ -68,6 +74,12 @@ TOKEN               = ""   # Leave blank → prompted securely at runtime
 
 # Subgroup path for Backend repos (all repos inside will be processed)
 BACKEND_SUBGROUP    = "itepaypg-sbiepay2/application/backend"
+
+# Single-repo target. If set (or passed via --repo), ONLY this one repo is
+# processed instead of the whole Backend subgroup. Use this to test on ONE
+# repo first before rolling out to all backend repos. Path-only, NOT a URL.
+# Example: "itepaypg-sbiepay2/application/backend/epay_key_managment"
+TARGET_PROJECT      = ""
 
 # Application subgroup — used to enumerate who has LDAP-inherited access
 APPLICATION_SUBGROUP = "itepaypg-sbiepay2/application"
@@ -213,6 +225,12 @@ def get_all_projects_in_subgroup(subgroup_path):
         f"/groups/{encoded}/projects",
         {"include_subgroups": "true", "archived": "false"}
     )
+
+def get_single_project(project_path):
+    """Return a single project as a one-element list (for --repo mode)."""
+    encoded = urllib.parse.quote(project_path, safe="")
+    proj = api_get(f"/projects/{encoded}")
+    return [proj]
 
 def get_direct_project_members(project_id):
     """
@@ -447,6 +465,16 @@ def main():
     elif "--verify" in sys.argv:
         mode = "verify"
 
+    # --repo <path> overrides TARGET_PROJECT for single-repo testing
+    target_project = TARGET_PROJECT
+    if "--repo" in sys.argv:
+        idx = sys.argv.index("--repo")
+        if idx + 1 < len(sys.argv):
+            target_project = sys.argv[idx + 1]
+        else:
+            print("[ERROR] --repo requires a project path argument.")
+            sys.exit(1)
+
     # Choose log file prefix based on mode
     prefix_map = {
         "audit":   "audit_direct_members",
@@ -457,7 +485,10 @@ def main():
 
     log_section(f"GitLab Direct Membership Removal — {mode.upper()}")
     log(f"  GitLab        : {GITLAB_URL}")
-    log(f"  Backend scope : {BACKEND_SUBGROUP}")
+    if target_project:
+        log(f"  Target (SINGLE): {target_project}")
+    else:
+        log(f"  Backend scope : {BACKEND_SUBGROUP}")
     log(f"  LDAP ref      : {APPLICATION_SUBGROUP}")
     log(f"  Mode          : {mode.upper()}")
     log(f"  Time          : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -480,13 +511,21 @@ def main():
         sys.exit(1)
     log()
 
-    # Fetch all backend projects
-    log(f"  Fetching projects under: {BACKEND_SUBGROUP}")
-    try:
-        all_projects = get_all_projects_in_subgroup(BACKEND_SUBGROUP)
-    except RuntimeError as e:
-        log(f"  [ERROR] Could not fetch projects: {e}")
-        sys.exit(1)
+    # Fetch projects: single repo if target set, else whole backend subgroup
+    if target_project:
+        log(f"  Fetching SINGLE project: {target_project}")
+        try:
+            all_projects = get_single_project(target_project)
+        except RuntimeError as e:
+            log(f"  [ERROR] Could not fetch project: {e}")
+            sys.exit(1)
+    else:
+        log(f"  Fetching projects under: {BACKEND_SUBGROUP}")
+        try:
+            all_projects = get_all_projects_in_subgroup(BACKEND_SUBGROUP)
+        except RuntimeError as e:
+            log(f"  [ERROR] Could not fetch projects: {e}")
+            sys.exit(1)
 
     # Filter out skip list
     projects = [
