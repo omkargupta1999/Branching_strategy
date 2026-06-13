@@ -1,36 +1,81 @@
+Several Windows-specific problems are colliding here. Let me break them down:
 
+**1. The `\` line continuation is a Linux/bash thing — it doesn't work in Windows CMD.** That's why everything ran together as one broken line and the `#` comment was treated as a command. In CMD you must put the whole command on **one line** with no backslashes.
 
+**2. `python3` isn't a valid command on your machine.** Typing `python3` is triggering the Windows App Installer / pymanager, which is trying to install Python 3.14.6 and failing. On Windows the command is usually `python` or `py`, not `python3`.
 
+**3. The piping to Python is fragile in CMD anyway.** Let me give you something that just works.
 
+## Easiest fix — skip curl piping entirely, save raw JSON to a file
 
-D:\Mr Om\Python_script># Source subgroupscurl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
-'#' is not recognized as an internal or external command,
-operable program or batch file.
+Run these as **single lines** in CMD (replace `YOUR_PAT`):
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>curl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
-********************************************************************************
-Installing Python 3.14.6.
-[ERROR] An error occurred. Please check any output above, or the log file, and try again.
-Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260613162216_38772.log
-If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
-To see all available commands, run 'py help'
-********************************************************************************
-[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
-Downloading: |
+```
+curl -sk -H "PRIVATE-TOKEN: YOUR_PAT" "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" -o source_groups.json
+```
 
-D:\Mr Om\Python_script>python311\python.exe curl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
-python311\python.exe: can't open file 'D:\\Mr Om\\Python_script\\curl': [Errno 2] No such file or directory
-********************************************************************************
-Installing Python 3.14.6.
-[ERROR] An error occurred. Please check any output above, or the log file, and try again.
-Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260613162235_39492.log
-If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
-To see all available commands, run 'py help'
-********************************************************************************
-[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
-Downloading: |
+```
+curl -sk -H "PRIVATE-TOKEN: YOUR_TARGET_PAT" "https://NEW-GITLAB-URL/api/v4/groups/NEW-TOP-GROUP/descendant_groups?per_page=100" -o target_groups.json
+```
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script> 
+That gives you two raw JSON files. No Python pipe, nothing to break.
+
+## Then extract the paths
+
+First confirm which Python command works. Run each and see which responds:
+
+```
+python --version
+```
+```
+py --version
+```
+
+Whichever prints a version (e.g. `Python 3.11.x`) is your command. Let me write a small script you run with that.Works exactly as intended — it auto-flags the renames for you. Let me give you this file.## Step by step on your Windows machine
+
+**Step 1 — Find your Python command.** Run these one at a time:
+
+```
+python --version
+```
+```
+py --version
+```
+
+Whichever prints a version is what you use below. Stop using `python3` — that's what's triggering the failed installer.
+
+**Step 2 — Save both group lists to files** (each command on ONE line, no `\`):
+
+```
+curl -sk -H "PRIVATE-TOKEN: YOUR_SOURCE_PAT" "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" -o source_groups.json
+```
+
+```
+curl -sk -H "PRIVATE-TOKEN: YOUR_TARGET_PAT" "https://NEW-GITLAB-URL/api/v4/groups/NEW-TOP-GROUP/descendant_groups?per_page=100" -o target_groups.json
+```
+
+**Step 3 — Run the helper** (use `python` or `py`, whichever worked in Step 1):
+
+```
+python list_groups.py source_groups.json target_groups.json Epay NEW-TOP-GROUP
+```
+
+The 3rd and 4th arguments are the source and target top-group paths so it can strip them and diff by relative path.
+
+## What you'll get
+
+A clean diff showing matched groups, source-only paths (renamed or missing), and target-only paths. Each source-only line pairs with a target-only line to give you the rename. From the test output above, that pairing directly becomes your map entries:
+
+```python
+GROUP_PATH_MAP = {
+    "Application/microservices": "Application/Backend",
+}
+```
+
+Paste me the diff output and I'll write the complete `GROUP_PATH_MAP` for all your renames.
+
+## A couple of Windows notes
+
+If `curl` itself isn't found, Windows 10/11 ships it at `C:\Windows\System32\curl.exe` — it should work in CMD. If it doesn't, tell me and I'll give you a pure-Python version that fetches and diffs in one shot, so you don't need curl at all.
+
+Also — since `python3` kicked off that pymanager install attempt, you may want to cancel/ignore those failed installs. They're not needed; your existing Python (whatever `python` or `py` points to) is fine for all of this.
