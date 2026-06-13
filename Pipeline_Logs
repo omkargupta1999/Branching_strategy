@@ -46,11 +46,11 @@ from datetime import datetime
 #  CONFIGURATION — Edit only this block
 # =============================================================================
 
-GITLAB_URL     = "https://gitlab.sbi"   # Target GitLab instance
-TOKEN          = "token"    # Maintainer/Owner PAT (glpat-...)
+GITLAB_URL     = "https://gitlab.epay.sbi"   # Target GitLab instance
+TOKEN          = ""                            # Maintainer/Owner PAT (glpat-...)
 
 # Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/frontend/epay_admin_fe"
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/Epay_Admin_Service"
 
 # =============================================================================
 #  SPEC — Do not edit unless the governance master doc changes
@@ -67,11 +67,12 @@ MAINTAINER = 40
 # fragile GET /groups?search= lookup (which did not match reliably on this
 # 18.1.6-EE instance). To onboard a new instance, re-run discovery and update.
 GROUP_IDS = {
-    "epay-gitlab-bank-app-owner":        4953,
-    "epay-gitlab-bank-app-maintainer":   4954,
-    "epay-gitlab-vendor-app-maintainer": 4955,
-    "epay-gitlab-vendor-app-lead":       4956,
-    "epay-gitlab-vendor-pm":             4962,
+    "epay-gitlab-bank-app-owner":          4953,
+    "epay-gitlab-bank-app-maintainer":     4954,
+    "epay-gitlab-vendor-app-maintainer":   4955,
+    "epay-gitlab-vendor-app-lead":         4956,
+    "epay-gitlab-vendor-pm":               4962,
+    "epay-gitlab-vendor-release-manager":  4950,   # added: used in approval rules
 }
 
 # Step 1 — Group invites (project share). GitLab requires a group to be a
@@ -118,11 +119,17 @@ PUSH_RULES = {
 # Step 3 — Protected branches.  push = No one ; merge = listed groups only.
 PROTECTED_BRANCHES = [
     {"name": "main",
-     "merge_groups": ["epay-gitlab-bank-app-maintainer", "epay-gitlab-bank-app-owner"]},
+     "merge_groups": ["epay-gitlab-bank-app-maintainer",
+                      "epay-gitlab-bank-app-owner",
+                      "epay-gitlab-vendor-app-maintainer"]},
     {"name": "develop",
-     "merge_groups": ["epay-gitlab-vendor-app-lead"]},
+     "merge_groups": ["epay-gitlab-vendor-app-lead",
+                      "epay-gitlab-vendor-app-maintainer",
+                      "epay-gitlab-vendor-release-manager"]},
     {"name": "release/*",
-     "merge_groups": ["epay-gitlab-vendor-app-maintainer"]},
+     "merge_groups": ["epay-gitlab-vendor-app-lead",
+                      "epay-gitlab-vendor-app-maintainer",
+                      "epay-gitlab-vendor-release-manager"]},
 ]
 
 # Step 4 — MR approval rules (project-level, Ultimate). One group per rule.
@@ -130,13 +137,15 @@ PROTECTED_BRANCHES = [
 #   target main), so no separate hotfix rules are needed. Lead absent from
 #   main => "Lead NOT required for hotfix" is satisfied.
 APPROVAL_RULES = [
-    {"name": "Lead Approval",                "branch": "develop",   "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Gate - Lead",          "branch": "release/*", "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Gate - Architect",     "branch": "release/*", "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor Architect Sign-off",    "branch": "main",      "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor PM Approval (CAB gate)","branch": "main",      "group": "epay-gitlab-vendor-pm",             "required": 1},
-    {"name": "Bank Maintainer Approval",     "branch": "main",      "group": "epay-gitlab-bank-app-maintainer",   "required": 1},
-    {"name": "Bank PM Final Gate",           "branch": "main",      "group": "epay-gitlab-bank-app-owner",        "required": 1},
+    {"name": "Lead Approval",                    "branch": "develop",   "group": "epay-gitlab-vendor-app-lead",        "required": 1},
+    {"name": "Release Manager Approval Develop", "branch": "develop",   "group": "epay-gitlab-vendor-release-manager", "required": 1},
+    {"name": "Release Gate - Lead",              "branch": "release/*", "group": "epay-gitlab-vendor-app-lead",        "required": 1},
+    {"name": "Release Manager Approval",         "branch": "release/*", "group": "epay-gitlab-vendor-release-manager", "required": 1},
+    {"name": "Release Gate - Architect",         "branch": "release/*", "group": "epay-gitlab-vendor-app-maintainer",  "required": 1},
+    {"name": "Vendor Architect Sign-off",        "branch": "main",      "group": "epay-gitlab-vendor-app-maintainer",  "required": 1},
+    {"name": "Vendor PM Approval (CAB gate)",    "branch": "main",      "group": "epay-gitlab-vendor-pm",              "required": 1},
+    {"name": "Bank Maintainer Approval",         "branch": "main",      "group": "epay-gitlab-bank-app-maintainer",    "required": 1},
+    {"name": "Bank PM Final Gate",               "branch": "main",      "group": "epay-gitlab-bank-app-owner",         "required": 1},
 ]
 
 # =============================================================================
@@ -658,67 +667,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-============================================ Above script i am using to set rules in gitlab repos but there is some changes here we have to add some more additional rule for protected branch and MR Approval rules  ,  please update the scipt accordingly and share the updated script.
-
-PROTECTED_BRANCHES = [
-    {"name": "main",
-     "merge_groups": ["epay-gitlab-bank-app-maintainer", "epay-gitlab-bank-app-owner", "epay-gitlab-vendor-app-maintainer"]},
-    {"name": "develop",
-     "merge_groups": ["epay-gitlab-vendor-app-lead", "epay-gitlab-vendor-app-maintainer", "epay-gitlab-vendor-release-manager"]},
-    {"name": "release/*",
-     "merge_groups": ["epay-gitlab-vendor-app-lead", "epay-gitlab-vendor-app-maintainer", "epay-gitlab-vendor-release-manager"]},
-]
-
-
-
-
-
-APPROVAL_RULES = [
-    {"name": "Lead Approval",                        "branch": "develop",   "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Manager Approval Develop",     "branch": "develop",   "group": "epay-gitlab-vendor-release-manager",       "required": 1},
-    {"name": "Release Gate - Lead",                  "branch": "release/*", "group": "epay-gitlab-vendor-app-lead",       "required": 1},
-    {"name": "Release Manager Approval ",            "branch": "release/*", "group": "epay-gitlab-vendor-release-manager",       "required": 1},
-    {"name": "Release Gate - Architect",             "branch": "release/*", "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor Architect Sign-off",            "branch": "main",      "group": "epay-gitlab-vendor-app-maintainer", "required": 1},
-    {"name": "Vendor PM Approval (CAB gate)",        "branch": "main",      "group": "epay-gitlab-vendor-pm",             "required": 1},
-    {"name": "Bank Maintainer Approval",             "branch": "main",      "group": "epay-gitlab-bank-app-maintainer",   "required": 1},
-    {"name": "Bank PM Final Gate",                   "branch": "main",      "group": "epay-gitlab-bank-app-owner",        "required": 1},
-]
-
-
-
-Please share the updated script before sharing please check everything is correct or not or any identation erorr ........
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
