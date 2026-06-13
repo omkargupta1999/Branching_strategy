@@ -1,9 +1,36 @@
-# Source subgroups
-curl -sk -H "PRIVATE-TOKEN: SRC_PAT" \
-  "https://OLD-GITLAB/api/v4/groups/ITEPAYPG-SBIePay2-OLD/descendant_groups?per_page=100" \
-  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
 
-# Target subgroups
-curl -sk -H "PRIVATE-TOKEN: TGT_PAT" \
-  "https://NEW-GITLAB/api/v4/groups/ITEPAYPG-SBIePay2/descendant_groups?per_page=100" \
-  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
+
+
+
+
+D:\Mr Om\Python_script># Source subgroupscurl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>curl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
+********************************************************************************
+Installing Python 3.14.6.
+[ERROR] An error occurred. Please check any output above, or the log file, and try again.
+Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260613162216_38772.log
+If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
+To see all available commands, run 'py help'
+********************************************************************************
+[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
+Downloading: |
+
+D:\Mr Om\Python_script>python311\python.exe curl -sk -H "PRIVATE-TOKEN: " \  "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" \  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
+python311\python.exe: can't open file 'D:\\Mr Om\\Python_script\\curl': [Errno 2] No such file or directory
+********************************************************************************
+Installing Python 3.14.6.
+[ERROR] An error occurred. Please check any output above, or the log file, and try again.
+Log file for this session: C:\Users\v1021577\AppData\Local\Temp\python_install_20260613162235_39492.log
+If you cannot resolve it yourself, please report the error with your log file at https://github.com/python/pymanager
+To see all available commands, run 'py help'
+********************************************************************************
+[ERROR] Internal error 0x80190193. Please report to https://github.com/python/pymanager
+Downloading: |
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script> 
