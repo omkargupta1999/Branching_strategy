@@ -1,18 +1,9 @@
-D:\Mr Om\Python_script>python311\python.exe remove_direct_members.py --repo itepaypg-sbiepay2/application/backend/epay_key_managment    
-======================================================================
-  GitLab Direct Membership Removal — AUDIT
-======================================================================
-  GitLab        : https://gitlab.sbi
-  Backend scope : itepaypg-sbiepay2/application/backend/epay_admin_service
-  LDAP ref      : itepaypg-sbiepay2/application/backend
-  Mode          : AUDIT
-  Time          : 2026-06-13 13:25:22
-  Log file      : audit_direct_members_20260613_132522.txt
+# Source subgroups
+curl -sk -H "PRIVATE-TOKEN: SRC_PAT" \
+  "https://OLD-GITLAB/api/v4/groups/ITEPAYPG-SBIePay2-OLD/descendant_groups?per_page=100" \
+  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
 
-
-  Authenticated as : @group_2783_bot_cdf8db6c138285c0cfaed5aca09d69bb  (TO_FETCH_DETAILS_OWNER)  id=2130
-
-  Fetching projects under: itepaypg-sbiepay2/application/backend/epay_admin_service
-  [ERROR] Could not fetch projects: HTTP 404 on GET /groups/itepaypg-sbiepay2%2Fapplication%2Fbackend%2Fepay_admin_service/projects: {"message":"404 Group Not Found"}
-
-D:\Mr Om\Python_script>
+# Target subgroups
+curl -sk -H "PRIVATE-TOKEN: TGT_PAT" \
+  "https://NEW-GITLAB/api/v4/groups/ITEPAYPG-SBIePay2/descendant_groups?per_page=100" \
+  | python3 -c "import json,sys; [print(g['full_path']) for g in json.load(sys.stdin)]" | sort
