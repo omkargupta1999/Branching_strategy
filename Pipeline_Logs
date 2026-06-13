@@ -1,81 +1,761 @@
-Several Windows-specific problems are colliding here. Let me break them down:
+#!/usr/bin/env python3
+"""
+GitLab Epic Migration Validator
+SBIePay — ITEPAYPG-SBIePay2
+Validates Epic data integrity after Export/Import migration between GitLab instances.
+Read-only: no data is modified on either instance.
+"""
 
-**1. The `\` line continuation is a Linux/bash thing — it doesn't work in Windows CMD.** That's why everything ran together as one broken line and the `#` comment was treated as a command. In CMD you must put the whole command on **one line** with no backslashes.
+import requests
+import csv
+import json
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
 
-**2. `python3` isn't a valid command on your machine.** Typing `python3` is triggering the Windows App Installer / pymanager, which is trying to install Python 3.14.6 and failing. On Windows the command is usually `python` or `py`, not `python3`.
+try:
+    import openpyxl
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
 
-**3. The piping to Python is fragile in CMD anyway.** Let me give you something that just works.
+# ─────────────────────────────────────────────
+# CONFIGURATION  — fill before running
+# ─────────────────────────────────────────────
+SOURCE_URL   = "https://OLD-GITLAB.example.com"   # <TO_BE_FILLED>
+TARGET_URL   = "https://NEW-GITLAB.example.com"   # <TO_BE_FILLED>
+SOURCE_TOKEN = "SOURCE_PAT_HERE"                   # <TO_BE_FILLED>
+TARGET_TOKEN = "TARGET_PAT_HERE"                   # <TO_BE_FILLED>
+# Top-level group on each instance. These may DIFFER between source and target
+# (e.g. renamed/restructured during migration). The script pairs subgroups by
+# their RELATIVE path beneath the top group, not by full path.
+SOURCE_TOP_GROUP = "epay"                          # source top-level group full path
+TARGET_TOP_GROUP = "itepaypg-sbiepay2"             # target top-level group full path
 
-## Easiest fix — skip curl piping entirely, save raw JSON to a file
-
-Run these as **single lines** in CMD (replace `YOUR_PAT`):
-
-```
-curl -sk -H "PRIVATE-TOKEN: YOUR_PAT" "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" -o source_groups.json
-```
-
-```
-curl -sk -H "PRIVATE-TOKEN: YOUR_TARGET_PAT" "https://NEW-GITLAB-URL/api/v4/groups/NEW-TOP-GROUP/descendant_groups?per_page=100" -o target_groups.json
-```
-
-That gives you two raw JSON files. No Python pipe, nothing to break.
-
-## Then extract the paths
-
-First confirm which Python command works. Run each and see which responds:
-
-```
-python --version
-```
-```
-py --version
-```
-
-Whichever prints a version (e.g. `Python 3.11.x`) is your command. Let me write a small script you run with that.Works exactly as intended — it auto-flags the renames for you. Let me give you this file.## Step by step on your Windows machine
-
-**Step 1 — Find your Python command.** Run these one at a time:
-
-```
-python --version
-```
-```
-py --version
-```
-
-Whichever prints a version is what you use below. Stop using `python3` — that's what's triggering the failed installer.
-
-**Step 2 — Save both group lists to files** (each command on ONE line, no `\`):
-
-```
-curl -sk -H "PRIVATE-TOKEN: YOUR_SOURCE_PAT" "https://gitlab.epay.sbi/api/v4/groups/Epay/descendant_groups?per_page=100" -o source_groups.json
-```
-
-```
-curl -sk -H "PRIVATE-TOKEN: YOUR_TARGET_PAT" "https://NEW-GITLAB-URL/api/v4/groups/NEW-TOP-GROUP/descendant_groups?per_page=100" -o target_groups.json
-```
-
-**Step 3 — Run the helper** (use `python` or `py`, whichever worked in Step 1):
-
-```
-python list_groups.py source_groups.json target_groups.json Epay NEW-TOP-GROUP
-```
-
-The 3rd and 4th arguments are the source and target top-group paths so it can strip them and diff by relative path.
-
-## What you'll get
-
-A clean diff showing matched groups, source-only paths (renamed or missing), and target-only paths. Each source-only line pairs with a target-only line to give you the rename. From the test output above, that pairing directly becomes your map entries:
-
-```python
+# ─────────────────────────────────────────────
+# SUBGROUP RENAME MAP  (source rel_path  ->  target rel_path)
+# ─────────────────────────────────────────────
+# Built from the actual enumeration of both instances and confirmed by the team.
+# The OLD instance had a partially-migrated nested copy under 'epay/application/*'
+# that was EMPTY — the real epic-holding groups are the original FLAT groups
+# (microservices, frontends, devops, etc). We map ONLY the flat groups and
+# deliberately EXCLUDE the empty nested duplicates so there are no collisions.
 GROUP_PATH_MAP = {
-    "Application/microservices": "Application/Backend",
+    "microservices":           "application/backend",
+    "frontends":               "application/frontend",
+    "devops":                  "infra/devops",
+    "merchant-simulator":      "application/merchantsimulator",
+    "sdks":                    "application/sdks",
+    "api-postman-collection":  "application/postman-collection",
+    "qa-automation":           "application/qa-automation",
 }
-```
 
-Paste me the diff output and I'll write the complete `GROUP_PATH_MAP` for all your renames.
+# Source rel_paths to SKIP entirely (empty nested duplicates on the OLD instance
+# that were superseded by the flat groups above). Excluding them avoids comparing
+# empty groups and prevents false collisions.
+SOURCE_SKIP = (
+    "application/frontends",   # empty nested dup — real epics are in flat 'frontends'
+    "application/backend",     # empty nested dup — real epics are in flat 'microservices'
+    "infra/devops",            # empty nested dup — real epics are in flat 'devops'
+    "application/config",      # nested config (no epics expected; skip to avoid noise)
+)
 
-## A couple of Windows notes
+# Target-only groups (new repos created on the NEW instance, no source equivalent).
+# These are NOT migration failures and must never be flagged as missing epics.
+TARGET_ONLY_IGNORE_PREFIXES = (
+    "application-bridge",
+    "ldap-membership",
+)
 
-If `curl` itself isn't found, Windows 10/11 ships it at `C:\Windows\System32\curl.exe` — it should work in CMD. If it doesn't, tell me and I'll give you a pure-Python version that fetches and diffs in one shot, so you don't need curl at all.
+# If a renamed PARENT subgroup has children, auto-rewrite child paths that
+# start with a mapped parent prefix (e.g. sdks/X -> application/sdks/X).
+MAP_CHILDREN_BY_PREFIX = True
 
-Also — since `python3` kicked off that pymanager install attempt, you may want to cancel/ignore those failed installs. They're not needed; your existing Python (whatever `python` or `py` points to) is fine for all of this.
+OUTPUT_DIR   = Path("./epic_validation_output")
+OUTPUT_DIR.mkdir(exist_ok=True)
+RUN_TS       = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# ─────────────────────────────────────────────
+# HTTP HELPERS
+# ─────────────────────────────────────────────
+def _headers(token):
+    return {"PRIVATE-TOKEN": token, "Content-Type": "application/json"}
+
+def _get_all(base_url, token, endpoint, params=None):
+    """Paginate through all pages of a GitLab API endpoint."""
+    results = []
+    page = 1
+    if params is None:
+        params = {}
+    while True:
+        p = {**params, "per_page": 100, "page": page}
+        resp = requests.get(
+            f"{base_url}/api/v4/{endpoint}",
+            headers=_headers(token),
+            params=p,
+            timeout=30,
+            verify=False   # adjust for self-signed certs in air-gapped env
+        )
+        if resp.status_code == 404:
+            return []
+        resp.raise_for_status()
+        data = resp.json()
+        if not data:
+            break
+        results.extend(data)
+        if len(data) < 100:
+            break
+        page += 1
+        time.sleep(0.1)  # rate-limit courtesy
+    return results
+
+def _get(base_url, token, endpoint, params=None):
+    resp = requests.get(
+        f"{base_url}/api/v4/{endpoint}",
+        headers=_headers(token),
+        params=params or {},
+        timeout=30,
+        verify=False
+    )
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+# ─────────────────────────────────────────────
+# GROUP ENUMERATION
+# ─────────────────────────────────────────────
+def get_all_groups(base_url, token, top_group):
+    """Return list of all groups/subgroups under top_group.
+
+    Each group dict is annotated with a 'rel_path' key: its full_path with the
+    top group's full_path prefix stripped. This lets us pair source and target
+    groups even when the two instances use different top-level group names.
+    The top group itself gets rel_path == "" (empty string).
+    """
+    top = _get(base_url, token, f"groups/{requests.utils.quote(top_group, safe='')}")
+    if not top:
+        raise RuntimeError(f"Top group '{top_group}' not found on {base_url}")
+
+    top_full = top["full_path"]  # e.g. "ITEPAYPG-SBIePay2-OLD"
+
+    descendants = _get_all(
+        base_url, token,
+        f"groups/{requests.utils.quote(top_group, safe='')}/descendant_groups",
+        {"include_subgroups": True, "all_available": True}
+    )
+
+    groups = [top] + descendants
+    for g in groups:
+        fp = g["full_path"]
+        if fp == top_full:
+            g["rel_path"] = ""  # the top group itself
+        elif fp.startswith(top_full + "/"):
+            g["rel_path"] = fp[len(top_full) + 1:]   # strip "TOP/"
+        else:
+            # Defensive: descendant API should never return out-of-tree groups
+            g["rel_path"] = fp
+    return groups
+
+# ─────────────────────────────────────────────
+# EPIC FETCHERS
+# ─────────────────────────────────────────────
+def get_epics_for_group(base_url, token, group_id, state="all"):
+    return _get_all(base_url, token, f"groups/{group_id}/epics",
+                    {"state": state, "include_descendant_groups": False})
+
+def get_epic_issues(base_url, token, group_id, epic_iid):
+    return _get_all(base_url, token, f"groups/{group_id}/epics/{epic_iid}/issues")
+
+def get_epic_children(base_url, token, group_id, epic_iid):
+    return _get_all(base_url, token, f"groups/{group_id}/epics/{epic_iid}/epics")
+
+def get_epic_labels(base_url, token, group_id):
+    return _get_all(base_url, token, f"groups/{group_id}/labels")
+
+def get_epic_boards(base_url, token, group_id):
+    """Epic boards are group-level. Returns [] on 404 (not supported / not present)."""
+    try:
+        return _get_all(base_url, token, f"groups/{group_id}/epic_boards")
+    except requests.HTTPError:
+        return []
+
+def get_epic_board_detail(base_url, token, group_id, board_id):
+    """Full board incl. lists (lists carry label info needed to recreate)."""
+    return _get(base_url, token, f"groups/{group_id}/epic_boards/{board_id}")
+
+def get_milestones(base_url, token, group_id):
+    return _get_all(base_url, token, f"groups/{group_id}/milestones")
+
+# ─────────────────────────────────────────────
+# EPIC BOARD RECREATION  (write — only runs when --recreate-boards is passed)
+# ─────────────────────────────────────────────
+def _post(base_url, token, endpoint, payload):
+    resp = requests.post(
+        f"{base_url}/api/v4/{endpoint}",
+        headers=_headers(token), json=payload, timeout=30, verify=False)
+    resp.raise_for_status()
+    return resp.json()
+
+def label_name_to_id(base_url, token, group_id):
+    """Map label name -> id on a group (labels IDs differ between instances)."""
+    labels = _get_all(base_url, token, f"groups/{group_id}/labels")
+    return {l["name"]: l["id"] for l in labels}
+
+def recreate_boards(src_url, src_tok, src_gid,
+                    tgt_url, tgt_tok, tgt_gid, dry_run=True):
+    """Recreate source epic boards (and their label-based lists) on the target.
+
+    Epic boards are NOT migrated by Export/Import, so they must be rebuilt.
+    Label-based lists are re-pointed to the TARGET label IDs by matching label
+    NAME (target IDs differ from source IDs). dry_run=True only prints actions.
+    """
+    actions = []
+    src_boards = get_epic_boards(src_url, src_tok, src_gid)
+    tgt_boards = {b["name"] for b in get_epic_boards(tgt_url, tgt_tok, tgt_gid)}
+    tgt_label_ids = label_name_to_id(tgt_url, tgt_tok, tgt_gid)
+
+    for b in src_boards:
+        if b["name"] in tgt_boards:
+            actions.append(f"SKIP board '{b['name']}' (already exists on target)")
+            continue
+        if dry_run:
+            actions.append(f"WOULD CREATE board '{b['name']}' on target")
+        else:
+            new_board = _post(tgt_url, tgt_tok,
+                              f"groups/{tgt_gid}/epic_boards",
+                              {"name": b["name"]})
+            actions.append(f"CREATED board '{b['name']}' (id={new_board['id']})")
+            # Recreate label-based lists
+            detail = get_epic_board_detail(src_url, src_tok, src_gid, b["id"]) or {}
+            for lst in detail.get("lists", []):
+                lbl = lst.get("label")
+                if not lbl:
+                    continue  # skip non-label lists (open/closed are automatic)
+                tgt_lbl_id = tgt_label_ids.get(lbl["name"])
+                if not tgt_lbl_id:
+                    actions.append(f"  WARN list label '{lbl['name']}' not found on target — list skipped")
+                    continue
+                _post(tgt_url, tgt_tok,
+                      f"groups/{tgt_gid}/epic_boards/{new_board['id']}/lists",
+                      {"label_id": tgt_lbl_id})
+                actions.append(f"  added list for label '{lbl['name']}'")
+    return actions
+
+# ─────────────────────────────────────────────
+# INSTANCE VERSION
+# ─────────────────────────────────────────────
+def get_version(base_url, token):
+    v = _get(base_url, token, "version")
+    if v:
+        return v.get("version", "unknown"), v.get("revision", "unknown")
+    return "unknown", "unknown"
+
+# ─────────────────────────────────────────────
+# CORE COMPARISON LOGIC
+# ─────────────────────────────────────────────
+def build_epic_map(epics):
+    """Key: (group_id, iid) → epic dict."""
+    return {(e["group_id"], e["iid"]): e for e in epics}
+
+def compare_epics(src_epics, tgt_epics, group_name):
+    """Return comparison result dict for a single group."""
+    src_map = {e["iid"]: e for e in src_epics}
+    tgt_map = {e["iid"]: e for e in tgt_epics}
+
+    src_iids = set(src_map.keys())
+    tgt_iids = set(tgt_map.keys())
+
+    missing   = src_iids - tgt_iids   # in source, not in target
+    extra     = tgt_iids - src_iids   # in target, not in source (unexpected)
+    common    = src_iids & tgt_iids
+
+    drift_records = []
+    for iid in common:
+        s = src_map[iid]
+        t = tgt_map[iid]
+        issues = []
+        if s.get("state") != t.get("state"):
+            issues.append(f"state: {s.get('state')} → {t.get('state')}")
+        if s.get("title") != t.get("title"):
+            issues.append(f"title mismatch")
+        if s.get("parent_id") != t.get("parent_id"):
+            issues.append(f"parent_id drift: {s.get('parent_id')} → {t.get('parent_id')}")
+        if s.get("start_date") != t.get("start_date"):
+            issues.append(f"start_date: {s.get('start_date')} → {t.get('start_date')}")
+        if s.get("due_date") != t.get("due_date"):
+            issues.append(f"due_date: {s.get('due_date')} → {t.get('due_date')}")
+        if issues:
+            drift_records.append({
+                "group": group_name,
+                "epic_iid": iid,
+                "title": s.get("title"),
+                "drift": "; ".join(issues)
+            })
+
+    return {
+        "group":        group_name,
+        "src_total":    len(src_epics),
+        "tgt_total":    len(tgt_epics),
+        "src_open":     sum(1 for e in src_epics if e.get("state") == "opened"),
+        "tgt_open":     sum(1 for e in tgt_epics if e.get("state") == "opened"),
+        "src_closed":   sum(1 for e in src_epics if e.get("state") == "closed"),
+        "tgt_closed":   sum(1 for e in tgt_epics if e.get("state") == "closed"),
+        "missing_iids": sorted(missing),
+        "extra_iids":   sorted(extra),
+        "drift":        drift_records,
+        "count_match":  len(src_epics) == len(tgt_epics),
+    }
+
+# ─────────────────────────────────────────────
+# HIERARCHY CHECKER
+# ─────────────────────────────────────────────
+def check_hierarchy(base_url, token, group_id, epics):
+    """Detect orphaned epics — parent_id set but parent not in group."""
+    epic_ids = {e["id"] for e in epics}
+    orphaned = []
+    for e in epics:
+        pid = e.get("parent_id")
+        if pid and pid not in epic_ids:
+            orphaned.append({
+                "epic_iid":  e["iid"],
+                "title":     e.get("title"),
+                "parent_id": pid,
+                "issue":     "parent_id references an epic not present in this group"
+            })
+    return orphaned
+
+# ─────────────────────────────────────────────
+# BOARD COMPARISON
+# ─────────────────────────────────────────────
+def compare_boards(src_boards, tgt_boards, group_name):
+    src_names = {b.get("name") for b in src_boards}
+    tgt_names = {b.get("name") for b in tgt_boards}
+    return {
+        "group":        group_name,
+        "src_count":    len(src_boards),
+        "tgt_count":    len(tgt_boards),
+        "missing":      sorted(src_names - tgt_names),
+        "extra":        sorted(tgt_names - src_names),
+    }
+
+# ─────────────────────────────────────────────
+# CSV WRITERS
+# ─────────────────────────────────────────────
+def write_csv(filename, rows, fieldnames):
+    path = OUTPUT_DIR / filename
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+    return path
+
+# ─────────────────────────────────────────────
+# EXCEL REPORT
+# ─────────────────────────────────────────────
+def write_excel(all_results, drift_records, orphan_records, board_results,
+                src_ver, tgt_ver, missing_epics_detail):
+    if not EXCEL_AVAILABLE:
+        print("[WARN] openpyxl not available — skipping Excel output.")
+        return None
+
+    path = OUTPUT_DIR / f"epic_migration_report_{RUN_TS}.xlsx"
+    wb   = openpyxl.Workbook()
+
+    # ── colour palette ──────────────────────────────
+    RED    = PatternFill("solid", fgColor="FF4C4C")
+    AMBER  = PatternFill("solid", fgColor="FFA500")
+    GREEN  = PatternFill("solid", fgColor="70AD47")
+    BLUE   = PatternFill("solid", fgColor="1F4E79")
+    LBLUE  = PatternFill("solid", fgColor="BDD7EE")
+    GREY   = PatternFill("solid", fgColor="F2F2F2")
+    WHITE_FONT = Font(color="FFFFFF", bold=True)
+    BOLD   = Font(bold=True)
+
+    def hdr_row(ws, row_num, values, fill=BLUE):
+        for col, val in enumerate(values, 1):
+            c = ws.cell(row=row_num, column=col, value=val)
+            c.fill = fill
+            c.font = WHITE_FONT
+            c.alignment = Alignment(horizontal="center", wrap_text=True)
+
+    def auto_width(ws, min_w=12, max_w=60):
+        for col in ws.columns:
+            length = max(len(str(c.value or "")) for c in col)
+            ws.column_dimensions[get_column_letter(col[0].column)].width = \
+                min(max(length + 2, min_w), max_w)
+
+    # ── Sheet 1: Summary ─────────────────────────────
+    ws = wb.active
+    ws.title = "Summary"
+    ws.merge_cells("A1:H1")
+    title_cell = ws["A1"]
+    title_cell.value = "GitLab Epic Migration Validation Report — SBIePay ITEPAYPG-SBIePay2"
+    title_cell.fill = BLUE
+    title_cell.font = Font(color="FFFFFF", bold=True, size=13)
+    title_cell.alignment = Alignment(horizontal="center")
+    ws.row_dimensions[1].height = 28
+
+    meta = [
+        ("Run Timestamp",      RUN_TS),
+        ("Source GitLab",      SOURCE_URL),
+        ("Target GitLab",      TARGET_URL),
+        ("Source Version",     src_ver),
+        ("Target Version",     tgt_ver),
+        ("Source Top Group",   SOURCE_TOP_GROUP),
+        ("Target Top Group",   TARGET_TOP_GROUP),
+    ]
+    for r, (k, v) in enumerate(meta, 3):
+        ws.cell(row=r, column=1, value=k).font = BOLD
+        ws.cell(row=r, column=2, value=v)
+
+    ws.cell(row=10, column=1, value="Group").font = BOLD
+    hdr_row(ws, 11,
+            ["Group", "Src Total", "Tgt Total", "Src Open", "Tgt Open",
+             "Src Closed", "Tgt Closed", "Status"])
+
+    for r, res in enumerate(all_results, 12):
+        ok = res["count_match"] and not res["missing_iids"]
+        status = "✅ OK" if ok else ("⚠ DRIFT" if res["drift"] else "❌ MISSING")
+        fill = GREEN if ok else (AMBER if res["drift"] else RED)
+        vals = [res["group"], res["src_total"], res["tgt_total"],
+                res["src_open"], res["tgt_open"],
+                res["src_closed"], res["tgt_closed"], status]
+        for col, val in enumerate(vals, 1):
+            c = ws.cell(row=r, column=col, value=val)
+            if col == 8:
+                c.fill = fill
+                c.font = Font(bold=True)
+    auto_width(ws)
+
+    # ── Sheet 2: Missing Epics ───────────────────────
+    ws2 = wb.create_sheet("Missing Epics")
+    hdr_row(ws2, 1, ["Group", "Missing IIDs (source has, target missing)", "Source Epic Count", "Target Epic Count"])
+    r = 2
+    for res in all_results:
+        if res["missing_iids"]:
+            ws2.cell(row=r, column=1, value=res["group"])
+            ws2.cell(row=r, column=2, value=str(res["missing_iids"]))
+            ws2.cell(row=r, column=3, value=res["src_total"])
+            ws2.cell(row=r, column=4, value=res["tgt_total"])
+            for col in range(1, 5):
+                ws2.cell(row=r, column=col).fill = RED if res["missing_iids"] else GREY
+            r += 1
+    if r == 2:
+        ws2.cell(row=2, column=1, value="✅ No missing epics detected").fill = GREEN
+    for row in missing_epics_detail:
+        ws2.append([row.get("group"), row.get("iid"), row.get("title"),
+                    row.get("state"), row.get("created_at")])
+    auto_width(ws2)
+
+    # ── Sheet 3: Attribute Drift ─────────────────────
+    ws3 = wb.create_sheet("Attribute Drift")
+    hdr_row(ws3, 1, ["Group", "Epic IID", "Title", "Drift Description"])
+    for r, d in enumerate(drift_records, 2):
+        ws3.cell(row=r, column=1, value=d["group"])
+        ws3.cell(row=r, column=2, value=d["epic_iid"])
+        ws3.cell(row=r, column=3, value=d["title"])
+        ws3.cell(row=r, column=4, value=d["drift"])
+        ws3.cell(row=r, column=4).fill = AMBER
+    if not drift_records:
+        ws3.cell(row=2, column=1, value="✅ No attribute drift detected").fill = GREEN
+    auto_width(ws3)
+
+    # ── Sheet 4: Orphaned Epics ──────────────────────
+    ws4 = wb.create_sheet("Orphaned Epics")
+    hdr_row(ws4, 1, ["Group", "Epic IID", "Title", "Orphan parent_id", "Issue"])
+    for r, o in enumerate(orphan_records, 2):
+        ws4.cell(row=r, column=1, value=o["group"])
+        ws4.cell(row=r, column=2, value=o["epic_iid"])
+        ws4.cell(row=r, column=3, value=o["title"])
+        ws4.cell(row=r, column=4, value=o["parent_id"])
+        ws4.cell(row=r, column=5, value=o["issue"])
+        for c in range(1, 6):
+            ws4.cell(row=r, column=c).fill = RED
+    if not orphan_records:
+        ws4.cell(row=2, column=1, value="✅ No orphaned epics detected").fill = GREEN
+    auto_width(ws4)
+
+    # ── Sheet 5: Epic Boards ─────────────────────────
+    ws5 = wb.create_sheet("Epic Boards")
+    hdr_row(ws5, 1, ["Group", "Src Board Count", "Tgt Board Count", "Missing Boards", "Extra Boards"])
+    for r, b in enumerate(board_results, 2):
+        ws5.cell(row=r, column=1, value=b["group"])
+        ws5.cell(row=r, column=2, value=b["src_count"])
+        ws5.cell(row=r, column=3, value=b["tgt_count"])
+        ws5.cell(row=r, column=4, value=str(b["missing"]) if b["missing"] else "—")
+        ws5.cell(row=r, column=5, value=str(b["extra"])   if b["extra"]   else "—")
+        status_fill = RED if b["missing"] else GREEN
+        ws5.cell(row=r, column=4).fill = status_fill
+    auto_width(ws5)
+
+    # ── Sheet 6: Root Cause Matrix ───────────────────
+    ws6 = wb.create_sheet("Root Cause Matrix")
+    hdr_row(ws6, 1, ["#", "Symptom", "Probable Cause", "Validation Command", "Remediation"])
+    matrix = [
+        (1, "Epic count mismatch",
+         "Epics not included in group export if exported at project level only",
+         "GET /groups/:id/epics on both instances",
+         "Re-export at group level with subgroups; use Direct Transfer API"),
+        (2, "Epic hierarchy broken / parent_id null",
+         "GitLab Export/Import resets parent_id for cross-group parents; known limitation",
+         "Compare parent_id fields via API on both instances",
+         "Re-link parent epics manually via API or UI post-migration"),
+        (3, "Epic boards missing",
+         "Epic boards are NOT included in GitLab Export/Import — documented limitation",
+         "GET /groups/:id/epic_boards on target (expect 0 or default)",
+         "Recreate boards manually or via API script on target"),
+        (4, "Orphaned epics (parent set but parent missing)",
+         "Parent epic not migrated; cross-group parent reference broke",
+         "Run orphan detection script on target group",
+         "Identify and migrate missing parent epics; re-link"),
+        (5, "Epic labels missing",
+         "Group-level labels may not fully migrate with Export/Import",
+         "GET /groups/:id/labels on both; diff label names",
+         "Create missing labels via POST /groups/:id/labels on target"),
+        (6, "Epic milestones lost",
+         "Group milestones may not carry over; milestone IDs differ across instances",
+         "GET /groups/:id/milestones diff; check epic.milestone field",
+         "Re-create milestones on target; re-assign to epics via API"),
+        (7, "Epic-issue links missing",
+         "Epic-issue associations may not migrate correctly",
+         "GET /groups/:id/epics/:iid/issues on both; compare counts",
+         "Re-add issues to epics via POST /groups/:id/epics/:iid/issues"),
+        (8, "Epics converted to Work Items on target",
+         "GitLab 17.x converting Epics to Work Items; different API path",
+         "Check if /groups/:id/work_items contains migrated epics",
+         "Use Work Items API on target; adjust tooling accordingly"),
+        (9, "Extra epics on target",
+         "Migration ran multiple times; duplicate imports",
+         "Compare epic IIDs and titles across both instances",
+         "Identify duplicates and archive/delete extra epics on target"),
+        (10, "Epic dates lost (start/due)",
+         "Fixed date fields not preserved in older export formats",
+         "Compare start_date/due_date per epic IID",
+         "Restore dates via PUT /groups/:id/epics/:iid on target"),
+    ]
+    for r, row in enumerate(matrix, 2):
+        for col, val in enumerate(row, 1):
+            ws6.cell(row=r, column=col, value=val)
+        ws6.cell(row=r, column=1).fill = LBLUE
+    auto_width(ws6)
+
+    wb.save(path)
+    return path
+
+# ─────────────────────────────────────────────
+# MAIN ORCHESTRATOR
+# ─────────────────────────────────────────────
+def main(recreate_boards_flag=False, dry_run_flag=True):
+    print("=" * 70)
+    print("  GitLab Epic Migration Validator — SBIePay")
+    print(f"  Run: {RUN_TS}")
+    print("=" * 70)
+
+    # Version check
+    print("\n[1/7] Checking GitLab versions...")
+    src_ver, src_rev = get_version(SOURCE_URL, SOURCE_TOKEN)
+    tgt_ver, tgt_rev = get_version(TARGET_URL, TARGET_TOKEN)
+    print(f"  Source: {src_ver} ({src_rev})")
+    print(f"  Target: {tgt_ver} ({tgt_rev})")
+
+    # Group enumeration
+    print("\n[2/7] Enumerating groups on source...")
+    src_groups = get_all_groups(SOURCE_URL, SOURCE_TOKEN, SOURCE_TOP_GROUP)
+    print(f"  Source top group: {SOURCE_TOP_GROUP}  ({len(src_groups)} groups)")
+
+    print("[2/7] Enumerating groups on target...")
+    tgt_groups = get_all_groups(TARGET_URL, TARGET_TOKEN, TARGET_TOP_GROUP)
+    print(f"  Target top group: {TARGET_TOP_GROUP}  ({len(tgt_groups)} groups)")
+
+    # Pair by RELATIVE path beneath the top group. Renamed subgroups are
+    # remapped via GROUP_PATH_MAP so source/target still match.
+    def resolve_target_rel(src_rel):
+        """Translate a source rel_path to its expected target rel_path."""
+        if src_rel in GROUP_PATH_MAP:
+            return GROUP_PATH_MAP[src_rel]
+        if MAP_CHILDREN_BY_PREFIX:
+            # Longest matching parent prefix wins (handle nested renames).
+            for old_prefix in sorted(GROUP_PATH_MAP, key=len, reverse=True):
+                if src_rel.startswith(old_prefix + "/"):
+                    new_prefix = GROUP_PATH_MAP[old_prefix]
+                    return new_prefix + src_rel[len(old_prefix):]
+        return src_rel  # no rename — identical path expected
+
+    src_group_map = {g["rel_path"]: g for g in src_groups}
+    tgt_group_map = {g["rel_path"]: g for g in tgt_groups}
+
+    # Drop empty nested duplicate source groups so they are neither compared nor
+    # cause collisions. Keep the flat groups that actually hold the epics.
+    all_paths = sorted(p for p in src_group_map if p not in SOURCE_SKIP)
+    skipped = sorted(p for p in src_group_map if p in SOURCE_SKIP)
+    if skipped:
+        print(f"  Skipping empty nested duplicate source groups: {skipped}")
+
+    # Report any mapped path whose target does not actually exist (typo / stale map)
+    for old_rel, new_rel in GROUP_PATH_MAP.items():
+        if old_rel not in src_group_map:
+            print(f"  [MAP WARN] '{old_rel}' in GROUP_PATH_MAP not found on SOURCE.")
+        if new_rel not in tgt_group_map:
+            print(f"  [MAP WARN] mapped target '{new_rel}' not found on TARGET.")
+
+    # Safety net: detect any remaining SOURCE collision (should be none now).
+    resolved = {}
+    for s in all_paths:
+        r = resolve_target_rel(s)
+        resolved.setdefault(r, []).append(s)
+    for tgt_rel, srcs in resolved.items():
+        if len(srcs) > 1:
+            print(f"  [COLLISION] source groups {srcs} all map to target '{tgt_rel}' "
+                  f"— check GROUP_PATH_MAP / SOURCE_SKIP.")
+    # Target-only groups are intentionally ignored entirely (new repos).
+
+    # Epic comparison
+    print("\n[3/7] Comparing epics per group...")
+    all_results       = []
+    drift_records     = []
+    orphan_records    = []
+    board_results     = []
+    board_actions     = []
+    missing_epics_detail = []
+
+    for path in all_paths:
+        sg = src_group_map[path]
+        tgt_rel = resolve_target_rel(path)
+        tg = tgt_group_map.get(tgt_rel)
+        # Friendly display label. Show the rename explicitly when paths differ.
+        if path == "":
+            label = f"{sg['full_path']} → {tg['full_path']}" if tg else f"{sg['full_path']} (TOP)"
+        elif tgt_rel != path:
+            label = f"{path} → {tgt_rel}"  # renamed subgroup
+        else:
+            label = path
+        if not tg:
+            print(f"  [WARN] Group '{label}' missing on target — skipping epic compare.")
+            all_results.append({
+                "group": label, "src_total": "?", "tgt_total": 0,
+                "src_open": "?", "tgt_open": 0,
+                "src_closed": "?", "tgt_closed": 0,
+                "missing_iids": ["GROUP MISSING ON TARGET"],
+                "extra_iids": [], "drift": [], "count_match": False
+            })
+            continue
+
+        src_epics = get_epics_for_group(SOURCE_URL, SOURCE_TOKEN, sg["id"])
+        tgt_epics = get_epics_for_group(TARGET_URL, TARGET_TOKEN, tg["id"])
+
+        res = compare_epics(src_epics, tgt_epics, label)
+        all_results.append(res)
+        drift_records.extend(res["drift"])
+
+        # Detail rows for missing epics
+        src_iid_map = {e["iid"]: e for e in src_epics}
+        for iid in res["missing_iids"]:
+            e = src_iid_map.get(iid, {})
+            missing_epics_detail.append({
+                "group": label, "iid": iid,
+                "title": e.get("title", "?"),
+                "state": e.get("state", "?"),
+                "created_at": e.get("created_at", "?"),
+            })
+
+        # Orphan check on target
+        orphans = check_hierarchy(TARGET_URL, TARGET_TOKEN, tg["id"], tgt_epics)
+        for o in orphans:
+            o["group"] = label
+        orphan_records.extend(orphans)
+
+        # Epic boards
+        src_boards = get_epic_boards(SOURCE_URL, SOURCE_TOKEN, sg["id"])
+        tgt_boards = get_epic_boards(TARGET_URL, TARGET_TOKEN, tg["id"])
+        board_results.append(compare_boards(src_boards, tgt_boards, label))
+
+        # Optional: recreate missing boards on target (write operation)
+        if recreate_boards_flag and src_boards:
+            acts = recreate_boards(
+                SOURCE_URL, SOURCE_TOKEN, sg["id"],
+                TARGET_URL, TARGET_TOKEN, tg["id"],
+                dry_run=dry_run_flag)
+            for a in acts:
+                board_actions.append({"group": label, "action": a})
+                print(f"    [BOARD] {a}")
+
+        print(f"  {label}: src={res['src_total']} tgt={res['tgt_total']} "
+              f"missing={len(res['missing_iids'])} drift={len(res['drift'])} "
+              f"orphans={len(orphans)}")
+
+    # ── Write CSVs ─────────────────────────────────
+    print("\n[4/7] Writing CSV reports...")
+    p1 = write_csv(f"epic_count_summary_{RUN_TS}.csv", all_results,
+                   ["group","src_total","tgt_total","src_open","tgt_open",
+                    "src_closed","tgt_closed","count_match"])
+    p2 = write_csv(f"missing_epics_{RUN_TS}.csv", missing_epics_detail,
+                   ["group","iid","title","state","created_at"])
+    p3 = write_csv(f"attribute_drift_{RUN_TS}.csv", drift_records,
+                   ["group","epic_iid","title","drift"])
+    p4 = write_csv(f"orphaned_epics_{RUN_TS}.csv", orphan_records,
+                   ["group","epic_iid","title","parent_id","issue"])
+    p5 = write_csv(f"epic_boards_{RUN_TS}.csv", board_results,
+                   ["group","src_count","tgt_count","missing","extra"])
+    csv_paths = [p1, p2, p3, p4, p5]
+    if board_actions:
+        p6 = write_csv(f"board_recreation_actions_{RUN_TS}.csv", board_actions,
+                       ["group","action"])
+        csv_paths.append(p6)
+    for p in csv_paths:
+        print(f"  Written: {p}")
+
+    # ── Write Excel ────────────────────────────────
+    print("\n[5/7] Writing Excel report...")
+    xp = write_excel(all_results, drift_records, orphan_records, board_results,
+                     f"{src_ver} ({src_rev})", f"{tgt_ver} ({tgt_rev})",
+                     missing_epics_detail)
+    if xp:
+        print(f"  Written: {xp}")
+
+    # ── Console Summary ────────────────────────────
+    print("\n[6/7] Summary")
+    total_src   = sum(r["src_total"] for r in all_results if isinstance(r["src_total"], int))
+    total_tgt   = sum(r["tgt_total"] for r in all_results if isinstance(r["tgt_total"], int))
+    total_miss  = sum(len(r["missing_iids"]) for r in all_results
+                      if isinstance(r.get("missing_iids"), list)
+                      and r["missing_iids"] != ["GROUP MISSING ON TARGET"])
+    total_drift = len(drift_records)
+    total_orph  = len(orphan_records)
+    total_bmiss = sum(len(b["missing"]) for b in board_results)
+
+    print(f"  Source epics   : {total_src}")
+    print(f"  Target epics   : {total_tgt}")
+    print(f"  Missing epics  : {total_miss}")
+    print(f"  Drift records  : {total_drift}")
+    print(f"  Orphaned epics : {total_orph}")
+    print(f"  Missing boards : {total_bmiss}")
+
+    verdict = "✅ PASS" if (total_miss == 0 and total_drift == 0 and total_orph == 0) else "❌ ISSUES FOUND — review reports"
+    print(f"\n  VERDICT: {verdict}")
+    print("\n[7/7] Done.")
+    print(f"  All output in: {OUTPUT_DIR.resolve()}")
+
+if __name__ == "__main__":
+    import argparse
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    ap = argparse.ArgumentParser(
+        description="GitLab Epic migration validator + optional board recreation.")
+    ap.add_argument("--recreate-boards", action="store_true",
+                    help="Recreate missing epic boards on the target instance.")
+    ap.add_argument("--apply", action="store_true",
+                    help="With --recreate-boards: actually write (default is dry-run).")
+    args = ap.parse_args()
+
+    if args.recreate_boards and args.apply:
+        print("!! WRITE MODE: epic boards WILL be created on the target instance.")
+    elif args.recreate_boards:
+        print("-- DRY RUN: showing what boards WOULD be created (no writes). Use --apply to execute.")
+
+    main(recreate_boards_flag=args.recreate_boards,
+         dry_run_flag=not args.apply)
