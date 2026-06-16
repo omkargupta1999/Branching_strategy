@@ -1,14 +1,1 @@
-D:\Mr Om\Python_script>python311\python.exe purge_deleted_projects.py --dry-run
-=================================================================
-  GitLab Soft-Deleted Project Purge
-  Target : https://gitlab.sbi
-  Mode   : DRY-RUN
-  Time   : 2026-06-16 11:47:29
-=================================================================
-Fetching all projects (this may take a moment)...
-[ERROR] GET /projects page 1 -> 401: {'message': '401 Unauthorized'}
-No projects are currently marked for deletion. Nothing to do.
-
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
+curl -k -H "PRIVATE-TOKEN: glpat-xxxxxxxxxxxxxxxxxxxx" https://gitlab.sbi/api/v4/user
