@@ -1,1 +1,12 @@
-curl -k -H "PRIVATE-TOKEN: glpat-xxxxxxxxxxxxxxxxxxxx" https://gitlab.sbi/api/v4/user
+[osuser@bastion ~]$ podman  login -u v1021577 artifactory.jfrog.sbi:443 --tls-verify=false
+Password:
+Login Succeeded!
+[osuser@bastion ~]$ podman pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0 --tls-verify=false
+Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0...
+Getting image source signatures
+Copying blob 34f4a557df81 skipped: already exists
+Copying blob 263725895e6f skipped: already exists
+Copying blob 4169280e8625 skipped: already exists
+Copying config 388b5e8551 done   |
+Writing manifest to image destination
+388b5e85519adde960bf31a199d19fcb2fb7abf2ebb10c26328d14802765695b
