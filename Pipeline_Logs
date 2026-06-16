@@ -1,71 +1,157 @@
-Got it. "Safest to run on production" + full rollback drives the whole design. Here's how I'll build it, and why each choice is the safe one:
+import json
+import csv
+import ssl
+from datetime import datetime
+from urllib.request import urlopen, Request
+from urllib.parse import urlencode, quote
 
-**Phased, separate, idempotent, report-first.** Four scripts you run in order. Each one does a dry run by default, journals every write, and can be re-run safely (it skips what's already done). You never run a big-bang script against production epics.
+# ============== CONFIG ==============
+GITLAB_URL = "https://gitlab.sbi"
+TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx"   # PAT with api/read_api scope (admin token needed for private emails)
 
-Let me build them. First the shared library (HTTP, journal, matching), then the four phase scripts.Now Phase 1 — recreate label definitions on the target. I need to verify the labels API create/delete fields first (since labels are also the rollback target).Now Phase 2 — the matching pass. This is the critical correctness step: pair source↔target epics by title+created-date+author, flag ambiguous/unmatched, and write the map.Now Phase 3 — apply labels and restore closed state, using the match map. This is the biggest write phase, so it's idempotent (re-checks live target state) and fully journaled.Now Phase 4 — board mirror, reusing the GraphQL approach from before (corrected, None-safe). Then I'll test the whole chain.Now syntax-check all four + the lib, then run a comprehensive test harness:All clean, pure stdlib. Now the comprehensive functional test — I'll monkeypatch the data layer and exercise all four phases plus their rollbacks, modeling your actual situation (closed epics gone, labels gone, epics re-parented + renumbered, duplicate titles).**Every phase passed**, including the hard cases:
+# The 3 GitLab subgroups where the 13 LDAP groups are linked
+SUBGROUPS = [
+    "itepaypg-sbiepay2",
+    "itepaypg-sbiepay2/infra/devops",
+    "itepaypg-sbiepay2/application",
+]
+# ======================================
 
-- **Phase 1**: 4 missing labels created on target (dry run showed them first, apply created them).
-- **Phase 2**: matched 3 epics including the **renumbered** one — source `!17` correctly matched to target `!212` despite different IIDs and different groups, using title+date+author.
-- **Phase 3**: dry run changed nothing; apply closed the 2 epics that were closed on source and applied the right labels to each; the open epic stayed open.
-- **Idempotency**: re-running Phase 3 reported all 3 as "Already-correct (skipped)" — safe to resume.
-- **Rollback (Phase 3)**: reopened the closed epics and removed exactly the labels it had added (not pre-existing ones).
-- **Rollback (Phase 1)**: deleted all 4 labels it created.
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOG_FILE = f"ldap_members_{TIMESTAMP}.txt"
+OUTPUT_CSV = f"ldap_members_{TIMESTAMP}.csv"
 
-Now Phase 4 board test (GraphQL writes + rollback), since the test above didn't cover it:All four phases tested and passing, including the `None`-position crash that broke your earlier run — now handled correctly (sorted last instead of crashing). Clean up and ship all five files:Five files delivered, all tested and passing. Here's the toolkit and exactly how to run it safely on production.
+ACCESS_LEVEL_MAP = {10: "Guest", 20: "Reporter", 30: "Developer", 40: "Maintainer", 50: "Owner"}
 
-## The fix toolkit (run in order)
+ctx = ssl._create_unverified_context()
 
-All five files go in the same folder. Fill in tokens and URLs **once** in `gl_common.py` — the four phase scripts import from it.
 
-| File | What it does | Writes? |
-|---|---|---|
-| `gl_common.py` | Shared config + HTTP + journal. Edit this one only. | — |
-| `phase1_labels.py` | Recreates the missing label definitions on target | Creates labels |
-| `phase2_match.py` | Matches old↔new epics by title+date+author | **Read-only** |
-| `phase3_epics.py` | Applies labels + restores closed state | Modifies epics |
-| `phase4_boards.py` | Mirrors epic boards (label-filtered views) | Creates boards |
+def log(msg):
+    print(msg)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(msg + "\n")
 
-## The safe runbook
 
-Every script is **dry-run by default** — you must add `--apply` to write anything.
+def api_get(path, params=None):
+    url = f"{GITLAB_URL}/api/v4{path}"
+    if params:
+        url += "?" + urlencode(params)
+    req = Request(url, headers={"PRIVATE-TOKEN": TOKEN})
+    with urlopen(req, context=ctx, timeout=30) as resp:
+        return json.loads(resp.read().decode()), resp.headers
 
-```
-# 1. Recreate labels (preview, then apply)
-python311\python.exe phase1_labels.py
-python311\python.exe phase1_labels.py --apply
 
-# 2. Match epics — READ ONLY, always safe. Review the 3 CSVs it produces.
-python311\python.exe phase2_match.py
+def api_get_all(path, params=None):
+    params = dict(params or {})
+    params["per_page"] = 100
+    page = 1
+    results = []
+    while True:
+        params["page"] = page
+        data, headers = api_get(path, params)
+        if not data:
+            break
+        results.extend(data)
+        total_pages = headers.get("X-Total-Pages")
+        if not total_pages or page >= int(total_pages):
+            break
+        page += 1
+    return results
 
-# 3. Restore labels + closed state (preview, then apply)
-python311\python.exe phase3_epics.py
-python311\python.exe phase3_epics.py --apply
 
-# 4. Mirror boards LAST (preview, then apply)
-python311\python.exe phase4_boards.py
-python311\python.exe phase4_boards.py --apply
-```
+def resolve_group(path):
+    try:
+        data, _ = api_get(f"/groups/{quote(path, safe='')}")
+        return data
+    except Exception as e:
+        log(f"  [ERROR] Could not resolve '{path}': {e}")
+        return None
 
-**Stop after phase 2 and read the CSVs before going further:**
-- `phase2_matches.csv` — confirmed pairs (check a few are correct)
-- `phase2_unmatched.csv` — source epics with no target match (true losses, or title/date changed)
-- `phase2_ambiguous.csv` — your duplicate-title cases (e.g. the two "Consent Management") where the script **refuses to guess** and leaves them for you to handle manually
 
-## Rollback — every write is reversible
+def get_user_email(user_id, cache):
+    if user_id in cache:
+        return cache[user_id]
+    try:
+        data, _ = api_get(f"/users/{user_id}")
+        email = data.get("email") or data.get("public_email") or ""
+    except Exception as e:
+        log(f"    [WARN] email fetch failed for user_id={user_id}: {e}")
+        email = ""
+    cache[user_id] = email
+    return email
 
-Each apply writes a journal file. To undo any phase:
 
-```
-python311\python.exe phase3_epics.py --rollback --apply
-python311\python.exe phase1_labels.py --rollback --apply
-```
+def get_ldap_identity(user_id, cache):
+    """Returns the LDAP identity (provider/extern_uid) if present, else empty."""
+    if user_id in cache:
+        return cache[user_id]
+    try:
+        data, _ = api_get(f"/users/{user_id}")
+        idents = data.get("identities", [])
+        ldap_ident = next((i for i in idents if "ldap" in i.get("provider", "").lower()), None)
+        result = ldap_ident.get("extern_uid", "") if ldap_ident else ""
+    except Exception:
+        result = ""
+    cache[user_id] = result
+    return result
 
-Phase 3 rollback reopens closed epics and removes **only the labels it added** (not ones already there). Verified in testing.
 
-## What this fixes vs. what it can't
+def main():
+    log("=== GitLab Member Export (LDAP-synced subgroups) ===")
+    log(f"GitLab: {GITLAB_URL}  Timestamp: {TIMESTAMP}\n")
 
-**Fixes:** missing labels, lost open/closed state, missing epic boards — functionally matching your old GitLab.
+    email_cache = {}
+    ldap_cache = {}
+    all_rows = []
+    seen = set()  # dedupe by (subgroup, user_id) — a user might inherit from a parent too
 
-**Can't fix (honest limits):** the original *close dates* (epics will show "closed now"), the renumbered IIDs, and any epic in `phase2_unmatched.csv` that genuinely didn't migrate. For ambiguous duplicate-title epics, you'll resolve those by hand — the script tells you which ones.
+    for path in SUBGROUPS:
+        log(f"[SUBGROUP] {path}")
+        group = resolve_group(path)
+        if not group:
+            continue
 
-One safety suggestion since this is production: run the full sequence against **one small group first** (e.g. point `SOURCE_TOP_GROUP`/`TARGET_TOP_GROUP` at a single subgroup, or just eyeball that phase 3's dry-run output matches your expectation for ~5 epics) before letting it touch all 210. The dry runs make that easy and risk-free.
+        try:
+            members = api_get_all(f"/groups/{group['id']}/members/all")
+        except Exception as e:
+            log(f"  [ERROR] members fetch failed: {e}")
+            continue
+
+        log(f"  Members: {len(members)}")
+        for m in members:
+            key = (path, m["id"])
+            if key in seen:
+                continue
+            seen.add(key)
+
+            email = get_user_email(m["id"], email_cache)
+            extern_uid = get_ldap_identity(m["id"], ldap_cache)
+            level = m.get("access_level", 0)
+
+            all_rows.append({
+                "subgroup": path,
+                "user_id": m["id"],
+                "username": m.get("username", ""),
+                "name": m.get("name", ""),
+                "email": email,
+                "ldap_extern_uid": extern_uid,
+                "access_level": level,
+                "access_level_name": ACCESS_LEVEL_MAP.get(level, str(level)),
+                "state": m.get("state", ""),
+            })
+        log("")
+
+    fieldnames = ["subgroup", "user_id", "username", "name", "email",
+                  "ldap_extern_uid", "access_level", "access_level_name", "state"]
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(all_rows)
+
+    log(f"=== DONE === Total records: {len(all_rows)}")
+    log(f"CSV: {OUTPUT_CSV}")
+    log(f"Log: {LOG_FILE}")
+
+
+if __name__ == "__main__":
+    main()
