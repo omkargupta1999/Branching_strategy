@@ -1,256 +1,199 @@
-Based on the log you shared, the failure is **not occurring during SSL/TLS connection** (your certificate import looks successful), and it's also **not a Gradle version issue**.
-
-The key error is:
-
-```text
-Could not find spring-security-web-6.3.10.jar
-(org.springframework.security:spring-security-web:6.3.10).
-
-Searched in:
-https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-web/6.3.10/spring-security-web-6.3.10.jar
-```
-
-You mentioned that the JAR is available at:
-
-```text
-itepaypg-sbiepay2-gradle-virtual/
-└── org/springframework/security/spring-security-web/6.3.10/
-    └── spring-security-web-6.3.10.jar
-```
-
-If that's true, then there are a few likely causes.
-
----
-
-## 1. Check whether the POM exists
-
-Gradle does **not** usually resolve Maven dependencies using only the JAR.
-
-For Maven repositories, Gradle first looks for:
-
-```text
-spring-security-web-6.3.10.pom
-```
-
-and then downloads the JAR.
-
-Verify that both files exist:
-
-```text
-spring-security-web-6.3.10.pom
-spring-security-web-6.3.10.jar
-```
-
-under:
-
-```text
-org/springframework/security/spring-security-web/6.3.10/
-```
-
-If only the JAR exists, Gradle can report:
-
-```text
-Could not find spring-security-web-6.3.10.jar
-```
-
-even though the JAR is visible in Artifactory.
-
----
-
-## 2. Verify the artifact is actually downloadable
-
-From the runner host or inside the build container:
-
-```bash
-curl -u "$JF_USER:$JF_TOKEN" -I \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-web/6.3.10/spring-security-web-6.3.10.jar"
-```
-
-Expected:
-
-```text
-HTTP/1.1 200 OK
-```
-
-If you get:
-
-```text
-401 Unauthorized
-403 Forbidden
-404 Not Found
-```
-
-then Artifactory permissions or repository configuration are the issue.
-
----
-
-## 3. Check the virtual repository includes the remote/local repo containing Spring artifacts
-
-Even though the artifact appears in the UI, the virtual repository used by CI is:
-
-```yaml
-JFROG_GRADLE_REPO:
-https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
-```
-
-Verify that:
-
-```text
-itepaypg-sbiepay2-gradle-virtual
-```
-
-includes the repository where Spring Security artifacts reside.
-
-Common issue:
-
-```text
-Maven Central Remote
-```
-
-was removed from the virtual repository or excluded by a repository pattern.
-
----
-
-## 4. Check repository permissions for the CI service account
-
-The build authenticates with:
-
-```groovy
-credentials {
-    username = System.getenv("JF_USER")
-    password = System.getenv("JF_TOKEN")
-}
-```
-
-The UI may show the artifact because your personal account has access, but the GitLab service account may not.
-
-Test using the exact CI credentials:
-
-```bash
-curl -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-web/6.3.10/spring-security-web-6.3.10.pom"
-```
-
----
-
-## 5. Verify Gradle is actually using the repository from the init script
-
-Your init script configures repositories via:
-
-```groovy
-settings.dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        maven {
-            url System.getenv("JFROG_GRADLE_REPO")
-        }
-    }
-}
-```
-
-This only works if the project uses dependency resolution management correctly.
-
-Run:
-
-```bash
-gradle dependencies --info
-```
-
-or
-
-```bash
-gradle build --info
-```
-
-and check whether Gradle logs:
-
-```text
-Using Maven repository 'maven'
-https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/
-```
-
-for dependency resolution.
-
----
-
-## 6. Spring Security 6.3.10 may not actually exist in the repository metadata
-
-I've seen cases where:
-
-```text
-spring-security-web-6.3.10.jar
-```
-
-was manually uploaded or cached,
-
-but:
-
-```text
-maven-metadata.xml
-spring-security-web-6.3.10.pom
-```
-
-were missing.
-
-Open these URLs directly:
-
-```text
-.../spring-security-web/6.3.10/spring-security-web-6.3.10.pom
-.../spring-security-web/maven-metadata.xml
-```
-
-and verify they return successfully.
-
----
-
-## 7. Enable dependency resolution debug
-
-Modify the pipeline temporarily:
-
-```yaml
-gradle build -x test \
-  -Pversion="${VERSION}" \
-  --refresh-dependencies \
-  --info \
-  --stacktrace
-```
-
-This will show:
-
-* exact repository queried
-* HTTP status returned by Artifactory
-* whether Gradle found the POM
-* authentication failures
-
----
-
-## Most likely root cause
-
-Because the error is:
-
-```text
-Could not find spring-security-web-6.3.10.jar
-```
-
-while the artifact is visible in Artifactory, the most common causes are:
-
-1. **POM file missing** alongside the JAR.
-2. **CI service account lacks read permission**.
-3. **Artifact visible in UI but not exposed through the virtual repository used by Gradle**.
-4. **Gradle is querying a different repository than expected.**
-
-The next thing I'd check is:
-
-```bash
-curl -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-web/6.3.10/spring-security-web-6.3.10.pom"
-```
-
-and
-
-```bash
-curl -u "$JF_USER:$JF_TOKEN" -I \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/security/spring-security-web/6.3.10/spring-security-web-6.3.10.jar"
-```
-
-Those two commands will usually identify the problem immediately.
+#!/usr/bin/env python3
+"""
+purge_deleted_projects.py
+
+Finds all GitLab projects that are soft-deleted (marked_for_deletion_at is set
+but not yet purged by the background worker) and permanently removes them via
+POST /projects/:id?permanently_remove=true&full_path=<path>.
+
+This clears the "still exists in inactive/marked-for-deletion state" condition
+that blocks re-creating a project with the same path (duplicate-name error).
+
+Usage:
+    python311\\python.exe purge_deleted_projects.py --dry-run
+    python311\\python.exe purge_deleted_projects.py
+    python311\\python.exe purge_deleted_projects.py --project itepaypg-sbiepay2/application/backend/epay_key_managment
+    python311\\python.exe purge_deleted_projects.py --verify
+
+Requires: PAT with `api` scope, Owner/Admin role (permanently_remove requires admin
+on self-managed GitLab unless the project is in the user's own namespace).
+"""
+
+import json
+import ssl
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime
+
+# ============================== CONFIG ======================================
+GITLAB_URL = "https://gitlab.sbi"
+TOKEN = "REPLACE_WITH_YOUR_PAT"          # glpat-xxxxxxxxxxxxxxxxxxxx
+TARGET_PROJECT = ""                       # optional: path or numeric id to purge a single project
+PER_PAGE = 100
+# =============================================================================
+
+CTX = ssl._create_unverified_context()
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOGFILE = f"purge_deleted_projects_{TIMESTAMP}.txt"
+
+
+def log(msg):
+    print(msg)
+    with open(LOGFILE, "a", encoding="utf-8") as f:
+        f.write(msg + "\n")
+
+
+def api_request(method, path, params=None):
+    url = f"{GITLAB_URL}/api/v4{path}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, method=method)
+    req.add_header("PRIVATE-TOKEN", TOKEN)
+    try:
+        with urllib.request.urlopen(req, context=CTX, timeout=30) as resp:
+            headers = dict(resp.headers)
+            body = resp.read().decode("utf-8")
+            data = json.loads(body) if body else None
+            return resp.status, data, headers
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8")
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            data = {"raw": body}
+        return e.code, data, dict(e.headers)
+
+
+def api_get_all(path, params=None):
+    """Paginated GET, follows X-Total-Pages."""
+    params = dict(params or {})
+    params["per_page"] = PER_PAGE
+    page = 1
+    results = []
+    while True:
+        params["page"] = page
+        status, data, headers = api_request("GET", path, params)
+        if status != 200:
+            log(f"[ERROR] GET {path} page {page} -> {status}: {data}")
+            break
+        if not data:
+            break
+        results.extend(data)
+        total_pages = int(headers.get("X-Total-Pages", "1") or "1")
+        if page >= total_pages:
+            break
+        page += 1
+    return results
+
+
+def list_marked_for_deletion():
+    """
+    Pull all projects visible to the token (membership=true keeps it scoped to
+    projects you have access to; admins can drop that param to see all).
+    """
+    log("Fetching all projects (this may take a moment)...")
+    all_projects = api_get_all(
+        "/projects",
+        {"membership": "true", "simple": "false", "order_by": "id", "sort": "asc"},
+    )
+    marked = [p for p in all_projects if p.get("marked_for_deletion_at")]
+    return marked
+
+
+def resolve_single_project(identifier):
+    encoded = urllib.parse.quote(str(identifier), safe="")
+    status, data, _ = api_request("GET", f"/projects/{encoded}")
+    if status != 200:
+        log(f"[ERROR] Could not resolve project '{identifier}' -> {status}: {data}")
+        return None
+    return data
+
+
+def purge_project(project, dry_run):
+    pid = project["id"]
+    full_path = project["path_with_namespace"]
+    marked_at = project.get("marked_for_deletion_at")
+
+    if dry_run:
+        log(f"  [DRY-RUN] would purge id={pid} path={full_path} marked_at={marked_at}")
+        return True
+
+    params = {"permanently_remove": "true", "full_path": full_path}
+    status, data, _ = api_request("DELETE", f"/projects/{pid}", params)
+    if status in (200, 202):
+        log(f"  [OK] purged id={pid} path={full_path}")
+        return True
+    else:
+        log(f"  [ERROR] purge failed id={pid} path={full_path} -> {status}: {data}")
+        return False
+
+
+def verify():
+    remaining = list_marked_for_deletion()
+    if not remaining:
+        log("VERIFY: no projects remain in marked_for_deletion state.")
+    else:
+        log(f"VERIFY: {len(remaining)} project(s) still marked for deletion:")
+        for p in remaining:
+            log(f"  id={p['id']} path={p['path_with_namespace']} marked_at={p.get('marked_for_deletion_at')}")
+
+
+def main():
+    dry_run = "--dry-run" in sys.argv
+    verify_only = "--verify" in sys.argv
+
+    log("=" * 65)
+    log("  GitLab Soft-Deleted Project Purge")
+    log(f"  Target : {GITLAB_URL}")
+    log(f"  Mode   : {'VERIFY-ONLY' if verify_only else ('DRY-RUN' if dry_run else 'APPLY')}")
+    log(f"  Time   : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log("=" * 65)
+
+    if verify_only:
+        verify()
+        return
+
+    if "--project" in sys.argv:
+        idx = sys.argv.index("--project")
+        identifier = sys.argv[idx + 1]
+        project = resolve_single_project(identifier)
+        if not project:
+            sys.exit(1)
+        if not project.get("marked_for_deletion_at"):
+            log(f"[SKIP] '{identifier}' is not marked for deletion (active project). Nothing to purge.")
+            return
+        targets = [project]
+    else:
+        targets = list_marked_for_deletion()
+
+    if not targets:
+        log("No projects are currently marked for deletion. Nothing to do.")
+        return
+
+    log(f"\nFound {len(targets)} project(s) marked for deletion:")
+    for p in targets:
+        log(f"  id={p['id']} path={p['path_with_namespace']} marked_at={p.get('marked_for_deletion_at')}")
+
+    log("\n=== Purging ===")
+    ok, failed = 0, 0
+    for p in targets:
+        if purge_project(p, dry_run):
+            ok += 1
+        else:
+            failed += 1
+        time.sleep(0.3)  # gentle on the API
+
+    log(f"\nDone. success={ok} failed={failed} dry_run={dry_run}")
+
+    if not dry_run:
+        log("\n=== Auto-verify ===")
+        verify()
+
+    log(f"\nLog written to {LOGFILE}")
+
+
+if __name__ == "__main__":
+    main()
