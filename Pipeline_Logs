@@ -1,64 +1,50 @@
+You're mid-rebase (8/8, so this is the last commit), and you fixed the message on this commit but the push rule is still rejecting it. The push rule checks **every commit** in the push, not just HEAD — so one of the other 7 commits you're rebasing still has a bad message.
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$ git push origin HEAD:release/1.9.0
-warning: redirecting to https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service.git/
-Enumerating objects: 93, done.
-Counting objects: 100% (87/87), done.
-Delta compression using up to 24 threads
-Compressing objects: 100% (37/37), done.
-Writing objects: 100% (54/54), 4.91 KiB | 628.00 KiB/s, done.
-Total 54 (delta 25), reused 16 (delta 5), pack-reused 0 (from 0)
-remote: GitLab: Commit message does not follow the pattern '^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$'
-To https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
- ! [remote rejected]   HEAD -> release/1.9.0 (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service'
+A few things to check:
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
+**1. Confirm which commit is actually failing**
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
+Since you're at 8/8, all commits should have been replayed already. Check the full list being pushed:
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$ git commit --amend -m "EAP-123|OG|feat: edit dockerfile"
-[detached HEAD 64c74098] EAP-123|OG|feat: edit dockerfile
- Date: Wed Jun 17 16:48:19 2026 +0530
- Committer: Omkar Gupta <V1021577@CORP.AD.SBI>
-Your name and email address were configured automatically based
-on your username and hostname. Please check that they are accurate.
-You can suppress this message by setting them explicitly:
+```bash
+git log origin/release/1.9.0..HEAD --oneline
+```
 
-    git config --global user.name "Your Name"
-    git config --global user.email you@example.com
+Look at every line — GitLab's push rule validates each commit message in the push range, so even though you amended the *current* commit, an earlier one in this rebase may not match the pattern.
 
-After doing this, you may fix the identity used for this commit with:
+**2. Double check the regex against your message**
 
-    git commit --amend --reset-author
+Pattern: `^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$`
 
- 2 files changed, 32 insertions(+), 3 deletions(-)
+Your message: `EAP-123|OG|feat: edit dockerfile`
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
+That matches fine on its own. So if this exact commit is the only one in the range, the rejection is odd — which makes me suspect either:
+- there are more commits in the push range with bad messages, or
+- a hidden character snuck in (smart quotes from a clipboard paste, a trailing `\r` from Windows line endings, or a non-breaking space instead of a regular space).
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$ git push origin HEAD:release/1.9.0
-warning: redirecting to https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service.git/
-Enumerating objects: 93, done.
-Counting objects: 100% (87/87), done.
-Delta compression using up to 24 threads
-Compressing objects: 100% (37/37), done.
-Writing objects: 100% (54/54), 4.90 KiB | 334.00 KiB/s, done.
-Total 54 (delta 25), reused 16 (delta 5), pack-reused 0 (from 0)
-remote: GitLab: Commit message does not follow the pattern '^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$'
-To https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
- ! [remote rejected]   HEAD -> release/1.9.0 (pre-receive hook declined)
-error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service'
+Check for hidden characters:
+```bash
+git log -1 --format=%B | cat -A | head -5
+```
+Look for `^M` (carriage return) at the end of the line, or any `M-` prefixed bytes (non-ASCII).
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
-$
+**3. If other commits in the range are the problem**
 
-V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+You'll need to fix each one. Since you're already in an interactive rebase, easiest path:
+
+```bash
+git rebase --edit-todo
+```
+Change `pick` to `reword` (or `r`) for every commit that has a bad message, save, and Git will stop at each one for you to fix.
+
+Or, if you want to squash everything into one clean commit instead (often simpler for a release branch):
+
+```bash
+git reset --soft origin/release/1.9.0
+git commit -m "EAP-123|OG|feat: edit dockerfile"
+git push origin HEAD:release/1.9.0
+```
+
+That collapses the whole branch into a single compliant commit, sidestepping the per-commit check entirely — worth doing only if squashing this branch is acceptable for your MR process.
+
+Want to paste the output of `git log origin/release/1.9.0..HEAD --oneline` so I can spot which commit(s) are tripping the hook?
