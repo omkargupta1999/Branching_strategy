@@ -1,132 +1,64 @@
-Here's a stdlib-only script following your house style (CONFIG block, `log()` to console + timestamped file, `--dry-run`/`--verify` flags, idempotent).
 
-```python
-#!/usr/bin/env python
-"""install_git.py - Silent Git install from a staged installer (Windows, air-gapped).
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$ git push origin HEAD:release/1.9.0
+warning: redirecting to https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service.git/
+Enumerating objects: 93, done.
+Counting objects: 100% (87/87), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (37/37), done.
+Writing objects: 100% (54/54), 4.91 KiB | 628.00 KiB/s, done.
+Total 54 (delta 25), reused 16 (delta 5), pack-reused 0 (from 0)
+remote: GitLab: Commit message does not follow the pattern '^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$'
+To https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
+ ! [remote rejected]   HEAD -> release/1.9.0 (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service'
 
-Usage:
-    python install_git.py --dry-run      # show what would run, no changes
-    python install_git.py                # perform install
-    python install_git.py --verify       # check git is installed & report version
-"""
-import argparse
-import datetime
-import os
-import subprocess
-import sys
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
 
-# ---------------------------------------------------------------- CONFIG
-CONFIG = {
-    # Path to the staged Git installer .exe (update version as needed)
-    "INSTALLER": r"D:\Mr Om\installers\Git-2.45.2-64-bit.exe",
-    # Silent install switches (Inno Setup, used by Git-for-Windows)
-    "SWITCHES": [
-        "/VERYSILENT",
-        "/NORESTART",
-        "/SUPPRESSMSGBOXES",
-        "/NOCANCEL",
-        '/COMPONENTS=gitlfs,assoc,assoc_sh',
-    ],
-    "LOG_FILE": os.path.join(
-        r"D:\Mr Om\Python_script",
-        "install_git_{:%Y%m%d_%H%M%S}.log".format(datetime.datetime.now()),
-    ),
-}
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
 
-# ---------------------------------------------------------------- logging
-_log_fh = None
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$ git commit --amend -m "EAP-123|OG|feat: edit dockerfile"
+[detached HEAD 64c74098] EAP-123|OG|feat: edit dockerfile
+ Date: Wed Jun 17 16:48:19 2026 +0530
+ Committer: Omkar Gupta <V1021577@CORP.AD.SBI>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
 
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
 
-def log(msg):
-    global _log_fh
-    line = "[{:%H:%M:%S}] {}".format(datetime.datetime.now(), msg)
-    print(line)
-    if _log_fh is None:
-        _log_fh = open(CONFIG["LOG_FILE"], "a", encoding="utf-8")
-    _log_fh.write(line + "\n")
-    _log_fh.flush()
+After doing this, you may fix the identity used for this commit with:
 
+    git commit --amend --reset-author
 
-# ---------------------------------------------------------------- helpers
-def find_git():
-    """Return (path, version) if git is on PATH, else (None, None)."""
-    try:
-        out = subprocess.run(
-            ["git", "--version"],
-            capture_output=True, text=True, shell=False,
-        )
-        if out.returncode == 0:
-            ver = out.stdout.strip()
-            path = subprocess.run(
-                ["where", "git"], capture_output=True, text=True, shell=True
-            ).stdout.strip().splitlines()
-            return (path[0] if path else "git", ver)
-    except FileNotFoundError:
-        pass
-    return (None, None)
+ 2 files changed, 32 insertions(+), 3 deletions(-)
 
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
 
-def verify():
-    path, ver = find_git()
-    if ver:
-        log("VERIFY OK: {} ({})".format(ver, path))
-        return 0
-    log("VERIFY FAILED: git not found on PATH")
-    return 1
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$ git push origin HEAD:release/1.9.0
+warning: redirecting to https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service.git/
+Enumerating objects: 93, done.
+Counting objects: 100% (87/87), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (37/37), done.
+Writing objects: 100% (54/54), 4.90 KiB | 334.00 KiB/s, done.
+Total 54 (delta 25), reused 16 (delta 5), pack-reused 0 (from 0)
+remote: GitLab: Commit message does not follow the pattern '^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$'
+To https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service
+ ! [remote rejected]   HEAD -> release/1.9.0 (pre-receive hook declined)
+error: failed to push some refs to 'https://gitlab.sbi/itepaypg-sbiepay2/application/backend/epay_transaction_service'
 
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
 
-# ---------------------------------------------------------------- main
-def main():
-    ap = argparse.ArgumentParser(description="Silent Git install (air-gapped, Windows).")
-    ap.add_argument("--dry-run", action="store_true", help="show command, make no changes")
-    ap.add_argument("--verify", action="store_true", help="check git install & version")
-    args = ap.parse_args()
-
-    log("=== install_git.py start ===")
-
-    if args.verify:
-        sys.exit(verify())
-
-    # Idempotency: skip if already installed
-    path, ver = find_git()
-    if ver:
-        log("Git already installed: {} ({}) - nothing to do.".format(ver, path))
-        log("(Re-run with --verify to confirm, or uninstall first to reinstall.)")
-        sys.exit(0)
-
-    installer = CONFIG["INSTALLER"]
-    if not os.path.isfile(installer):
-        log("ERROR: installer not found: {}".format(installer))
-        sys.exit(2)
-
-    cmd = [installer] + CONFIG["SWITCHES"]
-    log("Command: " + " ".join(cmd))
-
-    if args.dry_run:
-        log("DRY-RUN: not executing.")
-        sys.exit(0)
-
-    log("Running silent install...")
-    r = subprocess.run(cmd)
-    log("Installer exit code: {}".format(r.returncode))
-
-    if r.returncode != 0:
-        log("ERROR: installer returned non-zero.")
-        sys.exit(r.returncode)
-
-    # Note: PATH update from a fresh install won't reflect in THIS process.
-    log("Install finished. Open a NEW shell, then run: python install_git.py --verify")
-    sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()
-```
-
-Two things specific to your environment worth flagging:
-
-The `--verify` step won't see Git in the *same* process that ran the installer — the installer updates the machine/user PATH, but the running Python process keeps its old environment. Open a fresh shell before verifying.
-
-The `/COMPONENTS=gitlfs,...` switch assumes the staged installer is the standard Git-for-Windows build with LFS bundled. If your security team repackaged or trimmed it, drop or adjust that switch — an invalid component name makes Inno Setup silently ignore it, so it's not fatal, but worth confirming against your actual installer build.
-
-Want me to add an `--uninstall` flag (locates the Inno `unins000.exe` and runs it silently) so the script handles the full reinstall cycle?
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
