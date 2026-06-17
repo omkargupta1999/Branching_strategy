@@ -1,3 +1,38 @@
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$ git log origin/release/1.9.0..HEAD --oneline
+64c74098 (HEAD) EAP-123|OG|feat: edit dockerfile
+49a3536e EAP-123|OG|chore: edit dockerfile
+f4e0a0ed EAP-123|OG|chore: edit dockerfile
+6c3988a6 EAP-123|OG|chore: resolve conflict in dockerfile
+308b162d ETS-002|UA| mis report for transaction
+b876558d ETS-002|UA| added constant for Mis report
+3d6fef64 ETS-001|AB|Refactor MIS API changes v1
+dab20dee ETS-002|UA|added the changes of transaction MIs
+8da2f616 (origin/main) EAP-123|OG|chore: edit dockerfile
+10c58c86 Update 4 files
+
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$ git log -1 --format=%B | cat -A | head -5
+EAP-123|OG|feat: edit dockerfile$
+$
+
+V1021577@SBIEPAYB119 MINGW64 ~/Omkar_Gitlab_repo/epay_transaction_service (release/1.9.0|REBASE 8/8)
+$
+
+
+
+
+
+
+
+
+
+
+
+
+
 You're mid-rebase (8/8, so this is the last commit), and you fixed the message on this commit but the push rule is still rejecting it. The push rule checks **every commit** in the push, not just HEAD — so one of the other 7 commits you're rebasing still has a bad message.
 
 A few things to check:
