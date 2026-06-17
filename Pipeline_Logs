@@ -1,8 +1,15 @@
-FROM registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.24
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+
 ARG ENV
 ARG VERSION
+
 ENV ENV=$ENV
 ENV VERSION=$VERSION
-COPY /build/libs/transaction_job_service-${VERSION}.jar .
+
+# FIX: Relative path (no leading /) — matches the pattern used in other services
+COPY build/libs/transaction_job_service-${VERSION}.jar .
+
 ENTRYPOINT sh -c 'java -XX:MaxRAMPercentage=50.0 -jar "transaction_job_service-$VERSION.jar"'
-USER 0
+
+USER root
