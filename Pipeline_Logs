@@ -1,17 +1,34 @@
-FROM registry.dev.sbiepay.sbi:8443/openjdk:03
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+
 ARG ENV
 ARG VERSION
 
 ENV ENV=$ENV
 ENV VERSION=$VERSION
 
-COPY /build/libs/java-utility-api-simulator-${VERSION}.war .
-ENTRYPOINT sh -c 'java -jar "java-utility-api-simulator-$VERSION.war"'
-COPY ./sms.cer  /tmp
-COPY ./epaycert.cer  /tmp
-RUN ls -lrth /tmp/
-USER 0
-RUN cd /usr/lib/jvm/java-21/bin
-RUN yes | keytool -import -trustcacerts -file /tmp/sms.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias DEV_EPAY_SMS -storepass changeit
-RUN yes | keytool -import -trustcacerts -file /tmp/epaycert.cer -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias S3_EPAY_CERT -storepass changeit
+# FIX 1: Relative path (no leading /)
+COPY build/libs/java-utility-api-simulator-${VERSION}.war .
 
+ENTRYPOINT sh -c 'java -jar "java-utility-api-simulator-$VERSION.war"'
+
+COPY ./sms.cer      /tmp
+COPY ./epaycert.cer /tmp
+
+USER root
+
+# FIX 2: Removed pointless "RUN cd /usr/lib/jvm/java-21/bin" and debug "RUN ls -lrth /tmp/"
+# FIX 3: Dynamic cacerts resolution — openjdk-21-runtime (UBI9) uses /etc/pki/java/cacerts
+# FIX 4: -noprompt suppresses verbose certificate dump in build logs
+RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
+    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
+    keytool -import -trustcacerts -noprompt \
+      -file /tmp/sms.cer \
+      -keystore "$CACERTS" \
+      -alias DEV_EPAY_SMS \
+      -storepass changeit && \
+    keytool -import -trustcacerts -noprompt \
+      -file /tmp/epaycert.cer \
+      -keystore "$CACERTS" \
+      -alias S3_EPAY_CERT \
+      -storepass changeit
