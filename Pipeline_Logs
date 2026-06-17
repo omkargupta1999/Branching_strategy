@@ -1,34 +1,132 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
+Here's a stdlib-only script following your house style (CONFIG block, `log()` to console + timestamped file, `--dry-run`/`--verify` flags, idempotent).
 
-ARG ENV
-ARG VERSION
+```python
+#!/usr/bin/env python
+"""install_git.py - Silent Git install from a staged installer (Windows, air-gapped).
 
-ENV ENV=$ENV
-ENV VERSION=$VERSION
+Usage:
+    python install_git.py --dry-run      # show what would run, no changes
+    python install_git.py                # perform install
+    python install_git.py --verify       # check git is installed & report version
+"""
+import argparse
+import datetime
+import os
+import subprocess
+import sys
 
-# FIX 1: Relative path (no leading /)
-COPY build/libs/java-utility-api-simulator-${VERSION}.war .
+# ---------------------------------------------------------------- CONFIG
+CONFIG = {
+    # Path to the staged Git installer .exe (update version as needed)
+    "INSTALLER": r"D:\Mr Om\installers\Git-2.45.2-64-bit.exe",
+    # Silent install switches (Inno Setup, used by Git-for-Windows)
+    "SWITCHES": [
+        "/VERYSILENT",
+        "/NORESTART",
+        "/SUPPRESSMSGBOXES",
+        "/NOCANCEL",
+        '/COMPONENTS=gitlfs,assoc,assoc_sh',
+    ],
+    "LOG_FILE": os.path.join(
+        r"D:\Mr Om\Python_script",
+        "install_git_{:%Y%m%d_%H%M%S}.log".format(datetime.datetime.now()),
+    ),
+}
 
-ENTRYPOINT sh -c 'java -jar "java-utility-api-simulator-$VERSION.war"'
+# ---------------------------------------------------------------- logging
+_log_fh = None
 
-COPY ./sms.cer      /tmp
-COPY ./epaycert.cer /tmp
 
-USER root
+def log(msg):
+    global _log_fh
+    line = "[{:%H:%M:%S}] {}".format(datetime.datetime.now(), msg)
+    print(line)
+    if _log_fh is None:
+        _log_fh = open(CONFIG["LOG_FILE"], "a", encoding="utf-8")
+    _log_fh.write(line + "\n")
+    _log_fh.flush()
 
-# FIX 2: Removed pointless "RUN cd /usr/lib/jvm/java-21/bin" and debug "RUN ls -lrth /tmp/"
-# FIX 3: Dynamic cacerts resolution — openjdk-21-runtime (UBI9) uses /etc/pki/java/cacerts
-# FIX 4: -noprompt suppresses verbose certificate dump in build logs
-RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
-    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/sms.cer \
-      -keystore "$CACERTS" \
-      -alias DEV_EPAY_SMS \
-      -storepass changeit && \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/epaycert.cer \
-      -keystore "$CACERTS" \
-      -alias S3_EPAY_CERT \
-      -storepass changeit
+
+# ---------------------------------------------------------------- helpers
+def find_git():
+    """Return (path, version) if git is on PATH, else (None, None)."""
+    try:
+        out = subprocess.run(
+            ["git", "--version"],
+            capture_output=True, text=True, shell=False,
+        )
+        if out.returncode == 0:
+            ver = out.stdout.strip()
+            path = subprocess.run(
+                ["where", "git"], capture_output=True, text=True, shell=True
+            ).stdout.strip().splitlines()
+            return (path[0] if path else "git", ver)
+    except FileNotFoundError:
+        pass
+    return (None, None)
+
+
+def verify():
+    path, ver = find_git()
+    if ver:
+        log("VERIFY OK: {} ({})".format(ver, path))
+        return 0
+    log("VERIFY FAILED: git not found on PATH")
+    return 1
+
+
+# ---------------------------------------------------------------- main
+def main():
+    ap = argparse.ArgumentParser(description="Silent Git install (air-gapped, Windows).")
+    ap.add_argument("--dry-run", action="store_true", help="show command, make no changes")
+    ap.add_argument("--verify", action="store_true", help="check git install & version")
+    args = ap.parse_args()
+
+    log("=== install_git.py start ===")
+
+    if args.verify:
+        sys.exit(verify())
+
+    # Idempotency: skip if already installed
+    path, ver = find_git()
+    if ver:
+        log("Git already installed: {} ({}) - nothing to do.".format(ver, path))
+        log("(Re-run with --verify to confirm, or uninstall first to reinstall.)")
+        sys.exit(0)
+
+    installer = CONFIG["INSTALLER"]
+    if not os.path.isfile(installer):
+        log("ERROR: installer not found: {}".format(installer))
+        sys.exit(2)
+
+    cmd = [installer] + CONFIG["SWITCHES"]
+    log("Command: " + " ".join(cmd))
+
+    if args.dry_run:
+        log("DRY-RUN: not executing.")
+        sys.exit(0)
+
+    log("Running silent install...")
+    r = subprocess.run(cmd)
+    log("Installer exit code: {}".format(r.returncode))
+
+    if r.returncode != 0:
+        log("ERROR: installer returned non-zero.")
+        sys.exit(r.returncode)
+
+    # Note: PATH update from a fresh install won't reflect in THIS process.
+    log("Install finished. Open a NEW shell, then run: python install_git.py --verify")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Two things specific to your environment worth flagging:
+
+The `--verify` step won't see Git in the *same* process that ran the installer — the installer updates the machine/user PATH, but the running Python process keeps its old environment. Open a fresh shell before verifying.
+
+The `/COMPONENTS=gitlfs,...` switch assumes the staged installer is the standard Git-for-Windows build with LFS bundled. If your security team repackaged or trimmed it, drop or adjust that switch — an invalid component name makes Inno Setup silently ignore it, so it's not fatal, but worth confirming against your actual installer build.
+
+Want me to add an `--uninstall` flag (locates the Inno `unins000.exe` and runs it silently) so the script handles the full reinstall cycle?
