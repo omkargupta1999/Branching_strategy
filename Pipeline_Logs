@@ -1,71 +1,360 @@
-D:\Mr Om\Python_script> python311\python.exe diagnose_deploy_access.py
-==============================================================================
- GitLab Deploy Access Diagnosis — 20260617_112126
- Instance       : https://gitlab.sbi
- Deployment repo: itepaypg-sbiepay2/infra/devops/deployment
-==============================================================================
+#!/usr/bin/env python3
+"""
+=============================================================================
+ Script      : diagnose_deploy_access.py
+ Purpose     : Diagnose why specific GitLab groups see GREYED-OUT manual
+               deploy jobs in the DEPLOYMENT repo pipeline, even though
+               they have been invited as project members.
 
-[OK] Resolved project id=2838 (default_branch=main)
+               For SBIePay ePay Platform (ITEPAYPG-SBIePay2).
 
-------------------------------------------------------------------------------
- CHECK 1: Group membership & effective access level on deployment repo
-------------------------------------------------------------------------------
-  Group 'epay-gitlab-vendor-app-maintainer' -> id=4955 (full_path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-maintainer)
-  Group 'epay-gitlab-vendor-app-lead' -> id=4956 (full_path=itepaypg-sbiepay2/ldap-membership/epay-gitlab-vendor-app-lead)
-  Project has 3 group(s) invited:
-    - epay-gitlab-techm-app-maintainer: access_level=None (None)
-    - epay-gitlab-vendor-app-maintainer: access_level=None (None) <-- FLAGGED GROUP
-    - epay-gitlab-vendor-app-lead: access_level=None (None) <-- FLAGGED GROUP
+ BACKGROUND  : Manual deploy jobs (deploy-sit/uat/int/perf/preprod/prod)
+               can be greyed out for a user/group for THREE independent
+               reasons, each checked by GitLab separately:
 
-------------------------------------------------------------------------------
- CHECK 2: Protected Environments — 'Allowed to deploy' allowlist
-------------------------------------------------------------------------------
- (This is checked SEPARATELY from project role. A group can be
-  Maintainer on the project and still be blocked here.)
+                 (1) Project membership / role           <- what you set
+                 (2) Protected Environments allowlist     <- SEPARATE gate
+                 (3) Protected Branches push/merge rules  <- SEPARATE gate
 
-  No protected environments returned (HTTP 200).
-  -> If your deploy environments (sit/uat/int/perf/preprod/prod) are NOT
-     configured as Protected Environments at all, then this is NOT your
-     blocker — manual jobs would fall back to project role only. Move to
-     CHECK 3 below.
+               Adding a group as Developer/Maintainer on the project
+               (#1) does NOT automatically grant deploy rights if (2) or
+               (3) have their own allowlist that does not include that
+               group. This script checks all three for the two groups
+               you flagged:
 
-------------------------------------------------------------------------------
- CHECK 3: Protected Branches — push/merge allowlist
-------------------------------------------------------------------------------
- (Manual deploy jobs only appear/enable on pipelines run from branches
-  these groups are allowed to push/merge to, per your .rules block.)
+                 epay-gitlab-vendor-app-maintainer  (Maintainer)
+                 epay-gitlab-vendor-app-lead         (Developer)
 
-  Branch pattern: develop
-    Push allowed for:
-      - access_level=Maintainer (role-based)
-    Merge allowed for:
-      - access_level=Maintainer (role-based)
+ SCOPE       : READ-ONLY. Every call is a GET. No writes are made.
 
-  Branch pattern: main
-    Push allowed for:
-      - user_id=552
-      - user_id=426
-      - user_id=644
-      - user_id=418
-    Merge allowed for:
-      - user_id=426
-      - group_id=4956 <-- FLAGGED GROUP
-      - user_id=552
-      - user_id=418
-      - user_id=644
+ Dependencies: NONE — Python standard library only (no pip required)
 
-==============================================================================
- SUMMARY — read top-to-bottom, fix the FIRST gate that excludes the group
-==============================================================================
- 1. Project membership (CHECK 1)         -> usually fine if you invited the group
- 2. Protected Environments (CHECK 2)     -> SEPARATE allowlist, most common culprit
- 3. Protected Branches push/merge (CHECK 3) -> blocks the pipeline run itself
+ Usage       :
+   1. Edit the CONFIG block below: GITLAB_URL, TOKEN, DEPLOY_PROJECT
+   2. python3 diagnose_deploy_access.py
 
- If CHECK 2 shows the flagged groups missing from an environment's
- deploy_access_levels, that confirms the fix: add both groups to the
- 'Allowed to deploy' list for each environment in Settings > CI/CD >
- Protected environments (or via POST /projects/:id/protected_environments).
+ Output      :
+   Console   — Live diagnostic log
+   deploy_access_diagnosis_<timestamp>.txt — Full run log
+=============================================================================
+"""
 
-  -> deploy_access_diagnosis_20260617_112126.txt written.
+import urllib.request
+import urllib.error
+import urllib.parse
+import json
+import ssl
+import sys
+from datetime import datetime
 
-D:\Mr Om\Python_script>
+# =============================================================================
+#  CONFIGURATION — Edit only this block
+# =============================================================================
+
+GITLAB_URL = "https://gitlab.sbi"        # Target GitLab instance
+TOKEN = ""                                 # Maintainer/Owner PAT (glpat-...)
+
+# Full path of the DEPLOYMENT repo (the one where the manual jobs run /
+# where you invited the two groups). Edit this to the real path, e.g.:
+#   "itepaypg-sbiepay2/infra/devops/deployments/adminservice"
+DEPLOY_PROJECT = ""
+
+# The two groups you flagged as still greyed out
+GROUPS_TO_CHECK = [
+    "epay-gitlab-vendor-app-maintainer",
+    "epay-gitlab-vendor-app-lead",
+]
+
+# Optional: numeric GitLab user_id of ONE real person from the affected
+# groups who is seeing the grey-out. Leave as None to skip this deeper
+# check. Find a user_id via GET /users?username=<their-username>.
+TEST_USER_ID = None
+
+# =============================================================================
+#  Internals — no need to edit below this line
+# =============================================================================
+
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+_log_lines = []
+_ctx = ssl._create_unverified_context()
+
+
+def log(msg):
+    print(msg)
+    _log_lines.append(msg)
+
+
+def api_get(path, params=None):
+    """Single GET call. Returns (status_code, parsed_json_or_None)."""
+    url = f"{GITLAB_URL}/api/v4{path}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": TOKEN})
+    try:
+        with urllib.request.urlopen(req, context=_ctx, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+            return resp.status, (json.loads(body) if body else None)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(body)
+        except Exception:
+            parsed = body
+        return e.code, parsed
+    except urllib.error.URLError as e:
+        log(f"  !! Network error calling {url}: {e}")
+        return None, None
+
+
+def api_get_all(path, params=None):
+    """Paginated GET. Returns full list across all pages."""
+    if params is None:
+        params = {}
+    params = dict(params)
+    params["per_page"] = 100
+    page = 1
+    results = []
+    while True:
+        params["page"] = page
+        status, data = api_get(path, params)
+        if status != 200 or data is None:
+            break
+        if isinstance(data, list):
+            results.extend(data)
+            if len(data) < 100:
+                break
+        else:
+            results.append(data)
+            break
+        page += 1
+    return results
+
+
+def resolve_project_id(project_path):
+    status, data = api_get(f"/projects/{urllib.parse.quote(project_path, safe='')}")
+    if status == 200 and data:
+        return data.get("id"), data
+    log(f"  !! Could not resolve project '{project_path}' (HTTP {status})")
+    if isinstance(data, dict):
+        log(f"     Response: {data}")
+    return None, None
+
+
+def resolve_group_id(group_name):
+    """Search groups by name, return best match id + full_path."""
+    matches = api_get_all("/groups", {"search": group_name})
+    for g in matches:
+        if g.get("path") == group_name or g.get("name") == group_name:
+            return g.get("id"), g.get("full_path")
+    # fallback: suffix match on full_path (handles nested groups)
+    for g in matches:
+        if g.get("full_path", "").endswith(group_name):
+            return g.get("id"), g.get("full_path")
+    return None, None
+
+
+def main():
+    if not TOKEN or not DEPLOY_PROJECT:
+        log("!! Please set TOKEN and DEPLOY_PROJECT in the CONFIG block before running.")
+        sys.exit(1)
+
+    log("=" * 78)
+    log(f" GitLab Deploy Access Diagnosis — {TIMESTAMP}")
+    log(f" Instance       : {GITLAB_URL}")
+    log(f" Deployment repo: {DEPLOY_PROJECT}")
+    log("=" * 78)
+
+    proj_id, proj_data = resolve_project_id(DEPLOY_PROJECT)
+    if not proj_id:
+        log("\nAborting — fix DEPLOY_PROJECT path and re-run.")
+        write_log()
+        sys.exit(1)
+    log(f"\n[OK] Resolved project id={proj_id} (default_branch={proj_data.get('default_branch')})")
+
+    # -------------------------------------------------------------------
+    # CHECK 1 — Group membership / effective role on the deployment repo
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 1: Group membership & effective access level on deployment repo")
+    log("-" * 78)
+
+    group_ids = {}
+    for gname in GROUPS_TO_CHECK:
+        gid, gpath = resolve_group_id(gname)
+        if not gid:
+            log(f"  !! Group '{gname}' NOT FOUND via /groups search — check exact name/casing.")
+            continue
+        group_ids[gname] = gid
+        log(f"  Group '{gname}' -> id={gid} (full_path={gpath})")
+
+    # Inspect all group-links on the project (this is the authoritative
+    # source of "what role did the Invite Group action actually grant")
+    invited_groups = api_get_all(f"/projects/{proj_id}/share_locations") or []
+    # share_locations isn't the right endpoint on all versions; use the
+    # documented one as primary and treat the above as best-effort.
+    status, links = api_get(f"/projects/{proj_id}")
+    shared_with = (proj_data or {}).get("shared_with_groups", [])
+    if not shared_with and isinstance(links, dict):
+        shared_with = links.get("shared_with_groups", [])
+
+    if not shared_with:
+        log("  !! No 'shared_with_groups' returned for this project at all.")
+        log("     This means NO group has been invited via Project > Members > Invite Group,")
+        log("     OR your token lacks permission to see this field (needs Maintainer+ on project).")
+    else:
+        log(f"  Project has {len(shared_with)} group(s) invited:")
+        log(f"  (raw keys on first entry, for debugging field names: {list(shared_with[0].keys())})")
+        for sg in shared_with:
+            name = sg.get("group_name") or sg.get("group_full_path")
+            # Different GitLab versions/endpoints use different key names
+            # for this field — try all known variants instead of guessing one.
+            level = (sg.get("group_access_level")
+                     if sg.get("group_access_level") is not None
+                     else sg.get("group_access"))
+            level_name = {10: "Guest", 20: "Reporter", 30: "Developer",
+                          40: "Maintainer", 50: "Owner"}.get(level, level)
+            flag = " <-- FLAGGED GROUP" if any(g in str(sg) for g in GROUPS_TO_CHECK) else ""
+            log(f"    - {name}: access_level={level} ({level_name}){flag}")
+
+    for gname, gid in group_ids.items():
+        found = any(gid == sg.get("group_id") for sg in shared_with)
+        if not found:
+            log(f"  !! '{gname}' (id={gid}) is NOT in shared_with_groups for this project.")
+            log(f"     -> The invite may have failed, been removed, or applied to a DIFFERENT")
+            log(f"        project (double check DEPLOY_PROJECT path above).")
+
+    # -------------------------------------------------------------------
+    # CHECK 1b — LDAP group sync lag / nested group note
+    # -------------------------------------------------------------------
+    log("\n  Note: both groups live under 'itepaypg-sbiepay2/ldap-membership/...'.")
+    log("  If this is an LDAP-synced group, GitLab's LDAP sync worker runs on its own")
+    log("  interval (often hourly, admin-configurable). A user added to the LDAP/AD")
+    log("  group AFTER you set up the GitLab group-link can take until the next sync")
+    log("  cycle to actually inherit access — this looks identical to 'greyed out'")
+    log("  from the user's side even though the group-level invite is fully correct.")
+    log("  To rule this out: Admin Area > Groups > ldap-membership/<group> > LDAP")
+    log("  Synchronization, and check 'Last successful sync' / trigger a manual sync.")
+
+    # -------------------------------------------------------------------
+    # CHECK 1c — Ask for one real affected user to check effective access
+    # -------------------------------------------------------------------
+    log("\n  To go one level deeper than group config (i.e. confirm what GitLab")
+    log("  resolves for an ACTUAL person), set TEST_USER_ID below to one user who")
+    log("  reported the grey-out, and re-run — this checks their resolved")
+    log("  access_level on this exact project, bypassing group-membership guesswork.")
+    if TEST_USER_ID:
+        status, eff = api_get(f"/projects/{proj_id}/members/all/{TEST_USER_ID}")
+        if status == 200 and eff:
+            lvl = eff.get("access_level")
+            lvl_name = {10: "Guest", 20: "Reporter", 30: "Developer",
+                        40: "Maintainer", 50: "Owner"}.get(lvl, lvl)
+            log(f"    User id={TEST_USER_ID} ({eff.get('username')}) effective access_level="
+                f"{lvl} ({lvl_name}) on this project, source={eff.get('group_id') or 'direct'}")
+            if lvl is None or lvl < 30:
+                log(f"    !! This user does NOT have Developer+ on the project — manual jobs")
+                log(f"       requiring Developer/Maintainer will be greyed out regardless of")
+                log(f"       which group they're in. This points to LDAP sync lag or wrong group.")
+        else:
+            log(f"    !! Could not resolve effective access for user_id={TEST_USER_ID} (HTTP {status}): {eff}")
+
+    # -------------------------------------------------------------------
+    # CHECK 2 — Protected Environments (the most common hidden gate)
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 2: Protected Environments — 'Allowed to deploy' allowlist")
+    log("-" * 78)
+    log(" (This is checked SEPARATELY from project role. A group can be")
+    log("  Maintainer on the project and still be blocked here.)")
+
+    prot_envs = api_get_all(f"/projects/{proj_id}/protected_environments")
+    if not prot_envs:
+        status, raw = api_get(f"/projects/{proj_id}/protected_environments")
+        log(f"\n  No protected environments returned (HTTP {status}).")
+        log("  -> If your deploy environments (sit/uat/int/perf/preprod/prod) are NOT")
+        log("     configured as Protected Environments at all, then this is NOT your")
+        log("     blocker — manual jobs would fall back to project role only. Move to")
+        log("     CHECK 3 below.")
+    else:
+        for env in prot_envs:
+            ename = env.get("name")
+            log(f"\n  Environment: {ename}")
+            rules = env.get("deploy_access_levels", [])
+            if not rules:
+                log("    (no deploy_access_levels entries — unexpected, check manually)")
+            for r in rules:
+                if r.get("group_id"):
+                    tag = " <-- FLAGGED GROUP" if r["group_id"] in group_ids.values() else ""
+                    log(f"    - group_id={r['group_id']} group_inheritance_type={r.get('group_inheritance_type')}{tag}")
+                elif r.get("user_id"):
+                    log(f"    - user_id={r['user_id']}")
+                elif r.get("access_level"):
+                    lvl = {30: "Developer", 40: "Maintainer", 50: "Owner"}.get(r["access_level"], r["access_level"])
+                    log(f"    - access_level={lvl} (role-based, applies to anyone with that role)")
+
+            matched = [r for r in rules if r.get("group_id") in group_ids.values()]
+            if not matched:
+                role_rules = [r for r in rules if r.get("access_level")]
+                if role_rules:
+                    log(f"    !! Neither flagged group appears explicitly, but a role-based rule")
+                    log(f"       exists (access_level). Effective access then depends on each")
+                    log(f"       group's PROJECT role from CHECK 1 matching one of: {[r.get('access_level') for r in role_rules]}")
+                else:
+                    log(f"    !! NEITHER flagged group is in the allowlist for '{ename}'.")
+                    log(f"       THIS IS LIKELY YOUR ROOT CAUSE for jobs targeting '{ename}'.")
+
+    # -------------------------------------------------------------------
+    # CHECK 3 — Protected Branches (push/merge allowlist)
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 3: Protected Branches — push/merge allowlist")
+    log("-" * 78)
+    log(" (Manual deploy jobs only appear/enable on pipelines run from branches")
+    log("  these groups are allowed to push/merge to, per your .rules block.)")
+
+    prot_branches = api_get_all(f"/projects/{proj_id}/protected_branches")
+    if not prot_branches:
+        log("\n  No protected branches returned — check token scope/permissions.")
+    else:
+        for pb in prot_branches:
+            bname = pb.get("name")
+            log(f"\n  Branch pattern: {bname}")
+            for key, label in [("push_access_levels", "Push"), ("merge_access_levels", "Merge")]:
+                entries = pb.get(key, [])
+                log(f"    {label} allowed for:")
+                for e in entries:
+                    if e.get("group_id"):
+                        tag = " <-- FLAGGED GROUP" if e["group_id"] in group_ids.values() else ""
+                        log(f"      - group_id={e['group_id']}{tag}")
+                    elif e.get("user_id"):
+                        log(f"      - user_id={e['user_id']}")
+                    elif e.get("access_level") is not None:
+                        lvl = {0: "No one", 30: "Developer", 40: "Maintainer", 50: "Owner",
+                               60: "Admin"}.get(e["access_level"], e["access_level"])
+                        log(f"      - access_level={lvl} (role-based)")
+
+    # -------------------------------------------------------------------
+    # Summary
+    # -------------------------------------------------------------------
+    log("\n" + "=" * 78)
+    log(" SUMMARY — read top-to-bottom, fix the FIRST gate that excludes the group")
+    log("=" * 78)
+    log(" 1. Project membership (CHECK 1)         -> usually fine if you invited the group")
+    log(" 2. Protected Environments (CHECK 2)     -> SEPARATE allowlist, most common culprit")
+    log(" 3. Protected Branches push/merge (CHECK 3) -> blocks the pipeline run itself")
+    log("\n If CHECK 2 shows the flagged groups missing from an environment's")
+    log(" deploy_access_levels, that confirms the fix: add both groups to the")
+    log(" 'Allowed to deploy' list for each environment in Settings > CI/CD >")
+    log(" Protected environments (or via POST /projects/:id/protected_environments).")
+
+    write_log()
+
+
+def write_log():
+    out_file = f"deploy_access_diagnosis_{TIMESTAMP}.txt"
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(_log_lines))
+    print(f"\n  -> {out_file} written.")
+
+
+if __name__ == "__main__":
+    main()
