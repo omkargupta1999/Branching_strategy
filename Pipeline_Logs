@@ -1,223 +1,316 @@
+#!/usr/bin/env python3
+"""
+=============================================================================
+ Script      : diagnose_deploy_access.py
+ Purpose     : Diagnose why specific GitLab groups see GREYED-OUT manual
+               deploy jobs in the DEPLOYMENT repo pipeline, even though
+               they have been invited as project members.
+
+               For SBIePay ePay Platform (ITEPAYPG-SBIePay2).
+
+ BACKGROUND  : Manual deploy jobs (deploy-sit/uat/int/perf/preprod/prod)
+               can be greyed out for a user/group for THREE independent
+               reasons, each checked by GitLab separately:
+
+                 (1) Project membership / role           <- what you set
+                 (2) Protected Environments allowlist     <- SEPARATE gate
+                 (3) Protected Branches push/merge rules  <- SEPARATE gate
+
+               Adding a group as Developer/Maintainer on the project
+               (#1) does NOT automatically grant deploy rights if (2) or
+               (3) have their own allowlist that does not include that
+               group. This script checks all three for the two groups
+               you flagged:
+
+                 epay-gitlab-vendor-app-maintainer  (Maintainer)
+                 epay-gitlab-vendor-app-lead         (Developer)
+
+ SCOPE       : READ-ONLY. Every call is a GET. No writes are made.
+
+ Dependencies: NONE — Python standard library only (no pip required)
+
+ Usage       :
+   1. Edit the CONFIG block below: GITLAB_URL, TOKEN, DEPLOY_PROJECT
+   2. python3 diagnose_deploy_access.py
+
+ Output      :
+   Console   — Live diagnostic log
+   deploy_access_diagnosis_<timestamp>.txt — Full run log
+=============================================================================
+"""
+
+import urllib.request
+import urllib.error
+import urllib.parse
+import json
+import ssl
+import sys
+from datetime import datetime
+
+# =============================================================================
+#  CONFIGURATION — Edit only this block
+# =============================================================================
+
+GITLAB_URL = "https://gitlab.sbi"        # Target GitLab instance
+TOKEN = ""                                 # Maintainer/Owner PAT (glpat-...)
+
+# Full path of the DEPLOYMENT repo (the one where the manual jobs run /
+# where you invited the two groups). Edit this to the real path, e.g.:
+#   "itepaypg-sbiepay2/infra/devops/deployments/adminservice"
+DEPLOY_PROJECT = ""
+
+# The two groups you flagged as still greyed out
+GROUPS_TO_CHECK = [
+    "epay-gitlab-vendor-app-maintainer",
+    "epay-gitlab-vendor-app-lead",
+]
+
+# =============================================================================
+#  Internals — no need to edit below this line
+# =============================================================================
+
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+_log_lines = []
+_ctx = ssl._create_unverified_context()
 
 
-Link 4 groups at Infra › DevOps subgroup:
-
-epay-gitlab-bank-infra-owner → Owner
-epay-gitlab-bank-infra-maintainer → Maintainer
-epay-gitlab-vendor-infra-maintainer → Maintainer
-epay-gitlab-vendor-infra-developer → Developer
-
-Link 6 groups at Application subgroup:
-
-epay-gitlab-bank-app-owner → Owner
-epay-gitlab-bank-app-maintainer → Maintainer
-epay-gitlab-vendor-app-maintainer → Maintainer
-epay-gitlab-vendor-release-manager → Developer
-epay-gitlab-vendor-app-lead → Developer
-epay-gitlab-vendor-app-developer → Developer
+def log(msg):
+    print(msg)
+    _log_lines.append(msg)
 
 
-We have two separate groups Like in Infra 1. cicd-templates: Where we hvae kept all the yamls file of cicd-templates which we are using for all the services which we are calling from the application repo.
-2. deployments: Here we kept all the helm charts files of applications env wise.
-
-and another is Application groups inside that backend : here we have multiple application repos from here we used to call the cicd-templates for ci stages.
-
-below is .gitlab-ci.yml:
-
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.yml'
-variables:
-  RELEASE_NAME: admin
-  CHART_NAME: adminservice
-
-
-==================   java.yml 
-
-# templates/ci/backend/java.yml
-# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
-# For library/utility repos (produce JARs → JFrog), use java.library.yml
-#
-# App repo .gitlab-ci.yml:
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: txn
-#     CHART_NAME:   transactionservice
-
-default:
-  tags:
-    - common_runner
-
-include:
-  - local: 'ci/version/semver.yml'
-  - local: 'ci/build/java.gradle.yml'
-  - local: 'ci/test/java.unit.yml'
-  # - local: 'ci/security/sast/sast.gitlab.yml'
-  # - local: 'ci/security/sast/sast.fortify.yml'
-  # - local: 'ci/security/sca/sca.xray.yml'
-  # - local: 'ci/security/secrets/secrets.detect.yml'
-  # - local: 'ci/security/iac/iac.scan.yml'
-  # - local: 'ci/security/license/license.scan.yml'
-  # - local: 'ci/security/sbom/sbom.generate.yml'
-  - local: 'ci/image/image.build.yml'
-  # - local: 'ci/image/image.scan.trivy.yml'
-  # - local: 'ci/image/image.scan.xray.yml'
-  # - local: 'ci/image/image.scan.rhacs.yml'
-  # - local: 'ci/image/image.sign.yml'
-  # - local: 'ci/image/image.sbom.attest.yml'
-  - local: 'ci/image/image.push.yml'
-  # - local: 'ci/release/tag.yml'
-  # # - local: 'ci/release/back-merge.yml'
-  - local: 'ci/deploy/trigger.cd.yml'
-  - local: 'ci/deploy/deploy.jobs.yml'
-
-stages:
-  - version       # version generation
-  - build         # gradle compile
-  - test          # unit + integration
-  - sast          # gitlab sast + fortify
-  - security      # sca + secrets + iac + license + sbom
-  - image-build   # podman build (local only — no push)
-  - image-scan    # trivy + xray + rhacs (gate before sign)
-  # - image-attest  # cosign sign + sbom attestation
-  - image-push    # push to JFrog (only after scan + sign)
-  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
-  - deploy        # trigger buttons → deployment repo CD pipeline
-
-variables:
-  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
-  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
-  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
-  GIT_STRATEGY: clone
-  RELEASE_NAME: ""
-  CHART_NAME:   ""
-  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
-  BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907"
-  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
-
-# Branch + MR filter — applied to all jobs via extends
-.rules:
-  rules:
-    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
-            (
-              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/
-              ||
-              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/
-            )'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-    - when: never
-
-# ── Stage: version ─────────────────────────────────────────────────────────────
-# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
-
-# ── Stage: build ───────────────────────────────────────────────────────────────
-build:
-  extends: [.build, .rules]
-
-# ── Stage: test ────────────────────────────────────────────────────────────────
-test:
-  extends: [.test, .rules]
-
-# ── Stage: sast ────────────────────────────────────────────────────────────────
-# sast:gitlab:
-#   extends: [.sast, .rules]
-
-# sast:fortify:
-#   extends: [.sast_fortify, .rules]
-
-# # ── Stage: security ────────────────────────────────────────────────────────────
-# sca:xray:
-#   extends: [.sca, .rules]
-
-# # GitLab template jobs — override stage and apply rules
-# secret_detection:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# kics-iac-sast:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# license_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# dependency_scanning:
-#   stage: security
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-
-# # ── Stage: image-build ─────────────────────────────────────────────────────────
-image:build:
-  extends: [.image_build, .rules]
-
-# # ── Stage: image-scan ──────────────────────────────────────────────────────────
-# Trivy (GitLab template job) — override stage and rules
-# container_scanning:
-#   stage: image-scan
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
-#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
-#     - when: never
-# image:scan:xray:
-#   extends: [.image_scan_xray, .rules]
-
-# image:scan:rhacs:
-#   extends: [.image_scan_rhacs, .rules]
-
-# # ── Stage: image-attest ────────────────────────────────────────────────────────
-# image:sign:
-#   extends: [.image_sign, .rules]
-
-# image:sbom:attest:
-#   extends: [.sbom_attest, .rules]
-
-# # ── Stage: image-push ──────────────────────────────────────────────────────────
-# image:push:
-#   extends: [.image_push, .rules]
-
-  
-
-# ── Stage: release ────────────────────────────────────────────────────────────
-# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
-# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
-
-# ── Stage: deploy ─────────────────────────────────────────────────────────────
-# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
-# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
-# deploy-prod-dc/dr: manual — Bank Only
-
-===================================================
+def api_get(path, params=None):
+    """Single GET call. Returns (status_code, parsed_json_or_None)."""
+    url = f"{GITLAB_URL}/api/v4{path}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": TOKEN})
+    try:
+        with urllib.request.urlopen(req, context=_ctx, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+            return resp.status, (json.loads(body) if body else None)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(body)
+        except Exception:
+            parsed = body
+        return e.code, parsed
+    except urllib.error.URLError as e:
+        log(f"  !! Network error calling {url}: {e}")
+        return None, None
 
 
-So we are facing the issue like below groups members are not able to trigger the deploy stages of pipeline even though i have invited both of these groups in deployment repo as developer.
+def api_get_all(path, params=None):
+    """Paginated GET. Returns full list across all pages."""
+    if params is None:
+        params = {}
+    params = dict(params)
+    params["per_page"] = 100
+    page = 1
+    results = []
+    while True:
+        params["page"] = page
+        status, data = api_get(path, params)
+        if status != 200 or data is None:
+            break
+        if isinstance(data, list):
+            results.extend(data)
+            if len(data) < 100:
+                break
+        else:
+            results.append(data)
+            break
+        page += 1
+    return results
 
-Still they are not able to trigger the pipeline it showing the grey out for them.
 
-epay-gitlab-vendor-app-maintainer → Maintainer
-epay-gitlab-vendor-app-lead → Developer
+def resolve_project_id(project_path):
+    status, data = api_get(f"/projects/{urllib.parse.quote(project_path, safe='')}")
+    if status == 200 and data:
+        return data.get("id"), data
+    log(f"  !! Could not resolve project '{project_path}' (HTTP {status})")
+    if isinstance(data, dict):
+        log(f"     Response: {data}")
+    return None, None
 
 
-if i have added these two groups in deployment repo then they should able to trigger the deployment.
+def resolve_group_id(group_name):
+    """Search groups by name, return best match id + full_path."""
+    matches = api_get_all("/groups", {"search": group_name})
+    for g in matches:
+        if g.get("path") == group_name or g.get("name") == group_name:
+            return g.get("id"), g.get("full_path")
+    # fallback: suffix match on full_path (handles nested groups)
+    for g in matches:
+        if g.get("full_path", "").endswith(group_name):
+            return g.get("id"), g.get("full_path")
+    return None, None
 
 
-I want you to please help me to troubleshoot this on priority ...if you want any other details let me know or else you can also fetch the details using the python script.
+def main():
+    if not TOKEN or not DEPLOY_PROJECT:
+        log("!! Please set TOKEN and DEPLOY_PROJECT in the CONFIG block before running.")
+        sys.exit(1)
 
+    log("=" * 78)
+    log(f" GitLab Deploy Access Diagnosis — {TIMESTAMP}")
+    log(f" Instance       : {GITLAB_URL}")
+    log(f" Deployment repo: {DEPLOY_PROJECT}")
+    log("=" * 78)
+
+    proj_id, proj_data = resolve_project_id(DEPLOY_PROJECT)
+    if not proj_id:
+        log("\nAborting — fix DEPLOY_PROJECT path and re-run.")
+        write_log()
+        sys.exit(1)
+    log(f"\n[OK] Resolved project id={proj_id} (default_branch={proj_data.get('default_branch')})")
+
+    # -------------------------------------------------------------------
+    # CHECK 1 — Group membership / effective role on the deployment repo
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 1: Group membership & effective access level on deployment repo")
+    log("-" * 78)
+
+    group_ids = {}
+    for gname in GROUPS_TO_CHECK:
+        gid, gpath = resolve_group_id(gname)
+        if not gid:
+            log(f"  !! Group '{gname}' NOT FOUND via /groups search — check exact name/casing.")
+            continue
+        group_ids[gname] = gid
+        log(f"  Group '{gname}' -> id={gid} (full_path={gpath})")
+
+    # Inspect all group-links on the project (this is the authoritative
+    # source of "what role did the Invite Group action actually grant")
+    invited_groups = api_get_all(f"/projects/{proj_id}/share_locations") or []
+    # share_locations isn't the right endpoint on all versions; use the
+    # documented one as primary and treat the above as best-effort.
+    status, links = api_get(f"/projects/{proj_id}")
+    shared_with = (proj_data or {}).get("shared_with_groups", [])
+    if not shared_with and isinstance(links, dict):
+        shared_with = links.get("shared_with_groups", [])
+
+    if not shared_with:
+        log("  !! No 'shared_with_groups' returned for this project at all.")
+        log("     This means NO group has been invited via Project > Members > Invite Group,")
+        log("     OR your token lacks permission to see this field (needs Maintainer+ on project).")
+    else:
+        log(f"  Project has {len(shared_with)} group(s) invited:")
+        for sg in shared_with:
+            name = sg.get("group_name") or sg.get("group_full_path")
+            level = sg.get("group_access")
+            level_name = {10: "Guest", 20: "Reporter", 30: "Developer",
+                          40: "Maintainer", 50: "Owner"}.get(level, level)
+            flag = " <-- FLAGGED GROUP" if any(g in str(sg) for g in GROUPS_TO_CHECK) else ""
+            log(f"    - {name}: access_level={level} ({level_name}){flag}")
+
+    for gname, gid in group_ids.items():
+        found = any(gid == sg.get("group_id") for sg in shared_with)
+        if not found:
+            log(f"  !! '{gname}' (id={gid}) is NOT in shared_with_groups for this project.")
+            log(f"     -> The invite may have failed, been removed, or applied to a DIFFERENT")
+            log(f"        project (double check DEPLOY_PROJECT path above).")
+
+    # -------------------------------------------------------------------
+    # CHECK 2 — Protected Environments (the most common hidden gate)
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 2: Protected Environments — 'Allowed to deploy' allowlist")
+    log("-" * 78)
+    log(" (This is checked SEPARATELY from project role. A group can be")
+    log("  Maintainer on the project and still be blocked here.)")
+
+    prot_envs = api_get_all(f"/projects/{proj_id}/protected_environments")
+    if not prot_envs:
+        status, raw = api_get(f"/projects/{proj_id}/protected_environments")
+        log(f"\n  No protected environments returned (HTTP {status}).")
+        log("  -> If your deploy environments (sit/uat/int/perf/preprod/prod) are NOT")
+        log("     configured as Protected Environments at all, then this is NOT your")
+        log("     blocker — manual jobs would fall back to project role only. Move to")
+        log("     CHECK 3 below.")
+    else:
+        for env in prot_envs:
+            ename = env.get("name")
+            log(f"\n  Environment: {ename}")
+            rules = env.get("deploy_access_levels", [])
+            if not rules:
+                log("    (no deploy_access_levels entries — unexpected, check manually)")
+            for r in rules:
+                if r.get("group_id"):
+                    tag = " <-- FLAGGED GROUP" if r["group_id"] in group_ids.values() else ""
+                    log(f"    - group_id={r['group_id']} group_inheritance_type={r.get('group_inheritance_type')}{tag}")
+                elif r.get("user_id"):
+                    log(f"    - user_id={r['user_id']}")
+                elif r.get("access_level"):
+                    lvl = {30: "Developer", 40: "Maintainer", 50: "Owner"}.get(r["access_level"], r["access_level"])
+                    log(f"    - access_level={lvl} (role-based, applies to anyone with that role)")
+
+            matched = [r for r in rules if r.get("group_id") in group_ids.values()]
+            if not matched:
+                role_rules = [r for r in rules if r.get("access_level")]
+                if role_rules:
+                    log(f"    !! Neither flagged group appears explicitly, but a role-based rule")
+                    log(f"       exists (access_level). Effective access then depends on each")
+                    log(f"       group's PROJECT role from CHECK 1 matching one of: {[r.get('access_level') for r in role_rules]}")
+                else:
+                    log(f"    !! NEITHER flagged group is in the allowlist for '{ename}'.")
+                    log(f"       THIS IS LIKELY YOUR ROOT CAUSE for jobs targeting '{ename}'.")
+
+    # -------------------------------------------------------------------
+    # CHECK 3 — Protected Branches (push/merge allowlist)
+    # -------------------------------------------------------------------
+    log("\n" + "-" * 78)
+    log(" CHECK 3: Protected Branches — push/merge allowlist")
+    log("-" * 78)
+    log(" (Manual deploy jobs only appear/enable on pipelines run from branches")
+    log("  these groups are allowed to push/merge to, per your .rules block.)")
+
+    prot_branches = api_get_all(f"/projects/{proj_id}/protected_branches")
+    if not prot_branches:
+        log("\n  No protected branches returned — check token scope/permissions.")
+    else:
+        for pb in prot_branches:
+            bname = pb.get("name")
+            log(f"\n  Branch pattern: {bname}")
+            for key, label in [("push_access_levels", "Push"), ("merge_access_levels", "Merge")]:
+                entries = pb.get(key, [])
+                log(f"    {label} allowed for:")
+                for e in entries:
+                    if e.get("group_id"):
+                        tag = " <-- FLAGGED GROUP" if e["group_id"] in group_ids.values() else ""
+                        log(f"      - group_id={e['group_id']}{tag}")
+                    elif e.get("user_id"):
+                        log(f"      - user_id={e['user_id']}")
+                    elif e.get("access_level") is not None:
+                        lvl = {0: "No one", 30: "Developer", 40: "Maintainer", 50: "Owner",
+                               60: "Admin"}.get(e["access_level"], e["access_level"])
+                        log(f"      - access_level={lvl} (role-based)")
+
+    # -------------------------------------------------------------------
+    # Summary
+    # -------------------------------------------------------------------
+    log("\n" + "=" * 78)
+    log(" SUMMARY — read top-to-bottom, fix the FIRST gate that excludes the group")
+    log("=" * 78)
+    log(" 1. Project membership (CHECK 1)         -> usually fine if you invited the group")
+    log(" 2. Protected Environments (CHECK 2)     -> SEPARATE allowlist, most common culprit")
+    log(" 3. Protected Branches push/merge (CHECK 3) -> blocks the pipeline run itself")
+    log("\n If CHECK 2 shows the flagged groups missing from an environment's")
+    log(" deploy_access_levels, that confirms the fix: add both groups to the")
+    log(" 'Allowed to deploy' list for each environment in Settings > CI/CD >")
+    log(" Protected environments (or via POST /projects/:id/protected_environments).")
+
+    write_log()
+
+
+def write_log():
+    out_file = f"deploy_access_diagnosis_{TIMESTAMP}.txt"
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(_log_lines))
+    print(f"\n  -> {out_file} written.")
+
+
+if __name__ == "__main__":
+    main()
