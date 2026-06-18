@@ -2,7 +2,7 @@ Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
-00:04
+00:02
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Authenticating with credentials from $DOCKER_AUTH_CONFIG
@@ -17,31 +17,33 @@ Preparing environment
 00:00
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Running on runner-wz1c0kgrx-project-2838-concurrent-1 via PE3DSOPGrunners4...
 Getting source from Git repository
-00:16
+00:13
 Fetching changes...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
 Created fresh repository.
-Checking out ed073e84 as detached HEAD (ref is main)...
+Checking out 21c50700 as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:04
+00:01
 Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
 $ set -eo pipefail # collapsed multi-line command
-Service=java_utility_api_simulator | ENV=dev | VERSION=mr-feature-epay-00-egras-and-standard-integ-develop-73-ebfb3b73
-$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
-RELEASE_NAME=javasimulator
+========== DEBUG ==========
 SERVICE_NAME=java_utility_api_simulator
 ENV=dev
-WARNING: Using insecure TLS client config. Setting this option is not supported!
-Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
-You have access to 212 projects, the list has been suppressed. You can list all projects with 'oc projects'
-Using project "default".
-Welcome! See 'oc help' to get started.
-Release "javasimulator" does not exist. Installing it now.
-Error: 1 error occurred:
-	* Namespace "dev-" is invalid: [metadata.name: Invalid value: "dev-": a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'), metadata.labels: Invalid value: "dev-": a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')]
+VERSION=mr-feature-epay-00-egras-and-standard-integ-develop-73-ebfb3b73
+CHART_NAME=$CHART_NAME
+RELEASE_NAME=javasimulator
+===========================
+Updating dev/charts/java_utility_api_simulator/values.yaml → image tag: mr-feature-epay-00-egras-and-standard-integ-develop-73-ebfb3b73
+SERVICE_PATH=dev/charts/java_utility_api_simulator
+ls: cannot access 'dev/charts/java_utility_api_simulator': No such file or directory
 Cleaning up project directory and file based variables
 00:00
 ERROR: Job failed: exit code 1
