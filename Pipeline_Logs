@@ -2,7 +2,7 @@ Running with gitlab-runner 17.9.2 (14c5775c)
   on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
 Resolving secrets
 Preparing the "docker" executor
-00:02
+00:04
 Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
 Authenticating with credentials from $DOCKER_AUTH_CONFIG
@@ -23,24 +23,25 @@ Getting source from Git repository
 Fetching changes...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
 Created fresh repository.
-Checking out 0ed1e4fa as detached HEAD (ref is main)...
+Checking out ed073e84 as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:00
+00:04
 Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
 $ set -eo pipefail # collapsed multi-line command
-RAW NAMESPACE=dev-admin
-FINAL VALUES:
-SERVICE_NAME=epay_admin_service
+Service=java_utility_api_simulator | ENV=dev | VERSION=mr-feature-epay-00-egras-and-standard-integ-develop-73-ebfb3b73
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=javasimulator
+SERVICE_NAME=java_utility_api_simulator
 ENV=dev
-RELEASE_NAME=admin
-NAMESPACE=dev-admin
-fatal: unable to access 'https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git/': SSL certificate problem: unable to get local issuer certificate
-Uploading artifacts for failed job
-00:03
-Uploading artifacts...
-build.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1124104 responseStatus=201 Created token=eyJraWQiO
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 212 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Release "javasimulator" does not exist. Installing it now.
+Error: 1 error occurred:
+	* Namespace "dev-" is invalid: [metadata.name: Invalid value: "dev-": a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'), metadata.labels: Invalid value: "dev-": a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')]
 Cleaning up project directory and file based variables
 00:00
 ERROR: Job failed: exit code 1
