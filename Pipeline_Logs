@@ -102,8 +102,15 @@ validate_service:
       # Helm validation
       helm lint ${ENV}/charts/${SERVICE_NAME}/
 
+      # values.yaml is the single source of truth for image.tag — no runtime override.
+      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+      if [ -z "$TAG_IN_FILE" ]; then
+        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+        exit 1
+      fi
+      echo "Validating with image tag from values.yaml: ${TAG_IN_FILE}"
+
       helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
-        --set image.tag=${VERSION} \
         -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
 
       echo "✅ Validation passed"
@@ -165,11 +172,18 @@ helm:deploy:
       #   --history-max=${HELM_HISTORY_MAX}
       #   --timeout ${DEPLOYMENT_TIMEOUT}
       #   --wait
+      # values.yaml is the single source of truth for image.tag — no runtime override.
+      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+      if [ -z "$TAG_IN_FILE" ]; then
+        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+        exit 1
+      fi
+      echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
+
       helm upgrade --install ${RELEASE_NAME} \
         ${ENV}/charts/${SERVICE_NAME} \
         -n ${NAMESPACE} \
         --create-namespace \
         -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
-        --set image.tag=${VERSION} \
         --history-max=${HELM_HISTORY_MAX}
-      echo "✅ Deployed $SERVICE_NAME:$VERSION to $ENV"
+      echo "✅ Deployed $SERVICE_NAME with tag ${TAG_IN_FILE} to $ENV"
