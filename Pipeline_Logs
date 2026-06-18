@@ -1,3 +1,572 @@
+
+
+
+
+I have used below the helm-deply.yml files ..........................still i am getting the error while doing the helm deployment by doing the direct commint and it deploying the chart.apiVersion in ocp cluster whenever doing the direct commit.
+
+We have checked with CI its working when the pipeline comming from upstream pipeline .
+
+
+======================================================================================
+
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get deploy   -n dev-simulators -o wide | grep -i javasimulator-javautilityapisimulator
+javasimulator-javautilityapisimulator           1/1     1            1           432d   javautilityapisimulator         artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/java-utility-api-simulator:1.16.0                                            app.kubernetes.io/instance=javasimulator,app.kubernetes.io/name=javautilityapisimulator
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+
+
+validate-services --------------------------Stages pipeline output.
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:11
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out d85344ff as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:00
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Detected SERVICE_NAME=java-utility-api-simulator
+Detected ENV=dev
+RAW NAMESPACE=dev-simulators
+FINAL VALUES:
+SERVICE_NAME=java-utility-api-simulator
+ENV=dev
+RELEASE_NAME=javasimulator
+NAMESPACE=dev-simulators
+==> Linting dev/charts/java-utility-api-simulator/
+[INFO] Chart.yaml: icon is recommended
+1 chart(s) linted, 0 chart(s) failed
+---
+# Source: javautilityapisimulator/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javasimulator-config
+  namespace: default
+  labels:
+    
+    helm.sh/chart: javautilityapisimulator-0.1.0
+    app.kubernetes.io/name: javautilityapisimulator
+    app.kubernetes.io/instance: javasimulator
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  application.properties: |
+    spring.application.name=epay_java_utility_api_simulator
+    server.port=8086
+    server.connection-timeout=100000 # 100 seconds
+    server.servlet.context-path=/api/javasimulator/v1
+    server.name=dfd
+    security.jwt.secret.issuer=sbi.epay
+    security.jwt.secret.key=gdjfgskjfhsdjkhkflkdlksdlfkskfwperip3ke3le3lmldrnkfnhiewjfejfokepfkldkfoikfokork3dklwedlsvflvkfkvlkdfvodkvcdokro3
+    security.whitelist.urls=/webjars/, /actuator/, /swagger-resources/, /v3/api-docs, /swagger-ui/, /swagger-ui/**, /swagger-ui.html, /login, /crypto/**, /notify/**, /transaction/**, /s3/**, /sftp/**, /rbiMalware/**, /login/**, /captcha/**, /h2-console, /h2-console/**, /ldap/**, /egras/**, /misc/thirdParty/wrapper/services, /egras/**, /standard-checkout.jsp, /fail.jsp, /result.jsp, /redirect.jsp, /static/**, /payment, /payment-result, /redirect, /standard/**
+    security.cors.allowed.origins=*
+    security.cors.origin=https://dev.epay.sbi
+    token.expiry.time.hr=5
+    #h2/oracle
+    captcha.repository.type=h2
+    spring.jpa.show-sql=true
+    spring.jpa.properties.hibernate.show_sql=true
+    ### ORACLE DB Config
+    #spring.datasource.url=jdbc:oracle:thin:@10.177.134.124:1590:epaydbdev1
+    ##spring.datasource.username=PAYAGGTRANSCTION
+    ##spring.datasource.password=AIS#2025
+    #spring.datasource.username=${DB_USERNAME}
+    #spring.datasource.password=${DB_PASSWORD}
+    #spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    #hibernate.dialect=org.hibernate.dialect.OracleDialect
+    ###  H2 DB Config
+    spring.datasource.url=jdbc:h2:mem:testdb
+    spring.datasource.driverClassName=org.h2.Driver
+    spring.datasource.username=sa
+    spring.datasource.password=
+    spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+    spring.h2.console.enabled=true
+    # Optional settings
+    spring.datasource.hikari.maximum-pool-size=10
+    spring.datasource.hikari.minimum-idle=5
+    spring.datasource.hikari.idle-timeout=30000
+    spring.datasource.hikari.max-lifetime=2000000
+    spring.data.web.pageable.max-page-size=200
+    spring.data.web.pageable.default-page-size=50
+    admin.user.username=admin
+    admin.user.password=test123
+    admin.user.userRole=ADMIN
+    external.api.sms.gateway.user=epaypgotpdom
+    external.api.sms.gateway.password=Ep@y1Dpt
+    external.api.sms.gateway.base.path=https://smsapipprod.sbi.co.in:9443
+    external.api.sms.gateway.url=/bmg/sms/epaypgotpdom
+    external.api.sms.body.content.type=text
+    external.api.sms.body.sender.id=SBIBNK
+    external.api.sms.body.int.flag=0
+    external.api.sms.body.charging=0
+    spring.mail.host=10.158.202.69
+    spring.mail.port=3066
+    spring.mail.username=info.sbiepay@sbi.co.in
+    spring.mail.password=P@ssw0rd
+    epay.transaction.kms=http://kms-kmsservice.dev-kms.svc.cluster.local:9093/api/kms/v1
+    #sdk configuration
+    epay.transaction.schema=http
+    #epay.transaction.host=txn-transactionservice.dev-sbiepay.svc.cluster.local
+    #epay.transaction.host=txn-transactionservice.sit-transaction.svc.cluster.local
+    epay.transaction.host=txn-transactionservice.dev-transaction.svc.cluster.local 
+    epay.transaction.port.available=true
+    epay.transaction.port=9092
+    #epay.transaction.schema=https
+    #epay.transaction.host=sit.epay.sbi
+    #epay.transaction.port.available=false
+    
+    #UAT KEYS
+    #epay.transaction.api.key.id=R5Mcqz1zyf7r9TIQUMRt
+    #epay.transaction.api.key.secret=3gpxkb7c2h9aCVsiPN2PTmaG248uR7n+zwUwIk7SFdY=
+    #epay.transaction.encryption.key=tgng2itxUWHJdrutnpTotR1TrI1SaQHSL3CqPUSMi2o=
+    
+    #DEV KEYS
+    epay.transaction.api.key.id=R5Mcqz1zyf7r9TIQUMRt
+    epay.transaction.api.key.secret=3gpxkb7c2h9aCVsiPN2PTmaG248uR7n+zwUwIk7SFdY=
+    epay.transaction.encryption.key=dlgKlchjWG+BZHqbhRKKRu7roYeJa1TvDLfan1njUt0=
+    
+    aws.s3.url=https://s3store.bank.sbi
+    aws.s3.region=ap-south-1
+    aws.s3.key=IDHJO1513FFMMNLPR9BC
+    aws.s3.secret=avXqEPv5B_QqqPK0D1VJzP3pSyAA4x31Zu_KucQ9
+    aws.s3.bucket=epay-nonprod-s3bucket
+    aws.s3.pathStyleAccess=true
+    #SFTP Local Config
+    sftp.localhost=localhost
+    sftp.localPort=2222
+    sftp.localUserName=root
+    sftp.localPassword=root
+    sftp.localDir=OPS
+    #SFTP OPS Config
+    sftp.host=sfg.sbiuat.bank.in
+    #10.191.155.195
+    #preprod.sfg.sbi
+    #10.176.48.25
+    sftp.port=2201
+    sftp.username=EPAY_CET_2501
+    sftp.password=Statebank@345
+    #P@ssw0rd4^1
+    sftp.dir=OPS
+    logging.level.com.neo.client=DEBUG
+    logging.level.com.sbi.epay=DEBUG
+    spring.servlet.multipart.max-file-size=50MB
+    spring.servlet.multipart.max-request-size=50MB
+    
+    file.upload.path=uploads/
+    spring.ldap.urls=ldaps://UATROOTDC1.UATAD.SBI:636
+    #ldaps://10.189.42.83:636
+    spring.ldap.base=DC=UATAD,DC=SBI
+    spring.ldap.username=CN=EPAYUAT_LDAP,OU=Users,OU=Domain Users,DC=UATAD,DC=SBI
+    #DC\=UATAD,DC\=SBI
+    #CN\=cmpicpdevadmin,OU\=GTCMP,dc\=corp,dc\=ad,dc\=sbi
+    spring.ldap.password=Gitlab@180326
+    #RaRav\#3032
+    spring.ldap.base-environment.com.sun.jndi.ldap.read.timeout=5000
+    spring.ldap.base-environment.com.sun.jndi.ldap.connect.timeout=5000
+    spring.ldap.template.ignore-partial-result-exception=true
+    app.ldap.pooling.max-active=50
+    app.ldap.pooling.max-wait=5000
+    app.ldap.pooling.test-on-borrow=false
+    certificate.pem-path=/keys/merchant-encryption-key/SBI_Public.key
+    certificate.private-pem-path=/keys/merchant-encryption-key/SBI_Private.key
+    external.api.services.uat.path=src/main/resources/keys/private_key_pkcs8.pem
+    
+    spring.mvc.view.prefix=WEB-INF/jsp/
+    spring.mvc.view.suffix=.jsp
+    server.forward-headers-strategy=framework
+    external.integration.services.standard.path=https://dev.epay.sbi/api/integration/v1/standard/order
+    external.api.services.base.path.kms=http://kms-kmsservice.dev-kms.svc.cluster.local:9093/api/kms/v1
+    ##Standard Congigs    
+    #AEK 1.0
+    key.standardAek=F/FB1LScrMizBTKp84ScUg==
+    #AEK 2.0
+    key.aek=BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+---
+# Source: javautilityapisimulator/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: javasimulator-javautilityapisimulator
+  labels:
+    helm.sh/chart: javautilityapisimulator-0.1.0
+    app.kubernetes.io/name: javautilityapisimulator
+    app.kubernetes.io/instance: javasimulator
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8086
+      targetPort: 
+      protocol: TCP
+      name: 8086-tcp
+  selector:
+    app.kubernetes.io/name: javautilityapisimulator
+    app.kubernetes.io/instance: javasimulator
+---
+# Source: javautilityapisimulator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javasimulator-javautilityapisimulator
+  labels:
+    helm.sh/chart: javautilityapisimulator-0.1.0
+    app.kubernetes.io/name: javautilityapisimulator
+    app.kubernetes.io/instance: javasimulator
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: javautilityapisimulator
+      app.kubernetes.io/instance: javasimulator
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: javautilityapisimulator-0.1.0
+        app.kubernetes.io/name: javautilityapisimulator
+        app.kubernetes.io/instance: javasimulator
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      imagePullSecrets:
+        - name: jfrog-pull-secret
+      serviceAccountName: default
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+###############################
+      #Init-container for trust-store
+      initContainers:
+        - name: import-certs
+          image: registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            #runAsNonRoot: true
+            #runAsUser: 0
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              echo "[INFO] Preparing shared cacerts volume..."
+              for C in \
+                "$JAVA_HOME/lib/security/cacerts" \
+                "/usr/lib/jvm/java-21/lib/security/cacerts" \
+                "/etc/pki/java/cacerts"; do
+                if [ -r "$C" ]; then
+                  echo "[INFO] Using truststore at $C"
+                  mkdir -p /cacerts/data
+                  cp "$C" /cacerts/data/cacerts
+                  chmod 660 /cacerts/data/cacerts
+                  break
+                fi
+              done
+              
+              echo "[INFO] Importing custom certificates..."
+              for f in /etc/custom-certs-simulator/*.crt /etc/custom-certs-simulator/*.cer /certs/*.crt /certs/*.cer; do
+                [ -e "$f" ] || continue
+                base="$(basename "$f")"
+                alias="$(echo "$base" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-')"
+                echo "[INFO] Importing $base as alias $alias"
+                keytool -import -trustcacerts -file "$f" \
+                  -alias "$alias" \
+                  -keystore /cacerts/data/cacerts \
+                  -storepass changeit -noprompt || true
+              done
+              
+          volumeMounts:
+            # - name: dcms-txn-cert
+            #   mountPath: /certs
+            - name: custom-certs-simulator
+              mountPath: /etc/custom-certs-simulator
+            - name: cacerts
+              mountPath: /cacerts
+######################################       
+      containers:
+        - name: javautilityapisimulator
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          image: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/java-utility-api-simulator:1.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8086
+              protocol: TCP
+          env:
+          - name: JAVA_TOOL_OPTIONS
+            value: "-Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit"        
+          - name: SPRING_CONFIG_LOCATION
+            value: file:/opt/gradle/
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-java-utility-api-simulator-service-secret
+                key: DB_USERNAME
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-java-utility-api-simulator-service-secret
+                key: DB_PASSWORD
+          volumeMounts:
+            - name: config
+              mountPath: /opt/gradle
+            - name: merchant-encryption-key
+              mountPath: /keys/merchant-encryption-key
+              readOnly: true
+            - name: custom-certs-simulator
+              mountPath: /etc/custom-certs-simulator
+              readOnly: true
+            - name: cacerts
+              mountPath: /cacerts
+              readOnly: true            
+      volumes:
+        - name: config
+          configMap:
+            name: javasimulator-config
+        - name: merchant-encryption-key
+          secret:
+            secretName: merchant-encryption-key
+        - name: custom-certs-simulator
+          secret:
+            secretName: custom-certs-simulator
+        - name: cacerts
+          emptyDir: {}
+        ####
+---
+# Source: javautilityapisimulator/templates/isto-vs.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: javasimulator-javautilityapisimulator
+  namespace: dev-simulators
+spec:
+  hosts:
+  - "dev.epay.sbi"
+  gateways:
+  - dev-istio-system/dev-gateway  
+  http:
+  - match:
+    - uri:
+        prefix: /api/javasimulator/v1
+    route:
+    - destination:
+        host: javasimulator-javautilityapisimulator
+        port:
+          number: 8086
+---
+# Source: javautilityapisimulator/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "javasimulator-javautilityapisimulator-test-connection"
+  labels:
+    helm.sh/chart: javautilityapisimulator-0.1.0
+    app.kubernetes.io/name: javautilityapisimulator
+    app.kubernetes.io/instance: javasimulator
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['javasimulator-javautilityapisimulator:8086']
+  restartPolicy: Never
+✅ Validation passed
+Uploading artifacts for successful job
+00:03
+Uploading artifacts...
+build.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1125752 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:00
+Job succeeded
+
+
+
+------------------- deploy -stage ------------------
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:15
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out d85344ff as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=java-utility-api-simulator | ENV=dev | VERSION=
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=javasimulator
+SERVICE_NAME=java-utility-api-simulator
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 212 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Release "javasimulator" has been upgraded. Happy Helming!
+NAME: javasimulator
+LAST DEPLOYED: Thu Jun 18 10:26:14 2026
+NAMESPACE: dev-simulators
+STATUS: deployed
+REVISION: 236
+✅ Deployed java-utility-api-simulator: to dev
+Cleaning up project directory and file based variables
+00:01
+Job succeeded
+
+--------------------
+
+
+[osuser@bastion ~]$ helm get values javasimulator   -n dev-simulators
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/osuser/.kube/config
+USER-SUPPLIED VALUES:
+affinity: {}
+autoscaling: {}
+configMap:
+  additionalLabels: null
+  annotations: null
+  nameSuffix: config
+customCertsSimulator:
+  enabled: true
+  mountPaths: /etc/custom-certs-simulator
+  secretName: custom-certs-simulator
+fullnameOverride: ""
+gatewayHost: dev.epay.sbi
+gatewayName: dev-istio-system/dev-gateway
+gatewayPort: 80
+image:
+  pullPolicy: IfNotPresent
+  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/java-utility-api-simulator
+  tag: ""
+imagePullSecrets:
+- name: jfrog-pull-secret
+ingress: {}
+initContainer:
+  enabled: true
+  image: registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462
+  truststorePassword: changeit
+livenessProbe: {}
+nameOverride: ""
+namespace: dev-simulators
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+prefixName: /api/javasimulator/v1
+readinessProbe: {}
+replicaCount: 1
+resources: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+service:
+  port: 8086
+  type: ClusterIP
+serviceAccount: {}
+serviceName: javasimulator-javautilityapisimulator
+servicePort: 8086
+tolerations: []
+virtualServiceName: javasimulator-javautilityapisimulator
+volumeMounts: []
+volumes: []
+[osuser@bastion ~]$
+[osuser@bastion ~]$ helm list -n dev-simulators
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/osuser/.kube/config
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                                   APP VERSION
+demo            dev-simulators  7               2026-05-15 07:39:47.254075656 +0000 UTC deployed        merchantsimulator-0.1.0                 1.16.0
+dotnetsimulator dev-simulators  176             2026-01-30 07:05:04.789052303 +0000 UTC deployed        merchant-api-simulator-dotnet-0.1.0     1.16.0
+javasimulator   dev-simulators  236             2026-06-18 10:26:14.417415726 +0000 UTC deployed        javautilityapisimulator-0.1.0           1.16.0
+nodejssimulator dev-simulators  42              2026-03-31 07:58:06.161191045 +0000 UTC deployed        merchant-api-simulator-nodejs-0.1.0     1.16.0
+orderhash       dev-simulators  10              2026-02-12 06:53:43.806598178 +0000 UTC deployed        orderhash-0.1.0                         1.16.0
+phpsimulator    dev-simulators  72              2026-05-18 11:40:10.415282181 +0000 UTC deployed        merchant-api-simulator-php-0.1.0        1.16.0
+pythonsimulator dev-simulators  35              2025-12-30 13:24:38.352288024 +0000 UTC deployed        merchant-api-simulator-python-0.1.0     1.16.0
+sdkdemo         dev-simulators  3               2025-04-17 11:09:58.367441737 +0000 UTC deployed        sdksimulaterdemo-0.1.0                  1.16.0
+stubs           dev-simulators  1               2025-08-15 08:03:30.181211652 +0000 UTC deployed        stubsservice-0.1.0                      1.16.0
+stubsservice    dev-simulators  11              2026-04-02 14:07:19.544760591 +0000 UTC deployed        stubsservice-0.1.0                      1.16.0
+[osuser@bastion ~]$ helm list -n dev-simulators | grep -i javasimulator
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/osuser/.kube/config
+javasimulator   dev-simulators  236             2026-06-18 10:26:14.417415726 +0000 UTC deployed        javautilityapisimulator-0.1.0           1.16.0
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+
+
+
+================================================================================
 # cd/helm/helm.deploy.yml
 # Stage: validate + deploy + verify
 # Single-service Helm upgrade to OCP cluster
