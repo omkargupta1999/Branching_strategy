@@ -1,27 +1,6 @@
-Events:
-  Type     Reason          Age                   From               Message
-  ----     ------          ----                  ----               -------
-  Normal   Scheduled       11m                   default-scheduler  Successfully assigned dev-transaction/payment-paymentservice-658d8bc48-c44wt to worker1.dev.sbiepay.sbi
-  Normal   AddedInterface  11m                   multus             Add eth0 [172.16.9.241/23] from ovn-kubernetes
-  Normal   Pulled          11m                   kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal   Created         11m                   kubelet            Created container: istio-validation
-  Normal   Started         11m                   kubelet            Started container istio-validation
-  Normal   Pulled          11m                   kubelet            Container image "registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462" already present on machine
-  Normal   Created         11m                   kubelet            Created container: import-certs
-  Normal   Started         11m                   kubelet            Started container import-certs
-  Normal   Created         11m                   kubelet            Created container: istio-proxy
-  Normal   Pulled          11m                   kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal   Started         11m                   kubelet            Started container istio-proxy
-  Warning  Unhealthy       7m28s (x10 over 10m)  kubelet            Liveness probe failed: HTTP probe failed with statuscode: 500
-  Normal   Created         4m26s (x4 over 11m)   kubelet            Created container: paymentservice
-  Normal   Started         4m26s (x4 over 11m)   kubelet            Started container paymentservice
-  Normal   Killing         2m8s (x4 over 9m8s)   kubelet            Container paymentservice failed liveness probe, will be restarted
-  Normal   Pulled          2m6s (x5 over 11m)    kubelet            Container image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:mr-feature-epay-241-payment-upi-qr-intent-develop-865-406eabca" already present on machine
-  Warning  Unhealthy       42s (x42 over 10m)    kubelet            Readiness probe failed: HTTP probe failed with statuscode: 500
+# 1. The actual reason — what the app logs at startup before/at the 500
+oc logs payment-paymentservice-658d8bc48-c44wt -n dev-transaction -c paymentservice --tail=200
 
-
-
-
-
-=================================================================
-
+# 2. Hit the health endpoint from inside the pod to see which component is DOWN
+oc exec -it payment-paymentservice-658d8bc48-c44wt -n dev-transaction -c paymentservice -- \
+  curl -s http://localhost:9093/api/payments/v1/actuator/health | python3 -m json.tool
