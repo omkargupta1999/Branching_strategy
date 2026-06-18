@@ -1,3 +1,9 @@
+[osuser@bastion ~]$ oc get deploy   -n dev-admin -o wide
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS           IMAGES                                                                                                 SELECTOR
+admin-adminservice                1/1     1            1           45d    adminservice         artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:dev-39282f95   app.kubernetes.io/instance=admin,app.kubernetes.io/name=adminservice
+
+
+
 update-tag stage:
 
 
