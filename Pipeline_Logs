@@ -1,3 +1,670 @@
+update-tag stage:
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:03
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:17
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 62c238e7 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:07
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ git config --global http.sslVerify false
+$ git config --global --add safe.directory '*'
+$ git config --global user.name "ci"
+$ git config --global user.email "ci.cedge@sbi.co.in"
+$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+$ set -eo pipefail # collapsed multi-line command
+========== DEBUG ==========
+SERVICE_NAME=epay_admin_service
+ENV=dev
+VERSION=dev-eedbb2b4
+CHART_NAME=$CHART_NAME
+RELEASE_NAME=admin
+===========================
+Updating dev/charts/epay_admin_service/values.yaml → image tag: dev-eedbb2b4
+SERVICE_PATH=dev/charts/epay_admin_service
+total 8.0K
+-rw-rw-rw- 1 root root 1.2K Jun 18 06:41 Chart.yaml
+drwxrwxrwx 3 root root  124 Jun 18 06:41 templates
+-rw-rw-rw- 1 root root 1.9K Jun 18 06:41 values.yaml
+Switched to a new branch 'main'
+branch 'main' set up to track 'origin/main'.
+From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+ * branch                main       -> FETCH_HEAD
+Already up to date.
+[main c5d8bd49d] chore: update image tag to dev-eedbb2b4 [skip ci]
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
+   62c238e77..c5d8bd49d  main -> main
+✅ values.yaml updated: dev/charts/epay_admin_service → dev-eedbb2b4
+# Default values for adminservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.##
+replicaCount: 1
+virtualService:
+  enabled: true
+image:
+  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "dev-eedbb2b4"
+  #tag: "dev-eedbb2b4"
+  tag: "dev-eedbb2b4"
+imagePullSecrets: 
+  - name: jfrog-pull-secret
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+applicationProperties: ""
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 9094
+namespace: dev-admin
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: admin-adminservice
+serviceName: admin-adminservice
+prefixName:  /api/admin/v1
+servicePort: 9094
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
+routes:
+  - prefixName: /api/admin/v1/merchant/payMode/
+    serviceName: admin-adminservice
+    servicePort: 9094
+  
+configMap: 
+  additionalLabels:
+    # ...
+  annotations:
+    # ...
+  nameSuffix: "config"
+resources: {}
+ingress: {}
+# readinessProbe: {}
+# livenessProbe: {}
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/readiness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/admin/v1/actuator/health/liveness"
+    port: 9094
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+autoscaling: {}
+# Additional volumes on the output Deployment definition.
+volumes: []
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true#
+nodeSelector: {}
+tolerations: []
+affinity: {}
+#
+Cleaning up project directory and file based variables
+00:02
+Job succeeded
+
+---------------------------------------
+
+
+validate services :
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:04
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:02
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:39
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 62c238e7 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+RAW NAMESPACE=dev-admin
+FINAL VALUES:
+SERVICE_NAME=epay_admin_service
+ENV=dev
+RELEASE_NAME=admin
+NAMESPACE=dev-admin
+==> Linting dev/charts/epay_admin_service/
+[INFO] Chart.yaml: icon is recommended
+1 chart(s) linted, 0 chart(s) failed
+Validating with image tag from values.yaml: dev-39282f95
+---
+# Source: adminservice/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-config
+  namespace: default
+  labels:
+    
+    helm.sh/chart: adminservice-0.1.0
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/instance: admin
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  application.properties: |
+    #
+    
+    server.servlet.context-path=/api/admin/v1
+    server.port=9094
+    spring.application.name=Epay_Admin_service
+    
+    ##cors.allowed.origins=https://dev.epay.sbi
+    security.cors.allowed.origins=*
+    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.username=${DB_USERNAME}
+    #spring.datasource.password=${DB_PASSWORD}
+    spring.datasource.username=EPAYADMIN
+    spring.datasource.password=April_2025
+    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    spring.jpa.show-sql=true
+    spring.jpa.hibernate.ddl-auto=none
+    #spring.jpa.hibernate.ddl-auto=create
+    
+    #LIQUIBASE
+    spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml
+    spring.liquibase.enabled=true
+    spring.liquibase.drop-first=false
+    logging.level.liquibase=INFO
+    #GemFire settings -------------------------  
+    spring.data.gemfire.pool.locators=gemfire-dev-locator.dev-cache-gemfire[10334]
+    spring.data.gemfire.use-bean-factory-locator=false
+    spring.data.gemfire.cache.server.port=40404
+    spring.data.gemfire.logging.level=info
+    spring.data.gemfire.security.ssl.keystore=/certs/keystore.p12
+    spring.data.gemfire.security.ssl.keystore.password=HHy45TuP6CAjf6XMlxSE12CmyhEoklLv_JcYmy9RcBw=
+    spring.data.gemfire.security.ssl.keystore.type=PKCS12
+    spring.data.gemfire.security.ssl.truststore=/certs/truststore.p12
+    spring.data.gemfire.security.ssl.truststore.password=HHy45TuP6CAjf6XMlxSE12CmyhEoklLv_JcYmy9RcBw=
+    spring.data.gemfire.security.ssl.truststore.type=PKCS12
+    #spring.data.gemfire.security.ssl.components=all
+    spring.data.gemfire.security.ssl.enabled-components=all
+    spring.data.gemfire.security.ssl.enable-endpoint-identification=false
+    spring.data.gemfire.security.ssl.require-authentication=false
+    spring.data.gemfire.security.ssl.web-require-authentication=false
+    spring.data.gemfire.security.ssl.protocols=any
+    spring.data.gemfire.security.ssl.ciphers=any
+    #spring.data.gemfire.pdx.read-serialized=false
+    #spring.data.gemfire.pdx.auto-serializable-classes=com.epay.admin.repository.cache.*
+    logging.level.org.apache.geode=debug
+    logging.level.org.springframework.data.gemfire=debug
+    
+    
+    ##kafka 
+    spring.kafka.bootstrap.servers=dev-kafka-cluster-kafka-bootstrap.dev-kafka.svc.cluster.local:9092
+    spring.kafka.topic-prefix=cdc-oracle-gemfire.LOHITH_M
+    spring.kafka.consumer.group-id=admin-consumers
+    #health endpoint will not require the Origin header.
+    security.cors.allowed.endpoints=/actuator/health, /actuator/health/readiness, /actuator/health/liveness
+    security.whitelist.urls=/api/transaction/v1/actuator/health/**, /actuator/health/**
+    management.endpoints.web.exposure.include=health, info
+    management.endpoint.health.show-details=always
+    management.endpoint.health.probes.enabled=true
+    management.endpoint.health.livenessState.enabled=true
+    management.endpoint.health.readinessState.enabled=true
+    # UPI Configuration
+    upi.pvt-key-pwd=Uat@Sbiepay
+    upi.server-private-key-path= 0x1D883787-sec.asc
+    upi.server-public-key-path= SBI0000000032588_UAT_1224_PublicKey.asc
+    upi.cors-allowed-origins=https://dev.epay.sbi,http://localhost:9098
+    upi.onboard-sub-merchant-url= https://uatupionline.sbi/merchant-web-war-6.0/upi/onBoardSubMerchant
+    upi.pg-merchant-id=SBI0000000032588
+    upi.business-name=MahaOnlineLimited 2.0
+    upi.integration-type=WEBAPI
+    upi.business-type=Govt, Govt Undertakings
+    upi.request-url1=https://uat.epay.sbi/api/payments/v1/upi/sbi/callback
+    upi.request-url2=https://uat.epay.sbi/api/payments/v1/upi/sbi/callback
+    upi.ext-mid=1000003
+    upi.ext-tid=
+    upi.merchant-genre=ONLINE
+    upi.onboarding-type=AGGREGATOR
+    upi.txn-validation=1|2|3|5
+    upi.me-whitelist=Y
+    upi.me-concent-flag=N
+    upi.split-tag=84
+    # List of featureNotSupported entries
+    upi.feature-not-supported[0].accTypeVal=05
+    upi.feature-not-supported[0].accType=CREDIT
+    upi.feature-not-supported[1].accTypeVal=06
+    upi.feature-not-supported[1].accType=PPIWALLET
+    upi.feature-not-supported[2].accTypeVal=31
+    upi.feature-not-supported[2].accType=CREDITLINE
+    
+    logging.level.com.epay.sbi=INFO
+    logging.level.org.apache.kafka=ERROR
+    logging.level.org.apache.geode=ERROR
+    logging.level.com.epay.admin=INFO
+    logging.level.org.springframework=ERROR
+  # application.yml: |
+  #   server:
+  #     servlet:
+  #       context-path: /api/admin/v1
+  #     port: 9094
+  #   spring:
+  #     application:
+  #       name: Epay_Admin_service
+  #     datasource:
+  #       url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+  #       username: EPAYADMIN
+  #       password: April_2025
+  #       driver-class-name: oracle.jdbc.OracleDriver
+  #     jpa:
+  #       show-sql: true
+  #       hibernate:
+  #         ddl-auto: none
+  #     liquibase:
+  #       change-log: classpath:db/changelog/db.changelog-master.xml
+  #       enabled: true
+  #       drop-first: false
+  #     data:
+  #       gemfire:
+  #         pool:
+  #           locators: gemfire-dev-locator.dev-cache-gemfire[10334]
+  #           use-bean-factory-locator: false
+  #           cache:
+  #             server:
+  #               port: 40404
+  #     kafka:
+  #       bootstrap-servers: dev-kafka-cluster-kafka-bootstrap.dev-kafka.svc.cluster.local:9092
+  #       topic-prefix: cdc-oracle-gemfire.LOHITH_M
+  #       consumer:
+  #         group-id: admin-consumers
+  #         security:
+  #           ssl:
+  #             keystore: /certs/keystore.p12
+  #             keystore-password: HHy45TuP6CAjf6XMlxSE12CmyhEoklLv_JcYmy9RcBw=
+  #             keystore-type: PKCS12
+  #             truststore: /certs/truststore.p12
+  #             truststore-password: HHy45TuP6CAjf6XMlxSE12CmyhEoklLv_JcYmy9RcBw=
+  #             truststore-type: PKCS12
+  #             enabled-components: all
+  #             enable-endpoint-identification: false
+  #             require-authentication: false
+  #             web-require-authentication: false
+  #             protocols: any
+  #             ciphers: any
+  #       # org.apache.geode: debug
+  #       # org.springframework.data.gemfire: debug
+  #       # com.epay.sbi: INFO
+  #       # org.apache.kafka: ERROR
+  #       # com.epay.admin: INFO
+  #       # org.springframework: ERROR   
+  #   security:
+  #     cors:
+  #       allowed-origins: "*"
+  #       allowed-endpoints: /actuator/health, /actuator/health/readiness, /actuator/health/liveness
+  #     whitelist:
+  #       urls: /api/transaction/v1/actuator/health/**, /actuator/health/**
+  #   management:
+  #     endpoints:
+  #       web:
+  #         exposure:
+  #           include: health, info
+  #     endpoint:
+  #       health:
+  #         show-details: always
+  #         probes:
+  #           enabled: true
+  #         livenessState:
+  #           enabled: true
+  #         readinessState:
+  #           enabled: true
+  #   # UPI Configuration
+  #   upi:
+  #     pvt-key-pwd: Uat@Sbiepay
+  #     server-private-key-path: 0x1D883787-sec.asc
+  #     server-public-key-path: SBI0000000032588_UAT_1224_PublicKey.asc
+  #     cors-allowed-origins: https://dev.epay.sbi,http://localhost:9098
+  #     onboard-sub-merchant-url: https://uatupionline.sbi/merchant-web-war-6.0/upi/onBoardSubMerchant
+  #     pg-merchant-id: SBI0000000032588
+  #     business-name: "MahaOnlineLimited 2.0"
+  #     integration-type: WEBAPI
+  #     business-type: "Govt, Govt Undertakings"
+  #     request-url1: https://uat.epay.sbi/api/payments/v1/upi/sbi/callback
+  #     request-url2: https://uat.epay.sbi/api/payments/v1/upi/sbi/callback
+  #     ext-mid: "1000003"
+  #     ext-tid: ""
+  #     merchant-genre: ONLINE
+  #     onboarding-type: AGGREGATOR
+  #     feature-not-supported:
+  #       - accTypeVal: "05"
+  #         accType: CREDIT
+  #       - accTypeVal: "06"
+  #         accType: PPIWALLET
+  #       - accTypeVal: "31"
+  #         accType: CREDITLINE
+  #   logging:
+  #     level:
+  #       liquibase: INFO
+  #       org.apache.geode: DEBUG
+  #       org.springframework.data.gemfire: DEBUG
+  #       com.epay.sbi: INFO
+  #       org.apache.kafka: ERROR
+  #       com.epay.admin: INFO
+  #       org.springframework: ERROR
+---
+# Source: adminservice/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-adminservice
+  labels:
+    helm.sh/chart: adminservice-0.1.0
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/instance: admin
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9094
+      targetPort: 
+      protocol: TCP
+      name: 9094-tcp
+  selector:
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/instance: admin
+---
+# Source: adminservice/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-adminservice
+  labels:
+    helm.sh/chart: adminservice-0.1.0
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/instance: admin
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: adminservice
+      app.kubernetes.io/instance: admin
+  template:
+    metadata:  
+      annotations:
+        checksum/configmap: f4a522ca2d4ca265c7166b1214ec61a96cc3ba1fb8859dce0c2938e7a57eb58b
+      labels:
+        helm.sh/chart: adminservice-0.1.0
+        app.kubernetes.io/name: adminservice
+        app.kubernetes.io/instance: admin
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      imagePullSecrets:
+        - name: jfrog-pull-secret
+      serviceAccountName: default
+      securityContext:
+        {}
+      containers:
+        - name: adminservice
+          securityContext:
+            {} 
+          image: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_service:dev-39282f95"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9094
+              protocol: TCP
+          env:
+          - name: SPRING_CONFIG_LOCATION
+            value: file:/opt/gradle/
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-admin-service-secret
+                key: DB_USERNAME
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-admin-service-secret
+                key: DB_PASSWORD
+          readinessProbe:
+            httpGet:
+              # path: /api/admin/v1/actuator/health
+              # port: 9094
+              path: /api/admin/v1/actuator/health/readiness
+              port: 9094
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              # path: /api/admin/v1/actuator/health
+              # port: 9094
+              path: /api/admin/v1/actuator/health/liveness
+              port: 9094
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
+            failureThreshold: 6
+            successThreshold: 1                
+          volumeMounts:
+            - name: config
+              mountPath: "/opt/gradle"
+            - name: payment-upivpaqr-cert
+              readOnly: true
+              mountPath: /certs
+            # - name: gemfire-admin-cert
+            #   readOnly: true
+            #   mountPath: /certs   
+      volumes:
+        - name: config
+          configMap:
+            name: admin-config
+        - name: payment-upivpaqr-cert
+          secret:
+            secretName: payment-upivpaqr
+            defaultMode: 444
+        # - name: gemfire-admin-cert
+        #   secret:
+        #     secretName: gemfire-dev-cert-admin
+        #     defaultMode: 420
+        
+#
+---
+# Source: adminservice/templates/isto-vs.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: admin-adminservice
+  namespace: dev-admin
+spec:
+  # hosts:
+  # - "dev.epay.sbi"
+  # gateways:
+  # - dev-istio-system/dev-gateway  
+  http:
+  - match:
+    - uri:
+        prefix: /api/admin/v1
+    route:
+    - destination:
+        host: admin-adminservice
+        port:
+          number: 9094
+---
+# Source: adminservice/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "admin-adminservice-test-connection"
+  labels:
+    helm.sh/chart: adminservice-0.1.0
+    app.kubernetes.io/name: adminservice
+    app.kubernetes.io/instance: admin
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['admin-adminservice:9094']
+  restartPolicy: Never
+✅ Validation passed
+Uploading artifacts for successful job
+00:04
+Uploading artifacts...
+build.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1123855 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:01
+Job succeeded
+
+
+
+
+
+
+
+
+
+
+
+
+============================================================
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:06
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:02
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:36
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 62c238e7 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:09
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_admin_service | ENV=dev | VERSION=dev-eedbb2b4
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=admin
+SERVICE_NAME=epay_admin_service
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 212 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Deploying with image tag from values.yaml: dev-39282f95
+Release "admin" has been upgraded. Happy Helming!
+NAME: admin
+LAST DEPLOYED: Thu Jun 18 06:43:33 2026
+NAMESPACE: dev-admin
+STATUS: deployed
+REVISION: 110
+✅ Deployed epay_admin_service with tag dev-39282f95 to dev
+Cleaning up project directory and file based variables
+00:01
+Job succeeded
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=========================================================
 # cd/helm/helm.deploy.yml
 # Stage: validate + deploy + verify
 # Single-service Helm upgrade to OCP cluster
