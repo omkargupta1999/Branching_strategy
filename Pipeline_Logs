@@ -1,7 +1,71 @@
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
->   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/actuator/health
-200
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn --   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/health
-404
+Here's the full verification checklist, in order. Run each step and confirm the expected result before moving on.
+
+## 1. Confirm the ConfigMap has the corrected path
+
+```
+oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep -i "context-path\|application.name"
+```
+Expect both to read `txn`:
+```
+server.servlet.context-path=/epaylite-bridge-txn-service
+spring.application.name=epaylite-bridge-txn-service
+```
+
+## 2. Restart the pods (critical — context path is read only at startup)
+
+```
+oc rollout restart deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
+oc rollout status  deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
+```
+Expect: `successfully rolled out`.
+
+## 3. Confirm new pods are Running and recent
+
+```
+oc get pods -n dev-bridge -l app.kubernetes.io/instance=epaybridgetxn
+```
+Expect: `2/2 Running`, and **AGE of a few minutes** (proves they restarted, not the old ones).
+
+## 4. Confirm the app now serves on the `txn` path (inside the pod)
+
+```
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
+  curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txn-service/actuator/health
+```
+Expect: `200`. (This is the real proof the typo fix took effect.)
+
+Optional — the old `txt` path should now be gone:
+```
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
+  curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/actuator/health
+```
+Expect: `404` (confirms it moved off `txt`).
+
+## 5. Confirm the VirtualService host is correct (the 503 fix)
+
+```
+oc get vs epaylitebridge-txnservice -n dev-bridge \
+  -o jsonpath='{.spec.http[0].route[0].destination.host}{"\n"}'
+```
+Expect: `epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local`
+
+## 6. Confirm that host actually matches a real Service with endpoints
+
+```
+oc get svc epaybridgetxn-epaylitebridgetxn -n dev-bridge
+oc get endpoints epaybridgetxn-epaylitebridgetxn -n dev-bridge
+```
+Expect: service exists on `8099`, and endpoints shows **two pod IPs** (not `<none>`).
+
+## 7. End-to-end test through the gateway (the real user path)
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
+```
+Expect: `200`. This is the one the team was hitting — if this is `200`, the issue is resolved.
+
+---
+
+**Quick summary of pass criteria:** ConfigMap shows `txn` → pods restarted and Running → in-pod `txn` path returns `200` → VS host points to the real service → endpoints show 2 IPs → gateway URL returns `200`.
+
+If any step fails, tell me which number and paste the output — that pinpoints exactly where it's stuck. One likely gotcha: if step 4 still returns 404 after restart, the pods may not have actually picked up the new ConfigMap (check step 3 AGE is recent), or there's a second `application.properties` baked into the image overriding the mounted one.
