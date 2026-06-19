@@ -1,48 +1,80 @@
-Expected — this is the second issue I flagged. The 503 is gone (routing now reaches the pod), but the path is being forwarded unchanged and the app doesn't serve it.
+Right — if all three curls 404, the app isn't serving on the paths we guessed. The chart won't tell us the app's routes directly, but the app's own config files in the chart (mounted via the ConfigMap) will. Let me read them.Found it. The 404 is a **context-path mismatch**, and there's a typo in it too.
 
-The VS matches prefix `/epaylite-bridge-txn-service` and forwards the **full path** to the pod, because there's no `rewrite`. So the app receives:
+In the ConfigMap, the app's properties set:
 ```
-/epaylite-bridge-txn-service/health
-```
-which it doesn't have → 404.
-
-First, find the path the app actually serves, so we rewrite to the right target:
-
-```
-oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/health
-oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/actuator/health
-oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/api/bridge/v1/actuator/health
+server.servlet.context-path=/epaylite-bridge-txt-service
 ```
 
-Whichever returns `200` tells you the app's real base path. Your `values.yaml` probe config hints the app is context-pathed at `/api/bridge/v1`, so the third one is the likely winner.
+Note: **`txt`**, not `txn` — `epaylite-bridge-`**`txt`**`-service`. So the Spring app serves *everything* under that context path. The actuator health endpoint is actually at:
 
-## The fix — add a `rewrite` to the VS
+```
+/epaylite-bridge-txt-service/actuator/health
+```
 
-In `templates/isto-vs.yaml`, add a `rewrite` block under the match. Two scenarios depending on what the curl above shows:
+Meanwhile:
+- The UI calls `/epaylite-bridge-txn-service/health` (with `txn`)
+- The VS matches prefix `/epaylite-bridge-txn-service` (with `txn`) and forwards it unchanged
+- The app only answers under `/epaylite-bridge-txt-service/...` (with `txt`)
 
-**Scenario 1 — app serves at root** (`localhost:8099/health` → 200): strip the prefix entirely.
+So even the in-pod curls 404'd because none of them used the context path. That's why **every** path returned 404.
+
+Let me confirm the real endpoint inside the pod (note the context path + `txt`):
+
+```
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
+  curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/actuator/health
+```
+
+That should return `200`. (Also try `/health` instead of `/actuator/health` at the end if it doesn't — but `management.endpoints.web.exposure.include=health` plus default actuator base means `/actuator/health` is correct.)
+
+## The fix
+
+You have two mismatches to reconcile: the **txn/txt typo** and the **context path**. Pick one approach.
+
+### Recommended: fix the typo, then rewrite the VS to the context path
+
+The `txt` is almost certainly an unintentional typo (`spring.application.name` is also `epaylite-bridge-txt-service`). Best long-term fix is to correct it to `txn`, but that requires the app team to agree since it changes the served path. If you can:
+
+**Step 1** — in `templates/configmap.yaml`, fix both lines:
+```
+server.servlet.context-path=/epaylite-bridge-txn-service
+spring.application.name=epaylite-bridge-txn-service
+```
+
+**Step 2** — add a rewrite in `templates/isto-vs.yaml` so the gateway path maps onto the context path:
 ```yaml
   http:
   - match:
     - uri:
         prefix: {{ .Values.prefixName }}
     rewrite:
-      uri: /
+      uri: {{ .Values.prefixName }}
     route:
     - destination:
         host: {{ include "epaylite-bridge-txn-service.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local
         port:
           number: {{ .Values.servicePort }}
 ```
-With this, `/epaylite-bridge-txn-service/health` → `/health` on the pod.
 
-**Scenario 2 — app is context-pathed** (e.g. `localhost:8099/api/bridge/v1/actuator/health` → 200): rewrite to that base.
+With `prefixName: /epaylite-bridge-txn-service`, the incoming `/epaylite-bridge-txn-service/health`... actually maps cleanly. But note: the UI is hitting `/epaylite-bridge-txn-service/health`, while the actuator lives at `<context-path>/actuator/health`. So `/epaylite-bridge-txn-service/health` won't reach `/actuator/health` regardless. **What exact URL is the UI calling, and is it the health check or a real API endpoint?**
+
+This matters because:
+- If the UI hits a real business API like `/epaylite-bridge-txn-service/api/.../something`, then once context-path = `/epaylite-bridge-txn-service` and you rewrite prefix→prefix (or just don't rewrite at all, since they'd match), it works.
+- If the UI is hitting `/health` expecting the actuator, that endpoint is at `/actuator/health` under the context — different path.
+
+### Minimal fix without touching the app (no app-team dependency)
+
+Keep the app's `txt` context path as-is and have the VS rewrite the incoming `txn` prefix to the app's real `txt` context path:
+
 ```yaml
     rewrite:
-      uri: /api/bridge/v1
+      uri: /epaylite-bridge-txt-service
 ```
-Then `/epaylite-bridge-txn-service/health` → `/api/bridge/v1/health`.
+So `/epaylite-bridge-txn-service/<anything>` → `/epaylite-bridge-txt-service/<anything>` on the pod, matching the app's actual context path.
 
-Istio's prefix rewrite replaces the matched prefix with the `rewrite.uri` value, so pick the target that lines up with the real endpoint from the curl test.
+To give you the exact final file, I need two things confirmed:
 
-Run the three curls first and tell me which returns 200 — I'll give you the exact `rewrite.uri` and the final file. Don't guess the rewrite target; the in-pod curl is the ground truth for what the app actually serves.
+1. Run the in-pod curl above against `/epaylite-bridge-txt-service/actuator/health` — does it return 200?
+2. What is the **exact** URL the UI calls (the failing request), and is it a health check or a functional API call?
+
+Tell me those and I'll hand back the finished `isto-vs.yaml` (and `configmap.yaml` if we go the rename route) with the precise rewrite.
