@@ -1,36 +1,3 @@
-Good progress — the ConfigMap and the app are now fully fixed:
+text: cfda47
+2026-06-19 12:24:43.432 ERROR | com.epay.merchant.exceptionhandlers.MerchantExceptionHandler:151 | principal=  | scenario=/api/merchant/v1/captcha | operation=POST | correlation=2085ff0c-393a-490c-a921-55f2de812a9e | handleGenericException | Handling Generic Exception: Fontconfig head is null, check your fonts or fonts configuration
 
-- ConfigMap has only the `txn` context path (the duplicate `txt` is gone, the only remaining `txt` is a harmless commented `#` line).
-- Pods restarted cleanly (new pod name `d8867b5c7`, AGE seconds).
-- **In-pod test returns `200`** on `/epaylite-bridge-txn-service/actuator/health` — the app now serves on the correct `txn` path. ✅
-- VS host is correct: `epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local`. ✅
-
-So the application side and routing config are both correct now. The internal path is 100% working.
-
-**The only thing left:** the final gateway test didn't complete — you hit `Ctrl+C` (`^C`), so it was hanging, not returning a result. That's a different signal from the earlier errors. A hang on the external URL (while the in-pod call works instantly) usually points to something at the gateway/network layer, not the app.
-
-Run it again with a timeout so it can't hang indefinitely, plus a verbose attempt:
-
-```
-curl -sS --max-time 15 -o /dev/null -w "%{http_code}\n" \
-  https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
-
-# if it hangs/fails, see where it stalls:
-curl -v --max-time 15 https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
-```
-
-A few likely reasons the external call hangs while in-pod works:
-
-1. **DNS / reachability from the bastion** — does `dev.epay.sbi` resolve and is the gateway reachable from where you're running curl? Check:
-   ```
-   getent hosts dev.epay.sbi
-   curl -v --max-time 10 https://dev.epay.sbi/ 2>&1 | head -20
-   ```
-2. **TLS** — if it's hanging during handshake, could be a cert/SNI issue on the gateway. The `-v` output will show if it stalls at "SSL handshake".
-3. **Gateway config** — confirm the gateway actually serves this host on the port you're hitting:
-   ```
-   oc get gateway dev-gateway -n dev-istio-system -o yaml | grep -A8 "servers:"
-   ```
-   Check the gateway listens on 443/HTTPS for host `dev.epay.sbi` (or `*`).
-
-Run the timed curl first and paste what it returns. If it gives `200`, you're completely done. If it hangs or errors, the `-v` output will tell us exactly which layer (DNS, TCP, TLS, or routing) is the holdup — and that's a gateway/network item, separate from the app fix which is now confirmed working.
