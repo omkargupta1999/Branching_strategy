@@ -1,96 +1,120 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2842-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:07
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_transaction_service/.git/
-Created fresh repository.
-Checking out 526a8a92 as detached HEAD (ref is refs/merge-requests/1362/head)...
-Skipping Git submodules setup
-Downloading artifacts
-00:08
-Downloading artifacts for build (1126005)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1126005 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for test (1126006)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1126006 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for image:build (1126007)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1126007 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:28
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ mkdir -p ~/.jfrog/security/certs
-$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-11:16:39 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-11:16:39 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ jf config show
-Server ID:			epay-server
-JFrog Platform URL:		https://artifactory.jfrog.sbi/
-Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
-Distribution URL:		https://artifactory.jfrog.sbi/distribution/
-Xray URL:			https://artifactory.jfrog.sbi/xray/
-Mission Control URL:		https://artifactory.jfrog.sbi/mc/
-Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
-User:				[MASKED]
-Access token:			***
-Default:			true
-$ IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" # collapsed multi-line command
-Loading TAR...
-Getting image source signatures
-Copying blob sha256:c8758dfb7c70f3b4151a1ed77765e059c5e3d99ac2e3c9acba5eb955ac9d6ff4
-Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
-Copying blob sha256:ea810944020b46a28aaf3d702459036c51a68b065abe49bb4573372a80e049d1
-Copying blob sha256:edfa5fd7a14b12ce4e8754f05c2162708bae024790a5c4d9d53d6372749a0860
-Copying blob sha256:fff32172b0bde4886c6d0ff8dc132f396f084f9e03314fb16effc178dbaf8719
-Copying blob sha256:7064814bf00b93023182a65d6144271226935559ac8813b01b6883c4b17951df
-Copying blob sha256:da04dc5eba62fbacf86f12afe34e97351bca41328ca6e438b80092d237ae56aa
-Copying blob sha256:0244815208d2edfe287333d1c8620e30bf123bd4960b60eaf1f9c2b4db164fdc
-Copying blob sha256:9cf2ba9ca6c60288dada069b96895c77d38d561f6098f5855d19d97dde7a39e3
-Copying blob sha256:3f6dcfe30a7dec961ac8ca6134d96b9ba88a7b885db4493f818c81a33c677cd1
-Copying config sha256:c2098211dd633d5db5ded622625953719f6a13cf4172c4613015ec3c1fe6349f
-Writing manifest to image destination
-Loaded image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_transaction_service:mr-feature-epay-00-consent-management-main-develop-1362-526a8a92
-Pushing: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_transaction_service:mr-feature-epay-00-consent-management-main-develop-1362-526a8a92
-Getting image source signatures
-Copying blob sha256:c8758dfb7c70f3b4151a1ed77765e059c5e3d99ac2e3c9acba5eb955ac9d6ff4
-Copying blob sha256:edfa5fd7a14b12ce4e8754f05c2162708bae024790a5c4d9d53d6372749a0860
-Copying blob sha256:2f6a86cef112f9d0fab6988c789bdeb9a8e25aef1deb45c9f5aaa330cb16c602
-Copying blob sha256:7064814bf00b93023182a65d6144271226935559ac8813b01b6883c4b17951df
-Copying blob sha256:ea810944020b46a28aaf3d702459036c51a68b065abe49bb4573372a80e049d1
-Copying blob sha256:fff32172b0bde4886c6d0ff8dc132f396f084f9e03314fb16effc178dbaf8719
-Copying blob sha256:da04dc5eba62fbacf86f12afe34e97351bca41328ca6e438b80092d237ae56aa
-Copying blob sha256:0244815208d2edfe287333d1c8620e30bf123bd4960b60eaf1f9c2b4db164fdc
-Copying blob sha256:9cf2ba9ca6c60288dada069b96895c77d38d561f6098f5855d19d97dde7a39e3
-Copying blob sha256:3f6dcfe30a7dec961ac8ca6134d96b9ba88a7b885db4493f818c81a33c677cd1
-Error: writing blob: uploading layer chunked: unexpected EOF
-Uploading artifacts for failed job
-00:00
-Uploading artifacts...
-WARNING: push.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_transaction_service) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+# cd/publish/values.update.yml
+# Stage: publish
+# Updates image tag in deployment repo values.yaml — git commit + push
+# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
+# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
+.update_tag:
+  stage: publish
+  tags:
+    - deploy_runner
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+  script:
+    - |
+      set -eo pipefail
+      echo "========== DEBUG =========="
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "VERSION=$VERSION"
+      echo "CHART_NAME=$CHART_NAME"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "==========================="
+
+      if [ -z "$SERVICE_NAME" ] || \
+         [ -z "$ENV" ] || \
+         [ -z "$VERSION" ]; then
+        echo "ERROR: Required variables missing"
+        exit 1
+      fi
+
+      
+      TAG=$VERSION
+      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
+      echo "SERVICE_PATH=$SERVICE_PATH"
+      ls -ltrh $SERVICE_PATH
+      git fetch origin ##
+      git checkout $CI_COMMIT_BRANCH ##
+      # retry rebase
+      for i in 1 2 3; do
+        git pull --rebase origin $CI_COMMIT_BRANCH && break 
+        echo "Rebase failed...retrying ($i)"
+        sleep 2
+        if [ $i -eq 3 ]; then
+        echo "Rebase failed after retries"
+        exit 1
+        fi
+      done
+      #git fetch
+      #git checkout $CI_COMMIT_BRANCH
+      # Anchor to start-of-line so ONLY the active "tag:" line is rewritten and
+      # commented "#tag:" decoy lines are left untouched. This keeps each commit
+      # to a single-line diff, which is what makes GitLab web "Revert" work
+      # cleanly for the most recent deploy of a service.
+      sed -i -E "s|^([[:space:]]*)tag:[[:space:]].*|\1tag: \"${TAG}\"|" "$SERVICE_PATH/values.yaml"
+      git add $SERVICE_PATH/values.yaml
+      if [[ $(git status --porcelain) ]]; then
+        git commit -m "chore: update image tag to $TAG [skip ci]"
+        for i in 1 2 3; do
+          git push origin $CI_COMMIT_BRANCH && break
+          echo "Push failed...retrying ($i)"
+          sleep 2
+          git pull --rebase origin $CI_COMMIT_BRANCH
+          if [ $i -eq 3 ]; then
+            echo "Push failed after retries"
+            exit 1
+          fi
+        done
+        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
+      else
+        echo "No changes — image tag already $TAG"
+      fi
+      cat $SERVICE_PATH/values.yaml
+# values:update:
+#   extends: .update_tag
+
+
+
+
+
+
+# .update_tag:
+#   tags:
+#     - deploy_runner
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global --add safe.directory '*'
+#     - git config --global user.name "ci"
+#     - git config --global user.email "ci.cedge@sbi.co.in"    
+#     - git remote set-url origin https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git
+#   script:
+#     - TAG=$VERSION
+#     - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
+#     - ls -ltrh $SERVICE_PATH
+#     - cat $SERVICE_PATH/values.yaml
+#     - echo "Tag is $TAG"
+#     - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
+#     - git fetch 
+#     - git status
+#     - git branch -a  
+#     - git checkout $CI_COMMIT_BRANCH
+#     - git add $SERVICE_PATH/values.yaml
+#     - git status --porcelain
+#     - |
+#       if [[ `git status --porcelain` ]]; then
+#         # Changes
+#         git commit -m "Update image tag to $TAG"
+#         git push origin $CI_COMMIT_BRANCH
+#       else
+#         # No changes
+#         echo "No changes in git"
+#       fi
+#     - cat $SERVICE_PATH/values.yaml
+# values:update:
+#   extends: .update_tag
