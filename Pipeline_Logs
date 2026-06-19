@@ -1,30 +1,91 @@
-# ci/common/workflow.yml
-# Shared pipeline-trigger rules for ALL app-repo CI orchestrators.
-# Goal: when a branch has an OPEN merge request, run ONLY the merge_request
-# pipeline — never the duplicate branch pipeline.
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/*.jar consumed by image-build stage
+
+# ── Extends ───────────────────────────────────────────────────────────────────
+# Inherits from .base_setup_java_gradle (ci/common/base-setup.java.gradle.yml):
+#   image, tags, variables, before_script
+# No image or before_script defined here — single source of truth in common file.
 #
-# NOTE (GitLab behaviour): GitLab honours exactly ONE workflow: block — the one
-# in the TOP-LEVEL config. This file is pulled in via `include:` by each
-# orchestrator (java.yml, nodejs.yml, ...). It only takes effect if the APP
-# repo's own .gitlab-ci.yml does NOT define its own workflow: block. If an app
-# repo defines workflow: locally, that local block wins and these rules are
-# ignored for that repo.
+# ── Artifacts Passed to Test Stage ───────────────────────────────────────────
+# build/classes/   — compiled application + test classes (skips recompile in test)
+# build/resources/ — processed resources
+# build/tmp/       — annotation processor outputs (Lombok, MapStruct)
+# build/libs/      — JAR consumed by image-build stage
+# Gradle incremental build detects these on next invocation — skips compileJava.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
 
-workflow:
-  rules:
-    # 1. Always allow downstream/triggered (parent→child) pipelines.
-    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
-      when: always
+include:
+  - local: 'ci/common/base-setup.java.gradle.yml'
 
-    # 2. DEDUPE: a branch push that already has an open MR -> skip the branch
-    #    pipeline; the merge_request pipeline (rule 3) runs instead.
-    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
-      when: never
+.build:
+  extends: .base_setup_java_gradle
+  stage: build
 
-    # 3. Run merge_request pipelines.
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: always
+  script:
+    - |
+      set -eo pipefail
 
-    # 4. Run branch pipelines (only reached when the branch has NO open MR).
-    - if: '$CI_COMMIT_BRANCH'
-      when: always
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+        exit 1
+      fi
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Gradle build ──────────────────────────────────────────────────────
+      # Dependencies resolved from JFrog via settings.gradle in app repo
+      # -x test: unit tests run separately in test stage (java.unit.yml)
+      # -Pversion: sets project version used in bootJar archiveFileName
+      gradle build -x test -Pversion="${VERSION}" --info
+
+      # ── Verify output ─────────────────────────────────────────────────────
+      echo "Build output:"
+      ls -lh build/libs/
+
+      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+        exit 1
+      fi
+
+
+      # ── Build metadata for downstream stages ────────────────────────────────
+      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+      # BUILD_TIME: consumed by image-build stage for OCI image labels
+      
+      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v plain | head -1 || true)
+      WAR_FILE=$(ls build/libs/*.war 2>/dev/null | grep -v plain | head -1 || true)
+
+      if [ -n "$JAR_FILE" ]; then
+        ARTIFACT_FILE="$JAR_FILE"
+      elif [ -n "$WAR_FILE" ]; then
+        ARTIFACT_FILE="$WAR_FILE"
+      else
+        echo "❌ ERROR: No deployable JAR or WAR found in build/libs/"
+        exit 1
+      fi
+
+      echo "✅ ARTIFACT: ${ARTIFACT_FILE}"
+      echo "JAR_FILE=${ARTIFACT_FILE}"                      >> build.env
+      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> build.env
+
+
+      # JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+      # echo "✅ JAR: ${JAR_FILE}"
+      # echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+      # echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+
+  artifacts:
+    paths:
+      - build/libs/
+      - build/classes/
+      - build/resources/
+      - build/tmp/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
