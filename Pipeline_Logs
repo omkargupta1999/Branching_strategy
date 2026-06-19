@@ -1,34 +1,171 @@
-The 503 here is not an application startup failure — the app started fine (`Started EpayLiteBridgeTxnApplication in 15.488 seconds`). The 503 is coming from the routing/proxy layer in front of the pod, not from the service itself. Two things stand out:
-
-**1. The route/ingress isn't sending traffic to a Ready pod yet.** A 503 from OpenShift's router almost always means there are no endpoints behind the Service at the moment of the request. Even though the JVM logged "Started," the pod may not be passing its readiness probe (or the probe path/port is wrong), so it never gets added to the Service endpoints. Check:
-
-```
-oc get endpoints epaylite-bridge-txn-service -n <namespace>
-oc get pods -l app=epaylite-bridge-txn-service -o wide
-oc describe pod <pod> | grep -A5 -i readiness
-```
-
-If `ENDPOINTS` is `<none>`, the route has nothing to forward to → 503.
-
-**2. The readiness probe is likely failing because of the malformed environment value.** This is the real smell:
-
-```
-"environment":"ENVIRONMENT:dev_IS_UNDEFINED"
-```
-
-That `_IS_UNDEFINED` suffix is the classic pattern of an unresolved placeholder — something like `${ENVIRONMENT:dev}` where the env var `ENVIRONMENT` was never injected, and the substitution fell back oddly. If your readiness/health config (e.g. management endpoint group, actuator exposure, or a profile-gated bean) depends on that `environment`/profile being resolved correctly, the `/health` endpoint can return DOWN or 503 even with the app "started."
-
-Concretely, verify:
-
-```
-oc set env pod/<pod> --list | grep -i environment
-oc exec <pod> -- curl -s localhost:<mgmt-port>/actuator/health
-```
-
-If the in-pod curl to the actuator health endpoint returns 200 but the external URL returns 503, the problem is the route/readiness/endpoints layer. If the in-pod curl itself fails or returns DOWN, the problem is the app config — most likely the unresolved `ENVIRONMENT` variable breaking profile/property resolution.
-
-Most likely root cause: the `ENVIRONMENT` variable isn't set in the deployment, so the Spring profile/property isn't resolving, the readiness probe never passes, the Service has zero endpoints, and the router returns 503.
-
-Quickest confirmation: check pod readiness and endpoints first, then fix the missing `ENVIRONMENT` env var in the Helm values / deployment manifest.
-
-Want me to help trace how `ENVIRONMENT` is being injected (Helm values vs ConfigMap vs Dockerfile) so we can pin where the substitution is failing?
+[osuser@bastion ~]$ oc get po -n dev-bridge
+NAME                                               READY   STATUS    RESTARTS   AGE
+epaybridgetxn-epaylitebridgetxn-85d67dc545-7xfrb   2/2     Running   0          3h59m
+epaybridgetxn-epaylitebridgetxn-85d67dc545-p7wl5   2/2     Running   0          3h59m
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get svc -n dev-bridge
+NAME                              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+epaybridgetxn-epaylitebridgetxn   ClusterIP   172.30.10.71   <none>        8099/TCP   2d22h
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get vs  -n dev-bridge
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+NAME                        GATEWAYS                           HOSTS              AGE
+epaylitebridge-txnservice   ["dev-istio-system/dev-gateway"]   ["dev.epay.sbi"]   2d22h
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get vs  -n dev-bridge epaylitebridge-txnservice -o yaml
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  annotations:
+    meta.helm.sh/release-name: epaybridgetxn
+    meta.helm.sh/release-namespace: dev-bridge
+  creationTimestamp: "2026-06-16T09:45:19Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: epaylitebridge-txnservice
+  namespace: dev-bridge
+  resourceVersion: "819227204"
+  uid: 47d79b4c-d62e-4b16-b894-28de219cc4ea
+spec:
+  gateways:
+  - dev-istio-system/dev-gateway
+  hosts:
+  - dev.epay.sbi
+  http:
+  - match:
+    - uri:
+        prefix: /epaylite-bridge-txn-service
+    route:
+    - destination:
+        host: epaylitebridge-txnservice
+        port:
+          number: 8099
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get vs  -n dev-bridge
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+NAME                        GATEWAYS                           HOSTS              AGE
+epaylitebridge-txnservice   ["dev-istio-system/dev-gateway"]   ["dev.epay.sbi"]   2d22h
+[osuser@bastion ~]$ oc get deploy   -n dev-bridge
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+epaybridgetxn-epaylitebridgetxn   2/2     2            2           2d22h
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get deploy   -n dev-bridge epaybridgetxn-epaylitebridgetxn -o yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "8"
+    meta.helm.sh/release-name: epaybridgetxn
+    meta.helm.sh/release-namespace: dev-bridge
+  creationTimestamp: "2026-06-16T09:45:19Z"
+  generation: 9
+  labels:
+    app.kubernetes.io/instance: epaybridgetxn
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: epaylitebridgetxn
+    app.kubernetes.io/version: 1.16.0
+    helm.sh/chart: epaylitebridgetxn-0.1.0
+  name: epaybridgetxn-epaylitebridgetxn
+  namespace: dev-bridge
+  resourceVersion: "825039863"
+  uid: 90030a71-fd08-4e11-8a09-22b42c52d254
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: epaybridgetxn
+      app.kubernetes.io/name: epaylitebridgetxn
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: epaybridgetxn
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: epaylitebridgetxn
+        app.kubernetes.io/version: 1.16.0
+        helm.sh/chart: epaylitebridgetxn-0.1.0
+    spec:
+      containers:
+      - env:
+        - name: SPRING_CONFIG_LOCATION
+          value: file:/opt/gradle/
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: DB_USERNAME
+              name: my-secrets-transaction-service-secret
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_PASSWORD
+              name: my-secrets-transaction-service-secret
+        image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epaylite-bridge-txn-service:mr-feature-gradle-epaybridge-txn-init-develop-17-9d9994cd
+        imagePullPolicy: IfNotPresent
+        name: epaylitebridgetxn
+        ports:
+        - containerPort: 8099
+          name: http
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /opt/gradle
+          name: config
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: jfrog-pull-secret
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: epaybridgetxn-config
+        name: config
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2026-06-17T23:59:30Z"
+    lastUpdateTime: "2026-06-17T23:59:30Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-06-17T13:02:27Z"
+    lastUpdateTime: "2026-06-19T04:16:59Z"
+    message: ReplicaSet "epaybridgetxn-epaylitebridgetxn-85d67dc545" has successfully
+      progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 9
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
