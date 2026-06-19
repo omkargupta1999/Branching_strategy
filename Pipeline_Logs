@@ -1,120 +1,14 @@
-# cd/publish/values.update.yml
-# Stage: publish
-# Updates image tag in deployment repo values.yaml — git commit + push
-# Runs in DEPLOYMENT REPO pipeline (triggered from app repo CI)
-# Migrated from: cd/commit/commit.yml (renamed: commit → publish, update-tag → values:update)
-.update_tag:
-  stage: publish
-  tags:
-    - deploy_runner
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-  script:
-    - |
-      set -eo pipefail
-      echo "========== DEBUG =========="
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      echo "VERSION=$VERSION"
-      echo "CHART_NAME=$CHART_NAME"
-      echo "RELEASE_NAME=$RELEASE_NAME"
-      echo "==========================="
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-6c468fdbc6-lvmh7 -n dev-transaction | grep -i error
+2026-06-19 05:53:33.601 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=880530b1-6b02-42da-9a6e-6911cf097013 | methodName=handleGenericException | Error in handleGenericException
+2026-06-19 05:54:23.870 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=b6be7a7b-bbc1-425f-a27d-31352810de8f | methodName=handleGenericException | Error in handleGenericException
 
-      if [ -z "$SERVICE_NAME" ] || \
-         [ -z "$ENV" ] || \
-         [ -z "$VERSION" ]; then
-        echo "ERROR: Required variables missing"
-        exit 1
-      fi
-
-      
-      TAG=$VERSION
-      SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-      echo "Updating $SERVICE_PATH/values.yaml → image tag: $TAG"
-      echo "SERVICE_PATH=$SERVICE_PATH"
-      ls -ltrh $SERVICE_PATH
-      git fetch origin ##
-      git checkout $CI_COMMIT_BRANCH ##
-      # retry rebase
-      for i in 1 2 3; do
-        git pull --rebase origin $CI_COMMIT_BRANCH && break 
-        echo "Rebase failed...retrying ($i)"
-        sleep 2
-        if [ $i -eq 3 ]; then
-        echo "Rebase failed after retries"
-        exit 1
-        fi
-      done
-      #git fetch
-      #git checkout $CI_COMMIT_BRANCH
-      # Anchor to start-of-line so ONLY the active "tag:" line is rewritten and
-      # commented "#tag:" decoy lines are left untouched. This keeps each commit
-      # to a single-line diff, which is what makes GitLab web "Revert" work
-      # cleanly for the most recent deploy of a service.
-      sed -i -E "s|^([[:space:]]*)tag:[[:space:]].*|\1tag: \"${TAG}\"|" "$SERVICE_PATH/values.yaml"
-      git add $SERVICE_PATH/values.yaml
-      if [[ $(git status --porcelain) ]]; then
-        git commit -m "chore: update image tag to $TAG [skip ci]"
-        for i in 1 2 3; do
-          git push origin $CI_COMMIT_BRANCH && break
-          echo "Push failed...retrying ($i)"
-          sleep 2
-          git pull --rebase origin $CI_COMMIT_BRANCH
-          if [ $i -eq 3 ]; then
-            echo "Push failed after retries"
-            exit 1
-          fi
-        done
-        echo "✅ values.yaml updated: $SERVICE_PATH → $TAG"
-      else
-        echo "No changes — image tag already $TAG"
-      fi
-      cat $SERVICE_PATH/values.yaml
-# values:update:
-#   extends: .update_tag
+2026-06-19 05:55:18.253 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=4b201d1b-af94-465c-aa9a-de367c499e48 | methodName=handleGenericException | Error in handleGenericException
+2026-06-19 05:59:57.233 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=f61a6e35-1b07-4fe6-86f4-31eae6a309f2 | methodName=handleGenericException | Error in handleGenericException
+2026-06-19 06:03:00.961 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=3f1d4802-749e-4974-b7a0-43da34f7a6e3 | methodName=handleGenericException | Error in handleGenericException
 
 
 
 
-
-
-# .update_tag:
-#   tags:
-#     - deploy_runner
-#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-#   before_script:
-#     - git config --global http.sslVerify false
-#     - git config --global --add safe.directory '*'
-#     - git config --global user.name "ci"
-#     - git config --global user.email "ci.cedge@sbi.co.in"    
-#     - git remote set-url origin https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git
-#   script:
-#     - TAG=$VERSION
-#     - SERVICE_PATH="${ENV}/charts/${SERVICE_NAME}"
-#     - ls -ltrh $SERVICE_PATH
-#     - cat $SERVICE_PATH/values.yaml
-#     - echo "Tag is $TAG"
-#     - sed -i "s/\(tag:\).*/\1 \"${TAG}\"/" $SERVICE_PATH/values.yaml
-#     - git fetch 
-#     - git status
-#     - git branch -a  
-#     - git checkout $CI_COMMIT_BRANCH
-#     - git add $SERVICE_PATH/values.yaml
-#     - git status --porcelain
-#     - |
-#       if [[ `git status --porcelain` ]]; then
-#         # Changes
-#         git commit -m "Update image tag to $TAG"
-#         git push origin $CI_COMMIT_BRANCH
-#       else
-#         # No changes
-#         echo "No changes in git"
-#       fi
-#     - cat $SERVICE_PATH/values.yaml
-# values:update:
-#   extends: .update_tag
