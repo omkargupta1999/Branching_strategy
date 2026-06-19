@@ -1,24 +1,48 @@
-The change goes in **one file**:
+Expected — this is the second issue I flagged. The 503 is gone (routing now reaches the pod), but the path is being forwarded unchanged and the app doesn't serve it.
+
+The VS matches prefix `/epaylite-bridge-txn-service` and forwards the **full path** to the pod, because there's no `rewrite`. So the app receives:
+```
+/epaylite-bridge-txn-service/health
+```
+which it doesn't have → 404.
+
+First, find the path the app actually serves, so we rewrite to the right target:
 
 ```
-dev/charts/epaylite-bridge-txn-service/templates/isto-vs.yaml
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/health
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/actuator/health
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/api/bridge/v1/actuator/health
 ```
 
-On the destination host line (line 18), which currently reads:
+Whichever returns `200` tells you the app's real base path. Your `values.yaml` probe config hints the app is context-pathed at `/api/bridge/v1`, so the third one is the likely winner.
+
+## The fix — add a `rewrite` to the VS
+
+In `templates/isto-vs.yaml`, add a `rewrite` block under the match. Two scenarios depending on what the curl above shows:
+
+**Scenario 1 — app serves at root** (`localhost:8099/health` → 200): strip the prefix entirely.
 ```yaml
-        host: {{ .Values.serviceName }}
-```
-
-Change it to:
-```yaml
+  http:
+  - match:
+    - uri:
+        prefix: {{ .Values.prefixName }}
+    rewrite:
+      uri: /
+    route:
+    - destination:
         host: {{ include "epaylite-bridge-txn-service.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local
+        port:
+          number: {{ .Values.servicePort }}
 ```
+With this, `/epaylite-bridge-txn-service/health` → `/health` on the pod.
 
-That's the only edit needed. (This is already done in the file I gave you back — `isto-vs.yaml` in your outputs.)
-
-Optionally, in `dev/charts/epaylite-bridge-txn-service/values.yaml`, delete the now-unused `serviceName: epaylitebridge-txnservice` line so no one hand-edits it again — but that's cleanup, not required for the fix to work.
-
-Then apply:
+**Scenario 2 — app is context-pathed** (e.g. `localhost:8099/api/bridge/v1/actuator/health` → 200): rewrite to that base.
+```yaml
+    rewrite:
+      uri: /api/bridge/v1
 ```
-helm upgrade epaybridgetxn ./dev/charts/epaylite-bridge-txn-service -n dev-bridge
-```
+Then `/epaylite-bridge-txn-service/health` → `/api/bridge/v1/health`.
+
+Istio's prefix rewrite replaces the matched prefix with the `rewrite.uri` value, so pick the target that lines up with the real endpoint from the curl test.
+
+Run the three curls first and tell me which returns 200 — I'll give you the exact `rewrite.uri` and the final file. Don't guess the rewrite target; the in-pod curl is the ground truth for what the app actually serves.
