@@ -1,14 +1,29 @@
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-6c468fdbc6-lvmh7 -n dev-transaction | grep -i error
-2026-06-19 05:53:33.601 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=880530b1-6b02-42da-9a6e-6911cf097013 | methodName=handleGenericException | Error in handleGenericException
-2026-06-19 05:54:23.870 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=b6be7a7b-bbc1-425f-a27d-31352810de8f | methodName=handleGenericException | Error in handleGenericException
+The `grep -i error` is hiding the actual cause. `handleGenericException` is just the catch-all handler logging that something was thrown — the stack trace and root cause are on the lines immediately after each ERROR, which your grep filters out.
 
-2026-06-19 05:55:18.253 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=4b201d1b-af94-465c-aa9a-de367c499e48 | methodName=handleGenericException | Error in handleGenericException
-2026-06-19 05:59:57.233 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=f61a6e35-1b07-4fe6-86f4-31eae6a309f2 | methodName=handleGenericException | Error in handleGenericException
-2026-06-19 06:03:00.961 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=NA  | scenario=/api/payments/v1/cashchallan/sbi/get-details | operation=POST | correlation=3f1d4802-749e-4974-b7a0-43da34f7a6e3 | methodName=handleGenericException | Error in handleGenericException
+Pull the full context around one correlation ID:
 
+```bash
+oc logs payment-paymentservice-6c468fdbc6-lvmh7 -n dev-transaction \
+  | grep -A 30 "880530b1-6b02-42da-9a6e-6911cf097013"
+```
 
+Or get the trace lines that follow the ERROR:
 
+```bash
+oc logs payment-paymentservice-6c468fdbc6-lvmh7 -n dev-transaction \
+  | grep -A 25 "Error in handleGenericException" | tail -50
+```
 
+Key observations from what you have:
+- `principal=NA` — request is unauthenticated/anonymous at the point of failure. Could be expected for this endpoint, or an auth/token resolution failure upstream.
+- All failures are the same endpoint: `POST /api/payments/v1/cashchallan/sbi/get-details`. Consistent, recurring (~every 1–5 min) → likely a downstream dependency for cash challan lookup: DB query, a SOAP/REST call to an SBI core banking service, or a serialization/NPE in that specific handler path.
+- It's a generic handler, so this is an *unhandled* exception type — not a mapped business exception. Often an NPE, a downstream timeout/connection refused, or a deserialization error.
+
+Once you paste the stack trace lines (the `Caused by:` chain), I can point at the root cause. If the app logs the exception class on the same line elsewhere, also try:
+
+```bash
+oc logs payment-paymentservice-6c468fdbc6-lvmh7 -n dev-transaction \
+  | grep -iE "exception|caused by|at com.epay" | tail -40
+```
+
+What does the trace after one of those ERROR lines show?
