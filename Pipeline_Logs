@@ -1,3 +1,1 @@
-text: cfda47
-2026-06-19 12:24:43.432 ERROR | com.epay.merchant.exceptionhandlers.MerchantExceptionHandler:151 | principal=  | scenario=/api/merchant/v1/captcha | operation=POST | correlation=2085ff0c-393a-490c-a921-55f2de812a9e | handleGenericException | Handling Generic Exception: Fontconfig head is null, check your fonts or fonts configuration
-
+podman run --rm <artifactory-registry>/ubi9/openjdk-21:<tag> fc-list
