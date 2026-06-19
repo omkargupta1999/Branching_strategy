@@ -1,99 +1,113 @@
-The VS host comes from `.Values.serviceName`, and the Service name comes from its own template. Let me check both.Confirmed. This is the exact mismatch. Here's the root cause from the chart itself:
+# templates/cd/deploy.single.yml
+# CD orchestrator — single service deploy
+# Used by deployment repo when SERVICE_NAME + ENV known at trigger time
 
-**The Service is named by a Helm template, but the VirtualService points at a hardcoded value that doesn't match it.**
+workflow:
+  rules:
 
-The Service gets its name from `{{ include "epaylite-bridge-txn-service.fullname" . }}`. With `fullnameOverride` empty and release name `epaybridgetxn`, that template resolves to:
+    # #--------------------------------------------------------------------#
+    # # Block branch creation pipelines
+    # #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000" && $CI_PIPELINE_SOURCE == "push"'
+    #   when: never
 
-```
-epaybridgetxn-epaylitebridgetxn
-```
+    #--------------------------------------------------------------------#
+    # ALWAYS allow downstream pipelines
+    # (microservice repo → deployment repo)
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+      when: always
 
-(matching the live `oc get svc` output exactly).
 
-But in `values.yaml`, the VS destination host is hardcoded:
+    #--------------------------------------------------------------------#
+    # Avoid DUPLICATE pipelines: when a branch push has an open MR,
+    # run only the merge_request pipeline and skip the branch (push) one.
+    # (first-match-wins, so this must sit before the MR/branch allow rules)
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+      when: never
 
-```
-serviceName: epaylitebridge-txnservice    # <-- does NOT exist as a Service
-```
 
-So Istio routes `/epaylite-bridge-txn-service` to host `epaylitebridge-txnservice`, which has no matching Service → no healthy upstream → **503**.
+    #--------------------------------------------------------------------#
+    # BLOCK MR pipelines targeting MAIN
+    # Prevents deployment before approval
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: never
 
-## What and where to fix
 
-In `dev/charts/epaylite-bridge-txn-service/values.yaml`, change `serviceName` to the real Service name:
+    #--------------------------------------------------------------------#
+    # Allow MR pipelines for NON-main branches
+    # (release → develop etc.)
+    #--------------------------------------------------------------------#
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
 
-```yaml
-serviceName: epaybridgetxn-epaylitebridgetxn
-```
 
-Better, use the FQDN so Istio resolves unambiguously:
+    #--------------------------------------------------------------------#
+    # Deploy AFTER merge (push to main)
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
 
-```yaml
-serviceName: epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local
-```
 
-### Recommended (more robust) fix — make the VS reference the same template as the Service
+    #--------------------------------------------------------------------#
+    # Allow release branches deployment
+    #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BRANCH =~ /^release\/.*$/ && $CI_PIPELINE_SOURCE == "push"'
+    #   when: always
 
-Hardcoding `serviceName` is exactly what caused this drift. Point the VS template at the same fullname helper the Service uses, so they can never disagree. Edit `templates/isto-vs.yaml`:
 
-```yaml
-    route:
-    - destination:
-        host: {{ include "epaylite-bridge-txn-service.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local
-        port:
-          number: {{ .Values.servicePort }}
-```
+    #--------------------------------------------------------------------#
+    # Allow develop branches deployment
+    #--------------------------------------------------------------------#
+    # - if: '$CI_COMMIT_BRANCH =~ /^develop\/.*$/ && $CI_PIPELINE_SOURCE == "push"'
+    #   when: always
 
-Then delete the now-unused `serviceName` line from `values.yaml`. With this, the VS host is always derived from the actual Service name regardless of release name.
 
-## Second issue you'll hit right after
+    #--------------------------------------------------------------------#
+    # Block branch creation pipelines
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000" && $CI_PIPELINE_SOURCE == "push"'
+      when: never
 
-Once the host is fixed, traffic reaches the pod but the **path is forwarded unchanged** — there's no `rewrite` in the VS template. The external URL is:
 
-```
-/epaylite-bridge-txn-service/health
-```
+    #--------------------------------------------------------------------#
+    # Skip CI bot commits
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_AUTHOR == "ci" && $CI_COMMIT_AUTHOR_EMAIL == "ci.cedge@sbi.co.in"'
+      when: never
 
-That full path gets passed to the Spring app. But your own probe config in `values.yaml` shows the app's actuator base is:
 
-```
-/api/bridge/v1/actuator/health/...
-```
+    #--------------------------------------------------------------------#
+    # Allow tags (production releases)
+    #--------------------------------------------------------------------#
+    - if: '$CI_COMMIT_TAG'
+      when: always
 
-So the app almost certainly does not serve `/epaylite-bridge-txn-service/health`, and you'll get a 404 (or whatever the app returns) after the 503 is resolved. You need a rewrite. Add to `templates/isto-vs.yaml`:
 
-```yaml
-  http:
-  - match:
-    - uri:
-        prefix: {{ .Values.prefixName }}
-    rewrite:
-      uri: /
-    route:
-    - destination:
-        host: {{ include "epaylite-bridge-txn-service.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local
-        port:
-          number: {{ .Values.servicePort }}
-```
+    #--------------------------------------------------------------------#
+    # Block everything else
+    #--------------------------------------------------------------------#
+    - when: never
 
-Confirm the real health path inside the pod first so the rewrite target is correct:
+stages:
+  - publish     # update image tag in values.yaml
+  - validate    # helm dry-run + service config check
+  - deploy      # helm upgrade to OCP cluster
+  # - verify      # rollout status + health check
+  # - notify      # slack + jira
 
-```
-oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
-  curl -s localhost:8099/actuator/health || \
-oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
-  curl -s localhost:8099/api/bridge/v1/actuator/health
-```
+include:
+  - local: 'cd/publish/values.update.yml'
+  - local: 'cd/helm/helm.deploy.yml'
+  # - local: 'cd/verify/verify.rollout.yml'
+  # - local: 'cd/verify/verify.health.yml'
+  # - local: 'cd/notify/notify.slack.yml'
+  # - local: 'cd/notify/notify.jira.yml'
 
-Whichever returns 200 tells you what to rewrite to (e.g. `rewrite.uri: /api/bridge/v1` if the app is context-pathed there).
-
-## Apply
-
-```
-helm upgrade epaybridgetxn ./dev/charts/epaylite-bridge-txn-service -n dev-bridge
-
-# verify VS now points at the real service
-oc get vs epaylitebridge-txnservice -n dev-bridge -o jsonpath='{.spec.http[0].route[0].destination.host}{"\n"}'
-```
-
-Summary: the 503 is purely the `serviceName: epaylitebridge-txnservice` mismatch in `dev/charts/epaylite-bridge-txn-service/values.yaml` — fix that (ideally via the fullname helper in the VS template), and add a `rewrite` so the forwarded path matches the app's actual health endpoint.
+update-tag:
+  extends:
+    - .update_tag
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
