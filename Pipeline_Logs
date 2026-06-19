@@ -1,91 +1,24 @@
-# ci/build/java.gradle.yml  |  Stage: build
-# Gradle compile — produces build/libs/*.jar consumed by image-build stage
+The change goes in **one file**:
 
-# ── Extends ───────────────────────────────────────────────────────────────────
-# Inherits from .base_setup_java_gradle (ci/common/base-setup.java.gradle.yml):
-#   image, tags, variables, before_script
-# No image or before_script defined here — single source of truth in common file.
-#
-# ── Artifacts Passed to Test Stage ───────────────────────────────────────────
-# build/classes/   — compiled application + test classes (skips recompile in test)
-# build/resources/ — processed resources
-# build/tmp/       — annotation processor outputs (Lombok, MapStruct)
-# build/libs/      — JAR consumed by image-build stage
-# Gradle incremental build detects these on next invocation — skips compileJava.
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
-# Built on bastion, pushed to JFrog docker-local repo.
-# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+```
+dev/charts/epaylite-bridge-txn-service/templates/isto-vs.yaml
+```
 
-include:
-  - local: 'ci/common/base-setup.java.gradle.yml'
+On the destination host line (line 18), which currently reads:
+```yaml
+        host: {{ .Values.serviceName }}
+```
 
-.build:
-  extends: .base_setup_java_gradle
-  stage: build
+Change it to:
+```yaml
+        host: {{ include "epaylite-bridge-txn-service.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local
+```
 
-  script:
-    - |
-      set -eo pipefail
+That's the only edit needed. (This is already done in the file I gave you back — `isto-vs.yaml` in your outputs.)
 
-      # ── Validate VERSION ──────────────────────────────────────────────────
-      if [ -z "$VERSION" ]; then
-        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
-        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
-        exit 1
-      fi
-      echo "Building VERSION: ${VERSION}"
+Optionally, in `dev/charts/epaylite-bridge-txn-service/values.yaml`, delete the now-unused `serviceName: epaylitebridge-txnservice` line so no one hand-edits it again — but that's cleanup, not required for the fix to work.
 
-      # ── Gradle build ──────────────────────────────────────────────────────
-      # Dependencies resolved from JFrog via settings.gradle in app repo
-      # -x test: unit tests run separately in test stage (java.unit.yml)
-      # -Pversion: sets project version used in bootJar archiveFileName
-      gradle build -x test -Pversion="${VERSION}" --info
-
-      # ── Verify output ─────────────────────────────────────────────────────
-      echo "Build output:"
-      ls -lh build/libs/
-
-      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
-        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
-        exit 1
-      fi
-
-
-      # ── Build metadata for downstream stages ────────────────────────────────
-      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
-      # BUILD_TIME: consumed by image-build stage for OCI image labels
-      
-      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v plain | head -1 || true)
-      WAR_FILE=$(ls build/libs/*.war 2>/dev/null | grep -v plain | head -1 || true)
-
-      if [ -n "$JAR_FILE" ]; then
-        ARTIFACT_FILE="$JAR_FILE"
-      elif [ -n "$WAR_FILE" ]; then
-        ARTIFACT_FILE="$WAR_FILE"
-      else
-        echo "❌ ERROR: No deployable JAR or WAR found in build/libs/"
-        exit 1
-      fi
-
-      echo "✅ ARTIFACT: ${ARTIFACT_FILE}"
-      echo "JAR_FILE=${ARTIFACT_FILE}"                      >> build.env
-      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> build.env
-
-
-      # JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
-      # echo "✅ JAR: ${JAR_FILE}"
-      # echo "JAR_FILE=${JAR_FILE}"                         >> build.env
-      # echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
-
-  artifacts:
-    paths:
-      - build/libs/
-      - build/classes/
-      - build/resources/
-      - build/tmp/
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
+Then apply:
+```
+helm upgrade epaybridgetxn ./dev/charts/epaylite-bridge-txn-service -n dev-bridge
+```
