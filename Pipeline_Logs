@@ -1,55 +1,36 @@
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get vs epaylitebridge-txnservice -n dev-bridge   -o jsonpath='{.spec.http[0].route[0].destination.host}{"\n"}'
-Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
-epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep -i "context-path\|application.name"
-  application.properties: "#server.port=8099\n#server.servlet.context-path=/epaylite-bridge-txt-service\n
-    \   \n#security.jwt.secret.issuer=https://sbi.epay.com\n#security.jwt.secret.issuer=sbi.epay\n#security.cors.origin=*\nsecurity.cors.allowed.origins=*\n##cors.origin=*\n##cors.allowed.origins=*\n\nserver.port=8099\nserver.servlet.context-path=/epaylite-bridge-txn-service\nspring.application.name=epaylite-bridge-txn-service\n#
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get po -n dev-bridge
-NAME                                              READY   STATUS    RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-6w2kx   2/2     Running   0          5m38s
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-kmwfg   2/2     Running   0          5m30s
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc rollout restart deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
-deployment.apps/epaybridgetxn-epaylitebridgetxn restarted
-[osuser@bastion SIT_Secrets]$ oc rollout status  deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 old replicas are pending termination...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 old replicas are pending termination...
-deployment "epaybridgetxn-epaylitebridgetxn" successfully rolled out
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get po -n dev-bridge
-NAME                                              READY   STATUS    RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-d8867b5c7-2wh6w   2/2     Running   0          13s
-epaybridgetxn-epaylitebridgetxn-d8867b5c7-zj97r   2/2     Running   0          17s
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get po -n dev-bridge
-NAME                                              READY   STATUS    RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-d8867b5c7-2wh6w   2/2     Running   0          15s
-epaybridgetxn-epaylitebridgetxn-d8867b5c7-zj97r   2/2     Running   0          19s
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep "context-path"
-  application.properties: "#server.port=8099\n#server.servlet.context-path=/epaylite-bridge-txt-service\n
-    \   \n#security.jwt.secret.issuer=https://sbi.epay.com\n#security.jwt.secret.issuer=sbi.epay\n#security.cors.origin=*\nsecurity.cors.allowed.origins=*\n##cors.origin=*\n##cors.allowed.origins=*\n\nserver.port=8099\nserver.servlet.context-path=/epaylite-bridge-txn-service\nspring.application.name=epaylite-bridge-txn-service\n#
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
->   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txn-service/actuator/health
-200
-[osuser@bastion SIT_Secrets]$ curl -s -o /dev/null -w "%{http_code}\n" https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
-^C
-[osuser@bastion SIT_Secrets]$
+Good progress — the ConfigMap and the app are now fully fixed:
+
+- ConfigMap has only the `txn` context path (the duplicate `txt` is gone, the only remaining `txt` is a harmless commented `#` line).
+- Pods restarted cleanly (new pod name `d8867b5c7`, AGE seconds).
+- **In-pod test returns `200`** on `/epaylite-bridge-txn-service/actuator/health` — the app now serves on the correct `txn` path. ✅
+- VS host is correct: `epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local`. ✅
+
+So the application side and routing config are both correct now. The internal path is 100% working.
+
+**The only thing left:** the final gateway test didn't complete — you hit `Ctrl+C` (`^C`), so it was hanging, not returning a result. That's a different signal from the earlier errors. A hang on the external URL (while the in-pod call works instantly) usually points to something at the gateway/network layer, not the app.
+
+Run it again with a timeout so it can't hang indefinitely, plus a verbose attempt:
+
+```
+curl -sS --max-time 15 -o /dev/null -w "%{http_code}\n" \
+  https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
+
+# if it hangs/fails, see where it stalls:
+curl -v --max-time 15 https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
+```
+
+A few likely reasons the external call hangs while in-pod works:
+
+1. **DNS / reachability from the bastion** — does `dev.epay.sbi` resolve and is the gateway reachable from where you're running curl? Check:
+   ```
+   getent hosts dev.epay.sbi
+   curl -v --max-time 10 https://dev.epay.sbi/ 2>&1 | head -20
+   ```
+2. **TLS** — if it's hanging during handshake, could be a cert/SNI issue on the gateway. The `-v` output will show if it stalls at "SSL handshake".
+3. **Gateway config** — confirm the gateway actually serves this host on the port you're hitting:
+   ```
+   oc get gateway dev-gateway -n dev-istio-system -o yaml | grep -A8 "servers:"
+   ```
+   Check the gateway listens on 443/HTTPS for host `dev.epay.sbi` (or `*`).
+
+Run the timed curl first and paste what it returns. If it gives `200`, you're completely done. If it hangs or errors, the `-v` output will tell us exactly which layer (DNS, TCP, TLS, or routing) is the holdup — and that's a gateway/network item, separate from the app fix which is now confirmed working.
