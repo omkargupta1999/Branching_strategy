@@ -1,56 +1,80 @@
-[osuser@bastion SIT_Secrets]$ oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep -i "context-path\|application.name"
-  application.properties: "#server.port=8099\n#server.servlet.context-path=/epaylite-bridge-txt-service\n
-    server.servlet.context-path=/epaylite-bridge-txt-service\n# spring.application.name=epaylite-bridge-txt-service\nserver.servlet.context-path=/epaylite-bridge-txn-service\nspring.application.name=epaylite-bridge-txn-service\n#
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc rollout restart deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
-deployment.apps/epaybridgetxn-epaylitebridgetxn restarted
-[osuser@bastion SIT_Secrets]$ oc rollout status  deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 out of 2 new replicas have been updated...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 old replicas are pending termination...
-Waiting for deployment "epaybridgetxn-epaylitebridgetxn" rollout to finish: 1 old replicas are pending termination...
-deployment "epaybridgetxn-epaylitebridgetxn" successfully rolled out
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get pods -n dev-bridge -l app.kubernetes.io/instance=epaybridgetxn
-NAME                                               READY   STATUS        RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-5d6c847f89-2xjnn   2/2     Terminating   0          12m
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-6w2kx    2/2     Running       0          16s
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-kmwfg    2/2     Running       0          8s
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get pods -n dev-bridge -l app.kubernetes.io/instance=epaybridgetxn
-NAME                                              READY   STATUS    RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-6w2kx   2/2     Running   0          18s
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-kmwfg   2/2     Running   0          10s
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc get pods -n dev-bridge -l app.kubernetes.io/instance=epaybridgetxn
-NAME                                              READY   STATUS    RESTARTS   AGE
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-6w2kx   2/2     Running   0          19s
-epaybridgetxn-epaylitebridgetxn-b6d7dcf9b-kmwfg   2/2     Running   0          11s
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
->   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txn-service/actuator/health
-000
-command terminated with exit code 7
-[osuser@bastion SIT_Secrets]$
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
->   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/actuator/health
-404
-[osuser@bastion SIT_Secrets]$ oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep -i "context-path\|application.name"
-  application.properties: "#server.port=8099\n#server.servlet.context-path=/epaylite-bridge-txt-service\n
-    server.servlet.context-path=/epaylite-bridge-txt-service\n# spring.application.name=epaylite-bridge-txt-service\nserver.servlet.context-path=/epaylite-bridge-txn-service\nspring.application.name=epaylite-bridge-txn-service\n#
-[osuser@bastion SIT_Secrets]$ oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
->   curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txt-service/actuator/health
-404
-[osuser@bastion SIT_Secrets]$ oc get vs epaylitebridge-txnservice -n dev-bridge \
->   -o jsonpath='{.spec.http[0].route[0].destination.host}{"\n"}'
-Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
-epaybridgetxn-epaylitebridgetxn.dev-bridge.svc.cluster.local
-[osuser@bastion SIT_Secrets]$ oc get svc epaybridgetxn-epaylitebridgetxn -n dev-bridge
-NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-epaybridgetxn-epaylitebridgetxn   ClusterIP   172.30.66.116   <none>        8099/TCP   19m
-[osuser@bastion SIT_Secrets]$ oc get endpoints epaybridgetxn-epaylitebridgetxn -n dev-bridge
-NAME                              ENDPOINTS                               AGE
-epaybridgetxn-epaylitebridgetxn   172.16.24.211:8099,172.16.39.167:8099   19m
-[osuser@bastion SIT_Secrets]$ curl -s -o /dev/null -w "%{http_code}\n" https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
+I see the problem. Look closely at your ConfigMap — there are **two** `context-path` lines, and they conflict:
 
+```
+server.servlet.context-path=/epaylite-bridge-txt-service     ← still here (txt)
+# spring.application.name=epaylite-bridge-txt-service
+server.servlet.context-path=/epaylite-bridge-txn-service     ← your new line (txn)
+spring.application.name=epaylite-bridge-txn-service
+```
+
+You **added** the `txn` line but didn't **remove** the old `txt` line. Now both exist in the same `application.properties`. With duplicate keys in a properties file, Spring keeps the **first** one it reads — which is `txt`. That's why the in-pod test still serves `txt` (404 on `txn`, 200... well, 404 on txt too now because of the duplicate-key confusion, but the point is the old line is still winning/interfering).
+
+So the restart worked fine, the pods are new, the ConfigMap just still contains the stale `txt` line.
+
+## Fix: delete the old `txt` line, keep only `txn`
+
+In `templates/configmap.yaml`, you should have exactly **one** active context-path line. Remove the active `txt` one. The result should look like:
+
+```
+#server.servlet.context-path=/epaylite-bridge-txt-service   ← commented, fine to leave
+server.servlet.context-path=/epaylite-bridge-txn-service    ← the only ACTIVE one
+spring.application.name=epaylite-bridge-txn-service
+```
+
+There must be **no uncommented line** that says `txt`.
+
+Let me fix it in the chart for you.Interesting — the chart **I** edited is correct (only one active `txn` line). But the ConfigMap **running in your cluster** still has the active `txt` line plus your added `txn` line. That means the cluster ConfigMap was edited separately/by hand and doesn't match this chart, OR a different chart was applied.
+
+The cluster currently has this (from your `oc get configmap` output), reformatted:
+
+```
+#server.servlet.context-path=/epaylite-bridge-txt-service     ← commented (ok)
+server.servlet.context-path=/epaylite-bridge-txt-service      ← ACTIVE txt — THIS is the problem
+# spring.application.name=epaylite-bridge-txt-service          ← commented (ok)
+server.servlet.context-path=/epaylite-bridge-txn-service      ← ACTIVE txn (your addition)
+spring.application.name=epaylite-bridge-txn-service
+```
+
+Two active `context-path` lines. Spring takes the first → `txt` wins.
+
+## You have two clean ways forward
+
+**Option 1 — deploy the corrected chart (recommended, since the chart is already right):**
+
+```
+helm upgrade epaybridgetxn ./dev/charts/epaylite-bridge-txn-service -n dev-bridge
+oc rollout restart deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
+oc rollout status  deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
+```
+This overwrites the messy cluster ConfigMap with the clean one (single `txn` line).
+
+**Option 2 — edit the ConfigMap directly in the cluster** (if you can't run helm right now):
+```
+oc edit configmap epaybridgetxn-config -n dev-bridge
+```
+Find the active (uncommented) line `server.servlet.context-path=/epaylite-bridge-txt-service` and delete it. Leave only the `txn` one. Save, then restart:
+```
+oc rollout restart deploy/epaybridgetxn-epaylitebridgetxn -n dev-bridge
+```
+
+Option 1 is better — it keeps cluster and chart in sync. With Option 2 the cluster works but your chart and cluster could drift again on the next deploy.
+
+## After the restart, verify
+
+```
+# only ONE active context-path line, and it's txn
+oc get configmap epaybridgetxn-config -n dev-bridge -o yaml | grep "context-path"
+
+# in-pod: txn should now work
+oc exec -n dev-bridge deploy/epaybridgetxn-epaylitebridgetxn -- \
+  curl -s -o /dev/null -w "%{http_code}\n" localhost:8099/epaylite-bridge-txn-service/actuator/health
+# expect 200
+
+# through the gateway
+curl -s -o /dev/null -w "%{http_code}\n" https://dev.epay.sbi/epaylite-bridge-txn-service/actuator/health
+# expect 200
+```
+
+One side note: your in-pod `txn` test returned `000 / exit code 7`, which means "connection refused" — likely the app was still booting in that 19-second-old pod when you ran it. Give it ~30–60s after restart before testing. The `txt` returning 404 (not 000) on the later run confirms the app was up by then and simply isn't serving `txn` yet — which the duplicate-line fix resolves.
+
+So the root cause of "still not changed in cluster": the old `txt` line was never removed, so it overrode your new `txn` line. Remove it (via helm upgrade or oc edit), restart, and it'll work.
