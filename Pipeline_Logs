@@ -1,5 +1,34 @@
-Sir,
+The 503 here is not an application startup failure — the app started fine (`Started EpayLiteBridgeTxnApplication in 15.488 seconds`). The 503 is coming from the routing/proxy layer in front of the pod, not from the service itself. Two things stand out:
 
-While accessing the URL 'https://dev.epay.sbi/epaylite-bridge-txn-service/health', team is getting 503 error. Kindly check and advise.
+**1. The route/ingress isn't sending traffic to a Ready pod yet.** A 503 from OpenShift's router almost always means there are no endpoints behind the Service at the moment of the request. Even though the JVM logged "Started," the pod may not be passing its readiness probe (or the probe path/port is wrong), so it never gets added to the Service endpoints. Check:
 
-{"@timestamp":"2026-06-19T03:10:25.864176651Z","@version":"1","message":"Started EpayLiteBridgeTxnApplication in 15.488 seconds (process running for 16.219)","logger_name":"com.sbi.epaybridge.epaylite.txn.EpayLiteBridgeTxnApplication","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
+```
+oc get endpoints epaylite-bridge-txn-service -n <namespace>
+oc get pods -l app=epaylite-bridge-txn-service -o wide
+oc describe pod <pod> | grep -A5 -i readiness
+```
+
+If `ENDPOINTS` is `<none>`, the route has nothing to forward to → 503.
+
+**2. The readiness probe is likely failing because of the malformed environment value.** This is the real smell:
+
+```
+"environment":"ENVIRONMENT:dev_IS_UNDEFINED"
+```
+
+That `_IS_UNDEFINED` suffix is the classic pattern of an unresolved placeholder — something like `${ENVIRONMENT:dev}` where the env var `ENVIRONMENT` was never injected, and the substitution fell back oddly. If your readiness/health config (e.g. management endpoint group, actuator exposure, or a profile-gated bean) depends on that `environment`/profile being resolved correctly, the `/health` endpoint can return DOWN or 503 even with the app "started."
+
+Concretely, verify:
+
+```
+oc set env pod/<pod> --list | grep -i environment
+oc exec <pod> -- curl -s localhost:<mgmt-port>/actuator/health
+```
+
+If the in-pod curl to the actuator health endpoint returns 200 but the external URL returns 503, the problem is the route/readiness/endpoints layer. If the in-pod curl itself fails or returns DOWN, the problem is the app config — most likely the unresolved `ENVIRONMENT` variable breaking profile/property resolution.
+
+Most likely root cause: the `ENVIRONMENT` variable isn't set in the deployment, so the Spring profile/property isn't resolving, the readiness probe never passes, the Service has zero endpoints, and the router returns 503.
+
+Quickest confirmation: check pod readiness and endpoints first, then fix the missing `ENVIRONMENT` env var in the Helm values / deployment manifest.
+
+Want me to help trace how `ENVIRONMENT` is being injected (Helm values vs ConfigMap vs Dockerfile) so we can pin where the substitution is failing?
