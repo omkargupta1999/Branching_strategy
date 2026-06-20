@@ -1,161 +1,262 @@
-sh-5.1$ pwd
-ls -lrth /home/default
-find /home/default -name "*.jar"
-/home/default
-total 122M
--rw-r--r--. 1 root root 122M Jun 20 07:06 epay_payment_service-dev-5a4af3bb.jar
-/home/default/epay_payment_service-dev-5a4af3bb.jar
-sh-5.1$ mkdir -p /tmp/check
-cd /tmp/check
-jar xf /home/default/epay_payment_service-dev-85b5df32.jar
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$ ls
-sh-5.1$
-sh-5.1$ ll
-sh: ll: command not found
-sh-5.1$ pwd
-/tmp/check
-sh-5.1$
-sh-5.1$ jar xf /home/default/epay_payment_service-dev-85b5df32.jar
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$
-sh-5.1$ ls
-sh-5.1$ ls -lrth BOOT-INF/lib | grep jackson
-ls: cannot access 'BOOT-INF/lib': No such file or directory
-sh-5.1$
-sh-5.1$ jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$
-sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$
-sh-5.1$ for j in BOOT-INF/lib/*.jar
-do
-  if jar tf "$j" 2>/dev/null | grep -q "com/fasterxml/jackson"; then
-      echo "===== $j ====="
-      jar tf "$j" | grep "com/fasterxml/jackson" | head -20
-      echo
+our developer is right. This is a Jackson version conflict — a classic transitive-vs-pinned mismatch, and the build logs prove it.
+Root cause
+READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE was added to JsonFormat.Feature in jackson-annotations 2.16. Your runtime is loading an older jackson-annotations (2.14.x), so EnumDeserializer (from a newer jackson-databind) calls a field that doesn't exist in the loaded annotations jar → NoSuchFieldError.
+The build log shows exactly this skew. The Spring Boot plugin's own classpath pulled in 2.14.2:
+jackson-annotations-2.14.2.jar
+jackson-databind-2.14.2.jar
+…while your application dependencies resolve a mix:
+
+jackson-databind → 2.17.2 (Spring Boot 3.3.3 BOM)
+jackson-datatype-joda → 2.17.2
+but you also have explicit pins fighting the BOM:
+
+gradleimplementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'   // ← drags 2.12
+implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'            // ← drags 2.15
+And the build log confirms the old annotations jar is physically present and resolved:
+jackson-datatype-joda-2.12.3.pom
+jackson-databind-2.15.2.pom
+jackson-bom-2.12.3.pom
+jackson-annotations-2.14.2.jar   ← this is what's on the runtime classpath
+Your fat jar (122M bootJar) ends up with jackson-annotations resolved low (2.14 from the buildpack/transitive path) while databind is 2.17 — incompatible by Jackson's own rule that all jackson-* modules must share one version line.
+The fix
+Remove every hardcoded Jackson version and let the Spring Boot 3.3.3 BOM govern all of them (it aligns the whole stack at 2.17.2). In build.gradle, delete these lines:
+gradleimplementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'
+implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+Replace with unversioned (BOM-managed) declarations:
+gradleimplementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+implementation 'com.fasterxml.jackson.core:jackson-databind'
+(databind is already transitive via spring-boot-starter-web/json, so you may not need to declare it at all.)
+To guarantee alignment and prevent any stray transitive from clawing back, add a platform constraint:
+gradledependencies {
+    implementation platform('com.fasterxml.jackson:jackson-bom:2.17.2')
+    ...
+}
+Verify before rebuilding
+Run this in the repo to confirm there's exactly one Jackson line:
+bash./gradlew dependencyInsight --dependency jackson-annotations --configuration runtimeClasspath
+./gradlew dependencyInsight --dependency jackson-databind     --configuration runtimeClasspath
+Both should report 2.17.2. Then check the actual fat jar (this is the real proof, since bootJar is what runs in the pod):
+bashunzip -l build/libs/epay_payment_service-dev-*.jar | grep -i jackson
+You should see a single version across jackson-core, jackson-databind, jackson-annotations, and all jackson-datatype-* / jackson-module-*. If jackson-annotations shows 2.14 there, the runtime will still break.
+Two side notes from the logs
+
+gradle.properties declares jackson_joda=2.12.3 and jackson_databind=2.15.2, but build.gradle doesn't consistently reference those vars — it hardcodes versions inline. Once you switch to BOM management, drop those two properties to avoid future confusion.
+The crash-loop (4 restarts) is purely this NoSuchFieldError thrown at deserialization of the initiate/qr-sign payloads, surfacing as the generic handleGenericException. It's not the scheduler-starvation issue from before — different failure mode. Fixing the Jackson alignment should clear both the crash-loop and the UI payment error.
+
+The dependencies are not resolving cleanly — the inline pins are the conflict. BOM alignment is the fix.You said: Could you please let me know exactly what i need to do .Could you please let me know exactly what i need to do ...i have only gitlab source code access i cannot build it locally ...11:20 AMClaude responded: Got it — air-gapped, GitLab-only, no local build.Got it — air-gapped, GitLab-only, no local build. Here's exactly what to change in the repo, then let the pipeline build it.
+What to edit
+Open build.gradle in the epay_payment_service repo (GitLab Web IDE or edit-in-browser on the develop branch).
+1. Find and delete these three lines:
+gradleimplementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'
+gradleimplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+gradleimplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+(They're scattered in different spots in the file — search the file for jackson and remove all three.)
+2. Add these two lines back in the dependencies block (anywhere inside dependencies { ... }):
+gradleimplementation platform('com.fasterxml.jackson:jackson-bom:2.17.2')
+implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+That's the whole change. The platform(...) line forces every Jackson module to 2.17.2. The joda line is the one real dependency you still need (now version-less, so the BOM controls it). You don't need to re-add jackson-databind at all — it comes in automatically through spring-boot-starter-web.
+Before you commit — one safety check
+Confirm 2.17.2 exists in your Artifactory mirror, since you can't pull from the internet. Easiest way without a local build: in the build log you already shared, this line is present —
+jackson-bom-2.17.2.pom
+So jackson-bom:2.17.2 is already cached in itepaypg-sbiepay2-gradle-virtual. You're safe. ✅
+Then
+Commit to develop (or your branch + MR per your protected-branch rules). The pipeline runs the same gradle clean build you showed, produces a new bootJar, and the new image deploys.
+How to confirm it actually worked
+You can't unzip the jar locally, but you have two checks:
+
+In the build job log, after your change, search the log for jackson-annotations. Every occurrence should now read 2.17.2. If you still see 2.14.2 or 2.15.2, the conflict survived — tell me and I'll adjust.
+In the pod after deploy:
+
+bashoc logs -f payment-paymentservice-<new-pod> -n dev-transaction | grep -i jackson
+No NoSuchFieldError = fixed. The crash-loop and the UI payment error should both clear.
+If you'd like, paste the new build log once the pipeline runs and I'll verify the Jackson versions aligned before you test the UI.You said: I have downloaded and unzip the jar please let me know how to check itexcerpt_from_previous_claude_message.txt1 linetxtI have downloaded and unzip the jar please let me know how to check it11:29 AMClaude responded: Good — once it's unzipped, you're looking for the Jackson jars on the classpath.Good — once it's unzipped, you're looking for the Jackson jars on the classpath. In a Spring Boot fat jar they live under BOOT-INF/lib/.
+Check the jar contents
+From the directory where you unzipped it:
+bashls BOOT-INF/lib/ | grep -i jackson
+You'll get a list like:
+jackson-annotations-2.17.2.jar
+jackson-core-2.17.2.jar
+jackson-databind-2.17.2.jar
+jackson-datatype-jdk8-2.17.2.jar
+jackson-datatype-joda-2.17.2.jar
+jackson-datatype-jsr310-2.17.2.jar
+jackson-dataformat-yaml-2.17.2.jar
+jackson-module-parameter-names-2.17.2.jar
+What you're checking for
+Every line must show the same version (2.17.2). Pay special attention to jackson-annotations — that's the one that was old (2.14.2) and caused the NoSuchFieldError.
+If you want to be strict, isolate just the version numbers:
+bashls BOOT-INF/lib/ | grep -i jackson | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'
+Then sort -u them to see how many distinct versions exist:
+bashls BOOT-INF/lib/ | grep -i jackson | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -u
+
+One line of output (2.17.2) → aligned, fix worked. ✅
+Two or more versions (e.g. 2.14.2 and 2.17.2) → conflict still there, the old jar got bundled. ❌
+
+If you didn't unzip — quicker option
+You don't actually need to unzip; you can list contents directly:
+bashunzip -l epay_payment_service-dev-*.jar | grep -i jackson
+or with jar:
+bashjar tf epay_payment_service-dev-*.jar | grep -i jackson
+Both show the same BOOT-INF/lib/jackson-*.jar paths with versions inline.
+Paste the output here and I'll confirm whether it's clean or if a stray old version slipped through.You said: As i checked im getting this same version.excerpt_from_previous_claude_message.txt1 linetxtAs i checked im getting this same version...we have deployed that images let me know how check from cluster and as i am still getting the same issue.[osuser@bastion ~]$ oc logs -f payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction | grep -i jackson
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)Show more11:34 AMClaude responded: This is an important clue.This is an important clue. The line numbers in the new stack trace changed:
+
+Old: EnumDeserializer.createContextual(EnumDeserializer.java:211)
+New: EnumDeserializer.createContextual(EnumDeserializer.java:235)
+
+So your app jar is fixed — databind is now 2.17.2 (line 235 is the 2.17 code path). But the NoSuchFieldError is still thrown, which means a second, older jackson-annotations is being loaded at runtime from somewhere other than your fat jar's BOOT-INF/lib/.
+Your jar is clean. The classpath the JVM actually sees is not. That points at the base image / Dockerfile, not the build.
+Most likely cause
+There's an older Jackson jar baked into the container image — typically dropped into a shared location like /app, /lib, ext, or added to the launch classpath in the Dockerfile or entrypoint. Spring Boot's loader puts BOOT-INF/lib on the classpath, but if the Dockerfile/entrypoint adds another jar or directory ahead of or alongside it, the old jackson-annotations wins.
+Look back at your earlier build.gradle — you have these unusual local deps:
+gradleimplementation 'name:SBINEWPG_2023'
+implementation 'name:PGPUtility'
+implementation 'name:BASE64DecoderData'
+implementation 'name:authentication-service-0.1.0'
+If any of these is a fat/shaded jar that bundles its own old com.fasterxml.jackson.annotation classes inside it, those shaded classes can shadow the real ones. That's a very common cause of exactly this error in air-gapped PG stacks with vendored utility jars.
+How to find the culprit — run these in the pod
+1. Find every Jackson annotations jar the container can see (not just your jar):
+bashoc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'find / -name "jackson-annotations*.jar" 2>/dev/null'
+If you see more than one, or one outside BOOT-INF/lib, that's your problem.
+2. Check whether a utility jar has Jackson classes shaded inside it. First locate them:
+bashoc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'find / -iname "*SBINEWPG*" -o -iname "*PGPUtility*" -o -iname "*BASE64*" 2>/dev/null'
+Then for each one found, check if it carries its own JsonFormat class:
+bashoc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'unzip -l /path/to/SBINEWPG_2023.jar | grep -i "JsonFormat\|jackson/annotation"'
+If com/fasterxml/jackson/annotation/JsonFormat.class shows up inside a vendored utility jar, that's the old copy overriding yours.
+3. See the actual launch command / classpath the container uses:
+bashoc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'cat /proc/1/cmdline | tr "\0" " "; echo'
+Look for any -cp / -classpath entry, a loader.path, or extra jars added beyond the single -jar app.jar. If the entrypoint sets LOADER_PATH / loader.path pointing at a directory with old jars, that's it.
+What to do once you find it
+Tell me which check fires and I'll give the exact fix, but it'll be one of:
+
+Old jar in the image → remove it from the Dockerfile (RUN rm ...) or stop copying it in. Rebuild image.
+Shaded Jackson inside a utility jar → exclude/relocate it. Since you can't rebuild the vendor jar, the cleanest GitLab-only fix is to ensure Spring Boot loads your BOOT-INF/lib first and the shaded classes don't leak — but if classes are physically inside the utility jar, they must be stripped from that jar or the jar replaced. I'll walk you through whichever applies.
+
+Run check #1 first and paste the output — the number of jackson-annotations*.jar files it finds tells us immediately whether this is a duplicate-jar problem or a shaded-class problem.You said: Here is the Dockerfile we are using:Here is the Dockerfile we are using:ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+# COPY ./sms.cer  /tmp
+# RUN ls -lrth /tmp/
+# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/tls/certs/
+# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test1.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test1.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test2.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test2.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test3.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test3.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+COPY /build/libs/epay_payment_service-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_payment_service-$VERSION.jar"'[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+>   sh -c 'find / -iname "*SBINEWPG*" -o -iname "*PGPUtility*" -o -iname "*BASE64*" 2>/dev/null'
+/usr/bin/base64
+/usr/lib64/python3.9/__pycache__/base64.cpython-39.opt-1.pyc
+/usr/lib64/python3.9/__pycache__/base64.cpython-39.opt-2.pyc
+/usr/lib64/python3.9/__pycache__/base64.cpython-39.pyc
+/usr/lib64/python3.9/base64.py
+/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.opt-1.pyc
+/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.opt-2.pyc
+/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.pyc
+/usr/lib64/python3.9/email/base64mime.py
+/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.opt-1.pyc
+/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.opt-2.pyc
+/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.pyc
+/usr/lib64/python3.9/encodings/base64_codec.py
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+>   sh -c 'unzip -l /path/to/SBINEWPG_2023.jar | grep -i "JsonFormat\|jackson/annotation"'
+sh: line 1: unzip: command not found
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+>   sh -c 'find / -name "jackson-annotations*.jar" 2>/dev/null'
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+>   sh -c 'cat /proc/1/cmdline | tr "\0" " "; echo'
+java -jar epay_payment_service-dev-85b5df32.jar
+[osuser@bastion ~]$
+[osuser@bastion ~]$here is teh output as well some of the commands not working.Show more11:42 AMClaude responded: The Dockerfile and launch command are clean — java -jar epaypaymentservice-dev-85b5df32.The Dockerfile and launch command are clean — java -jar epay_payment_service-dev-85b5df32.jar, no extra classpath, no loader.path, nothing baked in. And find returned nothing for stray jackson-annotations*.jar (the exit code 1 just means find matched nothing / hit permission noise, not that a duplicate exists).
+So the old JsonFormat$Feature class is inside your own fat jar — bundled as a shaded class inside one of your vendored utility jars in BOOT-INF/lib/. Spring Boot's loader reads BOOT-INF/lib/*.jar in directory order, and if a utility jar contains its own copy of com/fasterxml/jackson/annotation/JsonFormat.class, whichever loads first wins. That's why your jackson-annotations-2.17.2.jar check looked correct but the runtime still sees the old class.
+You already unzipped the jar locally. Let's prove it there — no cluster needed.
+Find the shaded copy in your unzipped jar
+From the unzip root:
+bashfind BOOT-INF/lib -name "*.jar" | while read j; do
+  if unzip -l "$j" 2>/dev/null | grep -q "com/fasterxml/jackson/annotation/JsonFormat"; then
+    echo ">>> FOUND in: $j"
   fi
 done
-sh-5.1$ ls
-sh-5.1$ for j in BOOT-INF/lib/jackson*.jar
-do
-  echo "===== $j ====="
-done
-===== BOOT-INF/lib/jackson*.jar =====
-sh-5.1$ mkdir -p /tmp/jackson
-cd /tmp/jackson
-jar xf /tmp/check/BOOT-INF/lib/jackson-annotations-*.jar
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: /tmp/check/BOOT-INF/lib/jackson-annotations-*.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$ javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-Error: class not found: com.fasterxml.jackson.annotation.JsonProperty
-sh-5.1$ mkdir -p /tmp/sbi
-cd /tmp/sbi
-jar xf /tmp/check/BOOT-INF/lib/SBINEWPG_2023.jar
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: /tmp/check/BOOT-INF/lib/SBINEWPG_2023.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$
+This lists every jar in your bundle that contains a JsonFormat class. You should get exactly one result: jackson-annotations-2.17.2.jar.
+If you see a second jar — almost certainly one of SBINEWPG_2023.jar, PGPUtility.jar, BASE64DecoderData.jar, authentication-service-*.jar, or encryption-decryption-service-*.jar — that's the offender. It has an old Jackson shaded inside it.
+To confirm which Jackson version that jar carries:
+bash# unzip the suspect jar and check the annotation class version
+mkdir /tmp/suspect && cd /tmp/suspect
+unzip -o /path/to/BOOT-INF/lib/SBINEWPG_2023.jar 'com/fasterxml/jackson/*' 2>/dev/null
+find . -path "*jackson*" | head -50
+If you see com/fasterxml/jackson/annotation/JsonFormat.class in there, that vendor jar is bundling its own (old, pre-2.16) Jackson annotations, and those classes are shadowing yours.
+Why this is the cause
+READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE was added to JsonFormat.Feature in Jackson 2.16. Your databind is 2.17 (proven by the line-235 stack frame), but the JsonFormat class being loaded predates 2.16 — and it's coming from a fat utility jar that pinned an old Jackson and shaded it in. Maven/Gradle version management can't fix this, because the old class is physically inside another jar, not declared as a dependency.
+The fix (GitLab-only, no local build)
+You can't rebuild the vendor jar, so you strip the shaded Jackson classes out of it during your pipeline, before the bootJar packages it. The cleanest approach without touching the vendor artifact source: exclude the shaded packages from that dependency in build.gradle.
+But Gradle exclude only removes transitive module dependencies — it won't strip classes physically embedded inside a jar. So the reliable fix is a build step that repacks the offending jar without its com/fasterxml/jackson entries.
+Before I write that pipeline step, I need to know which jar it is and exactly what's inside it. Run the first find loop above and paste the output. Two outcomes:
+
+Only jackson-annotations-2.17.2.jar shows up → the shaded class isn't in the bundle, and the problem is a duplicate jar somewhere on the image after all; I'll pivot to a different check.
+A second (vendor) jar shows up → that's confirmed the culprit, and I'll give you the exact GitLab CI step to strip it.
+
+One quick question so I tailor the fix correctly:You're out of usage credits. Buy more to keep going now, or wait until 4:10 PM when your plan usage resets.Buy more
+Opus 4.8 High
+      
+        
+        tally
+        ·
+        session
+      
+      92%
+      
+        
+        
+      
+      ≈0.8 msgs opus · 3h 14m
+      wk 7% · Sat 3:30 AM
+    Claude is AI and can make mistakes. Please double-check responses.
