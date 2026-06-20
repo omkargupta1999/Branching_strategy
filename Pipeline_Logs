@@ -1,170 +1,80 @@
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version "${spring_boot}"
-	id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+Good — since you've already deployed to the cluster, let's verify directly there instead of downloading locally. This gives you both the file-level confirmation and the real runtime test in one pass.
 
+## Step 1 — Confirm the jar contents inside the running pod
 
-group = 'com.epay.payment'
-version = "${version}"
+First get the pod name and exec in:
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
+```bash
+oc get pods -n dev-transaction | grep paymentservice
+```
 
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation  'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.apache.commons:commons-lang3:3.12.0'
-	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation("org.springframework.boot:spring-boot-starter-aop")
-	implementation group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
-	implementation 'commons-io:commons-io:2.14.0'
-	implementation 'org.modelmapper:modelmapper:2.4.4'
-	implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
-	// implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'
-	implementation 'org.hibernate.orm:hibernate-envers'
-	// implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.mockito:mockito-core'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-//    Added these two lines
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
+```bash
+oc exec -it <pod-name> -n dev-transaction -- sh
+```
 
-// ===========================
-// JACKSON TEST - 2.14.2
-// ===========================
-	// implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.2'
-	// implementation 'com.fasterxml.jackson.core:jackson-core:2.14.2'
-	// implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
-	// implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.14.2'
+Once inside, find the actual running jar (you already know the pattern from before — `epay_payment_service-dev-*.jar` sitting in the container's working directory):
 
-	//Utility
-	implementation 'name:authentication-service-0.1.0'
-	implementation 'name:encryption-decryption-service-0.1.0'
-	implementation 'name:logging-service-1.0-SNAPSHOT'
-	implementation 'name:notification-service-0.0.1-SNAPSHOT'
+```bash
+ls -la / | grep epay_payment_service
+```
 
-	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
-	implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
-	
-	implementation 'name:BASE64DecoderData'
+Then check what's in `BOOT-INF/lib` using `jar` (confirmed present in this image from your last interaction — `which jar` worked, `unzip` did not):
 
-	
-	implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
-    
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.7'
-    implementation group: 'commons-codec', name: 'commons-codec', version: '1.4'
-    implementation group: 'org.json', name: 'json', version: '20090211'
-	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
-	implementation 'name:SBINEWPG_2023'
-	implementation 'name:PGPUtility'
+```bash
+jar tf /epay_payment_service-dev-*.jar | grep "BOOT-INF/lib/" | grep -i "SBINEWPG\|jackson"
+```
 
-	//AWS
-	implementation "software.amazon.awssdk:s3:${s3}"
+**What you want to see:**
+- `BOOT-INF/lib/SBINEWPG_2023-cleaned.jar` → present
+- `BOOT-INF/lib/SBINEWPG_2023.jar` → **absent** (no unsuffixed original)
+- Every `jackson-*.jar` line → version `2.17.2`
 
-	//Just for Testing
-	implementation 'org.liquibase:liquibase-core'
-	// implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+## Step 2 — Confirm the cleaned jar has zero embedded Jackson classes
 
-    compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
-	//Swagger dependency
-	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
+Still inside the pod:
 
-	//kafka
-	implementation 'org.springframework.kafka:spring-kafka'
+```bash
+cd /tmp
+jar xf /epay_payment_service-dev-*.jar BOOT-INF/lib/SBINEWPG_2023-cleaned.jar
+jar tf BOOT-INF/lib/SBINEWPG_2023-cleaned.jar | grep -i jackson
+```
 
-	implementation "javax.mail:javax.mail-api:1.6.2"
-	implementation "com.sun.mail:javax.mail:1.6.2"
-	implementation "org.thymeleaf:thymeleaf:3.1.1.RELEASE"
-	implementation "org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE"
+This should return **nothing**. Any output here means the strip didn't fully work and we need to look at the `exclude` pattern again.
 
-	implementation "org.springframework:spring-context-support:5.3.30"
+Exit the pod once done:
 
-	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
-	implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
-	implementation 'com.sun.mail:jakarta.mail:2.0.1'
-}
+```bash
+exit
+```
 
-tasks.named('test') {
-	useJUnitPlatform()
-}
-test {
-	testLogging {
-		outputs.upToDateWhen {false}
-		showStandardStreams = true
-	}
-}
+## Step 3 — The real test: hit the endpoint that used to crash
 
-springBoot  {
-	buildInfo()
-}
+From your bastion, outside the pod, trigger whatever request previously caused the `NoSuchFieldError` — based on your earlier logs, that was the `/api/payments/v1/inb/sbi/initiate` endpoint, and also the `CashChallanStatusQueryListener` Kafka consumer path. You'll need to trigger this the same way QA/your test harness normally does (Postman, a test script, or however that endpoint is normally invoked in `dev-transaction`).
 
-// ============================================================================
-// FIX: Strip embedded Jackson 2.9.0.pr3 classes from SBINEWPG_2023.jar
-// ----------------------------------------------------------------------------
-// SBINEWPG_2023 is a vendored third-party PG SDK (flat-file dependency, no
-// POM metadata) that ships its own shaded copy of com.fasterxml.jackson.*
-// classes from 2017 (Jackson 2.9.0.pr3). Because it's an opaque jar, Gradle's
-// dependency resolution cannot see or manage this embedded Jackson — it is
-// physically baked into the jar's bytecode, not declared as a transitive
-// dependency. At runtime, Spring Boot's loader can load these stale shaded
-// classes instead of the correctly BOM-managed jackson-annotations:2.17.2,
-// causing:
-//   java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature
-//   does not have member field '...READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-// (that field was only added in Jackson 2.16).
-//
-// We cannot modify SBINEWPG_2023.jar's source (third-party, vendor-supplied).
-// Instead, this build step extracts the jar's contents, strips out every
-// com/fasterxml/jackson/** class (and the stale Maven metadata describing
-// them), and repacks a clean copy. bootJar then excludes the original jar
-// and bundles the cleaned one instead, so BOOT-INF/lib ends up with exactly
-// one Jackson version line: 2.17.2.
-// ============================================================================
+While that request is in flight or just after, watch the pod logs live:
 
-task stripJacksonFromVendorJars(type: Copy) {
-	description = 'Strips embedded Jackson 2.9.0.pr3 classes from SBINEWPG_2023, which conflict with the 2.17.2 BOM-managed stack'
-	from {
-		configurations.runtimeClasspath.files.findAll {
-			it.name.startsWith('SBINEWPG_2023')
-		}.collect { zipTree(it) }
-	}
-	into "$buildDir/stripped-libs/SBINEWPG_2023"
-	exclude 'com/fasterxml/jackson/**'
-	exclude 'META-INF/maven/com.fasterxml.jackson.core/**'
-}
+```bash
+oc logs -f <pod-name> -n dev-transaction | grep -i jackson
+```
 
-task repackVendorJar(type: Jar, dependsOn: stripJacksonFromVendorJars) {
-	description = 'Repacks SBINEWPG_2023 without the conflicting Jackson classes'
-	from "$buildDir/stripped-libs/SBINEWPG_2023"
-	archiveFileName = 'SBINEWPG_2023-cleaned.jar'
-	destinationDirectory = file("$buildDir/cleaned-libs")
-}
+**No output at all** = no `NoSuchFieldError` thrown = fixed.
 
-bootJar {
-	dependsOn repackVendorJar
-	exclude '**/SBINEWPG_2023-*.jar'
-	from(files("$buildDir/cleaned-libs/SBINEWPG_2023-cleaned.jar")) {
-		into 'BOOT-INF/lib'
-	}
-}
+Also worth a broader error check in case anything else surfaces:
+
+```bash
+oc logs -f <pod-name> -n dev-transaction | grep -i error
+```
+
+## Step 4 — Confirm the pod itself is stable
+
+Since it was crash-looping before, check restart count has stopped climbing:
+
+```bash
+oc get pods -n dev-transaction | grep paymentservice
+```
+
+Look at the `RESTARTS` column — if it stays flat after a few minutes of traffic (instead of incrementing), that's strong independent confirmation alongside the log check.
+
+---
+
+Run Step 1 and Step 2 first and paste me the output — that confirms the jar itself is clean before you spend time triggering the actual payment flow in Step 3.
