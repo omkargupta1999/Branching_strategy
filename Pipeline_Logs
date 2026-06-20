@@ -1,60 +1,74 @@
-Let me read through everything carefully — the build log, the gradle file, the runtime error, and the v1.6.2 comparison — and check one thing before giving you commands.I went through the full build log line by line. Found the actual root cause — it's different from what I told you before, and it's a **one-line fix**. Let me walk through the evidence first so you can verify my reasoning.
+include:
+  - local: 'ci/common/base-setup.java.gradle.yml'
 
-## What the build log actually proves
+.build:
+  extends: .base_setup_java_gradle
+  stage: build
 
-Search the log for `jackson-base`, `jackson-bom`, and `jackson-databind`:
+  script:
+    - |
+      set -eo pipefail
 
-```
-Found locally available resource with matching checksum: [.../com/fasterxml/jackson/core/jackson-databind/2.14.2/jackson-databind-2.14.2.pom, ...]
-...
-Found locally available resource with matching checksum: [.../com/fasterxml/jackson/jackson-bom/2.17.2/jackson-bom-2.17.2.pom, ...]
-```
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+        exit 1
+      fi
 
-**Both 2.14.2 and 2.17.2 get resolved in the same build**, at two different points:
+      
+      ./gradlew dependencies --configuration runtimeClasspath --warning-mode all
+      echo "Building VERSION: ${VERSION}"
 
-1. Early in the log — **before** your `build.gradle` is even evaluated — Gradle resolves the `org.springframework.boot` *plugin's own buildscript classpath*, and that pulls `jackson-databind-2.14.2`, `jackson-annotations-2.14.2`, `jackson-core-2.14.2`. This is the **Gradle plugin's own dependency**, used internally by the Spring Boot Gradle plugin/buildpack tooling — **not your application's runtime classpath**.
-2. Later — when your actual `dependencies {}` block resolves — Jackson 2.17.2 is what gets pulled via the BOM, confirmed by:
-```
-Found locally available resource with matching checksum: [.../jackson-databind/2.17.2/jackson-databind-2.17.2.jar, ...]
-```
+      # ── Gradle build ──────────────────────────────────────────────────────
+      # Dependencies resolved from JFrog via settings.gradle in app repo
+      # -x test: unit tests run separately in test stage (java.unit.yml)
+      # -Pversion: sets project version used in bootJar archiveFileName
+      gradle clean build -x test -Pversion="${VERSION}" --info
 
-So the 2.14.2 jars are a **build-time-only** artifact of the Spring Boot Gradle plugin itself, never bundled into `BOOT-INF/lib`. That part is fine — it's a Gradle-internals detail, not your bug.
+      # ── Verify output ─────────────────────────────────────────────────────
+      echo "Build output:"
+      ls -lh build/libs/
 
-## The actual smoking gun
+      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+        exit 1
+      fi
 
-Look here, near the very end, **right before `:bootJar` runs**:
 
-```
-Variant Selection Exception: org.gradle.internal.component.resolution.failure.exception.VariantSelectionByAttributesException caused by Resolution Failure: org.gradle.internal.component.resolution.failure.type.NoCompatibleVariantsFailure
-Excluding []
-```
+      # ── Build metadata for downstream stages ────────────────────────────────
+      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+      # BUILD_TIME: consumed by image-build stage for OCI image labels
+      
+      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v plain | head -1 || true)
+      WAR_FILE=$(ls build/libs/*.war 2>/dev/null | grep -v plain | head -1 || true)
 
-This appears **5 times** total in your log — once during global dependency resolution, and again right at `:bootJar`. This is Gradle 9.4.1 (note: you're on a brand-new Gradle major version) silently **failing to resolve a variant for a dependency and excluding it** rather than erroring out. This is the real lead — something is being silently dropped from resolution, and Gradle 9.x's new variant-aware dependency resolution machinery is involved.
+      if [ -n "$JAR_FILE" ]; then
+        ARTIFACT_FILE="$JAR_FILE"
+      elif [ -n "$WAR_FILE" ]; then
+        ARTIFACT_FILE="$WAR_FILE"
+      else
+        echo "❌ ERROR: No deployable JAR or WAR found in build/libs/"
+        exit 1
+      fi
 
-This single fact reframes everything: **your build tooling itself changed** (Gradle 9.4.1, a brand-new major version) between when `v1.6.2` was built and now. That's a far more likely trigger for a classpath/resolution change than re-litigating Jackson version numbers.
+      echo "✅ ARTIFACT: ${ARTIFACT_FILE}"
+      echo "JAR_FILE=${ARTIFACT_FILE}"                      >> build.env
+      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> build.env
 
-## What I need from you to finish this in one pass
 
-Run this and paste the full output — it isolates exactly which dependency triggers the variant exclusion:
+      # JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+      # echo "✅ JAR: ${JAR_FILE}"
+      # echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+      # echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
 
-```bash
-# In the repo root, on the branch with the current build.gradle
-./gradlew dependencies --configuration runtimeClasspath --warning-mode all > /tmp/deps_full.txt 2>&1
-grep -B 20 "NoCompatibleVariantsFailure" /tmp/deps_full.txt
-```
-
-If you genuinely can't run Gradle locally (air-gapped), trigger this in the **GitLab pipeline** instead by temporarily adding this as a step right before the `build` task in your `.gitlab-ci.yml` job script:
-
-```bash
-./gradlew dependencies --configuration runtimeClasspath --warning-mode all
-```
-
-and paste me the section of that job's log surrounding any `NoCompatibleVariantsFailure` or `Excluding []` lines — specifically the 20-30 lines **above** each occurrence, since Gradle prints the dependency tree context right before the failure.
-
-## Why I'm not jumping straight to a fix this time
-
-You explicitly asked me to verify before proposing a change, and I agree that's the right call here — this `NoCompatibleVariantsFailure` pattern is new information that wasn't in any of the previous logs we looked at, and it could mean the vendor jar exclusion approach is solving a downstream symptom of an upstream resolution problem. I'd rather confirm what's actually being excluded than have you make a change that doesn't address the real mechanism.
-
-Once you get me that `dependencies` output, I'll know definitively whether:
-- It's still the `SBINEWPG_2023` shaded-class issue (in which case the strip-and-repack fix stands, and is your one-line-equivalent fix), or
-- Gradle 9.4.1's resolution silently dropped something else entirely, in which case the fix is different and likely even simpler.
+  artifacts:
+    paths:
+      - build/libs/
+      - build/classes/
+      - build/resources/
+      - build/tmp/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
