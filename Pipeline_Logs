@@ -1,202 +1,150 @@
-I went through the entire conversation and I don't think the current theory ("shaded Jackson inside another JAR") is proven yet. 
-
-Based on everything you've shared, we know these facts:
-
-1. Your application is running with:
-
-```bash
-java -jar epay_payment_service-dev-85b5df32.jar
-```
-
-No extra `classpath` or `loader.path`.
-
-2. The error is still:
-
-```java
-java.lang.NoSuchFieldError:
-com.fasterxml.jackson.annotation.JsonFormat$Feature
-READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
-```
-
-3. Your rebuilt fat jar already contains Jackson 2.17.2.
-
-This means **the JVM is still loading an older `jackson-annotations` class from somewhere**.
-
----
-
-# First thing I need from you
-
-Since your pod doesn't have `find` and `unzip` working properly, run these commands instead.
-
-## Step 1: Find the application jar
-
-```bash
-oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- sh
-```
-
-Inside the pod:
-
-```bash
-pwd
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- sh
+sh-5.1$
+sh-5.1$
+sh-5.1$ pwd
 ls -lrth
 find . -name "*.jar"
-```
-
-or
-
-```bash
-ls -lrth /
+/home/default
+total 122M
+-rw-r--r--. 1 root root 122M Jun 20 05:53 epay_payment_service-dev-85b5df32.jar
+./epay_payment_service-dev-85b5df32.jar
+sh-5.1$ ls -lrth /
 ls -lrth /app
 ls -lrth /tmp
-```
-
-Tell me where:
-
-```bash
+total 24K
+drwxr-xr-x.   2 root    root         6 Jun 25  2024 srv
+lrwxrwxrwx.   1 root    root         8 Jun 25  2024 sbin -> usr/sbin
+drwxr-xr-x.   2 root    root         6 Jun 25  2024 mnt
+drwxr-xr-x.   2 root    root         6 Jun 25  2024 media
+lrwxrwxrwx.   1 root    root         9 Jun 25  2024 lib64 -> usr/lib64
+lrwxrwxrwx.   1 root    root         7 Jun 25  2024 lib -> usr/lib
+dr-xr-xr-x.   2 root    root         6 Jun 25  2024 boot
+lrwxrwxrwx.   1 root    root         7 Jun 25  2024 bin -> usr/bin
+dr-xr-xr-x.   2 root    root         6 Jun 25  2024 afs
+drwx------.   2 root    root         6 Aug 20  2025 lost+found
+drwxr-xr-x.   1 root    root        97 Aug 20  2025 usr
+drwxr-xr-x.   1 root    root        41 Aug 20  2025 var
+dr-xr-x---.   1 root    root        23 Aug 20  2025 root
+-rw-rw-r--.   1 root    root       24K Aug 20  2025 help.1
+drwxrwxr-x.   3 default root        18 Aug 20  2025 deployments
+dr-xr-xr-x.  13 root    root         0 Jan 22 06:43 sys
+drwxr-xr-x.   1 root    root        21 Jun 20 05:55 home
+drwxrwsrwt.   3 root    1001190000 200 Jun 20 06:02 certs
+drwxrwsrwx.   3 root    1001190000  18 Jun 20 06:02 cacerts
+dr-xr-xr-x. 559 root    root         0 Jun 20 06:02 proc
+drwxr-xr-x.   1 root    root        27 Jun 20 06:02 run
+drwxrwxr-x.   1 root    root        20 Jun 20 06:02 opt
+drwxr-xr-x.   1 root    root        34 Jun 20 06:02 etc
+drwxr-xr-x.   5 root    root       360 Jun 20 06:02 dev
+drwxrwxrwt.   1 root    root       122 Jun 20 06:02 tmp
+ls: cannot access '/app': No such file or directory
+total 0
+drwxr-xr-x. 2 1001190000 root 15 Jun 20 06:02 hsperfdata_1001190000
+drwx------. 2 1001190000 root  6 Jun 20 06:02 tomcat-docbase.9093.5414489482469293845
+drwx------. 3 1001190000 root 18 Jun 20 06:02 tomcat.9093.15003982979477847992
+sh-5.1$
+sh-5.1$
+sh-5.1$ ls
 epay_payment_service-dev-85b5df32.jar
-```
-
-is located.
-
----
-
-# Step 2: Check the Jackson jars inside the running jar
-
-Suppose the jar is in:
-
-```bash
-/app
-```
-
-Run:
-
-```bash
-jar tf /app/epay_payment_service-dev-85b5df32.jar | grep jackson
-```
-
-Paste the output.
-
----
-
-# Step 3: Most important check
-
-Run:
-
-```bash
-jar tf /app/epay_payment_service-dev-85b5df32.jar | grep JsonFormat.class
-```
-
-Expected:
-
-```bash
-BOOT-INF/lib/jackson-annotations-2.17.2.jar
-```
-
-or no output.
-
-If you see:
-
-```bash
-BOOT-INF/lib/SBINEWPG_2023.jar
-BOOT-INF/lib/PGPUtility.jar
-BOOT-INF/lib/authentication-service.jar
-```
-
-containing:
-
-```bash
-com/fasterxml/jackson/annotation/JsonFormat.class
-```
-
-then we found the culprit.
-
----
-
-# Step 4: Check every embedded library
-
-Run:
-
-```bash
-mkdir /tmp/check
+sh-5.1$ jar tf /app/epay_payment_service-dev-85b5df32.jar | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /app/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$ jar tf /app/epay_payment_service-dev-85b5df32.jar | grep JsonFormat.class
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /app/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ mkdir /tmp/check
 cd /tmp/check
 jar xf /app/epay_payment_service-dev-85b5df32.jar
-```
-
-Then:
-
-```bash
-for j in BOOT-INF/lib/*.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /app/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   echo "Checking $j"
   jar tf "$j" | grep "com/fasterxml/jackson/annotation/JsonFormat.class"
 done
-```
-
-This command will immediately tell us **which jar contains its own Jackson classes**.
-
----
-
-# Another possibility (very important)
-
-Your base image may already have:
-
-```bash
-JAVA_TOOL_OPTIONS
+Checking BOOT-INF/lib/*.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/*.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ JAVA_TOOL_OPTIONS
 CLASSPATH
 SPRING_BOOT_LOADER_PATH
-```
-
-configured.
-
-Please run:
-
-```bash
-oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i java
-```
-
-and
-
-```bash
-oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i class
-```
-
-Paste the output.
-
----
-
-# My current suspicion ranking
-
-### 60%
-
-A vendor JAR like:
-
-* `SBINEWPG_2023.jar`
-* `PGPUtility.jar`
-* `authentication-service.jar`
-
-contains:
-
-```java
-com.fasterxml.jackson.annotation.*
-```
-
-### 30%
-
-Base image injects an old Jackson via environment variables.
-
-### 10%
-
-The image deployed in OpenShift is actually an old image tag and not the newly built one.
-
----
-
-Please share these four outputs:
-
-```bash
-jar tf epay_payment_service-dev-85b5df32.jar | grep jackson
-jar tf epay_payment_service-dev-85b5df32.jar | grep JsonFormat.class
-for j in BOOT-INF/lib/*.jar; do jar tf "$j" | grep JsonFormat.class && echo $j; done
-env | grep -i java
-```
-
-Once I see those outputs, I can tell you the exact fix instead of guessing.
+sh: JAVA_TOOL_OPTIONS: command not found
+sh: CLASSPATH: command not found
+sh: SPRING_BOOT_LOADER_PATH: command not found
+sh-5.1$ exit
+exit
+command terminated with exit code 127
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i java
+JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+JAVA_HOME=/usr/lib/jvm/java-21
+JAVA_VENDOR=openjdk
+JAVA_VERSION=21
+JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy
+JBOSS_CONTAINER_JAVA_JVM_MODULE=/opt/jboss/container/java/jvm
+JAVA_DATA_DIR=/deployments/data
+JBOSS_CONTAINER_JAVA_RUN_MODULE=/opt/jboss/container/java/run
+JBOSS_CONTAINER_JAVA_S2I_MODULE=/opt/jboss/container/java/s2i
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i class
+[osuser@bastion ~]$
