@@ -1,97 +1,107 @@
-You're very close, but you're running commands against paths that don't exist. Let's do this properly from scratch.
-
-## Step 1 – Find the application JAR
-
-Inside the pod, run:
-
-```bash
-pwd
+sh-5.1$ pwd
 ls -lrth /home/default
 find /home/default -name "*.jar"
-```
-
-You should see something like:
-
-```text
-/home/default/epay_payment_service-dev-85b5df32.jar
-```
-
----
-
-## Step 2 – Extract the Spring Boot JAR
-
-```bash
-mkdir -p /tmp/check
+/home/default
+total 122M
+-rw-r--r--. 1 root root 122M Jun 20 07:06 epay_payment_service-dev-5a4af3bb.jar
+/home/default/epay_payment_service-dev-5a4af3bb.jar
+sh-5.1$ mkdir -p /tmp/check
 cd /tmp/check
 jar xf /home/default/epay_payment_service-dev-85b5df32.jar
-```
-
-Verify extraction:
-
-```bash
-ls
-```
-
-You should see:
-
-```text
-BOOT-INF
-META-INF
-org
-```
-
----
-
-## Step 3 – Check all Jackson jars inside the application
-
-```bash
-ls -lrth BOOT-INF/lib | grep jackson
-```
-
-and
-
-```bash
-jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson
-```
-
-Paste the output.
-
----
-
-## Step 4 – Check whether vendor jars contain Jackson classes
-
-### SBINEWPG
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
-```
-
-### PGPUtility
-
-```bash
-jar tf BOOT-INF/lib/PGPUtility.jar | grep "com/fasterxml/jackson"
-```
-
-### Authentication Service
-
-```bash
-jar tf BOOT-INF/lib/authentication-service-0.1.0.jar | grep "com/fasterxml/jackson"
-```
-
-### Logging Service
-
-```bash
-jar tf BOOT-INF/lib/logging-service-1.0-SNAPSHOT.jar | grep "com/fasterxml/jackson"
-```
-
----
-
-## Step 5 – Find ALL jars containing Jackson classes
-
-This is the most important command:
-
-```bash
-for j in BOOT-INF/lib/*.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ ls
+sh-5.1$
+sh-5.1$ ll
+sh: ll: command not found
+sh-5.1$ pwd
+/tmp/check
+sh-5.1$
+sh-5.1$ jar xf /home/default/epay_payment_service-dev-85b5df32.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$ ls
+sh-5.1$ ls -lrth BOOT-INF/lib | grep jackson
+ls: cannot access 'BOOT-INF/lib': No such file or directory
+sh-5.1$
+sh-5.1$ jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /home/default/epay_payment_service-dev-85b5df32.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   if jar tf "$j" 2>/dev/null | grep -q "com/fasterxml/jackson"; then
       echo "===== $j ====="
@@ -99,90 +109,53 @@ do
       echo
   fi
 done
-```
-
-Paste the entire output.
-
----
-
-## Step 6 – Check your actual Jackson versions
-
-```bash
-for j in BOOT-INF/lib/jackson*.jar
+sh-5.1$ ls
+sh-5.1$ for j in BOOT-INF/lib/jackson*.jar
 do
   echo "===== $j ====="
 done
-```
-
----
-
-## Step 7 – Verify whether `JsonProperty.namespace()` exists
-
-First extract the annotations jar:
-
-```bash
-mkdir -p /tmp/jackson
+===== BOOT-INF/lib/jackson*.jar =====
+sh-5.1$ mkdir -p /tmp/jackson
 cd /tmp/jackson
 jar xf /tmp/check/BOOT-INF/lib/jackson-annotations-*.jar
-```
-
-Then:
-
-```bash
-javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
-```
-
-Expected output:
-
-```text
-public abstract java.lang.String namespace();
-```
-
----
-
-## Step 8 – Verify the same inside SBINEWPG
-
-```bash
-mkdir -p /tmp/sbi
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /tmp/check/BOOT-INF/lib/jackson-annotations-*.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Error: class not found: com.fasterxml.jackson.annotation.JsonProperty
+sh-5.1$ mkdir -p /tmp/sbi
 cd /tmp/sbi
 jar xf /tmp/check/BOOT-INF/lib/SBINEWPG_2023.jar
-```
-
-Then:
-
-```bash
-javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
-```
-
-If nothing is returned, then **SBINEWPG is definitely overriding Jackson with an old version**, which matches the `NoSuchMethodError` you're getting.
-
----
-
-# My prediction
-
-I expect one of these commands:
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
-```
-
-or
-
-```bash
-jar tf BOOT-INF/lib/authentication-service-0.1.0.jar | grep "com/fasterxml/jackson"
-```
-
-will show:
-
-```text
-com/fasterxml/jackson/annotation/JsonProperty.class
-com/fasterxml/jackson/annotation/JsonFormat.class
-...
-```
-
-If that happens, we have confirmed the root cause and the fix will be:
-
-* remove embedded Jackson classes from that vendor jar, or
-* get a rebuilt version of that jar from the owning team.
-
-Please run **Steps 3, 4, and 5** and paste the outputs. Those outputs will tell us exactly which jar is poisoning your runtime classpath.
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /tmp/check/BOOT-INF/lib/SBINEWPG_2023.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
