@@ -1,69 +1,4 @@
-We found the root cause. This is no longer a theory.
-
-The smoking gun is this line:
-
-```bash
-FOUND IN: BOOT-INF/lib/SBINEWPG_2023.jar
-FOUND IN: BOOT-INF/lib/jackson-annotations-2.17.2.jar
-```
-
-and later:
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar
-com/fasterxml/jackson/annotation/JsonFormat$Feature.class
-...
-```
-
-This proves that **SBINEWPG_2023.jar contains its own copy of Jackson annotations classes**. 
-
----
-
-# Why your application still fails
-
-Your application has:
-
-```text
-jackson-annotations-2.17.2.jar
-jackson-databind-2.17.2.jar
-```
-
-which is correct.
-
-But `SBINEWPG_2023.jar` also contains:
-
-```text
-com.fasterxml.jackson.annotation.*
-```
-
-and that copy is OLD.
-
-Specifically, it does NOT contain:
-
-```java
-READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
-```
-
-Therefore:
-
-```text
-jackson-databind 2.17.2
-+
-old JsonFormat$Feature from SBINEWPG_2023.jar
-=
-NoSuchFieldError
-```
-
-Exactly the error you're seeing.
-
----
-
-# We need one final confirmation
-
-Run this:
-
-```bash
-cd /tmp/check
+sh-5.1$ cd /tmp/check
 
 mkdir sbi
 cd sbi
@@ -71,130 +6,46 @@ cd sbi
 jar xf ../BOOT-INF/lib/SBINEWPG_2023.jar
 
 javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
-```
-
-I expect you will see:
-
-```java
-READ_UNKNOWN_ENUM_VALUES_AS_NULL
-```
-
-but NOT:
-
-```java
-READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
-```
-
-That will prove beyond doubt that the embedded Jackson is old.
-
----
-
-# The real fix
-
-The issue is **NOT** in Spring Boot.
-
-The issue is **NOT** in OpenShift.
-
-The issue is **NOT** in Docker.
-
-The issue is:
-
-```text
-SBINEWPG_2023.jar
-```
-
----
-
-# Question:
-
-Do you have source code of `SBINEWPG_2023`?
-
-### Option 1 (best)
-
-If yes:
-
-Upgrade its Jackson dependency to 2.17.2 and rebuild the jar.
-
----
-
-### Option 2
-
-If source code is unavailable:
-
-Ask the team that owns `SBINEWPG_2023.jar` for a new version built with:
-
-```text
-jackson-annotations-2.17.2
-jackson-core-2.17.2
-jackson-databind-2.17.2
-```
-
----
-
-### Option 3 (temporary workaround)
-
-Strip the embedded Jackson classes from `SBINEWPG_2023.jar` during the build.
-
-This is ugly, but it works.
-
-For example:
-
-```gradle
-tasks.register('cleanSBIJar') {
-    doLast {
-        copy {
-            from(zipTree('libs/SBINEWPG_2023.jar')) {
-                exclude 'com/fasterxml/jackson/**'
-            }
-            into("$buildDir/tmp/sbi")
-        }
-
-        ant.jar(
-            destfile: "$buildDir/libs/SBINEWPG_2023-fixed.jar",
-            basedir: "$buildDir/tmp/sbi"
-        )
-    }
-}
-```
-
-Then replace:
-
-```gradle
-implementation files('libs/SBINEWPG_2023.jar')
-```
-
-with
-
-```gradle
-implementation files("$buildDir/libs/SBINEWPG_2023-fixed.jar")
-```
-
----
-
-# Since you only have GitLab access, I need one thing from you
-
-Please share these outputs:
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep pom.properties
-```
-
-and
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep jackson
-```
-
-and
-
-```bash
-javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
-```
-
-from inside the extracted `SBINEWPG_2023.jar`.
-
-Once you share those three outputs, I can tell you:
-
-1. Which Jackson version is embedded in `SBINEWPG_2023.jar`.
-2. Whether you can fix this only by changing `build.gradle`.
-3. Or whether the vendor jar itself must be rebuilt.
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+sh-5.1$
+sh-5.1$
+sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep pom.properties
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$ javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+sh-5.1$
