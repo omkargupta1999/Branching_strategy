@@ -1,67 +1,170 @@
-Quick gut-check before the how-to: this would be a **temporary, manual patch directly inside a live pod's filesystem**, purely to confirm the fix works before committing it properly. That's a reasonable diagnostic step, but a few things to flag clearly:
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${spring_boot}"
+	id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
 
-## What this actually involves and its limits
 
-- Pod filesystems are **ephemeral** — if the pod restarts, crashes, or gets rescheduled (which it will, given it's currently crash-looping), **your manual changes vanish** and it reverts to the broken image.
-- You'd be editing the running container's `BOOT-INF/lib` to remove the bad jar contents, but the JVM has **already started** with its classpath loaded — Jackson classes get loaded lazily on first use (which is why this only blows up on certain requests), so editing files on disk **won't fix the already-running JVM process**. You'd need to **restart the process inside the pod** after patching, not just edit and hope.
-- This is `dev-transaction` namespace based on your earlier logs, so the blast radius of doing this directly in the pod is low — but it's still good to be deliberate about it.
+group = 'com.epay.payment'
+version = "${version}"
 
-## How to actually do it
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
 
-Since the pod is crash-looping (from your earlier log: `oc logs -f payment-paymentservice-...`), you need a pod that's at least staying up long enough to exec into. If it's stuck in `CrashLoopBackOff`, you may need to temporarily override the container's command so it doesn't immediately crash — e.g. patch the deployment to run `sleep infinity` instead of the real entrypoint, just for this test.
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation  'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation("org.springframework.boot:spring-boot-starter-aop")
+	implementation group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
+	implementation 'commons-io:commons-io:2.14.0'
+	implementation 'org.modelmapper:modelmapper:2.4.4'
+	implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
+	// implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'
+	implementation 'org.hibernate.orm:hibernate-envers'
+	// implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+//    Added these two lines
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-**Step 1 — get a stable shell.** If the pod currently dies before you can exec in:
+// ===========================
+// JACKSON TEST - 2.14.2
+// ===========================
+	// implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.2'
+	// implementation 'com.fasterxml.jackson.core:jackson-core:2.14.2'
+	// implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
+	// implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.14.2'
 
-```bash
-oc get pods -n dev-transaction | grep paymentservice
-```
+	//Utility
+	implementation 'name:authentication-service-0.1.0'
+	implementation 'name:encryption-decryption-service-0.1.0'
+	implementation 'name:logging-service-1.0-SNAPSHOT'
+	implementation 'name:notification-service-0.0.1-SNAPSHOT'
 
-If it's bouncing too fast to exec into, temporarily scale to debug mode (you can revert after testing):
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
+	implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+	
+	implementation 'name:BASE64DecoderData'
 
-```bash
-oc patch deployment payment-paymentservice -n dev-transaction --type='json' \
-  -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/command", "value": ["sleep", "infinity"]}]'
-```
+	
+	implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
+    
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.7'
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.4'
+    implementation group: 'org.json', name: 'json', version: '20090211'
+	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+	implementation 'name:SBINEWPG_2023'
+	implementation 'name:PGPUtility'
 
-This stops the real app from starting at all, so the pod stays alive for you to work in.
+	//AWS
+	implementation "software.amazon.awssdk:s3:${s3}"
 
-**Step 2 — exec in and locate the jar:**
+	//Just for Testing
+	implementation 'org.liquibase:liquibase-core'
+	// implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 
-```bash
-oc exec -it <pod-name> -n dev-transaction -- sh
-```
+    compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	//Swagger dependency
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
 
-Inside the pod, find the actual app jar and where Java would unpack/read it from (Spring Boot fat jars don't extract to disk by default — they're read directly via a custom classloader at the zip-entry level). You likely don't have `zip`/`unzip` inside this minimal image (you found that out earlier — `unzip: command not found`), so this is the first real obstacle.
+	//kafka
+	implementation 'org.springframework.kafka:spring-kafka'
 
-**Step 3 — patch and repackage** without `zip`/`unzip` tools is awkward. If `jar` (the JDK tool) is present since Java is installed:
+	implementation "javax.mail:javax.mail-api:1.6.2"
+	implementation "com.sun.mail:javax.mail:1.6.2"
+	implementation "org.thymeleaf:thymeleaf:3.1.1.RELEASE"
+	implementation "org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE"
 
-```bash
-which jar
-```
+	implementation "org.springframework:spring-context-support:5.3.30"
 
-If `jar` exists, you can extract, delete the offending class files, and repack:
+	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+	implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
+	implementation 'com.sun.mail:jakarta.mail:2.0.1'
+}
 
-```bash
-cd /tmp
-mkdir extracted && cd extracted
-jar xf /epay_payment_service-dev-*.jar BOOT-INF/lib/SBINEWPG_2023.jar
-cd ..
-mkdir vendor_extracted && cd vendor_extracted
-jar xf ../extracted/BOOT-INF/lib/SBINEWPG_2023.jar
-rm -rf com/fasterxml/jackson
-jar cf ../SBINEWPG_2023-cleaned.jar -C . .
-```
+tasks.named('test') {
+	useJUnitPlatform()
+}
+test {
+	testLogging {
+		outputs.upToDateWhen {false}
+		showStandardStreams = true
+	}
+}
 
-Then replace the jar inside the app's fat jar — but **this is the hard part**: Spring Boot's loader reads `BOOT-INF/lib/*.jar` entries directly from the outer zip; updating a nested jar inside an existing zip without proper tooling is fiddly and error-prone with just `jar`/`zip` primitives (no `zip -d` available per your earlier finding).
+springBoot  {
+	buildInfo()
+}
 
-**Step 4 — restart the process** so the JVM picks up the patched classpath. Since you overrode the command to `sleep infinity`, you'd need to manually launch:
+// ============================================================================
+// FIX: Strip embedded Jackson 2.9.0.pr3 classes from SBINEWPG_2023.jar
+// ----------------------------------------------------------------------------
+// SBINEWPG_2023 is a vendored third-party PG SDK (flat-file dependency, no
+// POM metadata) that ships its own shaded copy of com.fasterxml.jackson.*
+// classes from 2017 (Jackson 2.9.0.pr3). Because it's an opaque jar, Gradle's
+// dependency resolution cannot see or manage this embedded Jackson — it is
+// physically baked into the jar's bytecode, not declared as a transitive
+// dependency. At runtime, Spring Boot's loader can load these stale shaded
+// classes instead of the correctly BOM-managed jackson-annotations:2.17.2,
+// causing:
+//   java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature
+//   does not have member field '...READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+// (that field was only added in Jackson 2.16).
+//
+// We cannot modify SBINEWPG_2023.jar's source (third-party, vendor-supplied).
+// Instead, this build step extracts the jar's contents, strips out every
+// com/fasterxml/jackson/** class (and the stale Maven metadata describing
+// them), and repacks a clean copy. bootJar then excludes the original jar
+// and bundles the cleaned one instead, so BOOT-INF/lib ends up with exactly
+// one Jackson version line: 2.17.2.
+// ============================================================================
 
-```bash
-java -jar /path/to/patched-jar.jar &
-```
+task stripJacksonFromVendorJars(type: Copy) {
+	description = 'Strips embedded Jackson 2.9.0.pr3 classes from SBINEWPG_2023, which conflict with the 2.17.2 BOM-managed stack'
+	from {
+		configurations.runtimeClasspath.files.findAll {
+			it.name.startsWith('SBINEWPG_2023')
+		}.collect { zipTree(it) }
+	}
+	into "$buildDir/stripped-libs/SBINEWPG_2023"
+	exclude 'com/fasterxml/jackson/**'
+	exclude 'META-INF/maven/com.fasterxml.jackson.core/**'
+}
 
-then hit the same endpoint that triggered the crash before, and watch for the `NoSuchFieldError`.
+task repackVendorJar(type: Jar, dependsOn: stripJacksonFromVendorJars) {
+	description = 'Repacks SBINEWPG_2023 without the conflicting Jackson classes'
+	from "$buildDir/stripped-libs/SBINEWPG_2023"
+	archiveFileName = 'SBINEWPG_2023-cleaned.jar'
+	destinationDirectory = file("$buildDir/cleaned-libs")
+}
 
-## My honest read
-
-Given the tooling gaps you've already hit in this pod (no `unzip`, no `find` returning matches reliably, no `zip -d`), this manual-patch-in-pod route is likely to cost you **more** time than just running the Gradle fix through the pipeline once — especially since the pipeline build already takes under 90 seconds per your logs. Want me to help you trim the build job down to just `bootJar` (skip the parts you don't need) so a real test cycle through the pipeline is just as fast as fiddling inside the pod, with none of the missing-tool friction?
+bootJar {
+	dependsOn repackVendorJar
+	exclude '**/SBINEWPG_2023-*.jar'
+	from(files("$buildDir/cleaned-libs/SBINEWPG_2023-cleaned.jar")) {
+		into 'BOOT-INF/lib'
+	}
+}
