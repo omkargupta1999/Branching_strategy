@@ -1,80 +1,128 @@
-Good — since you've already deployed to the cluster, let's verify directly there instead of downloading locally. This gives you both the file-level confirmation and the real runtime test in one pass.
-
-## Step 1 — Confirm the jar contents inside the running pod
-
-First get the pod name and exec in:
-
-```bash
-oc get pods -n dev-transaction | grep paymentservice
-```
-
-```bash
-oc exec -it <pod-name> -n dev-transaction -- sh
-```
-
-Once inside, find the actual running jar (you already know the pattern from before — `epay_payment_service-dev-*.jar` sitting in the container's working directory):
-
-```bash
-ls -la / | grep epay_payment_service
-```
-
-Then check what's in `BOOT-INF/lib` using `jar` (confirmed present in this image from your last interaction — `which jar` worked, `unzip` did not):
-
-```bash
-jar tf /epay_payment_service-dev-*.jar | grep "BOOT-INF/lib/" | grep -i "SBINEWPG\|jackson"
-```
-
-**What you want to see:**
-- `BOOT-INF/lib/SBINEWPG_2023-cleaned.jar` → present
-- `BOOT-INF/lib/SBINEWPG_2023.jar` → **absent** (no unsuffixed original)
-- Every `jackson-*.jar` line → version `2.17.2`
-
-## Step 2 — Confirm the cleaned jar has zero embedded Jackson classes
-
-Still inside the pod:
-
-```bash
-cd /tmp
+[osuser@bastion ~]$ oc get po -n dev-transaction
+NAME                                            READY   STATUS    RESTARTS       AGE
+payment-paymentservice-658898fbcc-t9g8f         2/2     Running   1 (101s ago)   119s
+txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0              2d9h
+txn-transactionservice-75666bfc89-n5v7g         2/2     Running   0              10m
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-658898fbcc-t9g8f  -n dev-transaction -- sh
+sh-5.1$
+sh-5.1$
+sh-5.1$ ls -la / | grep epay_payment_service
+sh-5.1$ jar tf /epay_payment_service-dev-*.jar | grep "BOOT-INF/lib/" | grep -i "SBINEWPG\|jackson"
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /epay_payment_service-dev-*.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$ cd /tmp
 jar xf /epay_payment_service-dev-*.jar BOOT-INF/lib/SBINEWPG_2023-cleaned.jar
 jar tf BOOT-INF/lib/SBINEWPG_2023-cleaned.jar | grep -i jackson
-```
-
-This should return **nothing**. Any output here means the strip didn't fully work and we need to look at the `exclude` pattern again.
-
-Exit the pod once done:
-
-```bash
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: /epay_payment_service-dev-*.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.extract(Main.java:1405)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:389)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023-cleaned.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$ oc logs -f <pod-name> -n dev-transaction | grep -i jackson
+sh: pod-name: No such file or directory
+sh-5.1$
+sh-5.1$ exit
 exit
-```
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f <pod-name> -n dev-transaction | grep -i jackson
+-bash: pod-name: No such file or directory
+[osuser@bastion ~]$ \
+> oc get po -n dev-transaction
+NAME                                            READY   STATUS    RESTARTS        AGE
+payment-paymentservice-658898fbcc-t9g8f         2/2     Running   1 (3m14s ago)   3m32s
+txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0               2d9h
+txn-transactionservice-75666bfc89-n5v7g         2/2     Running   0               12m
+[osuser@bastion ~]$ ^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-658898fbcc-t9g8f  -n dev-transaction | grep -i jackson
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
 
-## Step 3 — The real test: hit the endpoint that used to crash
+^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-658898fbcc-t9g8f  -n dev-transaction | grep -i error
+2026-06-20 09:52:04.027 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=2704bca3-56f8-41a0-87b6-122871a4120d | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+2026-06-20 09:52:04.098 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=2704bca3-56f8-41a0-87b6-122871a4120d | methodName=cashChallanStatusQueryListener | Error while stopping the container
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+2026-06-20 09:53:30.279 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=712C41C7BBD84C979B2C  | scenario=/api/payments/v1/upi/sbi/qr-sign | operation=POST | correlation=39e100ab-1b1a-4854-8690-468ef3cb4a55 | methodName=handleGenericException | Error in handleGenericException
+2026-06-20 09:53:56.479 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=CBF11347D7E34208B88B  | scenario=/api/payments/v1/inb/sbi/initiate | operation=POST | correlation=d3852f2c-011c-4ffd-92ab-24c731fd3209 | methodName=handleGenericException | Error in handleGenericException
+2026-06-20 09:54:21.940 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=712C41C7BBD84C979B2C  | scenario=/api/payments/v1/upi/sbi/qr-sign | operation=POST | correlation=ecb36203-d878-42ef-8b97-a8f23c84f145 | methodName=handleGenericException | Error in handleGenericException
 
-From your bastion, outside the pod, trigger whatever request previously caused the `NoSuchFieldError` — based on your earlier logs, that was the `/api/payments/v1/inb/sbi/initiate` endpoint, and also the `CashChallanStatusQueryListener` Kafka consumer path. You'll need to trigger this the same way QA/your test harness normally does (Postman, a test script, or however that endpoint is normally invoked in `dev-transaction`).
-
-While that request is in flight or just after, watch the pod logs live:
-
-```bash
-oc logs -f <pod-name> -n dev-transaction | grep -i jackson
-```
-
-**No output at all** = no `NoSuchFieldError` thrown = fixed.
-
-Also worth a broader error check in case anything else surfaces:
-
-```bash
-oc logs -f <pod-name> -n dev-transaction | grep -i error
-```
-
-## Step 4 — Confirm the pod itself is stable
-
-Since it was crash-looping before, check restart count has stopped climbing:
-
-```bash
-oc get pods -n dev-transaction | grep paymentservice
-```
-
-Look at the `RESTARTS` column — if it stays flat after a few minutes of traffic (instead of incrementing), that's strong independent confirmation alongside the log check.
-
----
-
-Run Step 1 and Step 2 first and paste me the output — that confirms the jar itself is clean before you spend time triggering the actual payment flow in Step 3.
