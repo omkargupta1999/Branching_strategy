@@ -1,24 +1,68 @@
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
-ARG ENV
-ARG VERSION
+This is an important clue. The line numbers in the new stack trace changed:
 
-ENV ENV=$ENV
-ENV VERSION=$VERSION
+- Old: `EnumDeserializer.createContextual(EnumDeserializer.java:211)`
+- New: `EnumDeserializer.createContextual(EnumDeserializer.java:235)`
 
-# COPY ./sms.cer  /tmp
-# RUN ls -lrth /tmp/
-# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/tls/certs/
-# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/ca-trust/source/anchors/
-#
-# COPY ./test1.mobikwik.com.crt /etc/pki/tls/certs/
-# COPY ./test1.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
-#
-# COPY ./test2.mobikwik.com.crt /etc/pki/tls/certs/
-# COPY ./test2.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
-#
-# COPY ./test3.mobikwik.com.crt /etc/pki/tls/certs/
-# COPY ./test3.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
-#
-COPY /build/libs/epay_payment_service-${VERSION}.jar .
-ENTRYPOINT sh -c 'java -jar "epay_payment_service-$VERSION.jar"'
+So your **app jar is fixed** — `databind` is now 2.17.2 (line 235 is the 2.17 code path). But the `NoSuchFieldError` is still thrown, which means **a second, older `jackson-annotations` is being loaded at runtime from somewhere other than your fat jar's `BOOT-INF/lib/`.**
+
+Your jar is clean. The classpath the JVM actually sees is not. That points at the **base image / Dockerfile**, not the build.
+
+## Most likely cause
+
+There's an older Jackson jar baked into the container image — typically dropped into a shared location like `/app`, `/lib`, `ext`, or added to the launch classpath in the Dockerfile or entrypoint. Spring Boot's loader puts `BOOT-INF/lib` on the classpath, but if the Dockerfile/entrypoint adds another jar or directory **ahead of** or **alongside** it, the old `jackson-annotations` wins.
+
+Look back at your earlier `build.gradle` — you have these unusual local deps:
+
+```gradle
+implementation 'name:SBINEWPG_2023'
+implementation 'name:PGPUtility'
+implementation 'name:BASE64DecoderData'
+implementation 'name:authentication-service-0.1.0'
+```
+
+If any of these is a **fat/shaded jar** that bundles its own old `com.fasterxml.jackson.annotation` classes inside it, those shaded classes can shadow the real ones. That's a very common cause of exactly this error in air-gapped PG stacks with vendored utility jars.
+
+## How to find the culprit — run these in the pod
+
+**1. Find every Jackson annotations jar the container can see (not just your jar):**
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'find / -name "jackson-annotations*.jar" 2>/dev/null'
+```
+
+If you see **more than one**, or one outside `BOOT-INF/lib`, that's your problem.
+
+**2. Check whether a utility jar has Jackson classes shaded inside it.** First locate them:
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'find / -iname "*SBINEWPG*" -o -iname "*PGPUtility*" -o -iname "*BASE64*" 2>/dev/null'
+```
+
+Then for each one found, check if it carries its own `JsonFormat` class:
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'unzip -l /path/to/SBINEWPG_2023.jar | grep -i "JsonFormat\|jackson/annotation"'
+```
+
+If `com/fasterxml/jackson/annotation/JsonFormat.class` shows up **inside** a vendored utility jar, that's the old copy overriding yours.
+
+**3. See the actual launch command / classpath the container uses:**
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+  sh -c 'cat /proc/1/cmdline | tr "\0" " "; echo'
+```
+
+Look for any `-cp` / `-classpath` entry, a `loader.path`, or extra jars added beyond the single `-jar app.jar`. If the entrypoint sets `LOADER_PATH` / `loader.path` pointing at a directory with old jars, that's it.
+
+## What to do once you find it
+
+Tell me which check fires and I'll give the exact fix, but it'll be one of:
+
+- **Old jar in the image** → remove it from the Dockerfile (`RUN rm ...`) or stop copying it in. Rebuild image.
+- **Shaded Jackson inside a utility jar** → exclude/relocate it. Since you can't rebuild the vendor jar, the cleanest GitLab-only fix is to ensure Spring Boot loads your `BOOT-INF/lib` first and the shaded classes don't leak — but if classes are physically inside the utility jar, they must be stripped from that jar or the jar replaced. I'll walk you through whichever applies.
+
+Run check **#1** first and paste the output — the number of `jackson-annotations*.jar` files it finds tells us immediately whether this is a duplicate-jar problem or a shaded-class problem.
