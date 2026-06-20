@@ -1,56 +1,233 @@
-[osuser@bastion ~]$ oc get po -n dev-transaction
-NAME                                            READY   STATUS    RESTARTS   AGE
-payment-paymentservice-76cd9689c-2hd9l          2/2     Running   0          52s
-txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0          2d7h
-txn-transactionservice-64cf8d569f-4dg5l         2/2     Running   0          47m
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-76cd9689c-2hd9l -n dev-transaction | grep -i jackson
+This is actually a **new and very strong clue**.
 
+Previously you had:
 
-java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-        at com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector.findNameForSerialization(JacksonAnnotationIntrospector.java:1115)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector._addFields(POJOPropertiesCollector.java:566)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.collectAll(POJOPropertiesCollector.java:426)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.getJsonValueAccessor(POJOPropertiesCollector.java:272)
-        at com.fasterxml.jackson.databind.introspect.BasicBeanDescription.findJsonValueAccessor(BasicBeanDescription.java:258)
-        at com.fasterxml.jackson.databind.ser.BasicSerializerFactory.findSerializerByAnnotations(BasicSerializerFactory.java:391)
-        at com.fasterxml.jackson.databind.ser.BeanSerializerFactory._createSerializer2(BeanSerializerFactory.java:225)
-        at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.createSerializer(BeanSerializerFactory.java:174)
-        at com.fasterxml.jackson.databind.SerializerProvider._createUntypedSerializer(SerializerProvider.java:1501)
-        at com.fasterxml.jackson.databind.SerializerProvider._createAndCacheUntypedSerializer(SerializerProvider.java:1449)
-        at com.fasterxml.jackson.databind.SerializerProvider.findValueSerializer(SerializerProvider.java:550)
-        at com.fasterxml.jackson.databind.SerializerProvider.findTypedValueSerializer(SerializerProvider.java:828)
-        at com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.serializeValue(DefaultSerializerProvider.java:308)
-        at com.fasterxml.jackson.databind.ObjectMapper._writeValueAndClose(ObjectMapper.java:4624)
-        at com.fasterxml.jackson.databind.ObjectMapper.writeValueAsString(ObjectMapper.java:3869)
-java.util.concurrent.CompletionException: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-Caused by: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-        at com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector.findNameForSerialization(JacksonAnnotationIntrospector.java:1115)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector._addFields(POJOPropertiesCollector.java:566)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.collectAll(POJOPropertiesCollector.java:426)
-        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.getJsonValueAccessor(POJOPropertiesCollector.java:272)
-        at com.fasterxml.jackson.databind.introspect.BasicBeanDescription.findJsonValueAccessor(BasicBeanDescription.java:258)
-        at com.fasterxml.jackson.databind.ser.BasicSerializerFactory.findSerializerByAnnotations(BasicSerializerFactory.java:391)
-        at com.fasterxml.jackson.databind.ser.BeanSerializerFactory._createSerializer2(BeanSerializerFactory.java:225)
-        at com.fasterxml.jackson.databind.ser.BeanSerializerFactory.createSerializer(BeanSerializerFactory.java:174)
-        at com.fasterxml.jackson.databind.SerializerProvider._createUntypedSerializer(SerializerProvider.java:1501)
-        at com.fasterxml.jackson.databind.SerializerProvider._createAndCacheUntypedSerializer(SerializerProvider.java:1449)
-        at com.fasterxml.jackson.databind.SerializerProvider.findValueSerializer(SerializerProvider.java:550)
-        at com.fasterxml.jackson.databind.SerializerProvider.findTypedValueSerializer(SerializerProvider.java:828)
-        at com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.serializeValue(DefaultSerializerProvider.java:308)
-        at com.fasterxml.jackson.databind.ObjectMapper._writeValueAndClose(ObjectMapper.java:4624)
-        at com.fasterxml.jackson.databind.ObjectMapper.writeValueAsString(ObjectMapper.java:3869)
-^C
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-76cd9689c-2hd9l -n dev-transaction | grep -i error
-2026-06-20 07:13:23.805 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=AD7ABFBD58B5427C91D5  | scenario=/api/payments/v1/upi/sbi/qr-sign | operation=POST | correlation=71051f39-444a-4dec-a850-01f11e2beae1 | methodName=handleGenericException | Error in handleGenericException
-2026-06-20 07:13:29.440 ERROR | com.epay.payment.service.CashChallanStatusQueryService:189 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=c5da0ac5-8bd7-4ca7-9bce-e9dc62db3b57 | methodName=buildEISCashEncryptedRequest | Stopping container due to an Error
-java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-2026-06-20 07:13:29.513 ERROR | com.epay.payment.service.CashChallanStatusQueryService:189 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=c5da0ac5-8bd7-4ca7-9bce-e9dc62db3b57 | methodName=buildEISCashEncryptedRequest | Error while stopping the container
-java.util.concurrent.CompletionException: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-Caused by: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
-2026-06-20 07:13:44.136 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=4DD6192BB5BD479ABE48  | scenario=/api/payments/v1/inb/sbi/initiate | operation=POST | correlation=a4a15749-6c8f-423e-9267-473f1719ca38 | methodName=handleGenericException | Error in handleGenericException
+```text
+NoSuchFieldError:
+JsonFormat$Feature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
+```
 
-^C
-[osuser@bastion ~]$
+Now you have:
+
+```text
+NoSuchMethodError:
+com.fasterxml.jackson.annotation.JsonProperty.namespace()
+```
+
+This proves one thing with almost 100% certainty:
+
+> **Your `jackson-databind` and `jackson-annotations` versions are still mismatched at runtime.**
+
+`JsonProperty.namespace()` was introduced in newer versions of `jackson-annotations`, but your application is loading an older `jackson-annotations.jar` while `jackson-databind` is expecting the newer method.
+
+This is no longer a Gradle build issue.
+
+This is a **runtime classpath issue**.
+
+---
+
+# Step 1 – Find every Jackson jar inside the pod
+
+```bash
+POD=payment-paymentservice-76cd9689c-2hd9l
+NS=dev-transaction
+
+oc exec -it $POD -n $NS -- sh -c '
+find / -name "*jackson*.jar" 2>/dev/null
+'
+```
+
+Paste the output.
+
+---
+
+# Step 2 – Find all vendor jars
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+find / -iname "*SBINEWPG*" -o \
+        -iname "*PGP*" -o \
+        -iname "*BASE64*" -o \
+        -iname "*authentication*" 2>/dev/null
+'
+```
+
+Paste the output.
+
+---
+
+# Step 3 – See if vendor jars contain Jackson classes
+
+For each vendor jar found:
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+jar tf /path/to/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+'
+```
+
+or
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+unzip -l /path/to/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+'
+```
+
+---
+
+# Step 4 – Check exactly which version of JsonProperty is loaded
+
+First enter the pod:
+
+```bash
+oc rsh -n dev-transaction payment-paymentservice-76cd9689c-2hd9l
+```
+
+Then:
+
+```bash
+find . -name "jackson-annotations*.jar"
+```
+
+If you see one:
+
+```bash
+jar tf <jackson-annotations-jar> | grep JsonProperty.class
+```
+
+Then:
+
+```bash
+javap -classpath <jackson-annotations-jar> \
+com.fasterxml.jackson.annotation.JsonProperty | grep namespace
+```
+
+---
+
+### If nothing is returned:
+
+```text
+public abstract java.lang.String namespace();
+```
+
+then the jar is OLD and is causing the issue.
+
+---
+
+# Step 5 – Inspect the Spring Boot jar
+
+Find the application jar:
+
+```bash
+find / -name "*.jar" | grep payment
+```
+
+Then:
+
+```bash
+jar tf <application-jar> | grep jackson
+```
+
+You should see something like:
+
+```text
+BOOT-INF/lib/jackson-annotations-2.17.2.jar
+BOOT-INF/lib/jackson-core-2.17.2.jar
+BOOT-INF/lib/jackson-databind-2.17.2.jar
+```
+
+or
+
+```text
+BOOT-INF/lib/jackson-annotations-2.14.2.jar
+BOOT-INF/lib/jackson-core-2.14.2.jar
+BOOT-INF/lib/jackson-databind-2.14.2.jar
+```
+
+All three versions must be identical.
+
+---
+
+# Step 6 – Check if the container adds extra jars
+
+This one is extremely important:
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+cat /proc/1/cmdline | tr "\0" " "
+'
+```
+
+Also run:
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+env | grep -i loader
+'
+```
+
+and
+
+```bash
+oc exec -it $POD -n $NS -- sh -c '
+env | grep -i classpath
+'
+```
+
+---
+
+# My current suspicion (90%)
+
+I still think one of these jars:
+
+* `SBINEWPG_2023.jar`
+* `PGPUtility.jar`
+* `BASE64DecoderData.jar`
+* `authentication-service-0.1.0.jar`
+
+contains:
+
+```text
+com/fasterxml/jackson/annotation/*
+```
+
+and is overriding the proper Jackson libraries.
+
+You previously showed evidence that `SBINEWPG_2023.jar` already contains Jackson classes. That is highly suspicious.
+
+---
+
+# Possible final fix
+
+If `SBINEWPG_2023.jar` contains:
+
+```text
+com/fasterxml/jackson/annotation/
+```
+
+then the fix will be:
+
+1. Unpack that jar during the GitLab build.
+2. Remove:
+
+```text
+com/fasterxml/jackson/**
+```
+
+3. Repack the jar.
+4. Build the bootJar again.
+
+I can give you the exact `.gitlab-ci.yml` and `build.gradle` changes once you paste the outputs of these commands, especially:
+
+```bash
+find / -name "*jackson*.jar" 2>/dev/null
+```
+
+and
+
+```bash
+jar tf /path/to/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+```
+
+Those two outputs will tell us exactly where the old Jackson classes are coming from.
