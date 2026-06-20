@@ -1,84 +1,127 @@
-I can see exactly why none of the commands worked. You're using the **old jar name**.
-
-Your current jar is:
-
-```text
-/home/default/epay_payment_service-dev-5a4af3bb.jar
-```
-
-But all your commands are using:
-
-```text
-/home/default/epay_payment_service-dev-85b5df32.jar
-```
-
-which no longer exists. That's why every command is failing. 
-
-# Use these exact commands (copy-paste)
-
-## 1. Define the jar variable
-
-```bash
-APP_JAR=/home/default/epay_payment_service-dev-5a4af3bb.jar
+sh-5.1$ APP_JAR=/home/default/epay_payment_service-dev-5a4af3bb.jar
 echo $APP_JAR
 ls -lh $APP_JAR
-```
-
----
-
-## 2. Check which Jackson jars are packaged
-
-```bash
-jar tf $APP_JAR | grep jackson
-```
-
-Paste the output.
-
----
-
-## 3. Extract the application jar
-
-```bash
-rm -rf /tmp/check
+/home/default/epay_payment_service-dev-5a4af3bb.jar
+-rw-r--r--. 1 root root 122M Jun 20 07:06 /home/default/epay_payment_service-dev-5a4af3bb.jar
+sh-5.1$ jar tf $APP_JAR | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+BOOT-INF/lib/jackson-annotations-2.14.2.jar
+BOOT-INF/lib/jackson-core-2.14.2.jar
+BOOT-INF/lib/jackson-databind-2.14.2.jar
+BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-joda-2.14.2.jar
+BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar
+BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar
+BOOT-INF/lib/jjwt-jackson-0.12.6.jar
+BOOT-INF/lib/third-party-jackson-core-2.30.6.jar
+sh-5.1$
+sh-5.1$ rm -rf /tmp/check
 mkdir -p /tmp/check
 cd /tmp/check
 jar xf $APP_JAR
-```
-
-Verify:
-
-```bash
-ls
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+sh-5.1$
+sh-5.1$ ls
 ls BOOT-INF
 ls BOOT-INF/lib | head
-```
-
----
-
-## 4. Check all Jackson jars inside BOOT-INF/lib
-
-```bash
-ls BOOT-INF/lib | grep jackson
-```
-
-Paste the output.
-
----
-
-## 5. Check if SBINEWPG contains Jackson classes
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
-```
-
-Paste the output.
-
----
-
-## 6. Check if other vendor jars contain Jackson classes
-
-```bash
-for j in BOOT-INF/lib/*.jar
+BOOT-INF  META-INF  org
+classes  classpath.idx  layers.idx  lib
+BASE64DecoderData.jar
+HdrHistogram-2.2.2.jar
+HikariCP-5.1.0.jar
+LatencyUtils-2.0.3.jar
+PGPUtility.jar
+SBINEWPG_2023.jar
+activation-1.1.jar
+angus-activation-2.0.2.jar
+annotations-2.30.6.jar
+antlr4-runtime-4.13.0.jar
+sh-5.1$ ls BOOT-INF/lib | grep jackson
+jackson-annotations-2.14.2.jar
+jackson-core-2.14.2.jar
+jackson-databind-2.14.2.jar
+jackson-dataformat-yaml-2.17.2.jar
+jackson-datatype-jdk8-2.17.2.jar
+jackson-datatype-joda-2.14.2.jar
+jackson-datatype-jsr310-2.17.2.jar
+jackson-module-parameter-names-2.17.2.jar
+jjwt-jackson-0.12.6.jar
+third-party-jackson-core-2.30.6.jar
+sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
+com/fasterxml/jackson/annotation/JsonFormat$Feature.class
+com/fasterxml/jackson/annotation/JsonFormat$Features.class
+com/fasterxml/jackson/annotation/JsonFormat$Shape.class
+com/fasterxml/jackson/annotation/JsonFormat$Value.class
+com/fasterxml/jackson/annotation/JsonFormat.class
+com/fasterxml/jackson/annotation/JsonGetter.class
+com/fasterxml/jackson/annotation/JsonIdentityInfo.class
+com/fasterxml/jackson/annotation/JsonIdentityReference.class
+com/fasterxml/jackson/annotation/JsonIgnore.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties.class
+com/fasterxml/jackson/annotation/JsonIgnoreType.class
+com/fasterxml/jackson/annotation/JsonInclude$Include.class
+com/fasterxml/jackson/annotation/JsonInclude$Value.class
+com/fasterxml/jackson/annotation/JsonInclude.class
+com/fasterxml/jackson/annotation/JsonManagedReference.class
+com/fasterxml/jackson/annotation/JsonMerge.class
+com/fasterxml/jackson/annotation/JsonProperty$Access.class
+com/fasterxml/jackson/annotation/JsonProperty.class
+com/fasterxml/jackson/annotation/JsonPropertyDescription.class
+com/fasterxml/jackson/annotation/JsonPropertyOrder.class
+com/fasterxml/jackson/annotation/JsonRawValue.class
+com/fasterxml/jackson/annotation/JsonRootName.class
+com/fasterxml/jackson/annotation/JsonSetter$Value.class
+com/fasterxml/jackson/annotation/JsonSetter.class
+com/fasterxml/jackson/annotation/JsonSubTypes$Type.class
+com/fasterxml/jackson/annotation/JsonSubTypes.class
+com/fasterxml/jackson/annotation/JsonTypeId.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$As.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Id.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$None.class
+com/fasterxml/jackson/annotation/JsonTypeInfo.class
+com/fasterxml/jackson/annotation/JsonTypeName.class
+com/fasterxml/jackson/annotation/JsonUnwrapped.class
+com/fasterxml/jackson/annotation/JsonValue.class
+com/fasterxml/jackson/annotation/JsonView.class
+com/fasterxml/jackson/annotation/Nulls.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator$IdKey.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$Base.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$IntSequenceGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$None.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$PropertyGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$StringIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$UUIDGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators.class
+com/fasterxml/jackson/annotation/ObjectIdResolver.class
+com/fasterxml/jackson/annotation/OptBoolean.class
+com/fasterxml/jackson/annotation/PropertyAccessor.class
+com/fasterxml/jackson/annotation/SimpleObjectIdResolver.class
+sh-5.1$
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   if jar tf "$j" 2>/dev/null | grep -q "com/fasterxml/jackson"; then
       echo "========== $j =========="
@@ -86,84 +129,248 @@ do
       echo
   fi
 done
-```
+========== BOOT-INF/lib/SBINEWPG_2023.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
 
-Paste the entire output.
+========== BOOT-INF/lib/jackson-annotations-2.14.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
 
----
+========== BOOT-INF/lib/jackson-core-2.14.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/core/
+com/fasterxml/jackson/core/Base64Variant$PaddingReadBehaviour.class
+com/fasterxml/jackson/core/Base64Variant.class
+com/fasterxml/jackson/core/Base64Variants.class
+com/fasterxml/jackson/core/FormatFeature.class
+com/fasterxml/jackson/core/FormatSchema.class
+com/fasterxml/jackson/core/JacksonException.class
+com/fasterxml/jackson/core/JsonEncoding.class
+com/fasterxml/jackson/core/JsonFactory$Feature.class
+com/fasterxml/jackson/core/JsonFactory.class
+com/fasterxml/jackson/core/JsonFactoryBuilder.class
+com/fasterxml/jackson/core/JsonGenerationException.class
+com/fasterxml/jackson/core/JsonGenerator$1.class
+com/fasterxml/jackson/core/JsonGenerator$Feature.class
+com/fasterxml/jackson/core/JsonGenerator.class
+com/fasterxml/jackson/core/JsonLocation.class
+com/fasterxml/jackson/core/JsonParseException.class
+com/fasterxml/jackson/core/JsonParser$Feature.class
+com/fasterxml/jackson/core/JsonParser$NumberType.class
 
-## 7. Check whether `JsonProperty.namespace()` exists in the real Jackson annotations jar
+========== BOOT-INF/lib/jackson-databind-2.14.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/databind/
+com/fasterxml/jackson/databind/AbstractTypeResolver.class
+com/fasterxml/jackson/databind/AnnotationIntrospector$ReferenceProperty$Type.class
+com/fasterxml/jackson/databind/AnnotationIntrospector$ReferenceProperty.class
+com/fasterxml/jackson/databind/AnnotationIntrospector$XmlExtensions.class
+com/fasterxml/jackson/databind/AnnotationIntrospector.class
+com/fasterxml/jackson/databind/BeanDescription.class
+com/fasterxml/jackson/databind/BeanProperty$Bogus.class
+com/fasterxml/jackson/databind/BeanProperty$Std.class
+com/fasterxml/jackson/databind/BeanProperty.class
+com/fasterxml/jackson/databind/DatabindContext.class
+com/fasterxml/jackson/databind/DatabindException.class
+com/fasterxml/jackson/databind/DeserializationConfig.class
+com/fasterxml/jackson/databind/DeserializationContext$1.class
+com/fasterxml/jackson/databind/DeserializationContext.class
+com/fasterxml/jackson/databind/DeserializationFeature.class
+com/fasterxml/jackson/databind/InjectableValues$Std.class
+com/fasterxml/jackson/databind/InjectableValues.class
+com/fasterxml/jackson/databind/JavaType.class
 
-Find the exact jar name:
+========== BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/dataformat/
+com/fasterxml/jackson/dataformat/yaml/
+com/fasterxml/jackson/dataformat/yaml/snakeyaml/
+com/fasterxml/jackson/dataformat/yaml/snakeyaml/error/
+com/fasterxml/jackson/dataformat/yaml/util/
+com/fasterxml/jackson/dataformat/yaml/JacksonYAMLParseException.class
+com/fasterxml/jackson/dataformat/yaml/PackageVersion.class
+com/fasterxml/jackson/dataformat/yaml/UTF8Reader.class
+com/fasterxml/jackson/dataformat/yaml/UTF8Writer.class
+com/fasterxml/jackson/dataformat/yaml/YAMLFactory.class
+com/fasterxml/jackson/dataformat/yaml/YAMLFactoryBuilder.class
+com/fasterxml/jackson/dataformat/yaml/YAMLGenerator$Feature.class
+com/fasterxml/jackson/dataformat/yaml/YAMLGenerator.class
+com/fasterxml/jackson/dataformat/yaml/YAMLMapper$Builder.class
+com/fasterxml/jackson/dataformat/yaml/YAMLMapper.class
+com/fasterxml/jackson/dataformat/yaml/YAMLParser$Feature.class
+com/fasterxml/jackson/dataformat/yaml/YAMLParser.class
+com/fasterxml/jackson/dataformat/yaml/package-info.class
+com/fasterxml/jackson/dataformat/yaml/snakeyaml/error/Mark.class
 
-```bash
-ls BOOT-INF/lib/jackson-annotations*.jar
-```
+========== BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/datatype/
+com/fasterxml/jackson/datatype/jdk8/
+com/fasterxml/jackson/datatype/jdk8/BaseScalarOptionalDeserializer.class
+com/fasterxml/jackson/datatype/jdk8/DoubleStreamSerializer.class
+com/fasterxml/jackson/datatype/jdk8/IntStreamSerializer.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8BeanSerializerModifier.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8Deserializers.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8Module.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8OptionalBeanPropertyWriter.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8Serializers.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8TypeModifier.class
+com/fasterxml/jackson/datatype/jdk8/Jdk8UnwrappingOptionalBeanPropertyWriter.class
+com/fasterxml/jackson/datatype/jdk8/LongStreamSerializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalDeserializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalDoubleDeserializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalDoubleSerializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalIntDeserializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalIntSerializer.class
+com/fasterxml/jackson/datatype/jdk8/OptionalLongDeserializer.class
 
-Then run:
+========== BOOT-INF/lib/jackson-datatype-joda-2.14.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/datatype/
+com/fasterxml/jackson/datatype/joda/
+com/fasterxml/jackson/datatype/joda/JodaMapper.class
+com/fasterxml/jackson/datatype/joda/JodaModule.class
+com/fasterxml/jackson/datatype/joda/PackageVersion.class
+com/fasterxml/jackson/datatype/joda/cfg/
+com/fasterxml/jackson/datatype/joda/cfg/FormatConfig.class
+com/fasterxml/jackson/datatype/joda/cfg/JacksonJodaDateFormat.class
+com/fasterxml/jackson/datatype/joda/cfg/JacksonJodaFormatBase.class
+com/fasterxml/jackson/datatype/joda/cfg/JacksonJodaPeriodFormat.class
+com/fasterxml/jackson/datatype/joda/deser/
+com/fasterxml/jackson/datatype/joda/deser/DateMidnightDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/DateTimeDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/DateTimeZoneDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/DurationDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/InstantDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/IntervalDeserializer.class
+com/fasterxml/jackson/datatype/joda/deser/JodaDateDeserializerBase.class
+com/fasterxml/jackson/datatype/joda/deser/JodaDeserializerBase$1.class
 
-```bash
-mkdir -p /tmp/jackson
+========== BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/datatype/
+com/fasterxml/jackson/datatype/jsr310/
+com/fasterxml/jackson/datatype/jsr310/DecimalUtils.class
+com/fasterxml/jackson/datatype/jsr310/JSR310Module$1.class
+com/fasterxml/jackson/datatype/jsr310/JSR310Module.class
+com/fasterxml/jackson/datatype/jsr310/JavaTimeFeature.class
+com/fasterxml/jackson/datatype/jsr310/JavaTimeModule$1.class
+com/fasterxml/jackson/datatype/jsr310/JavaTimeModule.class
+com/fasterxml/jackson/datatype/jsr310/PackageVersion.class
+com/fasterxml/jackson/datatype/jsr310/deser/
+com/fasterxml/jackson/datatype/jsr310/deser/DurationDeserializer.class
+com/fasterxml/jackson/datatype/jsr310/deser/InstantDeserializer$FromDecimalArguments.class
+com/fasterxml/jackson/datatype/jsr310/deser/InstantDeserializer$FromIntegerArguments.class
+com/fasterxml/jackson/datatype/jsr310/deser/InstantDeserializer.class
+com/fasterxml/jackson/datatype/jsr310/deser/JSR310DateTimeDeserializerBase.class
+com/fasterxml/jackson/datatype/jsr310/deser/JSR310DeserializerBase$1.class
+com/fasterxml/jackson/datatype/jsr310/deser/JSR310DeserializerBase.class
+com/fasterxml/jackson/datatype/jsr310/deser/JSR310StringParsableDeserializer.class
+com/fasterxml/jackson/datatype/jsr310/deser/JavaTimeDeserializerModifier.class
+
+========== BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar ==========
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/
+com/fasterxml/jackson/module/
+com/fasterxml/jackson/module/paramnames/
+com/fasterxml/jackson/module/paramnames/PackageVersion.class
+com/fasterxml/jackson/module/paramnames/ParameterExtractor.class
+com/fasterxml/jackson/module/paramnames/ParameterNamesAnnotationIntrospector.class
+com/fasterxml/jackson/module/paramnames/ParameterNamesModule.class
+
+^C
+sh-5.1$ ls BOOT-INF/lib/jackson-annotations*.jar
+BOOT-INF/lib/jackson-annotations-2.14.2.jar
+sh-5.1$ mkdir -p /tmp/jackson
 cd /tmp/jackson
 jar xf /tmp/check/BOOT-INF/lib/jackson-annotations-*.jar
 javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
-```
-
-Expected:
-
-```text
-public abstract java.lang.String namespace();
-```
-
----
-
-## 8. Check the same inside SBINEWPG
-
-```bash
-mkdir -p /tmp/sbi
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+  public abstract java.lang.String namespace();
+sh-5.1$ public abstract java.lang.String namespace();
+sh: syntax error near unexpected token `('
+sh-5.1$ mkdir -p /tmp/sbi
 cd /tmp/sbi
 jar xf /tmp/check/BOOT-INF/lib/SBINEWPG_2023.jar
 javap -classpath . com.fasterxml.jackson.annotation.JsonProperty | grep namespace
-```
-
----
-
-# I think I already know the answer
-
-The new error:
-
-```text
-NoSuchMethodError:
-com.fasterxml.jackson.annotation.JsonProperty.namespace()
-```
-
-means:
-
-* `jackson-databind` is newer.
-* `jackson-annotations` loaded at runtime is older.
-
-I still strongly suspect:
-
-```text
-BOOT-INF/lib/SBINEWPG_2023.jar
-```
-
-contains old Jackson annotation classes and is overriding the proper Jackson jar.
-
----
-
-# The three outputs I need from you are only these:
-
-```bash
-jar tf $APP_JAR | grep jackson
-```
-
-```bash
-ls BOOT-INF/lib | grep jackson
-```
-
-```bash
-jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
-```
-
-Once you paste these three outputs, I can tell you exactly how to fix it permanently.
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+sh-5.1$ jar tf $APP_JAR | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+BOOT-INF/lib/jackson-annotations-2.14.2.jar
+BOOT-INF/lib/jackson-core-2.14.2.jar
+BOOT-INF/lib/jackson-databind-2.14.2.jar
+BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-joda-2.14.2.jar
+BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar
+BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar
+BOOT-INF/lib/jjwt-jackson-0.12.6.jar
+BOOT-INF/lib/third-party-jackson-core-2.30.6.jar
+sh-5.1$ ls BOOT-INF/lib | grep jackson
+ls: cannot access 'BOOT-INF/lib': No such file or directory
+sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep "com/fasterxml/jackson"
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
+        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
+        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
+        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
+        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
+sh-5.1$
