@@ -1,51 +1,152 @@
-sh-5.1$ cd /tmp/check
+--------------------------------------------------  gradle.properties ---------
 
-mkdir sbi
-cd sbi
+org.gradle.parallel=true
+version=0.0.1
+spring_boot=3.3.3
+dependency_plugin=1.1.6
+javax_persistence=2.2
+commons_io=2.18.0
+modelmapper=2.4.4
+oracle_driver=23.5.0.24.07
+jackson_joda=2.12.3
+httpclient=4.5.13
+gson=2.8.9
+swagger=2.6.0
+jackson_databind=2.15.2
+jwt=0.11.5
+shedlock=5.9.0
+mapstruct=1.5.1.Final
+aws_s3=2.30.6
+opencsv=5.7.1
+javax_mail=1.6.2
+sun_mail=1.6.2
+context_support=5.3.30
+thymeleaf=3.1.2.RELEASE
+thymeleaf_spring=3.1.1.RELEASE
+sbi_logging=0.1.0
+sbi_crypto=0.1.0
+sbi_auth=0.1.1
+sbi_notification=0.1.0
+flying_saucer_pdf=9.11.3
+s3=2.30.6
 
-jar xf ../BOOT-INF/lib/SBINEWPG_2023.jar
 
-javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-sh-5.1$
-sh-5.1$
-sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep pom.properties
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$ jar tf BOOT-INF/lib/SBINEWPG_2023.jar | grep jackson
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-java.nio.file.NoSuchFileException: BOOT-INF/lib/SBINEWPG_2023.jar
-        at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
-        at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
-        at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
-        at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
-        at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
-        at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
-        at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
-        at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
-        at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:151)
-        at jdk.jartool/sun.tools.jar.Main.list(Main.java:1522)
-        at jdk.jartool/sun.tools.jar.Main.run(Main.java:368)
-        at jdk.jartool/sun.tools.jar.Main.main(Main.java:1700)
-sh-5.1$ javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
-sh-5.1$
+-------------------------------------  build.gradle
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${spring_boot}"
+	id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
+
+
+group = 'com.epay.payment'
+version = "${version}"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation  'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation("org.springframework.boot:spring-boot-starter-aop")
+	implementation group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
+	implementation 'commons-io:commons-io:2.14.0'
+	implementation 'org.modelmapper:modelmapper:2.4.4'
+	implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
+	// implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.3'
+	implementation 'org.hibernate.orm:hibernate-envers'
+	// implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+//    Added these two lines
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+
+	//Utility
+	implementation 'name:authentication-service-0.1.0'
+	implementation 'name:encryption-decryption-service-0.1.0'
+	implementation 'name:logging-service-1.0-SNAPSHOT'
+	implementation 'name:notification-service-0.0.1-SNAPSHOT'
+
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
+	implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+	
+	implementation 'name:BASE64DecoderData'
+
+	
+	implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
+    
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.7'
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.4'
+    implementation group: 'org.json', name: 'json', version: '20090211'
+	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+	implementation 'name:SBINEWPG_2023'
+	implementation 'name:PGPUtility'
+
+	//AWS
+	implementation "software.amazon.awssdk:s3:${s3}"
+
+	//Just for Testing
+	implementation 'org.liquibase:liquibase-core'
+	// implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+
+    compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	//Swagger dependency
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.6.0'
+
+	//kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	implementation "javax.mail:javax.mail-api:1.6.2"
+	implementation "com.sun.mail:javax.mail:1.6.2"
+	implementation "org.thymeleaf:thymeleaf:3.1.1.RELEASE"
+	implementation "org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE"
+
+	implementation "org.springframework:spring-context-support:5.3.30"
+
+	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+	implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
+	implementation 'com.sun.mail:jakarta.mail:2.0.1'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+test {
+	testLogging {
+		outputs.upToDateWhen {false}
+		showStandardStreams = true
+	}
+}
+
+springBoot  {
+	buildInfo()
+}
+
+
+
+
