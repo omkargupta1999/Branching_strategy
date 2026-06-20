@@ -1,34 +1,202 @@
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
->   sh -c 'find / -iname "*SBINEWPG*" -o -iname "*PGPUtility*" -o -iname "*BASE64*" 2>/dev/null'
-/usr/bin/base64
-/usr/lib64/python3.9/__pycache__/base64.cpython-39.opt-1.pyc
-/usr/lib64/python3.9/__pycache__/base64.cpython-39.opt-2.pyc
-/usr/lib64/python3.9/__pycache__/base64.cpython-39.pyc
-/usr/lib64/python3.9/base64.py
-/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.opt-1.pyc
-/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.opt-2.pyc
-/usr/lib64/python3.9/email/__pycache__/base64mime.cpython-39.pyc
-/usr/lib64/python3.9/email/base64mime.py
-/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.opt-1.pyc
-/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.opt-2.pyc
-/usr/lib64/python3.9/encodings/__pycache__/base64_codec.cpython-39.pyc
-/usr/lib64/python3.9/encodings/base64_codec.py
-command terminated with exit code 1
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
->   sh -c 'unzip -l /path/to/SBINEWPG_2023.jar | grep -i "JsonFormat\|jackson/annotation"'
-sh: line 1: unzip: command not found
-command terminated with exit code 1
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
->   sh -c 'find / -name "jackson-annotations*.jar" 2>/dev/null'
-command terminated with exit code 1
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
->   sh -c 'cat /proc/1/cmdline | tr "\0" " "; echo'
+I went through the entire conversation and I don't think the current theory ("shaded Jackson inside another JAR") is proven yet. 
+
+Based on everything you've shared, we know these facts:
+
+1. Your application is running with:
+
+```bash
 java -jar epay_payment_service-dev-85b5df32.jar
-[osuser@bastion ~]$
-[osuser@bastion ~]$
+```
+
+No extra `classpath` or `loader.path`.
+
+2. The error is still:
+
+```java
+java.lang.NoSuchFieldError:
+com.fasterxml.jackson.annotation.JsonFormat$Feature
+READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
+```
+
+3. Your rebuilt fat jar already contains Jackson 2.17.2.
+
+This means **the JVM is still loading an older `jackson-annotations` class from somewhere**.
+
+---
+
+# First thing I need from you
+
+Since your pod doesn't have `find` and `unzip` working properly, run these commands instead.
+
+## Step 1: Find the application jar
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- sh
+```
+
+Inside the pod:
+
+```bash
+pwd
+ls -lrth
+find . -name "*.jar"
+```
+
+or
+
+```bash
+ls -lrth /
+ls -lrth /app
+ls -lrth /tmp
+```
+
+Tell me where:
+
+```bash
+epay_payment_service-dev-85b5df32.jar
+```
+
+is located.
+
+---
+
+# Step 2: Check the Jackson jars inside the running jar
+
+Suppose the jar is in:
+
+```bash
+/app
+```
+
+Run:
+
+```bash
+jar tf /app/epay_payment_service-dev-85b5df32.jar | grep jackson
+```
+
+Paste the output.
+
+---
+
+# Step 3: Most important check
+
+Run:
+
+```bash
+jar tf /app/epay_payment_service-dev-85b5df32.jar | grep JsonFormat.class
+```
+
+Expected:
+
+```bash
+BOOT-INF/lib/jackson-annotations-2.17.2.jar
+```
+
+or no output.
+
+If you see:
+
+```bash
+BOOT-INF/lib/SBINEWPG_2023.jar
+BOOT-INF/lib/PGPUtility.jar
+BOOT-INF/lib/authentication-service.jar
+```
+
+containing:
+
+```bash
+com/fasterxml/jackson/annotation/JsonFormat.class
+```
+
+then we found the culprit.
+
+---
+
+# Step 4: Check every embedded library
+
+Run:
+
+```bash
+mkdir /tmp/check
+cd /tmp/check
+jar xf /app/epay_payment_service-dev-85b5df32.jar
+```
+
+Then:
+
+```bash
+for j in BOOT-INF/lib/*.jar
+do
+  echo "Checking $j"
+  jar tf "$j" | grep "com/fasterxml/jackson/annotation/JsonFormat.class"
+done
+```
+
+This command will immediately tell us **which jar contains its own Jackson classes**.
+
+---
+
+# Another possibility (very important)
+
+Your base image may already have:
+
+```bash
+JAVA_TOOL_OPTIONS
+CLASSPATH
+SPRING_BOOT_LOADER_PATH
+```
+
+configured.
+
+Please run:
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i java
+```
+
+and
+
+```bash
+oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- env | grep -i class
+```
+
+Paste the output.
+
+---
+
+# My current suspicion ranking
+
+### 60%
+
+A vendor JAR like:
+
+* `SBINEWPG_2023.jar`
+* `PGPUtility.jar`
+* `authentication-service.jar`
+
+contains:
+
+```java
+com.fasterxml.jackson.annotation.*
+```
+
+### 30%
+
+Base image injects an old Jackson via environment variables.
+
+### 10%
+
+The image deployed in OpenShift is actually an old image tag and not the newly built one.
+
+---
+
+Please share these four outputs:
+
+```bash
+jar tf epay_payment_service-dev-85b5df32.jar | grep jackson
+jar tf epay_payment_service-dev-85b5df32.jar | grep JsonFormat.class
+for j in BOOT-INF/lib/*.jar; do jar tf "$j" | grep JsonFormat.class && echo $j; done
+env | grep -i java
+```
+
+Once I see those outputs, I can tell you the exact fix instead of guessing.
