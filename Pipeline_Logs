@@ -1,27 +1,24 @@
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction | grep -i jackson
-java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
-java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
 
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+
+# COPY ./sms.cer  /tmp
+# RUN ls -lrth /tmp/
+# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/tls/certs/
+# COPY ./merchant.sbiuat.bank.in.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test1.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test1.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test2.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test2.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+# COPY ./test3.mobikwik.com.crt /etc/pki/tls/certs/
+# COPY ./test3.mobikwik.com.crt /etc/pki/ca-trust/source/anchors/
+#
+COPY /build/libs/epay_payment_service-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_payment_service-$VERSION.jar"'
