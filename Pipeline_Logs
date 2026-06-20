@@ -1,56 +1,27 @@
-Two important things here, and the second one is the real finding — let's separate them.
-
-## Thing 1 — `ls -la / | grep epay_payment_service` returned nothing
-
-This is the actual blocker right now. Your glob `/epay_payment_service-dev-*.jar` matched **zero files** at `/`, which means the jar in this container isn't sitting at `/` the way it was in the build you investigated earlier. The `jar` commands failed with `NoSuchFileException` because the shell passed the literal unexpanded glob string to `jar` (no match found, so no expansion happened).
-
-Find out where it actually lives:
-
-```bash
-find / -maxdepth 3 -name "epay_payment_service*.jar" 2>/dev/null
-```
-
-or check the actual launch command, same as before:
-
-```bash
-cat /proc/1/cmdline | tr '\0' ' '; echo
-```
-
-That tells you the exact path/filename Java is running, and that's the path to use for the `jar tf` checks.
-
-## Thing 2 — The crash is still happening, and this matters a lot more
-
-Even before fixing the path issue, the live log already answers the real question:
-
-```
-java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature ...
-```
-
-This is still firing, on the same endpoints (`/api/payments/v1/inb/sbi/initiate`, `/api/payments/v1/upi/sbi/qr-sign`, and the `CashChallanStatusQueryListener`). So **the fix has not taken effect on this running pod** — meaning one of two things is true:
-
-1. **This pod is running an older image**, deployed before the `build.gradle` fix was committed and a new image was built/pushed from it, or
-2. **The image *was* rebuilt with the fix, but the Helm/deployment manifest is still pointing at the old image tag**, so the new jar never actually got deployed to this pod despite the build succeeding.
-
-Given you mentioned earlier you'd already resolved a similar "Helm always deploys old tag" issue (the `--set image.tag=${VERSION}` removal), it's worth specifically re-checking that this build's correct tag is what's actually running.
-
-## How to confirm which jar/image is actually in this pod
-
-```bash
-oc describe pod payment-paymentservice-658898fbcc-t9g8f -n dev-transaction | grep -i image
-```
-
-This shows the exact image (with tag/digest) Kubernetes pulled for this pod. Compare that against the image that was built from the commit containing your `build.gradle` fix — check your pipeline's image-build stage output for the tag it pushed, and confirm it matches.
-
-Also check when this image was built vs. when you committed the fix:
-
-```bash
-oc exec -it payment-paymentservice-658898fbcc-t9g8f -n dev-transaction -- sh -c 'find / -maxdepth 1 -name "epay_payment_service*.jar" -printf "%TY-%Tm-%Td %TH:%TM %p\n" 2>/dev/null'
-```
-
-If the jar's timestamp predates your `build.gradle` commit, that confirms it's the old jar still deployed — meaning this is a **deployment pipeline issue, not a problem with the fix itself**.
-
-## Most likely root cause given your history
-
-You'd previously fixed a Helm `image.tag` bug where `1.16.0` always deployed regardless of `${VERSION}`. If that fix didn't fully propagate to every environment/values file, or if there's a separate deploy stage for `dev-transaction` that wasn't using the corrected `values.update.yml` flow, this pod could simply be running a stale image built before your Gradle change — which would explain the identical crash with zero relation to whether the Gradle fix itself works.
-
-Can you check the deploy job log for this specific pipeline run (the one with commit `24c601f8` that built successfully) — specifically whether the `deploy-dev` (or equivalent) stage actually ran and pushed *this* image, and whether its tag matches what `oc describe pod` shows now? That tells us definitively whether the fix never reached the pod, versus the fix reaching the pod and still not working.
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-658898fbcc-t9g8f  -n dev-transaction -- sh
+sh-5.1$
+sh-5.1$
+sh-5.1$ find / -maxdepth 3 -name "epay_payment_service*.jar" 2>/dev/null
+/home/default/epay_payment_service-dev-24c601f8.jar
+sh-5.1$ cat /proc/1/cmdline | tr '\0' ' '; echo
+java -jar epay_payment_service-dev-24c601f8.jar
+sh-5.1$ exit
+exit
+[osuser@bastion ~]$ oc describe pod payment-paymentservice-658898fbcc-t9g8f -n dev-transaction | grep -i image
+    Image:         registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
+    Image ID:      registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
+    Image:           registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462
+    Image ID:        registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21@sha256:930f0e4891eccf17838c3d784e3fcc3fa13739a445d19ca32ba75461096ba20f
+    Image:           artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8
+    Image ID:        artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service@sha256:fcd51c8af66350663c701494f56142b40ed5e7090676315cc87e4f01814028d7
+    Image:         registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
+    Image ID:      registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
+  Normal  Pulled          9m1s                   kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
+  Normal  Pulled          9m                     kubelet            Container image "registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462" already present on machine
+  Normal  Pulling         8m57s                  kubelet            Pulling image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8"
+  Normal  Pulled          8m54s                  kubelet            Successfully pulled image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8" in 2.628s (2.628s including waiting). Image size: 551074725 bytes.
+  Normal  Pulled          8m54s                  kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
+  Normal  Pulled          8m43s                  kubelet            Container image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8" already present on machine
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-658898fbcc-t9g8f -n dev-transaction -- sh -c 'find / -maxdepth 1 -name "epay_payment_service*.jar" -printf "%TY-%Tm-%Td %TH:%TM %p\n" 2>/dev/null'
+[osuser@bastion ~]$
