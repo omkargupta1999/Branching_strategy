@@ -1,74 +1,67 @@
-include:
-  - local: 'ci/common/base-setup.java.gradle.yml'
+Quick gut-check before the how-to: this would be a **temporary, manual patch directly inside a live pod's filesystem**, purely to confirm the fix works before committing it properly. That's a reasonable diagnostic step, but a few things to flag clearly:
 
-.build:
-  extends: .base_setup_java_gradle
-  stage: build
+## What this actually involves and its limits
 
-  script:
-    - |
-      set -eo pipefail
+- Pod filesystems are **ephemeral** — if the pod restarts, crashes, or gets rescheduled (which it will, given it's currently crash-looping), **your manual changes vanish** and it reverts to the broken image.
+- You'd be editing the running container's `BOOT-INF/lib` to remove the bad jar contents, but the JVM has **already started** with its classpath loaded — Jackson classes get loaded lazily on first use (which is why this only blows up on certain requests), so editing files on disk **won't fix the already-running JVM process**. You'd need to **restart the process inside the pod** after patching, not just edit and hope.
+- This is `dev-transaction` namespace based on your earlier logs, so the blast radius of doing this directly in the pod is low — but it's still good to be deliberate about it.
 
-      # ── Validate VERSION ──────────────────────────────────────────────────
-      if [ -z "$VERSION" ]; then
-        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
-        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
-        exit 1
-      fi
+## How to actually do it
 
-      
-      ./gradlew dependencies --configuration runtimeClasspath --warning-mode all
-      echo "Building VERSION: ${VERSION}"
+Since the pod is crash-looping (from your earlier log: `oc logs -f payment-paymentservice-...`), you need a pod that's at least staying up long enough to exec into. If it's stuck in `CrashLoopBackOff`, you may need to temporarily override the container's command so it doesn't immediately crash — e.g. patch the deployment to run `sleep infinity` instead of the real entrypoint, just for this test.
 
-      # ── Gradle build ──────────────────────────────────────────────────────
-      # Dependencies resolved from JFrog via settings.gradle in app repo
-      # -x test: unit tests run separately in test stage (java.unit.yml)
-      # -Pversion: sets project version used in bootJar archiveFileName
-      gradle clean build -x test -Pversion="${VERSION}" --info
+**Step 1 — get a stable shell.** If the pod currently dies before you can exec in:
 
-      # ── Verify output ─────────────────────────────────────────────────────
-      echo "Build output:"
-      ls -lh build/libs/
+```bash
+oc get pods -n dev-transaction | grep paymentservice
+```
 
-      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
-        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
-        exit 1
-      fi
+If it's bouncing too fast to exec into, temporarily scale to debug mode (you can revert after testing):
 
+```bash
+oc patch deployment payment-paymentservice -n dev-transaction --type='json' \
+  -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/command", "value": ["sleep", "infinity"]}]'
+```
 
-      # ── Build metadata for downstream stages ────────────────────────────────
-      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
-      # BUILD_TIME: consumed by image-build stage for OCI image labels
-      
-      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v plain | head -1 || true)
-      WAR_FILE=$(ls build/libs/*.war 2>/dev/null | grep -v plain | head -1 || true)
+This stops the real app from starting at all, so the pod stays alive for you to work in.
 
-      if [ -n "$JAR_FILE" ]; then
-        ARTIFACT_FILE="$JAR_FILE"
-      elif [ -n "$WAR_FILE" ]; then
-        ARTIFACT_FILE="$WAR_FILE"
-      else
-        echo "❌ ERROR: No deployable JAR or WAR found in build/libs/"
-        exit 1
-      fi
+**Step 2 — exec in and locate the jar:**
 
-      echo "✅ ARTIFACT: ${ARTIFACT_FILE}"
-      echo "JAR_FILE=${ARTIFACT_FILE}"                      >> build.env
-      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> build.env
+```bash
+oc exec -it <pod-name> -n dev-transaction -- sh
+```
 
+Inside the pod, find the actual app jar and where Java would unpack/read it from (Spring Boot fat jars don't extract to disk by default — they're read directly via a custom classloader at the zip-entry level). You likely don't have `zip`/`unzip` inside this minimal image (you found that out earlier — `unzip: command not found`), so this is the first real obstacle.
 
-      # JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
-      # echo "✅ JAR: ${JAR_FILE}"
-      # echo "JAR_FILE=${JAR_FILE}"                         >> build.env
-      # echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+**Step 3 — patch and repackage** without `zip`/`unzip` tools is awkward. If `jar` (the JDK tool) is present since Java is installed:
 
-  artifacts:
-    paths:
-      - build/libs/
-      - build/classes/
-      - build/resources/
-      - build/tmp/
-    reports:
-      dotenv: build.env
-    when: on_success
-    expire_in: 1 day
+```bash
+which jar
+```
+
+If `jar` exists, you can extract, delete the offending class files, and repack:
+
+```bash
+cd /tmp
+mkdir extracted && cd extracted
+jar xf /epay_payment_service-dev-*.jar BOOT-INF/lib/SBINEWPG_2023.jar
+cd ..
+mkdir vendor_extracted && cd vendor_extracted
+jar xf ../extracted/BOOT-INF/lib/SBINEWPG_2023.jar
+rm -rf com/fasterxml/jackson
+jar cf ../SBINEWPG_2023-cleaned.jar -C . .
+```
+
+Then replace the jar inside the app's fat jar — but **this is the hard part**: Spring Boot's loader reads `BOOT-INF/lib/*.jar` entries directly from the outer zip; updating a nested jar inside an existing zip without proper tooling is fiddly and error-prone with just `jar`/`zip` primitives (no `zip -d` available per your earlier finding).
+
+**Step 4 — restart the process** so the JVM picks up the patched classpath. Since you overrode the command to `sleep infinity`, you'd need to manually launch:
+
+```bash
+java -jar /path/to/patched-jar.jar &
+```
+
+then hit the same endpoint that triggered the crash before, and watch for the `NoSuchFieldError`.
+
+## My honest read
+
+Given the tooling gaps you've already hit in this pod (no `unzip`, no `find` returning matches reliably, no `zip -d`), this manual-patch-in-pod route is likely to cost you **more** time than just running the Gradle fix through the pipeline once — especially since the pipeline build already takes under 90 seconds per your logs. Want me to help you trim the build job down to just `bootJar` (skip the parts you don't need) so a real test cycle through the pipeline is just as fast as fiddling inside the pod, with none of the missing-tool friction?
