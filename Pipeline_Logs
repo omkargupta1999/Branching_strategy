@@ -1,27 +1,52 @@
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-658898fbcc-t9g8f  -n dev-transaction -- sh
-sh-5.1$
-sh-5.1$
-sh-5.1$ find / -maxdepth 3 -name "epay_payment_service*.jar" 2>/dev/null
-/home/default/epay_payment_service-dev-24c601f8.jar
-sh-5.1$ cat /proc/1/cmdline | tr '\0' ' '; echo
-java -jar epay_payment_service-dev-24c601f8.jar
-sh-5.1$ exit
-exit
-[osuser@bastion ~]$ oc describe pod payment-paymentservice-658898fbcc-t9g8f -n dev-transaction | grep -i image
-    Image:         registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
-    Image ID:      registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
-    Image:           registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462
-    Image ID:        registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21@sha256:930f0e4891eccf17838c3d784e3fcc3fa13739a445d19ca32ba75461096ba20f
-    Image:           artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8
-    Image ID:        artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service@sha256:fcd51c8af66350663c701494f56142b40ed5e7090676315cc87e4f01814028d7
-    Image:         registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
-    Image ID:      registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662
-  Normal  Pulled          9m1s                   kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal  Pulled          9m                     kubelet            Container image "registry.dev.sbiepay.sbi:8443/ubi9/openjdk-21:1.23-6.1756793462" already present on machine
-  Normal  Pulling         8m57s                  kubelet            Pulling image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8"
-  Normal  Pulled          8m54s                  kubelet            Successfully pulled image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8" in 2.628s (2.628s including waiting). Image size: 551074725 bytes.
-  Normal  Pulled          8m54s                  kubelet            Container image "registry.redhat.io/openshift-service-mesh/istio-proxyv2-rhel9@sha256:1306526a12590e284b1170cfccdf91388520360e2d7afab0d7f57111c4f28662" already present on machine
-  Normal  Pulled          8m43s                  kubelet            Container image "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-24c601f8" already present on machine
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-658898fbcc-t9g8f -n dev-transaction -- sh -c 'find / -maxdepth 1 -name "epay_payment_service*.jar" -printf "%TY-%Tm-%Td %TH:%TM %p\n" 2>/dev/null'
-[osuser@bastion ~]$
+This rules out the deployment-mismatch theory completely. The image tag `dev-24c601f8` confirmed in the pod is **exactly the same commit** as the pipeline log you shared earlier, where `stripJacksonFromVendorJars` and `repackVendorJar` both ran successfully. So this is the correct, freshly-built, freshly-pulled image — yet the crash is identical. That's a real and useful finding: **the fix ran, but didn't fix the runtime symptom.**
+
+Let's check the actual jar contents now, with the correct path:
+
+```bash
+oc exec -it payment-paymentservice-658898fbcc-t9g8f -n dev-transaction -- sh
+```
+
+```bash
+cd /home/default
+jar tf epay_payment_service-dev-24c601f8.jar | grep "BOOT-INF/lib/" | grep -i "SBINEWPG\|jackson"
+```
+
+This is the critical check. I have a specific hypothesis for what it'll show, based on something in your build log I should have caught earlier.
+
+## My suspicion
+
+Look at this line from your `--info` build log:
+
+```
++--- name:SBINEWPG_2023
+```
+
+In the dependency tree, Gradle lists it as `name:SBINEWPG_2023` with **no version** at all — not even `unspecified`. This is a flatDir-style file dependency. When Gradle resolves a `flatDir` repository dependency declared as `implementation 'name:SBINEWPG_2023'`, the **resolved file on disk typically keeps its exact original filename** — which may not start with the string `SBINEWPG_2023` in the way `startsWith()` expects, *or* — more likely — there could be **a second, separate copy of this same jar** already being pulled in transitively or referenced elsewhere, so the strip only cleaned one copy while the original still ships too.
+
+But there's a simpler, very likely explanation: **bootJar's `exclude` pattern might not be matching the original jar's path inside the archive.**
+
+I wrote:
+```groovy
+bootJar {
+    exclude '**/SBINEWPG_2023-*.jar'
+    ...
+}
+```
+
+This excludes anything matching `SBINEWPG_2023-*.jar` — but the **original** file is just `SBINEWPG_2023.jar` (no trailing `-something`), so this exclude pattern **never matches the original at all**. It only would have mattered if the original happened to also match a `-*` suffix pattern, which it doesn't. I made an error here — the exclude needs to explicitly target the original filename, not assume a wildcard that only matches the cleaned copy's naming.
+
+## Run the check above and look specifically for this
+
+```bash
+jar tf epay_payment_service-dev-24c601f8.jar | grep "BOOT-INF/lib/" | grep -i "SBINEWPG\|jackson"
+```
+
+I'd bet you'll see **both**:
+```
+BOOT-INF/lib/SBINEWPG_2023.jar          ← original, still there, still has old Jackson
+BOOT-INF/lib/SBINEWPG_2023-cleaned.jar  ← cleaned copy, also there
+```
+
+If that's what you see, that confirms it precisely: the original (with the 2017 Jackson classes) is still in the bundle, sitting alongside the cleaned copy, and Spring Boot's classloader picks up the original first (or both, with the original winning the race) — so the crash continues exactly as before.
+
+Paste me that output and I'll give you the one-line fix to the `exclude` pattern.
