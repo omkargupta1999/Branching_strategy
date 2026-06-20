@@ -1,158 +1,713 @@
-Perfect. The good news is we've already found one mistake in our debugging approach.
-
-Your jar is **not** under `/app`.
-
-It is here:
-
-```bash
-/home/default/epay_payment_service-dev-85b5df32.jar
-```
-
-So all previous `jar tf /app/...` commands failed because the path was wrong.
-
-Now let's do the real investigation.
-
-# Step 1: List all Jackson jars inside the running application
-
-Run:
-
-```bash
-oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
-sh -c 'jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson'
-```
-
-Paste the entire output.
-
----
-
-# Step 2: Extract the application jar inside the pod
-
-```bash
-oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- sh
-```
-
-Then:
-
-```bash
-mkdir -p /tmp/check
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- \
+> sh -c 'jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson'
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+BOOT-INF/lib/jackson-annotations-2.17.2.jar
+BOOT-INF/lib/jackson-core-2.17.2.jar
+BOOT-INF/lib/jackson-databind-2.17.2.jar
+BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-joda-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar
+BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar
+BOOT-INF/lib/jjwt-jackson-0.12.6.jar
+BOOT-INF/lib/third-party-jackson-core-2.30.6.jar
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6df4bfd94b-pc7bt -n dev-transaction -- sh
+sh-5.1$ mkdir -p /tmp/check
 cd /tmp/check
 jar xf /home/default/epay_payment_service-dev-85b5df32.jar
 ls BOOT-INF/lib | grep jackson
-```
-
-Paste the output.
-
----
-
-# Step 3: This is the most important command
-
-Run:
-
-```bash
-for j in BOOT-INF/lib/*.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+jackson-annotations-2.17.2.jar
+jackson-core-2.17.2.jar
+jackson-databind-2.17.2.jar
+jackson-dataformat-yaml-2.17.2.jar
+jackson-datatype-jdk8-2.17.2.jar
+jackson-datatype-joda-2.17.2.jar
+jackson-datatype-jsr310-2.17.2.jar
+jackson-module-parameter-names-2.17.2.jar
+jjwt-jackson-0.12.6.jar
+third-party-jackson-core-2.30.6.jar
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   jar tf "$j" 2>/dev/null | grep -q "com/fasterxml/jackson/annotation/JsonFormat.class"
   if [ $? -eq 0 ]; then
       echo "FOUND IN: $j"
   fi
 done
-```
-
-This will tell us if any vendor jar is carrying its own Jackson classes.
-
----
-
-# Step 4: Check the actual version inside `jackson-annotations`
-
-```bash
-jar xf BOOT-INF/lib/jackson-annotations-*.jar
+FOUND IN: BOOT-INF/lib/SBINEWPG_2023.jar
+FOUND IN: BOOT-INF/lib/jackson-annotations-2.17.2.jar
+sh-5.1$ jar xf BOOT-INF/lib/jackson-annotations-*.jar
 javap -classpath . com.fasterxml.jackson.annotation.JsonFormat\$Feature | grep READ_UNKNOWN
-```
-
-If everything is correct, you should see:
-
-```java
-READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
-```
-
-If you don't see it, then despite the filename being `2.17.2`, the jar itself is corrupted or not actually 2.17.2.
-
----
-
-# Step 5: Check if another jar contains Jackson classes
-
-Run:
-
-```bash
-for j in BOOT-INF/lib/*.jar
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+  public static final com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_AS_NULL;
+  public static final com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE;
+sh-5.1$
+sh-5.1$
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   echo "Checking $j"
   jar tf "$j" 2>/dev/null | grep "com/fasterxml/jackson/annotation" && echo "^^^^^^"
 done
-```
-
----
-
-# Another thing I noticed
-
-Your container is based on:
-
-```bash
-JBOSS_CONTAINER_JAVA_RUN_MODULE
-JBOSS_CONTAINER_JAVA_S2I_MODULE
-```
-
-This means you're using a Red Hat UBI/S2I Java image.
-
-I have seen cases where S2I injects additional libraries.
-
-Run:
-
-```bash
-find /deployments -name "*.jar" 2>/dev/null
-```
-
-and
-
-```bash
-find /opt -name "*jackson*" 2>/dev/null
-```
-
-and
-
-```bash
-find /usr -name "jackson*.jar" 2>/dev/null
-```
-
----
-
-# My suspicion has now changed
-
-Earlier I thought:
-
-1. Vendor jar → 60%
-
-Now after seeing the container:
-
-1. Old Jackson injected by S2I base image → 50%
-2. Vendor jar containing shaded Jackson → 40%
-3. Corrupted `jackson-annotations-2.17.2.jar` → 10%
-
----
-
-The **single most important output** right now is this:
-
-```bash
-jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson
-```
-
-and
-
-```bash
-for j in BOOT-INF/lib/*.jar
+Checking BOOT-INF/lib/BASE64DecoderData.jar
+Checking BOOT-INF/lib/HdrHistogram-2.2.2.jar
+Checking BOOT-INF/lib/HikariCP-5.1.0.jar
+Checking BOOT-INF/lib/LatencyUtils-2.0.3.jar
+Checking BOOT-INF/lib/PGPUtility.jar
+Checking BOOT-INF/lib/SBINEWPG_2023.jar
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
+com/fasterxml/jackson/annotation/JsonFormat$Feature.class
+com/fasterxml/jackson/annotation/JsonFormat$Features.class
+com/fasterxml/jackson/annotation/JsonFormat$Shape.class
+com/fasterxml/jackson/annotation/JsonFormat$Value.class
+com/fasterxml/jackson/annotation/JsonFormat.class
+com/fasterxml/jackson/annotation/JsonGetter.class
+com/fasterxml/jackson/annotation/JsonIdentityInfo.class
+com/fasterxml/jackson/annotation/JsonIdentityReference.class
+com/fasterxml/jackson/annotation/JsonIgnore.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties.class
+com/fasterxml/jackson/annotation/JsonIgnoreType.class
+com/fasterxml/jackson/annotation/JsonInclude$Include.class
+com/fasterxml/jackson/annotation/JsonInclude$Value.class
+com/fasterxml/jackson/annotation/JsonInclude.class
+com/fasterxml/jackson/annotation/JsonManagedReference.class
+com/fasterxml/jackson/annotation/JsonMerge.class
+com/fasterxml/jackson/annotation/JsonProperty$Access.class
+com/fasterxml/jackson/annotation/JsonProperty.class
+com/fasterxml/jackson/annotation/JsonPropertyDescription.class
+com/fasterxml/jackson/annotation/JsonPropertyOrder.class
+com/fasterxml/jackson/annotation/JsonRawValue.class
+com/fasterxml/jackson/annotation/JsonRootName.class
+com/fasterxml/jackson/annotation/JsonSetter$Value.class
+com/fasterxml/jackson/annotation/JsonSetter.class
+com/fasterxml/jackson/annotation/JsonSubTypes$Type.class
+com/fasterxml/jackson/annotation/JsonSubTypes.class
+com/fasterxml/jackson/annotation/JsonTypeId.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$As.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Id.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$None.class
+com/fasterxml/jackson/annotation/JsonTypeInfo.class
+com/fasterxml/jackson/annotation/JsonTypeName.class
+com/fasterxml/jackson/annotation/JsonUnwrapped.class
+com/fasterxml/jackson/annotation/JsonValue.class
+com/fasterxml/jackson/annotation/JsonView.class
+com/fasterxml/jackson/annotation/Nulls.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator$IdKey.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$Base.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$IntSequenceGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$None.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$PropertyGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$StringIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$UUIDGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators.class
+com/fasterxml/jackson/annotation/ObjectIdResolver.class
+com/fasterxml/jackson/annotation/OptBoolean.class
+com/fasterxml/jackson/annotation/PropertyAccessor.class
+com/fasterxml/jackson/annotation/SimpleObjectIdResolver.class
+^^^^^^
+Checking BOOT-INF/lib/activation-1.1.jar
+Checking BOOT-INF/lib/angus-activation-2.0.2.jar
+Checking BOOT-INF/lib/annotations-2.30.6.jar
+Checking BOOT-INF/lib/antlr4-runtime-4.13.0.jar
+Checking BOOT-INF/lib/apache-client-2.30.6.jar
+Checking BOOT-INF/lib/arns-2.30.6.jar
+Checking BOOT-INF/lib/aspectjweaver-1.9.22.1.jar
+Checking BOOT-INF/lib/attoparser-2.0.6.RELEASE.jar
+Checking BOOT-INF/lib/auth-2.30.6.jar
+Checking BOOT-INF/lib/authentication-service-0.1.0.jar
+Checking BOOT-INF/lib/aws-core-2.30.6.jar
+Checking BOOT-INF/lib/aws-query-protocol-2.30.6.jar
+Checking BOOT-INF/lib/aws-xml-protocol-2.30.6.jar
+Checking BOOT-INF/lib/byte-buddy-1.14.19.jar
+Checking BOOT-INF/lib/checksums-2.30.6.jar
+Checking BOOT-INF/lib/checksums-spi-2.30.6.jar
+Checking BOOT-INF/lib/classmate-1.7.0.jar
+Checking BOOT-INF/lib/commons-codec-1.4.jar
+Checking BOOT-INF/lib/commons-collections4-4.4.jar
+Checking BOOT-INF/lib/commons-io-2.14.0.jar
+Checking BOOT-INF/lib/commons-lang3-3.12.0.jar
+Checking BOOT-INF/lib/commons-logging-1.2.jar
+Checking BOOT-INF/lib/commons-text-1.11.0.jar
+Checking BOOT-INF/lib/crt-core-2.30.6.jar
+Checking BOOT-INF/lib/encryption-decryption-service-0.1.0.jar
+Checking BOOT-INF/lib/endpoints-spi-2.30.6.jar
+Checking BOOT-INF/lib/eventstream-1.0.1.jar
+Checking BOOT-INF/lib/flying-saucer-core-9.11.3.jar
+Checking BOOT-INF/lib/flying-saucer-pdf-9.11.3.jar
+Checking BOOT-INF/lib/gson-2.7.jar
+Checking BOOT-INF/lib/hibernate-commons-annotations-6.0.6.Final.jar
+Checking BOOT-INF/lib/hibernate-core-6.5.2.Final.jar
+Checking BOOT-INF/lib/hibernate-envers-6.5.2.Final.jar
+Checking BOOT-INF/lib/hibernate-validator-8.0.1.Final.jar
+Checking BOOT-INF/lib/http-auth-2.30.6.jar
+Checking BOOT-INF/lib/http-auth-aws-2.30.6.jar
+Checking BOOT-INF/lib/http-auth-aws-eventstream-2.30.6.jar
+Checking BOOT-INF/lib/http-auth-spi-2.30.6.jar
+Checking BOOT-INF/lib/http-client-spi-2.30.6.jar
+Checking BOOT-INF/lib/httpclient-4.5.13.jar
+Checking BOOT-INF/lib/httpcore-4.4.11.jar
+Checking BOOT-INF/lib/identity-spi-2.30.6.jar
+Checking BOOT-INF/lib/istack-commons-runtime-4.1.2.jar
+Checking BOOT-INF/lib/jackson-annotations-2.17.2.jar
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
+com/fasterxml/jackson/annotation/JsonFormat$Feature.class
+com/fasterxml/jackson/annotation/JsonFormat$Features.class
+com/fasterxml/jackson/annotation/JsonFormat$Shape.class
+com/fasterxml/jackson/annotation/JsonFormat$Value.class
+com/fasterxml/jackson/annotation/JsonFormat.class
+com/fasterxml/jackson/annotation/JsonGetter.class
+com/fasterxml/jackson/annotation/JsonIdentityInfo.class
+com/fasterxml/jackson/annotation/JsonIdentityReference.class
+com/fasterxml/jackson/annotation/JsonIgnore.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties.class
+com/fasterxml/jackson/annotation/JsonIgnoreType.class
+com/fasterxml/jackson/annotation/JsonInclude$Include.class
+com/fasterxml/jackson/annotation/JsonInclude$Value.class
+com/fasterxml/jackson/annotation/JsonInclude.class
+com/fasterxml/jackson/annotation/JsonIncludeProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIncludeProperties.class
+com/fasterxml/jackson/annotation/JsonKey.class
+com/fasterxml/jackson/annotation/JsonManagedReference.class
+com/fasterxml/jackson/annotation/JsonMerge.class
+com/fasterxml/jackson/annotation/JsonProperty$Access.class
+com/fasterxml/jackson/annotation/JsonProperty.class
+com/fasterxml/jackson/annotation/JsonPropertyDescription.class
+com/fasterxml/jackson/annotation/JsonPropertyOrder.class
+com/fasterxml/jackson/annotation/JsonRawValue.class
+com/fasterxml/jackson/annotation/JsonRootName.class
+com/fasterxml/jackson/annotation/JsonSetter$Value.class
+com/fasterxml/jackson/annotation/JsonSetter.class
+com/fasterxml/jackson/annotation/JsonSubTypes$Type.class
+com/fasterxml/jackson/annotation/JsonSubTypes.class
+com/fasterxml/jackson/annotation/JsonTypeId.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$As.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Id.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$None.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Value.class
+com/fasterxml/jackson/annotation/JsonTypeInfo.class
+com/fasterxml/jackson/annotation/JsonTypeName.class
+com/fasterxml/jackson/annotation/JsonUnwrapped.class
+com/fasterxml/jackson/annotation/JsonValue.class
+com/fasterxml/jackson/annotation/JsonView.class
+com/fasterxml/jackson/annotation/Nulls.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator$IdKey.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$Base.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$IntSequenceGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$None.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$PropertyGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$StringIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$UUIDGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators.class
+com/fasterxml/jackson/annotation/ObjectIdResolver.class
+com/fasterxml/jackson/annotation/OptBoolean.class
+com/fasterxml/jackson/annotation/PropertyAccessor.class
+com/fasterxml/jackson/annotation/SimpleObjectIdResolver.class
+com/fasterxml/jackson/annotation/package-info.class
+^^^^^^
+Checking BOOT-INF/lib/jackson-core-2.17.2.jar
+Checking BOOT-INF/lib/jackson-databind-2.17.2.jar
+Checking BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar
+Checking BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar
+Checking BOOT-INF/lib/jackson-datatype-joda-2.17.2.jar
+Checking BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar
+Checking BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar
+Checking BOOT-INF/lib/jakarta.activation-2.0.1.jar
+Checking BOOT-INF/lib/jakarta.activation-api-2.1.4.jar
+Checking BOOT-INF/lib/jakarta.annotation-api-2.1.1.jar
+Checking BOOT-INF/lib/jakarta.inject-api-2.0.1.jar
+Checking BOOT-INF/lib/jakarta.mail-2.0.1.jar
+Checking BOOT-INF/lib/jakarta.mail-2.0.3.jar
+Checking BOOT-INF/lib/jakarta.mail-api-2.1.2.jar
+Checking BOOT-INF/lib/jakarta.persistence-api-3.1.0.jar
+Checking BOOT-INF/lib/jakarta.transaction-api-2.0.1.jar
+Checking BOOT-INF/lib/jakarta.validation-api-3.0.2.jar
+Checking BOOT-INF/lib/jakarta.xml.bind-api-4.0.2.jar
+Checking BOOT-INF/lib/jandex-3.1.2.jar
+Checking BOOT-INF/lib/javassist-3.29.0-GA.jar
+Checking BOOT-INF/lib/javax.mail-1.6.2.jar
+Checking BOOT-INF/lib/javax.mail-api-1.6.2.jar
+Checking BOOT-INF/lib/javax.persistence-api-2.2.jar
+Checking BOOT-INF/lib/jaxb-api-2.3.1.jar
+Checking BOOT-INF/lib/jaxb-core-4.0.5.jar
+Checking BOOT-INF/lib/jaxb-runtime-4.0.5.jar
+Checking BOOT-INF/lib/jboss-logging-3.5.3.Final.jar
+Checking BOOT-INF/lib/jjwt-api-0.12.6.jar
+Checking BOOT-INF/lib/jjwt-impl-0.12.6.jar
+Checking BOOT-INF/lib/jjwt-jackson-0.12.6.jar
+Checking BOOT-INF/lib/joda-time-2.10.14.jar
+Checking BOOT-INF/lib/json-20090211.jar
+Checking BOOT-INF/lib/json-utils-2.30.6.jar
+Checking BOOT-INF/lib/jul-to-slf4j-2.0.16.jar
+Checking BOOT-INF/lib/kafka-clients-3.7.1.jar
+Checking BOOT-INF/lib/liquibase-core-4.27.0.jar
+Checking BOOT-INF/lib/log4j-api-2.23.1.jar
+Checking BOOT-INF/lib/log4j-to-slf4j-2.23.1.jar
+Checking BOOT-INF/lib/logback-classic-1.5.7.jar
+Checking BOOT-INF/lib/logback-core-1.5.7.jar
+Checking BOOT-INF/lib/logging-service-1.0-SNAPSHOT.jar
+Checking BOOT-INF/lib/lz4-java-1.8.0.jar
+Checking BOOT-INF/lib/mapstruct-1.5.5.Final.jar
+Checking BOOT-INF/lib/metrics-spi-2.30.6.jar
+Checking BOOT-INF/lib/micrometer-commons-1.13.3.jar
+Checking BOOT-INF/lib/micrometer-core-1.13.3.jar
+Checking BOOT-INF/lib/micrometer-jakarta9-1.13.3.jar
+Checking BOOT-INF/lib/micrometer-observation-1.13.3.jar
+Checking BOOT-INF/lib/modelmapper-2.4.4.jar
+Checking BOOT-INF/lib/netty-buffer-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-codec-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-codec-dns-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-codec-http-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-codec-http2-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-codec-socks-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-common-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-handler-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-handler-proxy-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-nio-client-2.30.6.jar
+Checking BOOT-INF/lib/netty-resolver-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-resolver-dns-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-resolver-dns-classes-macos-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-resolver-dns-native-macos-4.1.112.Final-osx-x86_64.jar
+Checking BOOT-INF/lib/netty-transport-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-transport-classes-epoll-4.1.112.Final.jar
+Checking BOOT-INF/lib/netty-transport-native-epoll-4.1.112.Final-linux-x86_64.jar
+Checking BOOT-INF/lib/netty-transport-native-unix-common-4.1.112.Final.jar
+Checking BOOT-INF/lib/notification-service-0.0.1-SNAPSHOT.jar
+Checking BOOT-INF/lib/ognl-3.3.4.jar
+Checking BOOT-INF/lib/ojdbc11-23.5.0.24.07.jar
+Checking BOOT-INF/lib/opencsv-5.9.jar
+Checking BOOT-INF/lib/openpdf-2.0.3.jar
+Checking BOOT-INF/lib/profiles-2.30.6.jar
+Checking BOOT-INF/lib/protocol-core-2.30.6.jar
+Checking BOOT-INF/lib/reactive-streams-1.0.4.jar
+Checking BOOT-INF/lib/reactor-core-3.6.9.jar
+Checking BOOT-INF/lib/reactor-netty-core-1.1.22.jar
+Checking BOOT-INF/lib/reactor-netty-http-1.1.22.jar
+Checking BOOT-INF/lib/regions-2.30.6.jar
+Checking BOOT-INF/lib/retries-2.30.6.jar
+Checking BOOT-INF/lib/retries-spi-2.30.6.jar
+Checking BOOT-INF/lib/s3-2.30.6.jar
+Checking BOOT-INF/lib/sdk-core-2.30.6.jar
+Checking BOOT-INF/lib/slf4j-api-2.0.16.jar
+Checking BOOT-INF/lib/snakeyaml-2.2.jar
+Checking BOOT-INF/lib/snappy-java-1.1.10.5.jar
+Checking BOOT-INF/lib/spring-aop-6.1.12.jar
+Checking BOOT-INF/lib/spring-aspects-6.1.12.jar
+Checking BOOT-INF/lib/spring-beans-6.1.12.jar
+Checking BOOT-INF/lib/spring-boot-3.3.3.jar
+Checking BOOT-INF/lib/spring-boot-actuator-3.3.3.jar
+Checking BOOT-INF/lib/spring-boot-actuator-autoconfigure-3.3.3.jar
+Checking BOOT-INF/lib/spring-boot-autoconfigure-3.3.3.jar
+Checking BOOT-INF/lib/spring-boot-jarmode-tools-3.3.3.jar
+Checking BOOT-INF/lib/spring-context-6.1.12.jar
+Checking BOOT-INF/lib/spring-context-support-5.3.30.jar
+Checking BOOT-INF/lib/spring-core-6.1.12.jar
+Checking BOOT-INF/lib/spring-data-commons-3.3.3.jar
+Checking BOOT-INF/lib/spring-data-jpa-3.3.3.jar
+Checking BOOT-INF/lib/spring-expression-6.1.12.jar
+Checking BOOT-INF/lib/spring-jcl-6.1.12.jar
+Checking BOOT-INF/lib/spring-jdbc-6.1.12.jar
+Checking BOOT-INF/lib/spring-kafka-3.2.3.jar
+Checking BOOT-INF/lib/spring-messaging-6.1.12.jar
+Checking BOOT-INF/lib/spring-orm-6.1.12.jar
+Checking BOOT-INF/lib/spring-retry-2.0.8.jar
+Checking BOOT-INF/lib/spring-tx-6.1.12.jar
+Checking BOOT-INF/lib/spring-web-6.1.12.jar
+Checking BOOT-INF/lib/spring-webflux-6.1.12.jar
+Checking BOOT-INF/lib/spring-webmvc-6.1.12.jar
+Checking BOOT-INF/lib/springdoc-openapi-starter-common-2.6.0.jar
+Checking BOOT-INF/lib/springdoc-openapi-starter-webmvc-api-2.6.0.jar
+Checking BOOT-INF/lib/springdoc-openapi-starter-webmvc-ui-2.6.0.jar
+Checking BOOT-INF/lib/swagger-annotations-jakarta-2.2.22.jar
+Checking BOOT-INF/lib/swagger-core-jakarta-2.2.22.jar
+Checking BOOT-INF/lib/swagger-models-jakarta-2.2.22.jar
+Checking BOOT-INF/lib/swagger-ui-5.17.14.jar
+Checking BOOT-INF/lib/third-party-jackson-core-2.30.6.jar
+Checking BOOT-INF/lib/thymeleaf-3.1.1.RELEASE.jar
+Checking BOOT-INF/lib/thymeleaf-spring5-3.1.1.RELEASE.jar
+Checking BOOT-INF/lib/tomcat-embed-core-10.1.28.jar
+Checking BOOT-INF/lib/tomcat-embed-el-10.1.28.jar
+Checking BOOT-INF/lib/tomcat-embed-websocket-10.1.28.jar
+Checking BOOT-INF/lib/txw2-4.0.5.jar
+Checking BOOT-INF/lib/unbescape-1.1.6.RELEASE.jar
+Checking BOOT-INF/lib/utils-2.30.6.jar
+Checking BOOT-INF/lib/zstd-jni-1.5.6-3.jar
+sh-5.1$ find /deployments -name "*.jar" 2>/dev/null
+sh-5.1$ find /opt -name "*jackson*" 2>/dev/null
+sh-5.1$ find /usr -name "jackson*.jar" 2>/dev/null
+sh-5.1$ jar tf /home/default/epay_payment_service-dev-85b5df32.jar | grep jackson
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+BOOT-INF/lib/jackson-annotations-2.17.2.jar
+BOOT-INF/lib/jackson-core-2.17.2.jar
+BOOT-INF/lib/jackson-databind-2.17.2.jar
+BOOT-INF/lib/jackson-dataformat-yaml-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jdk8-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-joda-2.17.2.jar
+BOOT-INF/lib/jackson-datatype-jsr310-2.17.2.jar
+BOOT-INF/lib/jackson-module-parameter-names-2.17.2.jar
+BOOT-INF/lib/jjwt-jackson-0.12.6.jar
+BOOT-INF/lib/third-party-jackson-core-2.30.6.jar
+sh-5.1$ for j in BOOT-INF/lib/*.jar
 do
   jar tf "$j" | grep "com/fasterxml/jackson/annotation"
 done
-```
-
-Once you paste those two outputs, we should be able to identify the exact root cause instead of guessing.
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
+com/fasterxml/jackson/annotation/JsonFormat$Feature.class
+com/fasterxml/jackson/annotation/JsonFormat$Features.class
+com/fasterxml/jackson/annotation/JsonFormat$Shape.class
+com/fasterxml/jackson/annotation/JsonFormat$Value.class
+com/fasterxml/jackson/annotation/JsonFormat.class
+com/fasterxml/jackson/annotation/JsonGetter.class
+com/fasterxml/jackson/annotation/JsonIdentityInfo.class
+com/fasterxml/jackson/annotation/JsonIdentityReference.class
+com/fasterxml/jackson/annotation/JsonIgnore.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties.class
+com/fasterxml/jackson/annotation/JsonIgnoreType.class
+com/fasterxml/jackson/annotation/JsonInclude$Include.class
+com/fasterxml/jackson/annotation/JsonInclude$Value.class
+com/fasterxml/jackson/annotation/JsonInclude.class
+com/fasterxml/jackson/annotation/JsonManagedReference.class
+com/fasterxml/jackson/annotation/JsonMerge.class
+com/fasterxml/jackson/annotation/JsonProperty$Access.class
+com/fasterxml/jackson/annotation/JsonProperty.class
+com/fasterxml/jackson/annotation/JsonPropertyDescription.class
+com/fasterxml/jackson/annotation/JsonPropertyOrder.class
+com/fasterxml/jackson/annotation/JsonRawValue.class
+com/fasterxml/jackson/annotation/JsonRootName.class
+com/fasterxml/jackson/annotation/JsonSetter$Value.class
+com/fasterxml/jackson/annotation/JsonSetter.class
+com/fasterxml/jackson/annotation/JsonSubTypes$Type.class
+com/fasterxml/jackson/annotation/JsonSubTypes.class
+com/fasterxml/jackson/annotation/JsonTypeId.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$As.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Id.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$None.class
+com/fasterxml/jackson/annotation/JsonTypeInfo.class
+com/fasterxml/jackson/annotation/JsonTypeName.class
+com/fasterxml/jackson/annotation/JsonUnwrapped.class
+com/fasterxml/jackson/annotation/JsonValue.class
+com/fasterxml/jackson/annotation/JsonView.class
+com/fasterxml/jackson/annotation/Nulls.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator$IdKey.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$Base.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$IntSequenceGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$None.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$PropertyGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$StringIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$UUIDGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators.class
+com/fasterxml/jackson/annotation/ObjectIdResolver.class
+com/fasterxml/jackson/annotation/OptBoolean.class
+com/fasterxml/jackson/annotation/PropertyAccessor.class
+com/fasterxml/jackson/annotation/SimpleObjectIdResolver.class
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+com/fasterxml/jackson/annotation/
+com/fasterxml/jackson/annotation/JacksonAnnotation.class
+com/fasterxml/jackson/annotation/JacksonAnnotationValue.class
+com/fasterxml/jackson/annotation/JacksonAnnotationsInside.class
+com/fasterxml/jackson/annotation/JacksonInject$Value.class
+com/fasterxml/jackson/annotation/JacksonInject.class
+com/fasterxml/jackson/annotation/JsonAlias.class
+com/fasterxml/jackson/annotation/JsonAnyGetter.class
+com/fasterxml/jackson/annotation/JsonAnySetter.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$1.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Value.class
+com/fasterxml/jackson/annotation/JsonAutoDetect$Visibility.class
+com/fasterxml/jackson/annotation/JsonAutoDetect.class
+com/fasterxml/jackson/annotation/JsonBackReference.class
+com/fasterxml/jackson/annotation/JsonClassDescription.class
+com/fasterxml/jackson/annotation/JsonCreator$Mode.class
+com/fasterxml/jackson/annotation/JsonCreator.class
+com/fasterxml/jackson/annotation/JsonEnumDefaultValue.class
+com/fasterxml/jackson/annotation/JsonFilter.class
+com/fasterxml/jackson/annotation/JsonFormat$Feature.class
+com/fasterxml/jackson/annotation/JsonFormat$Features.class
+com/fasterxml/jackson/annotation/JsonFormat$Shape.class
+com/fasterxml/jackson/annotation/JsonFormat$Value.class
+com/fasterxml/jackson/annotation/JsonFormat.class
+com/fasterxml/jackson/annotation/JsonGetter.class
+com/fasterxml/jackson/annotation/JsonIdentityInfo.class
+com/fasterxml/jackson/annotation/JsonIdentityReference.class
+com/fasterxml/jackson/annotation/JsonIgnore.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIgnoreProperties.class
+com/fasterxml/jackson/annotation/JsonIgnoreType.class
+com/fasterxml/jackson/annotation/JsonInclude$Include.class
+com/fasterxml/jackson/annotation/JsonInclude$Value.class
+com/fasterxml/jackson/annotation/JsonInclude.class
+com/fasterxml/jackson/annotation/JsonIncludeProperties$Value.class
+com/fasterxml/jackson/annotation/JsonIncludeProperties.class
+com/fasterxml/jackson/annotation/JsonKey.class
+com/fasterxml/jackson/annotation/JsonManagedReference.class
+com/fasterxml/jackson/annotation/JsonMerge.class
+com/fasterxml/jackson/annotation/JsonProperty$Access.class
+com/fasterxml/jackson/annotation/JsonProperty.class
+com/fasterxml/jackson/annotation/JsonPropertyDescription.class
+com/fasterxml/jackson/annotation/JsonPropertyOrder.class
+com/fasterxml/jackson/annotation/JsonRawValue.class
+com/fasterxml/jackson/annotation/JsonRootName.class
+com/fasterxml/jackson/annotation/JsonSetter$Value.class
+com/fasterxml/jackson/annotation/JsonSetter.class
+com/fasterxml/jackson/annotation/JsonSubTypes$Type.class
+com/fasterxml/jackson/annotation/JsonSubTypes.class
+com/fasterxml/jackson/annotation/JsonTypeId.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$As.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Id.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$None.class
+com/fasterxml/jackson/annotation/JsonTypeInfo$Value.class
+com/fasterxml/jackson/annotation/JsonTypeInfo.class
+com/fasterxml/jackson/annotation/JsonTypeName.class
+com/fasterxml/jackson/annotation/JsonUnwrapped.class
+com/fasterxml/jackson/annotation/JsonValue.class
+com/fasterxml/jackson/annotation/JsonView.class
+com/fasterxml/jackson/annotation/Nulls.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator$IdKey.class
+com/fasterxml/jackson/annotation/ObjectIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$Base.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$IntSequenceGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$None.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$PropertyGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$StringIdGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators$UUIDGenerator.class
+com/fasterxml/jackson/annotation/ObjectIdGenerators.class
+com/fasterxml/jackson/annotation/ObjectIdResolver.class
+com/fasterxml/jackson/annotation/OptBoolean.class
+com/fasterxml/jackson/annotation/PropertyAccessor.class
+com/fasterxml/jackson/annotation/SimpleObjectIdResolver.class
+com/fasterxml/jackson/annotation/package-info.class
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=ch
