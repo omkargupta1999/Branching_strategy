@@ -1,63 +1,44 @@
-Now we have two critical pieces of information:
-
-**1. The new image IS deployed** — the deployment shows `dev-010848cb` which is your latest build.
-
-**2. Two different errors now** — this is the key insight:
-- `NoSuchFieldError: READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE` — line 235 (new databind code ✅)
-- `NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'`
-
-The second error is **new and different**. `JsonProperty.namespace()` was added in jackson-annotations **2.12**. This means somewhere a **pre-2.12 `jackson-annotations` class is still being loaded at runtime** — even though your jar has `2.17.2`.
-
-This confirms our earlier suspicion: **one of your vendored utility jars (`SBINEWPG_2023`, `PGPUtility`, `BASE64DecoderData`, or one of the `sbi_*` jars) has old Jackson annotation classes physically shaded inside it.**
-
-The `resolutionStrategy` in `build.gradle` controls which **standalone jar files** Gradle puts in `BOOT-INF/lib/`. It cannot strip classes that are **compiled inside** a vendor jar.
-
-## Prove it right now from the pod
-
-```bash
-oc exec -it payment-paymentservice-d746cdb85-8rv7x -n dev-transaction -- \
-  sh -c 'find /app -name "*.jar" 2>/dev/null; ls /'
-```
-
-This tells us where the jar sits and what the container filesystem looks like. Then:
-
-```bash
-oc exec -it payment-paymentservice-d746cdb85-8rv7x -n dev-transaction -- \
-  sh -c 'cd /tmp && cp /app/epay_payment_service-*.jar app.jar && jar tf app.jar | grep -i "JsonProperty\|JsonFormat\|jackson/annotation" | head -30'
-```
-
-If `jar` is not available:
-
-```bash
-oc exec -it payment-paymentservice-d746cdb85-8rv7x -n dev-transaction -- \
-  sh -c 'cd /tmp && cp /app/epay_payment_service-*.jar app.jar && python3 -c "
-import zipfile, sys
-with zipfile.ZipFile(\"app.jar\") as z:
-    entries = [e for e in z.namelist() if \"jackson/annotation\" in e.lower() or \"JsonProperty\" in e or \"JsonFormat\" in e]
-    for e in entries:
-        print(e)
-        if e.endswith(\".jar\"):
-            with z.open(e) as inner_bytes:
-                import io
-                inner_zip = zipfile.ZipFile(io.BytesIO(inner_bytes.read()))
-                for ie in inner_zip.namelist():
-                    if \"jackson\" in ie.lower():
-                        print(\"  --> \" + ie)
-"'
-```
-
-This will show us exactly which nested jar inside `BOOT-INF/lib/` contains the old `jackson-annotations` classes.
-
-## While that runs — the fix direction
-
-Once we identify the culprit jar (almost certainly `SBINEWPG_2023.jar` or one of the SBI utility jars), the fix in `build.gradle` is to add a `bootJar` task that strips the shaded Jackson classes from that jar before packaging:
-
-```gradle
-bootJar {
-    // Strip shaded jackson-annotations classes from vendor jars
-    // that bundle old versions internally
-    requiresUnpack('**/SBINEWPG_2023.jar')
-}
-```
-
-But first run the Python check above and paste which jars come back with `jackson/annotation` entries inside them. That will tell us exactly which jar(s) to target.
+[osuser@bastion ~]$ oc get po -n dev-transaction -o wide
+NAME                                            READY   STATUS    RESTARTS      AGE    IP              NODE                      NOMINATED NODE   READINESS GATES
+payment-paymentservice-6bd77d6ddc-xjn5j         2/2     Running   0             61s    172.16.8.120    worker1.dev.sbiepay.sbi   <none>           <none>
+txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0             4d7h   172.16.17.253   worker3.dev.sbiepay.sbi   <none>           <none>
+txn-transactionservice-6989f8684c-f2qws         2/2     Running   1 (44h ago)   44h    172.16.8.99     worker1.dev.sbiepay.sbi   <none>           <none>
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ #oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j   -n dev-transaction -- sh -c 'find /app -name "*.jar" 2>/dev/null; ls /'
+[osuser@bastion ~]$
+[osuser@bastion ~]$ #oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j   -n dev-transaction -- sh -c 'find /app -name "*.jar" 2>/dev/null; ls /'
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j   -n dev-transaction -- sh -c 'find /app -name "*.jar" 2>/dev/null; ls /'
+afs  bin  boot  cacerts  certs  deployments  dev  etc  help.1  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
+>   sh -c 'cd /tmp && cp /app/epay_payment_service-*.jar app.jar && jar tf app.jar | grep -i "JsonProperty\|JsonFormat\|jackson/annotation" | head -30'
+cp: cannot stat '/app/epay_payment_service-*.jar': No such file or directory
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- sh -c 'cd /tmp && cp /app/epay_payment_service-*.jar app.jar && jar tf app.jar | grep -i "JsonProperty\|JsonFormat\|jackson/annotation" | head -30'
+cp: cannot stat '/app/epay_payment_service-*.jar': No such file or directory
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
+>   sh -c 'cd /tmp && cp /app/epay_payment_service-*.jar app.jar && python3 -c "
+> import zipfile, sys
+> with zipfile.ZipFile(\"app.jar\") as z:
+>     entries = [e for e in z.namelist() if \"jackson/annotation\" in e.lower() or \"JsonProperty\" in e or \"JsonFormat\" in e]
+>     for e in entries:
+>         print(e)
+>         if e.endswith(\".jar\"):
+>             with z.open(e) as inner_bytes:
+>                 import io
+>                 inner_zip = zipfile.ZipFile(io.BytesIO(inner_bytes.read()))
+>                 for ie in inner_zip.namelist():
+>                     if \"jackson\" in ie.lower():
+>                         print(\"  --> \" + ie)
+> "'
+cp: cannot stat '/app/epay_payment_service-*.jar': No such file or directory
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$
