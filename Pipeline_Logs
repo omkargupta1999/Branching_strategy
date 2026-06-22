@@ -1,56 +1,41 @@
-The dependency tree from this build is **perfectly clean**. Look at these key lines:
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i jackson
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
 
-```
-+--- com.fasterxml.jackson.core:jackson-databind -> 2.17.2 ✅  (no downgrade arrow)
-+--- com.fasterxml.jackson.datatype:jackson-datatype-joda -> 2.17.2 ✅
-|    +--- com.fasterxml.jackson.core:jackson-annotations:2.17.2 ✅
-|    +--- com.fasterxml.jackson.core:jackson-databind:2.17.2 ✅
-\--- io.jsonwebtoken:jjwt-jackson -> com.fasterxml.jackson.core:jackson-databind:2.12.7.1 -> 2.17.2 ✅
-```
+^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i error
+2026-06-22 05:57:06.516 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+2026-06-22 05:57:06.605 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Error while stopping the container
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
 
-Every single Jackson module is at `2.17.2`. No arrows pointing down. **The build fix is confirmed 100% correct.**
 
----
 
-## The problem now is purely deployment
-
-The error you saw in the pod is from the **old image** (`df7c4c57d` ReplicaSet). Your new image was built at `06:11` with commit `010848cb`. You need to confirm it actually got deployed.
-
-Run these three commands right now:
-
-**1. Check what image the deployment is configured to use:**
-```bash
-oc get deployment payment-paymentservice \
-  -n dev-transaction \
-  -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
-```
-
-**2. Check what image the currently running pod is actually on:**
-```bash
-oc get pod -n dev-transaction \
-  -l app=payment-paymentservice \
-  -o jsonpath='{.items[0].spec.containers[0].image}'; echo
-```
-
-**3. If the deployment hasn't updated yet, force it:**
-```bash
-oc rollout restart deployment/payment-paymentservice -n dev-transaction
-oc rollout status deployment/payment-paymentservice -n dev-transaction
-```
-
-**4. Once new pod is Running, verify immediately:**
-```bash
-oc logs -f $(oc get pods -n dev-transaction \
-  -l app=payment-paymentservice \
-  --sort-by=.metadata.creationTimestamp \
-  -o jsonpath='{.items[-1].metadata.name}') \
-  -n dev-transaction | grep -i "jackson\|NoSuchField\|Started\|ERROR"
-```
-
-If the new image is running correctly you will see:
-- `Started EpayPaymentServiceApplication` — app started cleanly
-- **Zero** `NoSuchFieldError` or `jackson` error lines
-
-The `CashChallanStatusQueryListener` error you saw is also Jackson-driven — it will disappear with the new image too, because it's the same `READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE` field missing from the old annotations jar.
-
-Share the output of command 1 and 2 so we can confirm whether the deployment picked up the new image or is still running old.
+^C
+[osuser@bastion ~]$
