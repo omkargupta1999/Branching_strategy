@@ -1,113 +1,46 @@
-The jar is not in `/app`. Let's find it first, then we'll fix it permanently in the build.
-
-```bash
-oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
-  sh -c 'find / -name "epay_payment_service*.jar" 2>/dev/null'
-```
-
-But more importantly — **yes, there is a clean GitLab-only fix** that does not require touching `SBINEWPG_2023.jar` at all.
-
-## The Fix — Strip Jackson classes from vendor jars during build
-
-Add this to your `build.gradle`. It repacks the offending vendor jars during the `bootJar` packaging step, removing the shaded Jackson annotation classes before they get bundled into your fat jar:
-
-```gradle
-bootJar {
-    // Strip old shaded Jackson annotation classes physically embedded inside
-    // vendor jars (SBINEWPG_2023, PGPUtility, etc) that cause NoSuchFieldError
-    // and NoSuchMethodError at runtime. These classes override jackson-annotations
-    // 2.17.2 from BOOT-INF/lib/ with old pre-2.12 versions shaded inside the jar.
-    excludeFiles {
-        it.path.contains('BOOT-INF/lib/SBINEWPG_2023') ||
-        it.path.contains('BOOT-INF/lib/PGPUtility') ||
-        it.path.contains('BOOT-INF/lib/BASE64DecoderData') ||
-        it.path.contains('BOOT-INF/lib/authentication-service') ||
-        it.path.contains('BOOT-INF/lib/encryption-decryption-service') ||
-        it.path.contains('BOOT-INF/lib/logging-service') ||
-        it.path.contains('BOOT-INF/lib/notification-service')
-    }
-}
-```
-
-Wait — `excludeFiles` strips the whole jar, which breaks things. The correct approach for shaded classes is different. Here is the **proper working solution**:
-
-## Correct Fix — Using Gradle's zip filtering in bootJar
-
-Add this block to `build.gradle` (keep everything else the same, just add this):
-
-```gradle
-import org.springframework.boot.gradle.tasks.bundling.BootJar
-
-tasks.named('bootJar', BootJar) {
-    // Repack vendor jars to strip embedded jackson-annotation classes
-    // that conflict with jackson-annotations 2.17.2
-    from(configurations.runtimeClasspath.filter {
-        it.name.contains('SBINEWPG_2023') ||
-        it.name.contains('PGPUtility') ||
-        it.name.contains('BASE64DecoderData') ||
-        it.name.contains('authentication-service') ||
-        it.name.contains('encryption-decryption-service') ||
-        it.name.contains('logging-service') ||
-        it.name.contains('notification-service')
-    }.collect { vendorJar ->
-        zipTree(vendorJar).matching {
-            exclude 'com/fasterxml/jackson/**'
-        }
-    })
-}
-```
-
-Actually, this approach also has complications. The cleanest, most reliable GitLab-only fix is a **CI pipeline step** that strips and repacks the jars before Gradle builds. Add this to your `java.gradle.yml` build script, **before** the `gradle clean build` line:
-
-```yaml
-script:
-  - |
-    set -eo pipefail
-
-    # ── Strip shaded Jackson classes from vendor jars ──────────────────────────
-    # SBINEWPG_2023 and other vendor jars bundle old jackson-annotations classes
-    # internally (shaded), causing NoSuchFieldError/NoSuchMethodError at runtime
-    # even when jackson-annotations 2.17.2 is on the classpath.
-    # Solution: repack each vendor jar removing com/fasterxml/jackson/** entries.
-
-    VENDOR_JAR_DIR="${CI_PROJECT_DIR}/lib"   # adjust to wherever your local jars are stored
-    WORK_DIR="/tmp/jar-repack"
-    mkdir -p "$WORK_DIR"
-
-    for jar in "${VENDOR_JAR_DIR}"/*.jar; do
-      jar_name=$(basename "$jar")
-      echo "Checking $jar_name for shaded Jackson classes..."
-      
-      if jar tf "$jar" 2>/dev/null | grep -q "com/fasterxml/jackson"; then
-        echo "  ⚠️  Found shaded Jackson in $jar_name — repacking..."
-        mkdir -p "$WORK_DIR/$jar_name"
-        cd "$WORK_DIR/$jar_name"
-        jar xf "$jar"
-        rm -rf com/fasterxml/jackson
-        jar cf "$jar" .
-        cd "$CI_PROJECT_DIR"
-        echo "  ✅ Repacked $jar_name"
-      else
-        echo "  ✅ Clean: $jar_name"
-      fi
-    done
-
-    # ── Now run the actual build ───────────────────────────────────────────────
-    gradle clean build -x test -Pversion="${VERSION}"
-```
-
-**But before adding this**, tell me: where are your vendor jars stored in the repo? Run this to find them:
-
-```bash
-oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
-  sh -c 'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
-```
-
-And find the app jar location:
-
-```bash
-oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
-  sh -c 'ls /deployments/ 2>/dev/null; ls /opt/app/ 2>/dev/null; ls / 2>/dev/null | head -20'
-```
-
-Once I know where the jar sits in the container, I can also tell you the exact path to the vendor jars in the repo, and the CI step will be precise. Share those two outputs.
+[osuser@bastion ~]$ oc get po -n dev-transaction -o wide
+NAME                                            READY   STATUS    RESTARTS      AGE    IP              NODE                      NOMINATED NODE   READINESS GATES
+payment-paymentservice-fd9bfbf4b-q48sl          2/2     Running   0             4m3s   172.16.8.121    worker1.dev.sbiepay.sbi   <none>           <none>
+txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0             4d7h   172.16.17.253   worker3.dev.sbiepay.sbi   <none>           <none>
+txn-transactionservice-6989f8684c-f2qws         2/2     Running   1 (45h ago)   45h    172.16.8.99     worker1.dev.sbiepay.sbi   <none>           <none>
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
+>   sh -c 'find / -name "epay_payment_service*.jar" 2>/dev/null'
+/home/default/epay_payment_service-dev-82805a30.jar
+command terminated with exit code 1
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
+>   sh -c 'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction --   sh -c 'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
+command terminated with exit code 1
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
+>   sh -c 'ls /deployments/ 2>/dev/null; ls /opt/app/ 2>/dev/null; ls / 2>/dev/null | head -20'
+data
+afs
+bin
+boot
+cacerts
+certs
+deployments
+dev
+etc
+help.1
+home
+lib
+lib64
+lost+found
+media
+mnt
+opt
+proc
+root
+run
+sbin
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction --   sh  'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
+sh: find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null: No such file or directory
+command terminated with exit code 127
