@@ -1,135 +1,56 @@
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version "${spring_boot}"
-	id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+The dependency tree from this build is **perfectly clean**. Look at these key lines:
 
-group = 'com.epay.payment'
-version = "${version}"
+```
++--- com.fasterxml.jackson.core:jackson-databind -> 2.17.2 ✅  (no downgrade arrow)
++--- com.fasterxml.jackson.datatype:jackson-datatype-joda -> 2.17.2 ✅
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.17.2 ✅
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.17.2 ✅
+\--- io.jsonwebtoken:jjwt-jackson -> com.fasterxml.jackson.core:jackson-databind:2.12.7.1 -> 2.17.2 ✅
+```
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
+Every single Jackson module is at `2.17.2`. No arrows pointing down. **The build fix is confirmed 100% correct.**
 
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.apache.commons:commons-lang3:3.12.0'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.springframework.boot:spring-boot-starter-aop'
-	implementation 'javax.persistence:javax.persistence-api:2.2'
-	implementation 'commons-io:commons-io:2.14.0'
-	implementation 'org.modelmapper:modelmapper:2.4.4'
-	implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
-	implementation 'org.hibernate.orm:hibernate-envers'
+---
 
-	// Jackson — versions managed by Spring Boot BOM (2.17.2)
-	// DO NOT add explicit versions here — they cause mismatches
-	implementation 'com.fasterxml.jackson.core:jackson-databind'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+## The problem now is purely deployment
 
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.mockito:mockito-core'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+The error you saw in the pod is from the **old image** (`df7c4c57d` ReplicaSet). Your new image was built at `06:11` with commit `010848cb`. You need to confirm it actually got deployed.
 
-	// Internal utility jars
-	implementation 'name:authentication-service-0.1.0'
-	implementation 'name:encryption-decryption-service-0.1.0'
-	implementation 'name:logging-service-1.0-SNAPSHOT'
-	implementation 'name:notification-service-0.0.1-SNAPSHOT'
-	implementation 'name:PGPUtility'
-	implementation 'name:BASE64DecoderData'
-	implementation 'name:SBINEWPG_2023'
+Run these three commands right now:
 
-	implementation 'com.google.code.gson:gson:2.8.9'
-	implementation 'org.apache.httpcomponents:httpclient:4.5.13'
-	implementation 'org.apache.httpcomponents:httpcore:4.4.11'
-	implementation 'commons-codec:commons-codec:1.4'
-	implementation 'org.json:json:20090211'
-	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+**1. Check what image the deployment is configured to use:**
+```bash
+oc get deployment payment-paymentservice \
+  -n dev-transaction \
+  -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+```
 
-	// AWS
-	implementation "software.amazon.awssdk:s3:${s3}"
+**2. Check what image the currently running pod is actually on:**
+```bash
+oc get pod -n dev-transaction \
+  -l app=payment-paymentservice \
+  -o jsonpath='{.items[0].spec.containers[0].image}'; echo
+```
 
-	// Liquibase
-	implementation 'org.liquibase:liquibase-core'
+**3. If the deployment hasn't updated yet, force it:**
+```bash
+oc rollout restart deployment/payment-paymentservice -n dev-transaction
+oc rollout status deployment/payment-paymentservice -n dev-transaction
+```
 
-	// JWT
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+**4. Once new pod is Running, verify immediately:**
+```bash
+oc logs -f $(oc get pods -n dev-transaction \
+  -l app=payment-paymentservice \
+  --sort-by=.metadata.creationTimestamp \
+  -o jsonpath='{.items[-1].metadata.name}') \
+  -n dev-transaction | grep -i "jackson\|NoSuchField\|Started\|ERROR"
+```
 
-	// Lombok (declared once)
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
+If the new image is running correctly you will see:
+- `Started EpayPaymentServiceApplication` — app started cleanly
+- **Zero** `NoSuchFieldError` or `jackson` error lines
 
-	// MapStruct
-	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+The `CashChallanStatusQueryListener` error you saw is also Jackson-driven — it will disappear with the new image too, because it's the same `READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE` field missing from the old annotations jar.
 
-	// Swagger / OpenAPI (declared once)
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
-
-	// Kafka
-	implementation 'org.springframework.kafka:spring-kafka'
-
-	// Mail
-	implementation 'javax.mail:javax.mail-api:1.6.2'
-	implementation 'com.sun.mail:javax.mail:1.6.2'
-	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
-	implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
-	implementation 'com.sun.mail:jakarta.mail:2.0.1'
-
-	// Thymeleaf
-	implementation 'org.thymeleaf:thymeleaf:3.1.1.RELEASE'
-	implementation 'org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE'
-
-	// Spring context support (let Spring Boot BOM manage version)
-	implementation 'org.springframework:spring-context-support'
-
-	// Test
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-// ── Jackson version enforcement ───────────────────────────────────────────────
-// Forces ALL Jackson modules to 2.17.2 regardless of what any transitive
-// dependency or explicit declaration requests. Prevents NoSuchFieldError
-// caused by mismatched jackson-annotations vs jackson-databind versions.
-configurations.all {
-	resolutionStrategy {
-		eachDependency { DependencyResolveDetails details ->
-			if (details.requested.group == 'com.fasterxml.jackson.core' ||
-				details.requested.group == 'com.fasterxml.jackson.datatype' ||
-				details.requested.group == 'com.fasterxml.jackson.module' ||
-				details.requested.group == 'com.fasterxml.jackson.dataformat') {
-				details.useVersion '2.17.2'
-				details.because 'Enforce Jackson BOM alignment — prevent NoSuchFieldError'
-			}
-		}
-	}
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-}
-
-test {
-	testLogging {
-		outputs.upToDateWhen { false }
-		showStandardStreams = true
-	}
-}
-
-springBoot {
-	buildInfo()
-}
+Share the output of command 1 and 2 so we can confirm whether the deployment picked up the new image or is still running old.
