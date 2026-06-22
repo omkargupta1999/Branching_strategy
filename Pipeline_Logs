@@ -1,60 +1,37 @@
-helm:deploy:
-  stage: deploy
-  dependencies:
-    - validate_service
-  needs:
-    - job: validate_service
-      artifacts: true
-  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - deploy_runner
-  extends: .validate_inputs
-  script:
-    - |
-      echo "RELEASE_NAME=$RELEASE_NAME"
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      
-      case "$ENV" in
-        dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;        TOKEN=$OCP_TOKEN_DEV_CLUSTER ;;
-        pre-prod)              CLUSTER=$PREPROD_CLUSTER;    TOKEN=$OCP_TOKEN_PREPROD_DR ;;
-        pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER; TOKEN=$OCP_TOKEN_PREPROD_DC ;;
-        prod-dr)               CLUSTER=$PROD_DR_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DR ;;
-        prod-dc)               CLUSTER=$PROD_DC_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DC ;;
-      esac
-      oc login "$CLUSTER" --token="$TOKEN" --insecure-skip-tls-verify
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i jackson
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
 
-      # --- PERMANENT FIX: sync values.yaml to tip of main ---
-      # Same reason as validate_service: this job is still checked out at the
-      # pipeline's frozen SHA, which predates the update-tag commit. Re-sync so
-      # the helm upgrade uses the freshly-written image tag, not the old one.
-      # Requires fetch access to origin (deploy token) and trust of the internal
-      # GitLab CA. The deploy image does not trust it, so disable SSL verify
-      # (same as the update-tag job).
-      git config --global http.sslVerify false
-      git config --global --add safe.directory '*'
-      git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
-      # Use the ref this pipeline actually ran on (could be main OR a feature
-      # branch), NOT a hardcoded main — otherwise a feature-branch edit gets
-      # clobbered by main's older values.yaml.
-      SYNC_REF="${CI_COMMIT_REF_NAME:-main}"
-      git fetch --quiet origin "$SYNC_REF"
-      git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
-      echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
+^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i error
+2026-06-22 05:57:06.516 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+2026-06-22 05:57:06.605 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Error while stopping the container
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
 
-      # values.yaml is the single source of truth for image.tag — no runtime override.
-      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
-      if [ -z "$TAG_IN_FILE" ]; then
-        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
-        exit 1
-      fi
-      echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
-
-      helm upgrade --install ${RELEASE_NAME} \
-        ${ENV}/charts/${SERVICE_NAME} \
-        -n ${NAMESPACE} \
-        --create-namespace \
-        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
-        --history-max=${HELM_HISTORY_MAX}
-      echo "✅ Deployed ${SERVICE_NAME} with tag ${TAG_IN_FILE} to ${ENV}"
