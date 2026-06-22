@@ -1,62 +1,3 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Authenticating with credentials from $DOCKER_AUTH_CONFIG
-Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Authenticating with credentials from $DOCKER_AUTH_CONFIG
-Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:16
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out 19acbe27 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:02
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ set -eo pipefail # collapsed multi-line command
-Detected SERVICE_NAME=epay_common
-Detected ENV=dev
-RAW NAMESPACE=dev-epay-common
-FINAL VALUES:
-SERVICE_NAME=epay_common
-ENV=dev
-RELEASE_NAME=epay-common
-NAMESPACE=dev-epay-common
-Synced dev/charts/epay_common/values.yaml to origin/main
-==> Linting dev/charts/epay_common/
-[INFO] Chart.yaml: icon is recommended
-1 chart(s) linted, 0 chart(s) failed
-Uploading artifacts for failed job
-00:02
-Uploading artifacts...
-build.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1144645 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
-
-
-
-
-
-=========================================================  helm.deploy.yml
- 
-
 # cd/helm/helm.deploy.yml
 # Stage: validate + deploy + verify
 # Single-service Helm upgrade to OCP cluster
@@ -179,13 +120,20 @@ validate_service:
       # Helm validation
       helm lint ${ENV}/charts/${SERVICE_NAME}/
 
-      # values.yaml is the single source of truth for image.tag — no runtime override.
-      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
-      if [ -z "$TAG_IN_FILE" ]; then
-        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
-        exit 1
+      # values.yaml is the single source of truth for image.tag when the chart
+      # has an image block at all. Common/shared charts (e.g. epay_common) carry
+      # no image.tag by design and should skip this check entirely — they don't
+      # deploy a container, so there's no tag drift to guard against.
+      if grep -qE '^\s*image\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml"; then
+        TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+        if [ -z "$TAG_IN_FILE" ]; then
+          echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+          exit 1
+        fi
+        echo "Validating with image tag from values.yaml: ${TAG_IN_FILE}"
+      else
+        echo "ℹ️  No image block in values.yaml for ${SERVICE_NAME} — skipping tag check (common/shared chart)"
       fi
-      echo "Validating with image tag from values.yaml: ${TAG_IN_FILE}"
 
       helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
         -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
@@ -245,13 +193,21 @@ helm:deploy:
       git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
       echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
 
-      # values.yaml is the single source of truth for image.tag — no runtime override.
-      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
-      if [ -z "$TAG_IN_FILE" ]; then
-        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
-        exit 1
+      # values.yaml is the single source of truth for image.tag when the chart
+      # has an image block at all. Common/shared charts (e.g. epay_common) carry
+      # no image.tag by design and should skip this check entirely — they don't
+      # deploy a container, so there's no tag drift to guard against.
+      if grep -qE '^\s*image\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml"; then
+        TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+        if [ -z "$TAG_IN_FILE" ]; then
+          echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+          exit 1
+        fi
+        echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
+      else
+        TAG_IN_FILE="(none — common/shared chart)"
+        echo "ℹ️  No image block in values.yaml for ${SERVICE_NAME} — skipping tag check (common/shared chart)"
       fi
-      echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
 
       helm upgrade --install ${RELEASE_NAME} \
         ${ENV}/charts/${SERVICE_NAME} \
