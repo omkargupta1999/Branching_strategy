@@ -1,220 +1,211 @@
-# cd/helm/helm.deploy.yml
-# Stage: validate + deploy + verify
-# Single-service Helm upgrade to OCP cluster
-# Runs in DEPLOYMENT REPO pipeline
+## Step-Wise Implementation Guide — Protecting `prod-dc/` and `prod-dr/`
 
-include:
-  - local: 'config/services.yaml'
+### Prerequisite: Identify Your Approval Group
 
-# Prevents Gitlab auto-cancelling the pipeline 
-workflow:
-  auto_cancel:
-    on_new_commit: "none"
+Before starting, confirm who should approve production changes. Based on your existing four-level chain (vendor lead → vendor architect → vendor PM/CAB → bank owner), you'll map the **last tier(s)** to this group.
 
-stages:
-  - publish
-  - validate
-  - deploy
-  - verify
-  # - notify
+```
+Step 0: Go to gitlab.sbi → Groups → itepaypg-sbiepay2 → Subgroups
+Check if a group like "prod-approvers" or "cab-approvers" already exists.
+If not, create one (Step 1 below).
+```
 
-variables:
-  DEV_CLUSTER:        "https://api.dev.sbiepay.sbi:6443"
-  PREPROD_CLUSTER:    "https://api.preprod.epay.sbi:6443"
-  PREPROD_DC_CLUSTER: "https://api.dcpreprod.epay.sbi:6443"
-  PROD_DR_CLUSTER:    "https://api.dr.prod.epay.sbi:6443"
-  PROD_DC_CLUSTER:    "https://api.dc.prod.epay.sbi:6443"
-  # SERVICE_NAME:       ""
-  # ENV:                ""
-  HELM_HISTORY_MAX:   "10"
-  DEPLOYMENT_TIMEOUT: "15m"
-  GIT_STRATEGY: clone
-  GIT_DEPTH: 0
+---
 
-.validate_inputs:
-  before_script:
-    - |
-      set -eo pipefail
-      if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
-        echo "ERROR: SERVICE_NAME and ENV required"; exit 1
-      fi
-      if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
-        echo "ERROR: Invalid ENV '$ENV'"; exit 1
-      fi
-      echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
+### Step 1 — Create the Approval Group (skip if it already exists)
 
-validate_service:
-  stage: validate
-  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - deploy_runner
-  # extends: .validate_inputs
-  script:
-    - |
-      set -eo pipefail
-      echo "$SERVICES_CONFIG" > /tmp/services.yml
-      echo "VERSION=$VERSION" >> build.env
+```
+1. Navigate to: gitlab.sbi/groups/new (or under itepaypg-sbiepay2 subgroup)
+2. Group name: prod-approvers
+3. Group URL: itepaypg-sbiepay2/prod-approvers
+4. Visibility: Private
+5. Click "Create group"
 
-      if [ -z "$SERVICE_NAME" ]; then
-        CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep charts | head -1 || true)
-        
-        if [ -z "$CHANGED_FILE" ]; then
-          CHANGED_FILE=$(git ls-files | grep charts | head -1 || true)
-        fi
+6. Go to the new group → Members → Invite members
+7. Add the bank-owner / CAB-level individuals (your highest approval tier)
+8. Set their role to "Developer" or "Maintainer" (role here only controls
+   group-level access, not the approval-rule weight — that's separate)
+9. Save
+```
 
-        if [ -z "$CHANGED_FILE" ]; then
-          echo "No chart changes found"
-          exit 1
-        fi
+---
 
-        ENV=$(echo "$CHANGED_FILE" | cut -d'/' -f1)
-        SERVICE_NAME=$(echo "$CHANGED_FILE" | cut -d'/' -f3)
+### Step 2 — Add CODEOWNERS File to Deployment Repo
 
-        echo "Detected SERVICE_NAME=$SERVICE_NAME"
-        echo "Detected ENV=$ENV"
-      fi
+```
+1. Open the deployment repo: gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
+2. Create a new branch: feature/codeowners-prod-protection
+3. Create file at repo ROOT (not inside any subfolder): CODEOWNERS
+```
 
-      # RELEASE_NAME extract from services.yaml
-      RELEASE_NAME=$(awk -v svc="$SERVICE_NAME" '
-        $0 ~ "name: "svc {found=1}
-        found && /release:/ {print $2; exit}
-      ' /tmp/services.yml)
+File content:
 
-      RELEASE_NAME=${RELEASE_NAME:-$(echo "$SERVICE_NAME" | tr '_' '-')}
+```
+# CODEOWNERS
+# Production folders require sign-off from the production approval group
+# before any merge request touching these paths can be merged.
 
-      NAMESPACE=$(awk -v svc="$SERVICE_NAME" '
-        /namespace:/ {ns=$3}
-        $0 ~ "name: "svc {print ns; exit}
-      ' /tmp/services.yml)
+/prod-dc/  @itepaypg-sbiepay2/prod-approvers
+/prod-dr/  @itepaypg-sbiepay2/prod-approvers
+```
 
-      NAMESPACE="${ENV}-${NAMESPACE}"
+```
+4. Commit this file on the feature branch
+5. Open a Merge Request: feature/codeowners-prod-protection → main
+6. Get it reviewed/merged through your normal process (this MR itself doesn't
+   touch prod-dc/prod-dr, so it won't trigger the new rule yet)
+```
 
-      echo "RAW NAMESPACE=$NAMESPACE"
-      echo "FINAL VALUES:"
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      echo "RELEASE_NAME=$RELEASE_NAME"
-      echo "NAMESPACE=$NAMESPACE"
+> **Note:** GitLab also checks `.gitlab/CODEOWNERS` and `docs/CODEOWNERS` — root-level `CODEOWNERS` is the standard location, use that.
 
-      # --- PERMANENT FIX: sync values.yaml to tip of main ---
-      # update-tag commits a NEW commit (with [skip ci]) AFTER this pipeline's
-      # SHA was frozen, so this checkout is one commit behind and still holds the
-      # OLD tag. Re-sync the chart's values.yaml from origin/main so we read the
-      # tag update-tag just wrote, not the stale frozen-SHA copy.
-      # Internal GitLab CA is not trusted in this image -> disable SSL verify
-      # (same as the update-tag job) and authenticate with the deploy token.
-      git config --global http.sslVerify false
-      git config --global --add safe.directory '*'
-      git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
-      # Use the ref this pipeline actually ran on (could be main OR a feature
-      # branch), NOT a hardcoded main — otherwise a feature-branch edit gets
-      # clobbered by main's older values.yaml.
-      SYNC_REF="${CI_COMMIT_REF_NAME:-main}"
-      git fetch --quiet origin "$SYNC_REF"
-      git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
-      echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
-       
-      [ -d "${ENV}/charts/${SERVICE_NAME}" ] || { echo "Chart not found"; exit 1; }
+---
 
-      # Helm validation
-      helm lint ${ENV}/charts/${SERVICE_NAME}/
+### Step 3 — Enable Code Owner Approval on Protected Branch
 
-      # values.yaml is the single source of truth for image.tag when the chart
-      # declares a top-level "tag:" key. Common/shared infra charts (e.g.
-      # epay_common) have no standalone tag: key by design — only inline
-      # sidecar image refs (gemfire, kafka-connect, otel) — so they skip this
-      # check entirely. There's no single deployable image tag to guard there.
-      if grep -qE '^\s*tag\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml"; then
-        TAG_IN_FILE=$(grep -E '^\s*tag\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
-        if [ -z "$TAG_IN_FILE" ]; then
-          echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
-          exit 1
-        fi
-        echo "Validating with image tag from values.yaml: ${TAG_IN_FILE}"
-      else
-        echo "ℹ️  No top-level tag: key in values.yaml for ${SERVICE_NAME} — skipping tag check (common/shared chart)"
-      fi
+```
+1. Go to: Settings (left sidebar) → Repository
+2. Expand "Protected branches"
+3. Find the row for "main" (or click "Add protected branch" if not yet protected)
+4. Configure:
+   - Branch: main
+   - Allowed to merge: Maintainers  (or your current setting)
+   - Allowed to push and merge: No one  ← THIS closes the direct-commit gap
+     (or restrict to a specific role/user if your CI bot needs push access —
+      see Step 4 below)
+   - Require approval from code owners: ✅ TOGGLE ON
+5. Click "Protect" / "Save changes"
+```
 
-      helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
-        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
-      echo "✅ Validation passed"
+This single toggle is what makes Step 2's `CODEOWNERS` file actually enforceable — without it, `CODEOWNERS` is just documentation.
 
-      # Export for next stages
-      echo "SERVICE_NAME=$SERVICE_NAME" >> build.env
-      echo "ENV=$ENV" >> build.env
-      echo "RELEASE_NAME=$RELEASE_NAME" >> build.env
-      echo "NAMESPACE=$NAMESPACE" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
+---
 
-helm:deploy:
-  stage: deploy
-  dependencies:
-    - validate_service
-  needs:
-    - job: validate_service
-      artifacts: true
-  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - deploy_runner
-  extends: .validate_inputs
-  script:
-    - |
-      echo "RELEASE_NAME=$RELEASE_NAME"
-      echo "SERVICE_NAME=$SERVICE_NAME"
-      echo "ENV=$ENV"
-      
-      case "$ENV" in
-        dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;        TOKEN=$OCP_TOKEN_DEV_CLUSTER ;;
-        pre-prod)              CLUSTER=$PREPROD_CLUSTER;    TOKEN=$OCP_TOKEN_PREPROD_DR ;;
-        pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER; TOKEN=$OCP_TOKEN_PREPROD_DC ;;
-        prod-dr)               CLUSTER=$PROD_DR_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DR ;;
-        prod-dc)               CLUSTER=$PROD_DC_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DC ;;
-      esac
-      oc login "$CLUSTER" --token="$TOKEN" --insecure-skip-tls-verify
+### Step 4 — Preserve CI Bot Push Access (if needed)
 
-      # --- PERMANENT FIX: sync values.yaml to tip of main ---
-      # Same reason as validate_service: this job is still checked out at the
-      # pipeline's frozen SHA, which predates the update-tag commit. Re-sync so
-      # the helm upgrade uses the freshly-written image tag, not the old one.
-      # Requires fetch access to origin (deploy token) and trust of the internal
-      # GitLab CA. The deploy image does not trust it, so disable SSL verify
-      # (same as the update-tag job).
-      git config --global http.sslVerify false
-      git config --global --add safe.directory '*'
-      git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
-      # Use the ref this pipeline actually ran on (could be main OR a feature
-      # branch), NOT a hardcoded main — otherwise a feature-branch edit gets
-      # clobbered by main's older values.yaml.
-      SYNC_REF="${CI_COMMIT_REF_NAME:-main}"
-      git fetch --quiet origin "$SYNC_REF"
-      git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
-      echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
+Your platform already has `epay-cicd-bot` for automated commits (e.g. `update-tag` writing tags into `values.yaml`). If this bot needs to push directly to `main`:
 
-      # values.yaml is the single source of truth for image.tag when the chart
-      # declares a top-level "tag:" key. Common/shared infra charts (e.g.
-      # epay_common) have no standalone tag: key by design — only inline
-      # sidecar image refs (gemfire, kafka-connect, otel) — so they skip this
-      # check entirely. There's no single deployable image tag to guard there.
-      if grep -qE '^\s*tag\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml"; then
-        TAG_IN_FILE=$(grep -E '^\s*tag\s*:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
-        if [ -z "$TAG_IN_FILE" ]; then
-          echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
-          exit 1
-        fi
-        echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
-      else
-        TAG_IN_FILE="(none — common/shared chart)"
-        echo "ℹ️  No top-level tag: key in values.yaml for ${SERVICE_NAME} — skipping tag check (common/shared chart)"
-      fi
+```
+1. Still in Settings → Repository → Protected branches → main row
+2. Under "Allowed to push and merge"
+3. Instead of "No one", select the specific bot user/deploy-token account
+   (e.g. epay-cicd-bot) — GitLab lets you select specific users for this field
+4. Save
+```
 
-      helm upgrade --install ${RELEASE_NAME} \
-        ${ENV}/charts/${SERVICE_NAME} \
-        -n ${NAMESPACE} \
-        --create-namespace \
-        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
-        --history-max=${HELM_HISTORY_MAX}
-      echo "✅ Deployed ${SERVICE_NAME} with tag ${TAG_IN_FILE} to ${ENV}"
+This keeps the automated tag-update flow working while blocking humans from bypassing MR review.
+
+> ⚠️ **Important:** if `epay-cicd-bot` can push to `prod-dc/`/`prod-dr/` files directly (bypassing MR review entirely), that defeats the CODEOWNERS protection for production folders specifically. Consider scoping the bot's push rights to non-prod folders only, or — better — make even the bot's prod-tag updates go through an MR that still requires CODEOWNERS approval. This is a judgment call based on how much automation vs. human gatekeeping you want for prod specifically.
+
+---
+
+### Step 5 — Add Path-Scoped Merge Request Approval Rule (GitLab Ultimate — extra precision)
+
+This adds a *second*, independent enforcement layer scoped exactly to the folders, with a configurable approval count (e.g. require 2 approvers, not just 1).
+
+```
+1. Go to: Settings → Merge requests
+2. Scroll to "Merge request approvals"
+3. Click "Add approval rule"
+4. Configure:
+   - Rule name: Production Folder Protection
+   - Approvals required: 2
+   - Add approvers: search and add "prod-approvers" group
+   - Target branch: main
+5. Click "Add approval rule" to save
+```
+
+To scope it strictly to the two folders (so it doesn't apply to every MR touching `main`), use a **Security/Compliance approval policy** instead (more precise, Ultimate-tier):
+
+```
+1. Go to: Security → Policies (this may be at the group level instead of
+   project level, depending on your GitLab Ultimate setup)
+2. Click "New policy" → "Merge request approval policy"
+3. Configure:
+   - Name: Production Folder Approval
+   - Rule type: "Changed files match"
+   - Paths: prod-dc/**/*, prod-dr/**/*
+   - Required approvals: 2
+   - Approvers: prod-approvers group
+4. Save and assign this policy to the deployment repo project
+```
+
+> If your GitLab Ultimate instance doesn't expose "Security Policies" at the project level (sometimes it's only configurable via a linked Security Policy Project at the group level), this step may need your GitLab admin (Ranu Jain / Neeraj Durgapal, per your existing GitLab admin contacts) to set up the Security Policy Project once — then it can be reused across all repos, not just this one.
+
+---
+
+### Step 6 — Keep Prod Deploy Jobs as Manual Triggers (CI-level safety net)
+
+Verify (or add) this in your `deploy.jobs.yml`:
+
+```yaml
+deploy-prod-dc:
+  extends: .trigger_cd
+  variables:
+    ENV: prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION:      "$VERSION"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: manual        # ← requires explicit human click to deploy
+    - when: never
+
+deploy-prod-dr:
+  extends: .trigger_cd
+  variables:
+    ENV: prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION:      "$VERSION"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: manual
+    - when: never
+```
+
+`when: manual` means even after a CODEOWNERS-approved merge lands on `main`, deploying to `prod-dc`/`prod-dr` still requires someone to click "Run" on that specific job in the GitLab pipeline UI — giving you one more deliberate checkpoint, and another audit-logged action (who clicked, when).
+
+---
+
+### Step 7 — Test the Protection End-to-End
+
+```
+1. Create a test branch: test/prod-protection-check
+2. Make a trivial change inside prod-dc/charts/<any-service>/values.yaml
+   (e.g. add a comment line)
+3. Open an MR: test/prod-protection-check → main
+4. Verify GitLab UI shows: "Approval is required from Code Owners" with
+   prod-approvers listed as required reviewers
+5. Confirm the MR CANNOT be merged until someone from prod-approvers approves
+6. Try a direct push to main from a non-bot account (should be rejected with
+   "You are not allowed to push code to protected branches on this project")
+7. Clean up: close the test MR, delete the test branch
+```
+
+---
+
+### Step 8 — Document and Communicate
+
+```
+1. Update your existing GitLab branch protection / MR approval spec document
+   (the one with the four-level approval chain) to reference this new
+   folder-specific rule
+2. Notify the team (especially anyone who currently has Maintainer access
+   and was previously able to push directly) about the new restriction
+3. Add a note in the deployment repo's README about CODEOWNERS and the
+   approval requirement for prod-dc/prod-dr changes
+```
+
+---
+
+### Quick Reference — What Each Layer Protects Against
+
+| Layer | Protects Against |
+|---|---|
+| CODEOWNERS + Code Owner approval | Merges to prod folders without designated approver sign-off |
+| Protected branch (push = No one/bot only) | Direct commits bypassing MR review entirely |
+| Path-scoped approval policy (Ultimate) | Precise enforcement only on prod-dc/prod-dr, not all of `main` |
+| `when: manual` on deploy jobs | Auto-deployment to prod immediately after merge, without a deliberate trigger |
+| Audit logs | Lack of accountability — "who approved/deployed this and when" |
+
+Start with Steps 1–4 (CODEOWNERS + protected branch) since that's the highest-leverage, lowest-effort fix and directly closes the exact gap you hit today. Steps 5 and 6 add precision and defense-in-depth on top.
