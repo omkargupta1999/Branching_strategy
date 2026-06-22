@@ -1,3 +1,107 @@
+First let's find the jar location:
+
+```bash
+oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
+  sh -c 'find / -name "epay_payment_service*.jar" 2>/dev/null'
+```
+
+```bash
+oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
+  sh -c 'find / -name "SBINEWPG_2023.jar" 2>/dev/null'
+```
+
+While those run — here is the **complete `build.gradle` fix at build level only**, no CI template changes needed.
+
+The approach: add a Gradle task that repacks the vendor jars **before** `bootJar` runs, stripping the shaded Jackson classes from inside them. This is entirely in `build.gradle`.
+
+Add this block to your `build.gradle` (after the `dependencies {}` block, before `configurations.all`):
+
+```gradle
+// ── Strip shaded Jackson classes from vendor jars ─────────────────────────────
+// SBINEWPG_2023, PGPUtility, BASE64DecoderData and SBI utility jars physically
+// embed old com/fasterxml/jackson/** classes inside them. At runtime Spring Boot's
+// classloader loads these BEFORE jackson-annotations-2.17.2.jar, causing:
+//   NoSuchFieldError: READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
+//   NoSuchMethodError: JsonProperty.namespace()
+// Fix: repack each offending vendor jar, removing the embedded Jackson classes,
+// before bootJar packages everything into the fat jar.
+
+def vendorJarNames = [
+    'SBINEWPG_2023',
+    'PGPUtility',
+    'BASE64DecoderData',
+    'authentication-service',
+    'encryption-decryption-service',
+    'logging-service',
+    'notification-service'
+]
+
+task repackVendorJars {
+    description = 'Strips shaded jackson classes from vendor jars'
+    group = 'build'
+
+    doLast {
+        def workDir = file("${buildDir}/vendor-repack")
+
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            def jarFile = artifact.file
+            def jarName = jarFile.name
+
+            boolean isVendor = vendorJarNames.any { v -> jarName.contains(v) }
+            if (!isVendor) return
+
+            logger.lifecycle("Checking vendor jar for shaded Jackson: ${jarName}")
+
+            // Check if this jar contains jackson classes
+            def hasJackson = false
+            zipTree(jarFile).visit { fileDetails ->
+                if (fileDetails.path.startsWith('com/fasterxml/jackson')) {
+                    hasJackson = true
+                }
+            }
+
+            if (!hasJackson) {
+                logger.lifecycle("  ✅ Clean (no shaded Jackson): ${jarName}")
+                return
+            }
+
+            logger.lifecycle("  ⚠️  Shaded Jackson found in ${jarName} — repacking...")
+
+            // Extract jar excluding jackson classes
+            def extractDir = file("${workDir}/${jarName}-extracted")
+            extractDir.deleteDir()
+            extractDir.mkdirs()
+
+            copy {
+                from zipTree(jarFile)
+                into extractDir
+                exclude 'com/fasterxml/jackson/**'
+            }
+
+            // Repack into same location
+            def repackedJar = file("${workDir}/${jarName}")
+            ant.jar(destfile: repackedJar, basedir: extractDir)
+
+            // Replace original jar in Gradle's cache copy used by bootJar
+            // by overwriting via a file copy trick
+            jarFile.bytes = repackedJar.bytes
+
+            logger.lifecycle("  ✅ Repacked ${jarName} — Jackson classes removed")
+        }
+    }
+}
+
+// Ensure repack runs before bootJar packages the fat jar
+bootJar.dependsOn repackVendorJars
+```
+
+## Why `jarFile.bytes = repackedJar.bytes` works here
+
+Gradle resolves dependencies into a local cache. The `runtimeClasspath` artifact file points to that cached copy. Overwriting it in `doLast` before `bootJar` runs means `bootJar` picks up the stripped version. The original file in Artifactory/JFrog is never touched.
+
+## Full updated `build.gradle` — complete file
+
+```gradle
 plugins {
     id 'java'
     id 'org.springframework.boot' version "${spring_boot}"
@@ -177,3 +281,16 @@ test {
 springBoot {
     buildInfo()
 }
+```
+
+## What to verify in the build log after this runs
+
+You should see lines like:
+
+```
+Checking vendor jar for shaded Jackson: SBINEWPG_2023.jar
+  ⚠️  Shaded Jackson found in SBINEWPG_2023.jar — repacking...
+  ✅ Repacked SBINEWPG_2023.jar — Jackson classes removed
+```
+
+And after deploy, the pod logs should show zero `NoSuchFieldError` or `NoSuchMethodError` for Jackson. Share the build log output of the `repackVendorJars` task so we can confirm which jars were the culprits.
