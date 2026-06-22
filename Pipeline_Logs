@@ -1,296 +1,262 @@
-First let's find the jar location:
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 ...
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Authenticating with credentials from $DOCKER_AUTH_CONFIG
+Pulling docker image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:16
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 19acbe27 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:02
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Detected SERVICE_NAME=epay_common
+Detected ENV=dev
+RAW NAMESPACE=dev-epay-common
+FINAL VALUES:
+SERVICE_NAME=epay_common
+ENV=dev
+RELEASE_NAME=epay-common
+NAMESPACE=dev-epay-common
+Synced dev/charts/epay_common/values.yaml to origin/main
+==> Linting dev/charts/epay_common/
+[INFO] Chart.yaml: icon is recommended
+1 chart(s) linted, 0 chart(s) failed
+Uploading artifacts for failed job
+00:02
+Uploading artifacts...
+build.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1144645 responseStatus=201 Created token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
-```bash
-oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
-  sh -c 'find / -name "epay_payment_service*.jar" 2>/dev/null'
-```
 
-```bash
-oc exec -it payment-paymentservice-6bd77d6ddc-xjn5j -n dev-transaction -- \
-  sh -c 'find / -name "SBINEWPG_2023.jar" 2>/dev/null'
-```
 
-While those run — here is the **complete `build.gradle` fix at build level only**, no CI template changes needed.
 
-The approach: add a Gradle task that repacks the vendor jars **before** `bootJar` runs, stripping the shaded Jackson classes from inside them. This is entirely in `build.gradle`.
 
-Add this block to your `build.gradle` (after the `dependencies {}` block, before `configurations.all`):
+=========================================================  helm.deploy.yml
+ 
 
-```gradle
-// ── Strip shaded Jackson classes from vendor jars ─────────────────────────────
-// SBINEWPG_2023, PGPUtility, BASE64DecoderData and SBI utility jars physically
-// embed old com/fasterxml/jackson/** classes inside them. At runtime Spring Boot's
-// classloader loads these BEFORE jackson-annotations-2.17.2.jar, causing:
-//   NoSuchFieldError: READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE
-//   NoSuchMethodError: JsonProperty.namespace()
-// Fix: repack each offending vendor jar, removing the embedded Jackson classes,
-// before bootJar packages everything into the fat jar.
+# cd/helm/helm.deploy.yml
+# Stage: validate + deploy + verify
+# Single-service Helm upgrade to OCP cluster
+# Runs in DEPLOYMENT REPO pipeline
 
-def vendorJarNames = [
-    'SBINEWPG_2023',
-    'PGPUtility',
-    'BASE64DecoderData',
-    'authentication-service',
-    'encryption-decryption-service',
-    'logging-service',
-    'notification-service'
-]
+include:
+  - local: 'config/services.yaml'
 
-task repackVendorJars {
-    description = 'Strips shaded jackson classes from vendor jars'
-    group = 'build'
+# Prevents Gitlab auto-cancelling the pipeline 
+workflow:
+  auto_cancel:
+    on_new_commit: "none"
 
-    doLast {
-        def workDir = file("${buildDir}/vendor-repack")
+stages:
+  - publish
+  - validate
+  - deploy
+  - verify
+  # - notify
 
-        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            def jarFile = artifact.file
-            def jarName = jarFile.name
+variables:
+  DEV_CLUSTER:        "https://api.dev.sbiepay.sbi:6443"
+  PREPROD_CLUSTER:    "https://api.preprod.epay.sbi:6443"
+  PREPROD_DC_CLUSTER: "https://api.dcpreprod.epay.sbi:6443"
+  PROD_DR_CLUSTER:    "https://api.dr.prod.epay.sbi:6443"
+  PROD_DC_CLUSTER:    "https://api.dc.prod.epay.sbi:6443"
+  # SERVICE_NAME:       ""
+  # ENV:                ""
+  HELM_HISTORY_MAX:   "10"
+  DEPLOYMENT_TIMEOUT: "15m"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
 
-            boolean isVendor = vendorJarNames.any { v -> jarName.contains(v) }
-            if (!isVendor) return
+.validate_inputs:
+  before_script:
+    - |
+      set -eo pipefail
+      if [ -z "$SERVICE_NAME" ] || [ -z "$ENV" ]; then
+        echo "ERROR: SERVICE_NAME and ENV required"; exit 1
+      fi
+      if [[ ! "$ENV" =~ ^(dev|sit|uat|int|perf|pre-prod|pre-prod-dc|prod-dr|prod-dc)$ ]]; then
+        echo "ERROR: Invalid ENV '$ENV'"; exit 1
+      fi
+      echo "Service=$SERVICE_NAME | ENV=$ENV | VERSION=$VERSION"
 
-            logger.lifecycle("Checking vendor jar for shaded Jackson: ${jarName}")
+validate_service:
+  stage: validate
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  # extends: .validate_inputs
+  script:
+    - |
+      set -eo pipefail
+      echo "$SERVICES_CONFIG" > /tmp/services.yml
+      echo "VERSION=$VERSION" >> build.env
 
-            // Check if this jar contains jackson classes
-            def hasJackson = false
-            zipTree(jarFile).visit { fileDetails ->
-                if (fileDetails.path.startsWith('com/fasterxml/jackson')) {
-                    hasJackson = true
-                }
-            }
+      if [ -z "$SERVICE_NAME" ]; then
+        CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep charts | head -1 || true)
+        
+        if [ -z "$CHANGED_FILE" ]; then
+          CHANGED_FILE=$(git ls-files | grep charts | head -1 || true)
+        fi
 
-            if (!hasJackson) {
-                logger.lifecycle("  ✅ Clean (no shaded Jackson): ${jarName}")
-                return
-            }
+        if [ -z "$CHANGED_FILE" ]; then
+          echo "No chart changes found"
+          exit 1
+        fi
 
-            logger.lifecycle("  ⚠️  Shaded Jackson found in ${jarName} — repacking...")
+        ENV=$(echo "$CHANGED_FILE" | cut -d'/' -f1)
+        SERVICE_NAME=$(echo "$CHANGED_FILE" | cut -d'/' -f3)
 
-            // Extract jar excluding jackson classes
-            def extractDir = file("${workDir}/${jarName}-extracted")
-            extractDir.deleteDir()
-            extractDir.mkdirs()
+        echo "Detected SERVICE_NAME=$SERVICE_NAME"
+        echo "Detected ENV=$ENV"
+      fi
 
-            copy {
-                from zipTree(jarFile)
-                into extractDir
-                exclude 'com/fasterxml/jackson/**'
-            }
+      # RELEASE_NAME extract from services.yaml
+      RELEASE_NAME=$(awk -v svc="$SERVICE_NAME" '
+        $0 ~ "name: "svc {found=1}
+        found && /release:/ {print $2; exit}
+      ' /tmp/services.yml)
 
-            // Repack into same location
-            def repackedJar = file("${workDir}/${jarName}")
-            ant.jar(destfile: repackedJar, basedir: extractDir)
+      RELEASE_NAME=${RELEASE_NAME:-$(echo "$SERVICE_NAME" | tr '_' '-')}
 
-            // Replace original jar in Gradle's cache copy used by bootJar
-            // by overwriting via a file copy trick
-            jarFile.bytes = repackedJar.bytes
+      NAMESPACE=$(awk -v svc="$SERVICE_NAME" '
+        /namespace:/ {ns=$3}
+        $0 ~ "name: "svc {print ns; exit}
+      ' /tmp/services.yml)
 
-            logger.lifecycle("  ✅ Repacked ${jarName} — Jackson classes removed")
-        }
-    }
-}
+      NAMESPACE="${ENV}-${NAMESPACE}"
 
-// Ensure repack runs before bootJar packages the fat jar
-bootJar.dependsOn repackVendorJars
-```
+      echo "RAW NAMESPACE=$NAMESPACE"
+      echo "FINAL VALUES:"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "NAMESPACE=$NAMESPACE"
 
-## Why `jarFile.bytes = repackedJar.bytes` works here
+      # --- PERMANENT FIX: sync values.yaml to tip of main ---
+      # update-tag commits a NEW commit (with [skip ci]) AFTER this pipeline's
+      # SHA was frozen, so this checkout is one commit behind and still holds the
+      # OLD tag. Re-sync the chart's values.yaml from origin/main so we read the
+      # tag update-tag just wrote, not the stale frozen-SHA copy.
+      # Internal GitLab CA is not trusted in this image -> disable SSL verify
+      # (same as the update-tag job) and authenticate with the deploy token.
+      git config --global http.sslVerify false
+      git config --global --add safe.directory '*'
+      git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
+      # Use the ref this pipeline actually ran on (could be main OR a feature
+      # branch), NOT a hardcoded main — otherwise a feature-branch edit gets
+      # clobbered by main's older values.yaml.
+      SYNC_REF="${CI_COMMIT_REF_NAME:-main}"
+      git fetch --quiet origin "$SYNC_REF"
+      git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
+      echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
+       
+      [ -d "${ENV}/charts/${SERVICE_NAME}" ] || { echo "Chart not found"; exit 1; }
 
-Gradle resolves dependencies into a local cache. The `runtimeClasspath` artifact file points to that cached copy. Overwriting it in `doLast` before `bootJar` runs means `bootJar` picks up the stripped version. The original file in Artifactory/JFrog is never touched.
+      # Helm validation
+      helm lint ${ENV}/charts/${SERVICE_NAME}/
 
-## Full updated `build.gradle` — complete file
+      # values.yaml is the single source of truth for image.tag — no runtime override.
+      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+      if [ -z "$TAG_IN_FILE" ]; then
+        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+        exit 1
+      fi
+      echo "Validating with image tag from values.yaml: ${TAG_IN_FILE}"
 
-```gradle
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version "${spring_boot}"
-    id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+      helm template ${RELEASE_NAME} ${ENV}/charts/${SERVICE_NAME}/ \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml
+      echo "✅ Validation passed"
 
-group = 'com.epay.payment'
-version = "${version}"
+      # Export for next stages
+      echo "SERVICE_NAME=$SERVICE_NAME" >> build.env
+      echo "ENV=$ENV" >> build.env
+      echo "RELEASE_NAME=$RELEASE_NAME" >> build.env
+      echo "NAMESPACE=$NAMESPACE" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
+helm:deploy:
+  stage: deploy
+  dependencies:
+    - validate_service
+  needs:
+    - job: validate_service
+      artifacts: true
+  #image: registry.dev.sbiepay.sbi:8443/ubi9/ochelm:03122024
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - deploy_runner
+  extends: .validate_inputs
+  script:
+    - |
+      echo "RELEASE_NAME=$RELEASE_NAME"
+      echo "SERVICE_NAME=$SERVICE_NAME"
+      echo "ENV=$ENV"
+      
+      case "$ENV" in
+        dev|sit|uat|int|perf) CLUSTER=$DEV_CLUSTER;        TOKEN=$OCP_TOKEN_DEV_CLUSTER ;;
+        pre-prod)              CLUSTER=$PREPROD_CLUSTER;    TOKEN=$OCP_TOKEN_PREPROD_DR ;;
+        pre-prod-dc)           CLUSTER=$PREPROD_DC_CLUSTER; TOKEN=$OCP_TOKEN_PREPROD_DC ;;
+        prod-dr)               CLUSTER=$PROD_DR_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DR ;;
+        prod-dc)               CLUSTER=$PROD_DC_CLUSTER;    TOKEN=$OCP_TOKEN_PROD_DC ;;
+      esac
+      oc login "$CLUSTER" --token="$TOKEN" --insecure-skip-tls-verify
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    testImplementation 'org.apache.httpcomponents.client5:httpclient5'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'javax.persistence:javax.persistence-api:2.2'
-    implementation 'commons-io:commons-io:2.14.0'
-    implementation 'org.modelmapper:modelmapper:2.4.4'
-    implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
-    implementation 'org.hibernate.orm:hibernate-envers'
+      # --- PERMANENT FIX: sync values.yaml to tip of main ---
+      # Same reason as validate_service: this job is still checked out at the
+      # pipeline's frozen SHA, which predates the update-tag commit. Re-sync so
+      # the helm upgrade uses the freshly-written image tag, not the old one.
+      # Requires fetch access to origin (deploy token) and trust of the internal
+      # GitLab CA. The deploy image does not trust it, so disable SSL verify
+      # (same as the update-tag job).
+      git config --global http.sslVerify false
+      git config --global --add safe.directory '*'
+      git remote set-url origin "https://oauth2:${GITLAB_CI_DEPLOY_TOKEN}@gitlab.sbi/${CI_PROJECT_PATH}.git"
+      # Use the ref this pipeline actually ran on (could be main OR a feature
+      # branch), NOT a hardcoded main — otherwise a feature-branch edit gets
+      # clobbered by main's older values.yaml.
+      SYNC_REF="${CI_COMMIT_REF_NAME:-main}"
+      git fetch --quiet origin "$SYNC_REF"
+      git checkout "origin/${SYNC_REF}" -- "${ENV}/charts/${SERVICE_NAME}/values.yaml"
+      echo "Synced ${ENV}/charts/${SERVICE_NAME}/values.yaml to origin/${SYNC_REF}"
 
-    // Jackson — BOM managed at 2.17.2, enforced via resolutionStrategy below
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+      # values.yaml is the single source of truth for image.tag — no runtime override.
+      TAG_IN_FILE=$(grep -E '^\s*tag:' "${ENV}/charts/${SERVICE_NAME}/values.yaml" | head -1 | sed -E 's/.*tag:\s*"?([^"]*)"?.*/\1/')
+      if [ -z "$TAG_IN_FILE" ]; then
+        echo "FATAL: image.tag is empty or missing in ${ENV}/charts/${SERVICE_NAME}/values.yaml — refusing to deploy"
+        exit 1
+      fi
+      echo "Deploying with image tag from values.yaml: ${TAG_IN_FILE}"
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    // Internal utility jars
-    implementation 'name:authentication-service-0.1.0'
-    implementation 'name:encryption-decryption-service-0.1.0'
-    implementation 'name:logging-service-1.0-SNAPSHOT'
-    implementation 'name:notification-service-0.0.1-SNAPSHOT'
-    implementation 'name:PGPUtility'
-    implementation 'name:BASE64DecoderData'
-    implementation 'name:SBINEWPG_2023'
-
-    implementation 'com.google.code.gson:gson:2.8.9'
-    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
-    implementation 'org.apache.httpcomponents:httpcore:4.4.11'
-    implementation 'commons-codec:commons-codec:1.4'
-    implementation 'org.json:json:20090211'
-    implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
-
-    implementation "software.amazon.awssdk:s3:${s3}"
-    implementation 'org.liquibase:liquibase-core'
-
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
-
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
-    implementation 'org.springframework.kafka:spring-kafka'
-
-    implementation 'javax.mail:javax.mail-api:1.6.2'
-    implementation 'com.sun.mail:javax.mail:1.6.2'
-    implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
-    implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
-    implementation 'com.sun.mail:jakarta.mail:2.0.1'
-
-    implementation 'org.thymeleaf:thymeleaf:3.1.1.RELEASE'
-    implementation 'org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE'
-    implementation 'org.springframework:spring-context-support'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-// ── Jackson version enforcement (module-level) ────────────────────────────────
-configurations.all {
-    resolutionStrategy {
-        eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'com.fasterxml.jackson.core' ||
-                details.requested.group == 'com.fasterxml.jackson.datatype' ||
-                details.requested.group == 'com.fasterxml.jackson.module' ||
-                details.requested.group == 'com.fasterxml.jackson.dataformat') {
-                details.useVersion '2.17.2'
-                details.because 'Enforce Jackson BOM alignment'
-            }
-        }
-    }
-}
-
-// ── Strip shaded Jackson classes from vendor jars ─────────────────────────────
-def vendorJarNames = [
-    'SBINEWPG_2023',
-    'PGPUtility',
-    'BASE64DecoderData',
-    'authentication-service',
-    'encryption-decryption-service',
-    'logging-service',
-    'notification-service'
-]
-
-task repackVendorJars {
-    description = 'Strips shaded jackson classes from vendor jars'
-    group = 'build'
-
-    doLast {
-        def workDir = file("${buildDir}/vendor-repack")
-
-        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            def jarFile = artifact.file
-            def jarName = jarFile.name
-
-            boolean isVendor = vendorJarNames.any { v -> jarName.contains(v) }
-            if (!isVendor) return
-
-            logger.lifecycle("Checking vendor jar for shaded Jackson: ${jarName}")
-
-            def hasJackson = false
-            zipTree(jarFile).visit { fileDetails ->
-                if (fileDetails.path.startsWith('com/fasterxml/jackson')) {
-                    hasJackson = true
-                }
-            }
-
-            if (!hasJackson) {
-                logger.lifecycle("  ✅ Clean (no shaded Jackson): ${jarName}")
-                return
-            }
-
-            logger.lifecycle("  ⚠️  Shaded Jackson found in ${jarName} — repacking...")
-
-            def extractDir = file("${workDir}/${jarName}-extracted")
-            extractDir.deleteDir()
-            extractDir.mkdirs()
-
-            copy {
-                from zipTree(jarFile)
-                into extractDir
-                exclude 'com/fasterxml/jackson/**'
-            }
-
-            def repackedJar = file("${workDir}/${jarName}")
-            ant.jar(destfile: repackedJar, basedir: extractDir)
-
-            jarFile.bytes = repackedJar.bytes
-
-            logger.lifecycle("  ✅ Repacked ${jarName} — Jackson classes removed")
-        }
-    }
-}
-
-bootJar.dependsOn repackVendorJars
-
-tasks.named('test') {
-    useJUnitPlatform()
-}
-
-test {
-    testLogging {
-        outputs.upToDateWhen { false }
-        showStandardStreams = true
-    }
-}
-
-springBoot {
-    buildInfo()
-}
-```
-
-## What to verify in the build log after this runs
-
-You should see lines like:
-
-```
-Checking vendor jar for shaded Jackson: SBINEWPG_2023.jar
-  ⚠️  Shaded Jackson found in SBINEWPG_2023.jar — repacking...
-  ✅ Repacked SBINEWPG_2023.jar — Jackson classes removed
-```
-
-And after deploy, the pod logs should show zero `NoSuchFieldError` or `NoSuchMethodError` for Jackson. Share the build log output of the `repackVendorJars` task so we can confirm which jars were the culprits.
+      helm upgrade --install ${RELEASE_NAME} \
+        ${ENV}/charts/${SERVICE_NAME} \
+        -n ${NAMESPACE} \
+        --create-namespace \
+        -f ${ENV}/charts/${SERVICE_NAME}/values.yaml \
+        --history-max=${HELM_HISTORY_MAX}
+      echo "✅ Deployed ${SERVICE_NAME} with tag ${TAG_IN_FILE} to ${ENV}"
