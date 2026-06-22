@@ -1,41 +1,82 @@
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i jackson
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-d746cdb85-8rv7x  -n  dev-transaction | grep -i error
+2026-06-22 06:26:04.310 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=3dd98218-4722-4a03-a45c-7b5bfd6e9880 | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
 java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
-java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
-
-^C
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i error
-2026-06-22 05:57:06.516 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
-java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-2026-06-22 05:57:06.605 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Error while stopping the container
+2026-06-22 06:26:04.394 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=3dd98218-4722-4a03-a45c-7b5bfd6e9880 | methodName=cashChallanStatusQueryListener | Error while stopping the container
 java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
 Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
 
 
+2026-06-22 06:27:15.629 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=E81A8FD0A07F4B5B9C55  | scenario=/api/payments/v1/inb/sbi/initiate | operation=POST | correlation=a7c583e2-b1d8-42f9-a017-d11a24bb68d8 | methodName=handleGenericException | Error in handleGenericException Handler dispatch failed: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+jakarta.servlet.ServletException: Handler dispatch failed: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+        at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+Caused by: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f payment-paymentservice-d746cdb85-8rv7x  -n  dev-transaction | grep -i jackson
+java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
+java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:235)
+        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:851)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:561)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:326)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:173)
+        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:669)
+        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:5036)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4906)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3848)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3831)
+2026-06-22 06:27:15.629 ERROR | com.epay.payment.exceptionhandlers.PaymentExceptionHandler:212 | principal=E81A8FD0A07F4B5B9C55  | scenario=/api/payments/v1/inb/sbi/initiate | operation=POST | correlation=a7c583e2-b1d8-42f9-a017-d11a24bb68d8 | methodName=handleGenericException | Error in handleGenericException Handler dispatch failed: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+jakarta.servlet.ServletException: Handler dispatch failed: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+Caused by: java.lang.NoSuchMethodError: 'java.lang.String com.fasterxml.jackson.annotation.JsonProperty.namespace()'
+        at com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector.findNameForDeserialization(JacksonAnnotationIntrospector.java:1418)
+        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector._addFields(POJOPropertiesCollector.java:622)
+        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.collectAll(POJOPropertiesCollector.java:478)
+        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.getPropertyMap(POJOPropertiesCollector.java:413)
+        at com.fasterxml.jackson.databind.introspect.POJOPropertiesCollector.getProperties(POJOPropertiesCollector.java:255)
+        at com.fasterxml.jackson.databind.introspect.BasicBeanDescription._properties(BasicBeanDescription.java:164)
+        at com.fasterxml.jackson.databind.introspect.BasicBeanDescription.findProperties(BasicBeanDescription.java:239)
+        at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory._findCreatorsFromProperties(BasicDeserializerFactory.java:317)
+        at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory._constructDefaultValueInstantiator(BasicDeserializerFactory.java:271)
+        at com.fasterxml.jackson.databind.deser.BasicDeserializerFactory.findValueInstantiator(BasicDeserializerFactory.java:222)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.buildBeanDeserializer(BeanDeserializerFactory.java:262)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerFactory.createBeanDeserializer(BeanDeserializerFactory.java:151)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer2(DeserializerCache.java:450)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createDeserializer(DeserializerCache.java:394)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:295)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:273)
+        at com.fasterxml.jackson.databind.deser.DeserializerCache.hasValueDeserializerFor(DeserializerCache.java:220)
+        at com.fasterxml.jackson.databind.DeserializationContext.hasValueDeserializerFor(DeserializationContext.java:614)
+        at com.fasterxml.jackson.databind.ObjectMapper.canDeserialize(ObjectMapper.java:3686)
+        at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.canRead(AbstractJackson2HttpMessageConverter.java:263)
+
 
 ^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get deployment payment-paymentservice   -n dev-transaction   -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_payment_service:dev-010848cb
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get pod -n dev-transaction   -l app=payment-paymentservice   -o jsonpath='{.items[0].spec.containers[0].image}'; echo
+error: error executing jsonpath "{.items[0].spec.containers[0].image}": Error executing template: array index out of bounds: index 0, length 0. Printing more information for debugging the template:
+        template was:
+                {.items[0].spec.containers[0].image}
+        object given to jsonpath engine was:
+                map[string]interface {}{"apiVersion":"v1", "items":[]interface {}{}, "kind":"List", "metadata":map[string]interface {}{"resourceVersion":""}}
+
+
+
 [osuser@bastion ~]$
