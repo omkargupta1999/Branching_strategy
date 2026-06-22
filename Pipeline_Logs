@@ -1,46 +1,179 @@
-[osuser@bastion ~]$ oc get po -n dev-transaction -o wide
-NAME                                            READY   STATUS    RESTARTS      AGE    IP              NODE                      NOMINATED NODE   READINESS GATES
-payment-paymentservice-fd9bfbf4b-q48sl          2/2     Running   0             4m3s   172.16.8.121    worker1.dev.sbiepay.sbi   <none>           <none>
-txn-job-transactionjobservice-c6cc7785c-g7gtp   2/2     Running   0             4d7h   172.16.17.253   worker3.dev.sbiepay.sbi   <none>           <none>
-txn-transactionservice-6989f8684c-f2qws         2/2     Running   1 (45h ago)   45h    172.16.8.99     worker1.dev.sbiepay.sbi   <none>           <none>
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
->   sh -c 'find / -name "epay_payment_service*.jar" 2>/dev/null'
-/home/default/epay_payment_service-dev-82805a30.jar
-command terminated with exit code 1
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
->   sh -c 'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
-command terminated with exit code 1
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction --   sh -c 'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
-command terminated with exit code 1
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction -- \
->   sh -c 'ls /deployments/ 2>/dev/null; ls /opt/app/ 2>/dev/null; ls / 2>/dev/null | head -20'
-data
-afs
-bin
-boot
-cacerts
-certs
-deployments
-dev
-etc
-help.1
-home
-lib
-lib64
-lost+found
-media
-mnt
-opt
-proc
-root
-run
-sbin
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-fd9bfbf4b-q48sl -n dev-transaction --   sh  'find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null'
-sh: find / -name "SBINEWPG_2023.jar" -o -name "PGPUtility.jar" -o -name "BASE64DecoderData.jar" 2>/dev/null: No such file or directory
-command terminated with exit code 127
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version "${spring_boot}"
+    id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
+
+group = 'com.epay.payment'
+version = "${version}"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'javax.persistence:javax.persistence-api:2.2'
+    implementation 'commons-io:commons-io:2.14.0'
+    implementation 'org.modelmapper:modelmapper:2.4.4'
+    implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
+    implementation 'org.hibernate.orm:hibernate-envers'
+
+    // Jackson — BOM managed at 2.17.2, enforced via resolutionStrategy below
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Internal utility jars
+    implementation 'name:authentication-service-0.1.0'
+    implementation 'name:encryption-decryption-service-0.1.0'
+    implementation 'name:logging-service-1.0-SNAPSHOT'
+    implementation 'name:notification-service-0.0.1-SNAPSHOT'
+    implementation 'name:PGPUtility'
+    implementation 'name:BASE64DecoderData'
+    implementation 'name:SBINEWPG_2023'
+
+    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'org.apache.httpcomponents:httpcore:4.4.11'
+    implementation 'commons-codec:commons-codec:1.4'
+    implementation 'org.json:json:20090211'
+    implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+
+    implementation "software.amazon.awssdk:s3:${s3}"
+    implementation 'org.liquibase:liquibase-core'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    implementation 'javax.mail:javax.mail-api:1.6.2'
+    implementation 'com.sun.mail:javax.mail:1.6.2'
+    implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+    implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
+    implementation 'com.sun.mail:jakarta.mail:2.0.1'
+
+    implementation 'org.thymeleaf:thymeleaf:3.1.1.RELEASE'
+    implementation 'org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE'
+    implementation 'org.springframework:spring-context-support'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// ── Jackson version enforcement (module-level) ────────────────────────────────
+configurations.all {
+    resolutionStrategy {
+        eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'com.fasterxml.jackson.core' ||
+                details.requested.group == 'com.fasterxml.jackson.datatype' ||
+                details.requested.group == 'com.fasterxml.jackson.module' ||
+                details.requested.group == 'com.fasterxml.jackson.dataformat') {
+                details.useVersion '2.17.2'
+                details.because 'Enforce Jackson BOM alignment'
+            }
+        }
+    }
+}
+
+// ── Strip shaded Jackson classes from vendor jars ─────────────────────────────
+def vendorJarNames = [
+    'SBINEWPG_2023',
+    'PGPUtility',
+    'BASE64DecoderData',
+    'authentication-service',
+    'encryption-decryption-service',
+    'logging-service',
+    'notification-service'
+]
+
+task repackVendorJars {
+    description = 'Strips shaded jackson classes from vendor jars'
+    group = 'build'
+
+    doLast {
+        def workDir = file("${buildDir}/vendor-repack")
+
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            def jarFile = artifact.file
+            def jarName = jarFile.name
+
+            boolean isVendor = vendorJarNames.any { v -> jarName.contains(v) }
+            if (!isVendor) return
+
+            logger.lifecycle("Checking vendor jar for shaded Jackson: ${jarName}")
+
+            def hasJackson = false
+            zipTree(jarFile).visit { fileDetails ->
+                if (fileDetails.path.startsWith('com/fasterxml/jackson')) {
+                    hasJackson = true
+                }
+            }
+
+            if (!hasJackson) {
+                logger.lifecycle("  ✅ Clean (no shaded Jackson): ${jarName}")
+                return
+            }
+
+            logger.lifecycle("  ⚠️  Shaded Jackson found in ${jarName} — repacking...")
+
+            def extractDir = file("${workDir}/${jarName}-extracted")
+            extractDir.deleteDir()
+            extractDir.mkdirs()
+
+            copy {
+                from zipTree(jarFile)
+                into extractDir
+                exclude 'com/fasterxml/jackson/**'
+            }
+
+            def repackedJar = file("${workDir}/${jarName}")
+            ant.jar(destfile: repackedJar, basedir: extractDir)
+
+            jarFile.bytes = repackedJar.bytes
+
+            logger.lifecycle("  ✅ Repacked ${jarName} — Jackson classes removed")
+        }
+    }
+}
+
+bootJar.dependsOn repackVendorJars
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+test {
+    testLogging {
+        outputs.upToDateWhen { false }
+        showStandardStreams = true
+    }
+}
+
+springBoot {
+    buildInfo()
+}
