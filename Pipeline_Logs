@@ -1,37 +1,135 @@
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i jackson
-java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
-java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-        at com.fasterxml.jackson.databind.deser.std.EnumDeserializer.createContextual(EnumDeserializer.java:211)
-        at com.fasterxml.jackson.databind.DeserializationContext.handlePrimaryContextualization(DeserializationContext.java:836)
-        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.resolve(BeanDeserializerBase.java:550)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCache2(DeserializerCache.java:294)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache._createAndCacheValueDeserializer(DeserializerCache.java:244)
-        at com.fasterxml.jackson.databind.deser.DeserializerCache.findValueDeserializer(DeserializerCache.java:142)
-        at com.fasterxml.jackson.databind.DeserializationContext.findRootValueDeserializer(DeserializationContext.java:654)
-        at com.fasterxml.jackson.databind.ObjectMapper._findRootDeserializer(ObjectMapper.java:4956)
-        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4826)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3772)
-        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3755)
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${spring_boot}"
+	id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
 
-^C
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc logs -f payment-paymentservice-df7c4c57d-7qvj7 -n  dev-transaction | grep -i error
-2026-06-22 05:57:06.516 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Stopping container due to an Error
-java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-2026-06-22 05:57:06.605 ERROR | com.epay.payment.etl.listner.CashChallanStatusQueryListener:49 | principal=  | scenario=CashChallanStatusQueryListener | operation=CashChallanStatusQueryListener | correlation=5e363c8a-0c97-432d-8548-d72c939c7081 | methodName=cashChallanStatusQueryListener | Error while stopping the container
-java.util.concurrent.CompletionException: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
-Caused by: java.lang.NoSuchFieldError: Class com.fasterxml.jackson.annotation.JsonFormat$Feature does not have member field 'com.fasterxml.jackson.annotation.JsonFormat$Feature READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE'
+group = 'com.epay.payment'
+version = "${version}"
 
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'javax.persistence:javax.persistence-api:2.2'
+	implementation 'commons-io:commons-io:2.14.0'
+	implementation 'org.modelmapper:modelmapper:2.4.4'
+	implementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
+	implementation 'org.hibernate.orm:hibernate-envers'
+
+	// Jackson — versions managed by Spring Boot BOM (2.17.2)
+	// DO NOT add explicit versions here — they cause mismatches
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Internal utility jars
+	implementation 'name:authentication-service-0.1.0'
+	implementation 'name:encryption-decryption-service-0.1.0'
+	implementation 'name:logging-service-1.0-SNAPSHOT'
+	implementation 'name:notification-service-0.0.1-SNAPSHOT'
+	implementation 'name:PGPUtility'
+	implementation 'name:BASE64DecoderData'
+	implementation 'name:SBINEWPG_2023'
+
+	implementation 'com.google.code.gson:gson:2.8.9'
+	implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+	implementation 'org.apache.httpcomponents:httpcore:4.4.11'
+	implementation 'commons-codec:commons-codec:1.4'
+	implementation 'org.json:json:20090211'
+	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+
+	// AWS
+	implementation "software.amazon.awssdk:s3:${s3}"
+
+	// Liquibase
+	implementation 'org.liquibase:liquibase-core'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	// Lombok (declared once)
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// MapStruct
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+	// Swagger / OpenAPI (declared once)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	// Mail
+	implementation 'javax.mail:javax.mail-api:1.6.2'
+	implementation 'com.sun.mail:javax.mail:1.6.2'
+	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+	implementation 'jakarta.activation:jakarta.activation-api:2.1.4'
+	implementation 'com.sun.mail:jakarta.mail:2.0.1'
+
+	// Thymeleaf
+	implementation 'org.thymeleaf:thymeleaf:3.1.1.RELEASE'
+	implementation 'org.thymeleaf:thymeleaf-spring5:3.1.1.RELEASE'
+
+	// Spring context support (let Spring Boot BOM manage version)
+	implementation 'org.springframework:spring-context-support'
+
+	// Test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// ── Jackson version enforcement ───────────────────────────────────────────────
+// Forces ALL Jackson modules to 2.17.2 regardless of what any transitive
+// dependency or explicit declaration requests. Prevents NoSuchFieldError
+// caused by mismatched jackson-annotations vs jackson-databind versions.
+configurations.all {
+	resolutionStrategy {
+		eachDependency { DependencyResolveDetails details ->
+			if (details.requested.group == 'com.fasterxml.jackson.core' ||
+				details.requested.group == 'com.fasterxml.jackson.datatype' ||
+				details.requested.group == 'com.fasterxml.jackson.module' ||
+				details.requested.group == 'com.fasterxml.jackson.dataformat') {
+				details.useVersion '2.17.2'
+				details.because 'Enforce Jackson BOM alignment — prevent NoSuchFieldError'
+			}
+		}
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+test {
+	testLogging {
+		outputs.upToDateWhen { false }
+		showStandardStreams = true
+	}
+}
+
+springBoot {
+	buildInfo()
+}
