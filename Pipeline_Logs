@@ -1,72 +1,33 @@
-Release Management
-24 | P a g e
-Option 5 – Continuous Development with Late Release Branch Creation
-Overview
-Here, the “develop” branch that will act as integration branch for developers and “release” branch will 
-act as testing branch for SIT team.
-● In this model, feature development occurs independently through dedicated feature branches.
-● Feature branches continue to merge back into “develop” branch for developer testing.
-● Features which are developed and ready, can be merged to “release” branch and marked as 
-ready for SIT testing.
-● SIT team can test one/any/all features and test it sequentially or parallel and mark features as 
-SIT approved and keep it in “release” branch only.
-A Release Branch is created only after the Bank approves the final feature scope.
-Key Principles
-● Once the bank asks for feature UAT testing, a versioned release will be created.
-● This versioned release can be deployed to SIT / UAT
-● One round of SIT testing this branch will be handed to UAT team.
-● The same branch once approved by UAT will be given to ISD team.
-● Once the production date is fixed, the same UAT/ISD approved branch will be deployed on 
-Preprod.
-● Preprod approved release branch to be deployed on prod and merged back to main
-● Main will be synced to develop, release.
-Example
- Feature Development From develop Branch
-○ Feature B = In Dev
- All Features merged to develop Branch, develop Branch contains:
-○ Feature A = Dev Done
-○ Feature B = In Dev
-○ Feature C = Dev Done
-○ Feature D = Dev Done
- SIT:
-○ Feature A = SIT Approved
-○ Feature C = SIT In Progress
-○ Feature D = SIT Approved
- UAT:
-○ Feature A = UAT Approved
-○ Feature D = UAT In Progress
-Release Management
-25 | P a g e
- Bank Decision:
-○ Release Feature A only
- Release Branch Creation with Versioning
-○ Release Branch Creation from main
-○ Merge Feature A into Release
- Release Validation
-○ Optional SIT Sanity on Release Branch
-○ Optional UAT Sanity on Release Branch
-○ Mandatory PreProd on Release Branch
- Release to Production
-○ Deploy PreProd Approved build to Prod
-○ Merge Release to main
-○ Synch main with develop
-○ Synch main with release
-Pros
-● Bank fully controls release content.
-● No feature flags are required.
-● There is no need to change the current deployment model.
-● No need for extra environment, existing environments (develop, sit, uat) can be used.
-● Better governance and auditability.
-● All developed features can be deployed to SIT for SIT testing
-● SIT can test parallel multiple features.
-● With no long-lived feature branches, all developed code sits into common develop branch.
-● Single source of truth code branch for each stage, for developer “develop” branch and for SIT 
-testing “release” branch.
-● No Surprise deployment by other leads as only develop and release base code will be deployed 
-on develop / SIT environments.
-● Supports changing business priorities.
-Cons
-● Longer release cycle.
-● Cherry Picking Required
-● Higher testing effort.
-● Release branch created late in lifecycle.
+# ci/common/workflow.yml
+# Shared pipeline-trigger rules for ALL app-repo CI orchestrators.
+# Goal: when a branch has an OPEN merge request, run ONLY the merge_request
+# pipeline — never the duplicate branch pipeline.
+#
+# NOTE (GitLab behaviour): GitLab honours exactly ONE workflow: block — the one
+# in the TOP-LEVEL config. This file is pulled in via `include:` by each
+# orchestrator (java.yml, nodejs.yml, ...). It only takes effect if the APP
+# repo's own .gitlab-ci.yml does NOT define its own workflow: block. If an app
+# repo defines workflow: locally, that local block wins and these rules are
+# ignored for that repo.
+
+workflow:
+  rules:
+    # 1. Always allow downstream/triggered (parent→child) pipelines.
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+      when: always
+
+    # 2. DEDUPE: a branch push that already has an open MR -> skip the branch
+    #    pipeline; the merge_request pipeline (rule 3) runs instead.
+    # - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+    #   when: never
+
+    - if: '$CI_COMMIT_BRANCH =~ /^(feature|bugfix)\/.*$/ && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+      when: never
+
+    # 3. Run merge_request pipelines.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+
+    # 4. Run branch pipelines (only reached when the branch has NO open MR).
+    - if: '$CI_COMMIT_BRANCH'
+      when: always
