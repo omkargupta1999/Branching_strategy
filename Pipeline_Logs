@@ -1,141 +1,72 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2831-concurrent-1 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:05
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_reports_service/.git/
-Created fresh repository.
-Checking out 2fa6f89c as detached HEAD (ref is refs/merge-requests/637/head)...
-Skipping Git submodules setup
-Downloading artifacts
-00:05
-Downloading artifacts for build (1151232)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1151232 responseStatus=200 OK token=eyJraWQiO
-Downloading artifacts for test (1151233)...
-Downloading artifacts from coordinator... ok        host=gitlab.sbi id=1151233 responseStatus=200 OK token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:21
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-$ update-ca-trust extract
-$ mkdir -p ~/.jfrog/security/certs
-$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-Login Succeeded!
-$ jf config add \ # collapsed multi-line command
-07:06:02 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
-$ jf config use "$JF_SERVER_ID"
-07:06:02 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-$ jf config show
-Server ID:			epay-server
-JFrog Platform URL:		https://artifactory.jfrog.sbi/
-Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
-Distribution URL:		https://artifactory.jfrog.sbi/distribution/
-Xray URL:			https://artifactory.jfrog.sbi/xray/
-Mission Control URL:		https://artifactory.jfrog.sbi/mc/
-Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
-User:				[MASKED]
-Access token:			***
-Default:			true
-$ echo "VERSION=$VERSION" # collapsed multi-line command
-VERSION=mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c
-Backend build detected
-total 144004
--rw-r--r-- 1 1001 root   1061577 Jun 23 06:59 epay_reporting_service-mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c-plain.jar
--rw-r--r-- 1 1001 root 146392659 Jun 23 06:59 epay_reporting_service-mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c.jar
-Generated Tag.. mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c
-Image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_reports_service:mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c
-STEP 1/12: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728
-Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728...
-Getting image source signatures
-Copying blob sha256:0d1614f223c131235773346e681845dabeb309e47f37313ad5d52cb1b62ea2d9
-Copying blob sha256:740d83e4b2e14f00dd02178b30426cf8efd61f9979c3b9134320f3086336f094
-Copying config sha256:01347adbf2995f67301e16610a830b89bd1f642d993d980e696b81c576303279
-Writing manifest to image destination
-STEP 2/12: ARG ENV
---> 7ff0c5f37d43
-STEP 3/12: ARG VERSION
---> a53918b2b8e6
-STEP 4/12: ENV ENV=$ENV
---> 91f894e9c863
-STEP 5/12: ENV VERSION=$VERSION
---> 7e07d9e16b5b
-STEP 6/12: COPY ./epaycert.cer  /tmp
---> a31b6eb47d9e
-STEP 7/12: COPY ./sms.cer       /tmp
---> ddcb895d9ac4
-STEP 8/12: COPY build/libs/epay_reports_service-${VERSION}.jar .
-Error: building at STEP "COPY build/libs/epay_reports_service-${VERSION}.jar .": checking on sources under "/builds/itepaypg-sbiepay2/application/backend/epay_reports_service": copier: stat: "/build/libs/epay_reports_service-mr-feature-epay-263-emil-settlement-changes-feature-ers-00_egras_masreport_offline_r-637-2fa6f89c.jar": no such file or directory
-Uploading artifacts for failed job
-00:03
-Uploading artifacts...
-image.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  id=1151320 responseStatus=201 Created token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
-
-
-
-
-
-
-
-=====================================  Docker file
- 
-
-ARG BASE_IMAGE_DEV_ENV
-FROM ${BASE_IMAGE_DEV_ENV}
-
-ARG ENV
-ARG VERSION
-
-ENV ENV=$ENV
-ENV VERSION=$VERSION
-
-COPY ./epaycert.cer  /tmp
-COPY ./sms.cer       /tmp
-
-COPY build/libs/epay_reports_service-${VERSION}.jar .
-
-ENTRYPOINT sh -c 'java -jar "epay_reports_service-$VERSION.jar"'
-
-USER root
-
-RUN mkdir -p /home/default/merchantreports && \
-
-    chmod 777 -R /home/default/merchantreports
-
-RUN CACERTS=$(find /usr/lib/jvm -name "cacerts" 2>/dev/null | head -1) && \
-
-    [ -z "$CACERTS" ] && CACERTS=/etc/pki/java/cacerts ; \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/epaycert.cer \
-      -keystore "$CACERTS" \
-      -alias S3_EPAY_CERT \
-      -storepass changeit && \
-    keytool -import -trustcacerts -noprompt \
-      -file /tmp/sms.cer \
-      -keystore "$CACERTS" \
-      -alias DEV_EPAY_SMS \
-      -storepass changeit
-
-
+Release Management
+24 | P a g e
+Option 5 – Continuous Development with Late Release Branch Creation
+Overview
+Here, the “develop” branch that will act as integration branch for developers and “release” branch will 
+act as testing branch for SIT team.
+● In this model, feature development occurs independently through dedicated feature branches.
+● Feature branches continue to merge back into “develop” branch for developer testing.
+● Features which are developed and ready, can be merged to “release” branch and marked as 
+ready for SIT testing.
+● SIT team can test one/any/all features and test it sequentially or parallel and mark features as 
+SIT approved and keep it in “release” branch only.
+A Release Branch is created only after the Bank approves the final feature scope.
+Key Principles
+● Once the bank asks for feature UAT testing, a versioned release will be created.
+● This versioned release can be deployed to SIT / UAT
+● One round of SIT testing this branch will be handed to UAT team.
+● The same branch once approved by UAT will be given to ISD team.
+● Once the production date is fixed, the same UAT/ISD approved branch will be deployed on 
+Preprod.
+● Preprod approved release branch to be deployed on prod and merged back to main
+● Main will be synced to develop, release.
+Example
+ Feature Development From develop Branch
+○ Feature B = In Dev
+ All Features merged to develop Branch, develop Branch contains:
+○ Feature A = Dev Done
+○ Feature B = In Dev
+○ Feature C = Dev Done
+○ Feature D = Dev Done
+ SIT:
+○ Feature A = SIT Approved
+○ Feature C = SIT In Progress
+○ Feature D = SIT Approved
+ UAT:
+○ Feature A = UAT Approved
+○ Feature D = UAT In Progress
+Release Management
+25 | P a g e
+ Bank Decision:
+○ Release Feature A only
+ Release Branch Creation with Versioning
+○ Release Branch Creation from main
+○ Merge Feature A into Release
+ Release Validation
+○ Optional SIT Sanity on Release Branch
+○ Optional UAT Sanity on Release Branch
+○ Mandatory PreProd on Release Branch
+ Release to Production
+○ Deploy PreProd Approved build to Prod
+○ Merge Release to main
+○ Synch main with develop
+○ Synch main with release
+Pros
+● Bank fully controls release content.
+● No feature flags are required.
+● There is no need to change the current deployment model.
+● No need for extra environment, existing environments (develop, sit, uat) can be used.
+● Better governance and auditability.
+● All developed features can be deployed to SIT for SIT testing
+● SIT can test parallel multiple features.
+● With no long-lived feature branches, all developed code sits into common develop branch.
+● Single source of truth code branch for each stage, for developer “develop” branch and for SIT 
+testing “release” branch.
+● No Surprise deployment by other leads as only develop and release base code will be deployed 
+on develop / SIT environments.
+● Supports changing business priorities.
+Cons
+● Longer release cycle.
+● Cherry Picking Required
+● Higher testing effort.
+● Release branch created late in lifecycle.
