@@ -1,7 +1,7 @@
 # ci/common/workflow.yml
 # Shared pipeline-trigger rules for ALL app-repo CI orchestrators.
-# Goal: when a branch has an OPEN merge request, run ONLY the merge_request
-# pipeline — never the duplicate branch pipeline.
+# Goal: when a FEATURE branch has an OPEN merge request, run ONLY the
+# merge_request pipeline — never the duplicate branch pipeline.
 #
 # NOTE (GitLab behaviour): GitLab honours exactly ONE workflow: block — the one
 # in the TOP-LEVEL config. This file is pulled in via `include:` by each
@@ -9,25 +9,21 @@
 # repo's own .gitlab-ci.yml does NOT define its own workflow: block. If an app
 # repo defines workflow: locally, that local block wins and these rules are
 # ignored for that repo.
-
 workflow:
   rules:
-    # 1. Always allow downstream/triggered (parent→child) pipelines.
+    # 1. Always allow downstream/triggered (parent->child) pipelines.
     - if: '$CI_PIPELINE_SOURCE == "pipeline"'
       when: always
-
-    # 2. DEDUPE: a branch push that already has an open MR -> skip the branch
-    #    pipeline; the merge_request pipeline (rule 3) runs instead.
-    # - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
-    #   when: never
-
-    - if: '$CI_COMMIT_BRANCH =~ /^(feature|bugfix)\/.*$/ && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+    # 2. DEDUPE (feature branches ONLY): a push to a feature/* branch that
+    #    already has an open MR -> skip the branch pipeline; the merge_request
+    #    pipeline (rule 3) runs instead. Other branch types (bugfix, release,
+    #    hotfix, develop, main) are NOT deduplicated by this rule.
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
       when: never
-
     # 3. Run merge_request pipelines.
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
-
-    # 4. Run branch pipelines (only reached when the branch has NO open MR).
+    # 4. Run branch pipelines (only reached when the branch has NO open MR,
+    #    or the branch is not a feature/* branch).
     - if: '$CI_COMMIT_BRANCH'
       when: always
