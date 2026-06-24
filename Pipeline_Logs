@@ -1,267 +1,1098 @@
+# ci/common/base-setup-gradle-before-script.yml 
+# Shared hidden job — extended by build/test/publish stages 
+#
+# ── Purpose ───────────────────────────────────────────────────────────────────
+# Centralises image, variables, and before_script common to all Gradle jobs.
+# Extending job inherits image + variables + before_script automatically.
+# Single maintenance point — change once, applies to build and test stages.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Used by both build and test stages — same toolchain required for both.
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+#
+# ── JVM TLS — JFrog Internal CA ───────────────────────────────────────────────
+# Image: ubi9/openjdk-21 (non-root) — $JAVA_HOME/lib/security/cacerts is read-only.
+# Approach:
+#   1. Copy cacerts to $CI_PROJECT_DIR (writable workspace)
+#   2. chmod 644 — keytool requires write access to update the keystore
+#   3. Import JFrog internal CA cert via keytool
+#   4. Export JAVA_TOOL_OPTIONS to point JVM at custom truststore
+# $ARTIFACTORY_CERT — file-type CI/CD variable injected by GitLab (PEM certificate)
+# Error - Gradle Core Plugins (plugin is not in 'org.gradle' namespace) but actually SSL Issue 
+# https://jfrog.com/help/r/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate/artifactory-how-to-resolve-gradle-build-failures-with-https-when-artifactory-domain-uses-a-self-signed-certificate
+#
+# ── Init Script ───────────────────────────────────────────────────────────────
+# epay-artifactory.init.gradle injected inline via heredoc.
+# Gradle runs Initialization + Configuration phases on every invocation
+# (even gradle test with pre-compiled classes) — init script always required.
+# Covers: pluginManagement, dependencyResolutionManagement
+#
+# ── App Repo Requirements ─────────────────────────────────────────────────────
+# settings.gradle : NOT required for single-module repos.
+#                   Only needed for multi-module repos (include() only).
+#                   Must NOT contain pluginManagement {} or repositories {}.
+# build.gradle    : plugins {} and dependencies {} only.
+#                   Must NOT contain repositories {} — FAIL_ON_PROJECT_REPOS enforced.
+# ─────────────────────────────────────────────────────────────────────────────
 
+.base_setup_java_gradle:
+  stage: build
+  #image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/epay-build-java-gradle:1.0.0
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6
+  tags:
+    - common_runner
 
-Build Pipeline stages Error :
+  variables:
+    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO : "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
+    GRADLE_OPTS:      "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+    # GRADLE_USER_HOME: keeps Gradle metadata inside project dir (predictable path)
+    # init.d/ under this path is auto-scanned by Gradle on every build invocation
+    # Not cached — JFrog Artifactory on LAN is fast enough for air-gapped environment
 
+  before_script:
+    # ── Verify toolchain versions ─────────────────────────────────────────────
+    - java -version
+    - gradle --version
 
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:02
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:9d84e3c42636321c94fdf42b3e34fea559c16b0e06a07ffde266f6891bfd554e for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-6v7r1sqdv-project-2833-concurrent-0 via PE3DSOPGRUNNERS5...
-Getting source from Git repository
-00:06
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_operations_service/.git/
-Created fresh repository.
-Checking out 970a648c as detached HEAD (ref is feature/EPAY-123-gradle-test)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:18
-Using docker image sha256:9d84e3c42636321c94fdf42b3e34fea559c16b0e06a07ffde266f6891bfd554e for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87 ...
-$ java -version
-openjdk version "21.0.5" 2024-10-15 LTS
-OpenJDK Runtime Environment (Red_Hat-21.0.5.0.11-1) (build 21.0.5+11-LTS)
-OpenJDK 64-Bit Server VM (Red_Hat-21.0.5.0.11-1) (build 21.0.5+11-LTS, mixed mode, sharing)
-$ gradle --version
-Welcome to Gradle 8.9!
-Here are the highlights of this release:
- - Enhanced Error and Warning Messages
- - IDE Integration Improvements
- - Daemon JVM Information
-For more details see https://docs.gradle.org/8.9/release-notes.html
-------------------------------------------------------------
-Gradle 8.9
-------------------------------------------------------------
-Build time:    2024-07-11 14:37:41 UTC
-Revision:      d536ef36a19186ccc596d8817123e5445f30fef8
-Kotlin:        1.9.23
-Groovy:        3.0.21
-Ant:           Apache Ant(TM) version 1.10.13 compiled on January 4 2023
-Launcher JVM:  21.0.5 (Red Hat, Inc. 21.0.5+11-LTS)
-Daemon JVM:    /usr/lib/jvm/java-21-openjdk-21.0.5.0.11-2.el9.x86_64 (no JDK specified, using current Java home)
-OS:            Linux 5.14.0-611.36.1.el9_7.x86_64 amd64
-$ mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
-$ cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF' # collapsed multi-line command
-$ cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
-$ chmod 644 "$CACERT_PATH"
-$ keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal -file "$JF_ARTIFACTORY_CERT" -noprompt
-Certificate was added to keystore
-$ export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit"
-$ keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-jfrog-internal, Jun 24, 2026, trustedCertEntry, 
-Certificate fingerprint (SHA-256): 95:A7:28:EE:11:00:19:F7:94:F4:B5:F7:98:0A:D5:C6:17:5D:8A:6B:F6:97:46:8E:00:CC:CB:D2:56:35:5E:66
-$ set -eo pipefail # collapsed multi-line command
-Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-FAILURE: Build failed with an exception.
-* Where:
-Build file '/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/build.gradle' line: 3
-* What went wrong:
-Plugin [id: 'org.springframework.boot', version: '3.5.9'] was not found in any of the following sources:
-- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
-- Included Builds (No included builds contain this plugin)
-- Plugin Repositories (could not resolve plugin artifact 'org.springframework.boot:org.springframework.boot.gradle.plugin:3.5.9')
-  Searched in the following repositories:
-    maven(https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/)
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-BUILD FAILED in 12s
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_operations_service) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+    # ── Inject centralised Gradle init script ─────────────────────────────────
+    # Written inline via heredoc — single source of truth in cicd-templates repo.
+    # No app repo file needed. No CI/CD variable overhead.
+    # Gradle auto-loads all *.gradle files under $GRADLE_USER_HOME/init.d/
+    #
+    # pluginManagement:
+    #   Routes plugins {} DSL (Initialization Phase) through Artifactory.
+    #   Takes precedence over app repo settings.gradle pluginManagement if present.
+    #
+    # dependencyResolutionManagement:
+    #   FAIL_ON_PROJECT_REPOS — app repo build.gradle must NOT define repositories {}.
+    #   All 59 repos resolve exclusively through Artifactory virtual repo.
+    #   Internal SBI JARs must be published to itepaypg-sbiepay2-gradle-local —
+    #   flatDir libs/ is not used in CI (local desktop workaround only).
+    - mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+    - |
+      cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF'
+      // ── epay-artifactory.init.gradle ─────────────────────────────────────────
+      // Injected by ci/build/java.gradle.yml — DO NOT ADD TO APP REPOS
+      // Centralised Artifactory resolution config for all SBIePay 2.0 services
+      // Credentials resolved from environment at runtime — never stored in file
+      // ─────────────────────────────────────────────────────────────────────────
 
+      settingsEvaluated { settings ->
 
-============================================================= build.gradle =======================
+          // ── Plugin Resolution (Initialization Phase — pluginManagement) ───────
+          // Routes plugins {} DSL in app repo build.gradle through Artifactory.
+          // Artifactory virtual repo aggregates:
+          //   devsecops-maven-plugins            → plugins.gradle.org/m2/      (plugin markers)
+          //   devsecops-plugins-artifacts-remote → plugins-artifacts.gradle.org (plugin JARs)
+          //   devsecops-maven-remote             → repo1.maven.org/maven2/      (plugin JARs via Maven Central)
+          settings.pluginManagement {
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+              }
+          }
 
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version "${spring_boot}"
-	id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+          // ── Dependency Resolution (Configuration Phase — repositories) ────────
+          // FAIL_ON_PROJECT_REPOS: app repo build.gradle must NOT define repositories {}.
+          // All repos resolve dependencies exclusively through Artifactory virtual repo.
+          // Internal SBI JARs (logging-service, cache-management-service etc.) must be
+          // published to itepaypg-sbiepay2-gradle-local — resolved via virtual repo above.
+          settings.dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+                  flatDir {
+                    dirs "libs"
+                  }
+              }
+          }
+      }
+      EOF
 
-group = 'com.epay'
-version = "${version}"
+    # ── Trust JFrog internal CA ───────────────────────────────────────────────
+    # ubi9/openjdk-21 runs as non-root — $JAVA_HOME/lib/security/cacerts is read-only
+    # Copy to writable project dir, fix permissions, import cert, point JVM at copy
+    # The cp copies $JAVA_HOME/lib/security/cacerts but preserves the source file's read-only permissions (JVM cacerts is typically 444 or r--r--r--). 
+    # Keytool parses and imports in memory successfully, but can't write the modified keystore back to disk — hence the misleading "added" message followed by the error.
+    # Hence permission need to change from 444 to 644
+    - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+    - chmod 644 "$CACERT_PATH"
+    - keytool -importcert
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
+        -file "$JF_ARTIFACTORY_CERT"
+        -noprompt
+    - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom
+                                -Djavax.net.ssl.trustStorePassword=changeit"
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
-
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-configurations.configureEach {
-	exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
-    exclude group: 'org.apache.logging.log4j'
-}
-configurations.configureEach {
-	resolutionStrategy {
-		force "org.antlr:antlr4-runtime:${antlr4}"
-	}
-}
-
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter-tomcat'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.kafka:spring-kafka'
-	implementation 'org.springframework.integration:spring-integration-sftp'
-	implementation "commons-io:commons-io:${commons_io}"
-	implementation "org.apache.commons:commons-lang3:${commons_lang3}"
-	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
-	implementation "jakarta.persistence:jakarta.persistence-api:${jakarta_persistence}"
-	implementation "org.glassfish.web:jakarta.servlet.jsp.jstl:${jakarta_jstl}"
-	implementation "javax.servlet:javax.servlet-api:${javax_servlet_api}"
-	implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
-	implementation "com.opencsv:opencsv:${open_csv}"
-	implementation "org.apache.poi:poi-ooxml:${poi_ooxml}"
-	testImplementation 'org.junit.jupiter:junit-jupiter'
-	testImplementation 'org.mockito:mockito-core'
-	testImplementation 'org.mockito:mockito-junit-jupiter'
-
-	implementation("org.apache.spark:spark-core_2.12:${apache_spark}") {
-		exclude group: 'org.eclipse.jetty'
-		exclude group: 'org.eclipse.jetty.aggregate'
-		exclude group: 'org.eclipse.jetty.jetty'
-	}
-	implementation("org.apache.spark:spark-sql_2.12:${apache_spark}") {
-		exclude group: 'org.eclipse.jetty'
-		exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
-		exclude group: 'org.apache.logging.log4j', module: 'log4j-api'
-		exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
-		exclude group: "org.slf4j"
-	}
-	implementation "software.amazon.awssdk:s3:${aws_s3}"
-	implementation 'org.hibernate.orm:hibernate-envers'
-
-	implementation "com.sbi.epay:logging-service:${epay_logging}"
-	implementation "com.sbi.epay:encryption-decryption-service:${epay_enc}"
-
-	implementation "ch.qos.logback:logback-classic:${logback_classic}"
-	implementation "net.logstash.logback:logstash-logback-encoder:${logback_encoder}"
-	implementation "org.slf4j:jul-to-slf4j:${jul_to_slf4j}"
-	implementation "org.slf4j:jcl-over-slf4j:${jul_to_slf4j}"
-
-	compileOnly 'org.projectlombok:lombok'
-	compileOnly "org.mapstruct:mapstruct:${mapstruct}"
-	compileOnly "org.projectlombok:lombok-mapstruct-binding:${lombok_mapstruct}"
-
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.liquibase:liquibase-core'
-
-	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
-	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
-	runtimeOnly "org.antlr:antlr4-runtime:${antlr4}"
-
-	implementation("com.jcraft:jsch:${jsch}")
-
-	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
-	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
-
-	annotationProcessor 'org.projectlombok:lombok'
-	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
-
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-}
-
-bootRun {
-	jvmArgs += [
-			"--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
-			"--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
-			"--add-exports", "java.base/sun.security.action=ALL-UNNAMED"
-	]
-}
-
-tasks.withType(JavaExec).configureEach {
-	jvmArgs += [
-			"--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
-			"--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
-			"--add-exports", "java.base/sun.security.action=ALL-UNNAMED"
-	]
-}
-
-springBoot  {
-	buildInfo()
-}
-tasks.named('bootJar') {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
+    # ── Verify cert import ────────────────────────────────────────────────────
+    - keytool -list
+        -keystore "$CACERT_PATH"
+        -storepass changeit
+        -alias jfrog-internal
 
 
 
 
-=============================================  gradle.properties ===========
-
-version=1.0.0
-spring_boot=3.5.9
-dependency_plugin=1.1.7
-gorylenko_plugin=2.4.2
-swagger=2.6.0
-tomcat_jasper=10.1.20
-commons_io=2.18.0
-commons_lang3=3.18.0
-jakarta_jstl=3.0.1
-javax_servlet_api=4.0.1
-oracle_driver=23.5.0.24.07
-apache_spark=3.5.5
-jwt=0.12.6
-shedlock=5.9.0
-mapstruct=1.5.1.Final
-aws_s3=2.30.6
-epay_logging=1.0.0
-epay_cms=0.0.1
-jakarta_persistence=3.1.0
-logback_classic=1.5.14
-logback_encoder=7.4
-lombok_mapstruct=0.2.0
-jul_to_slf4j=2.0.9
-open_csv=5.12.0
-poi_ooxml=5.4.1
-jsch=0.1.55
-antlr4=4.13.1
-org.gradle.jvmargs=--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.base/sun.util.calendar=ALL-UNNAMED --add-exports=java.base/sun.security.action=ALL-UNNAMED
-epay_enc=1.0.0
 
 
 
-I want you to please help  me to troubleshoot this issue and fix this issue and provide the complete solution for this .
 
-And also please check the dependencies across all the version we are using which is supported by gradfle 8.9 or not , please check this from all the angles and provide the solution.
 
-FYI this is the same code was working with gradle 9.4 version.
+
+
+
+=================================== 
+
+
+# ci/build/java.gradle.yml  |  Stage: build
+# Gradle compile — produces build/libs/*.jar consumed by image-build stage
+
+# ── Extends ───────────────────────────────────────────────────────────────────
+# Inherits from .base_setup_java_gradle (ci/common/base-setup.java.gradle.yml):
+#   image, tags, variables, before_script
+# No image or before_script defined here — single source of truth in common file.
+#
+# ── Artifacts Passed to Test Stage ───────────────────────────────────────────
+# build/classes/   — compiled application + test classes (skips recompile in test)
+# build/resources/ — processed resources
+# build/tmp/       — annotation processor outputs (Lombok, MapStruct)
+# build/libs/      — JAR consumed by image-build stage
+# Gradle incremental build detects these on next invocation — skips compileJava.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# epay-build-java-gradle:1.0.0 = ubi9/openjdk-21 + Gradle 9.4.1
+# Built on bastion, pushed to JFrog docker-local repo.
+# Dockerfile: docs/docker/custom-ci-images/epay-build-java-gradle/
+
+include:
+  - local: 'ci/common/base-setup.java.gradle.yml'
+
+.build:
+  extends: .base_setup_java_gradle
+  stage: build
+
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Validate VERSION ──────────────────────────────────────────────────
+      if [ -z "$VERSION" ]; then
+        echo "❌ ERROR: VERSION is empty — semver.yml dotenv artifact not loaded"
+        echo "   Check: semver.yml is included before java.gradle.yml in orchestrator"
+        exit 1
+      fi
+
+
+      gradle dependencies --configuration runtimeClasspath --warning-mode all
+      echo "Building VERSION: ${VERSION}"
+
+      # ── Gradle build ──────────────────────────────────────────────────────
+      # Dependencies resolved from JFrog via settings.gradle in app repo
+      # -x test: unit tests run separately in test stage (java.unit.yml)
+      # -Pversion: sets project version used in bootJar archiveFileName
+      gradle clean build -x test -Pversion="${VERSION}"
+
+      # ── Verify output ─────────────────────────────────────────────────────
+      echo "Build output:"
+      ls -lh build/libs/
+
+      if [ -z "$(ls -A build/libs/*.jar 2>/dev/null)" ]; then
+        echo "❌ ERROR: No JAR found in build/libs/ — build may have failed silently"
+        exit 1
+      fi
+
+
+      # ── Build metadata for downstream stages ────────────────────────────────
+      # JAR_FILE: consumed by image-build stage for COPY instruction in Dockerfile
+      # BUILD_TIME: consumed by image-build stage for OCI image labels
+      
+      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | grep -v plain | head -1 || true)
+      WAR_FILE=$(ls build/libs/*.war 2>/dev/null | grep -v plain | head -1 || true)
+
+      if [ -n "$JAR_FILE" ]; then
+        ARTIFACT_FILE="$JAR_FILE"
+      elif [ -n "$WAR_FILE" ]; then
+        ARTIFACT_FILE="$WAR_FILE"
+      else
+        echo "❌ ERROR: No deployable JAR or WAR found in build/libs/"
+        exit 1
+      fi
+
+      echo "✅ ARTIFACT: ${ARTIFACT_FILE}"
+      echo "JAR_FILE=${ARTIFACT_FILE}"                      >> build.env
+      echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> build.env
+
+
+      # JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -1)
+      # echo "✅ JAR: ${JAR_FILE}"
+      # echo "JAR_FILE=${JAR_FILE}"                         >> build.env
+      # echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"    >> build.env
+
+  artifacts:
+    paths:
+      - build/libs/
+      - build/classes/
+      - build/resources/
+      - build/tmp/
+    reports:
+      dotenv: build.env
+    when: on_success
+    expire_in: 1 day
+
+
+
+
+
+=====================================  Docker inspect of that gradle 8.9 images which we are using and its a custom images ====================
+
+[osuser@bastion Gradle]$ podman inspect  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6
+[
+     {
+          "Id": "9d84e3c42636321c94fdf42b3e34fea559c16b0e06a07ffde266f6891bfd554e",
+          "Digest": "sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87",
+          "RepoTags": [
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/ubi9/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21:v6"
+          ],
+          "RepoDigests": [
+               "artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/ubi9/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87"
+          ],
+          "Parent": "",
+          "Comment": "",
+          "Created": "2025-02-17T12:26:59.436066849Z",
+          "Config": {
+               "User": "0",
+               "ExposedPorts": {
+                    "8080/tcp": {},
+                    "8443/tcp": {}
+               },
+               "Env": [
+                    "container=oci",
+                    "GECOS=Default user",
+                    "HOME=/home/default",
+                    "UID=185",
+                    "USER=default",
+                    "JAVA_HOME=/usr/lib/jvm/java-21",
+                    "JAVA_VENDOR=openjdk",
+                    "JAVA_VERSION=21",
+                    "JBOSS_CONTAINER_OPENJDK_JDK_MODULE=/opt/jboss/container/openjdk/jdk",
+                    "JBOSS_CONTAINER_MAVEN_38_MODULE=/opt/jboss/container/maven/38/",
+                    "MAVEN_VERSION=3.8",
+                    "JBOSS_CONTAINER_S2I_CORE_MODULE=/opt/jboss/container/s2i/core/",
+                    "S2I_SOURCE_DEPLOYMENTS_FILTER=*.jar quarkus-app",
+                    "JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy",
+                    "JBOSS_CONTAINER_JAVA_JVM_MODULE=/opt/jboss/container/java/jvm",
+                    "JBOSS_CONTAINER_UTIL_LOGGING_MODULE=/opt/jboss/container/util/logging/",
+                    "JBOSS_CONTAINER_MAVEN_DEFAULT_MODULE=/opt/jboss/container/maven/default/",
+                    "JBOSS_CONTAINER_MAVEN_S2I_MODULE=/opt/jboss/container/maven/s2i",
+                    "JAVA_DATA_DIR=/deployments/data",
+                    "JBOSS_CONTAINER_JAVA_RUN_MODULE=/opt/jboss/container/java/run",
+                    "JBOSS_CONTAINER_JAVA_S2I_MODULE=/opt/jboss/container/java/s2i",
+                    "JBOSS_IMAGE_NAME=ubi9/openjdk-21",
+                    "JBOSS_IMAGE_VERSION=1.21",
+                    "LANG=C.utf8",
+                    "GRADLE_HOME=/opt/gradle",
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/s2i:/opt/gradle/bin"
+               ],
+               "Cmd": [
+                    "bash"
+               ],
+               "WorkingDir": "/app",
+               "Labels": {
+                    "architecture": "x86_64",
+                    "build-date": "2025-01-15T06:57:58",
+                    "com.redhat.component": "openjdk-21-ubi9-container",
+                    "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+                    "description": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
+                    "distribution-scope": "public",
+                    "io.buildah.version": "1.29.0",
+                    "io.cekit.version": "4.13.0.dev0",
+                    "io.k8s.description": "Platform for building and running plain Java applications (fat-jar and flat classpath)",
+                    "io.k8s.display-name": "Java Applications",
+                    "io.openshift.expose-services": "",
+                    "io.openshift.s2i.destination": "/tmp",
+                    "io.openshift.s2i.scripts-url": "image:///usr/local/s2i",
+                    "io.openshift.tags": "builder,java",
+                    "maintainer": "Red Hat OpenJDK <openjdk@redhat.com>",
+                    "name": "ubi9/openjdk-21",
+                    "org.jboss.container.deployments-dir": "/deployments",
+                    "org.jboss.product": "openjdk",
+                    "org.jboss.product.openjdk.version": "21",
+                    "org.jboss.product.version": "21",
+                    "org.opencontainers.image.documentation": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
+                    "release": "3.1736923862",
+                    "summary": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
+                    "url": "https://access.redhat.com/containers/#/registry.access.redhat.com/ubi9/openjdk-21/images/1.21-3.1736923862",
+                    "usage": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
+                    "vcs-ref": "56628532431819cede459a1d0fcf7d7f9834b70b",
+                    "vcs-type": "git",
+                    "vendor": "Red Hat, Inc.",
+                    "version": "1.21"
+               }
+          },
+          "Version": "",
+          "Author": "",
+          "Architecture": "amd64",
+          "Os": "linux",
+          "Size": 720379820,
+          "VirtualSize": 720379820,
+          "GraphDriver": {
+               "Name": "overlay",
+               "Data": {
+                    "LowerDir": "/home/osuser/.local/share/containers/storage/overlay/c1d8311769af7213214502cc47739a5b6f6c93efb5a8870e86d724f770464928/diff:/home/osuser/.local/share/containers/storage/overlay/9516ebe5d80e8da7a5056c48d7a8cb3de7299be11d875eae58f99ca109078329/diff:/home/osuser/.local/share/containers/storage/overlay/56b50cb572cf03f94714aa81155b57b61103766c88363a655d58aa8727941584/diff:/home/osuser/.local/share/containers/storage/overlay/c51df8702f1bc88b3e2b9b05ed6675b18f0bb567e343ea18ea0ba9886aa4bc4a/diff:/home/osuser/.local/share/containers/storage/overlay/6213ca1f9f48455de4a648847d135443bad68c7d46a428817d447c6e6b6cae06/diff:/home/osuser/.local/share/containers/storage/overlay/5cb1343440016106c6ad2ef88933a8a981d7b8e3d202747c491a1cd060d14d6d/diff:/home/osuser/.local/share/containers/storage/overlay/ffe43e6a53ddee2f7dbafe6366b25db592d8525264d478eef6ad629ad4c1e3d7/diff:/home/osuser/.local/share/containers/storage/overlay/a3fe5c626cdee04dbdc432483769aaf8657abc08cb3981c77e8d2f7f49e92812/diff:/home/osuser/.local/share/containers/storage/overlay/49be7150a76a9129ff50fe5f4ebdf831eef7fcbc5b5feb977f544a8add37c450/diff",
+                    "UpperDir": "/home/osuser/.local/share/containers/storage/overlay/b2f75fdb177c9d13c9862b988308c11ecb43489cff85ebced7cf2f17170f76a1/diff",
+                    "WorkDir": "/home/osuser/.local/share/containers/storage/overlay/b2f75fdb177c9d13c9862b988308c11ecb43489cff85ebced7cf2f17170f76a1/work"
+               }
+          },
+          "RootFS": {
+               "Type": "layers",
+               "Layers": [
+                    "sha256:49be7150a76a9129ff50fe5f4ebdf831eef7fcbc5b5feb977f544a8add37c450",
+                    "sha256:ed986b89fe2c7207d5c23523e6595278ceca6e509ccccae110959401ebbdb9e0",
+                    "sha256:b7e5dee177fc1c19f51c56957ddb7e2d99f4c8b94bb2b418d59934817fa50e18",
+                    "sha256:3e7645bb6585f03d8c419c17dc9a52533f6f33afca3e3e8f79f9c22b83b7d36f",
+                    "sha256:e754886bb30a0bd8aed88d284ddc532636383c7edd543302f82d77ccbfdb38bc",
+                    "sha256:7dba9d3868b592823c4bf473063ab2d85c5fe6baa82392b5b45f00cfb3e532b7",
+                    "sha256:6d71f08457a0cc32d571dc8e13e04b224aa1219d6ad5dc9c5d37229d8695c732",
+                    "sha256:5a36b0117bc4713f26c2da05c5dc38b1936b3338878b891e75e892ca7838e3b8",
+                    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+                    "sha256:9ae832123070db652e7b569dbdf02ef7a8022b2bd81749abc5e7557ccca82f8f"
+               ]
+          },
+          "Labels": {
+               "architecture": "x86_64",
+               "build-date": "2025-01-15T06:57:58",
+               "com.redhat.component": "openjdk-21-ubi9-container",
+               "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+               "description": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
+               "distribution-scope": "public",
+               "io.buildah.version": "1.29.0",
+               "io.cekit.version": "4.13.0.dev0",
+               "io.k8s.description": "Platform for building and running plain Java applications (fat-jar and flat classpath)",
+               "io.k8s.display-name": "Java Applications",
+               "io.openshift.expose-services": "",
+               "io.openshift.s2i.destination": "/tmp",
+               "io.openshift.s2i.scripts-url": "image:///usr/local/s2i",
+               "io.openshift.tags": "builder,java",
+               "maintainer": "Red Hat OpenJDK <openjdk@redhat.com>",
+               "name": "ubi9/openjdk-21",
+               "org.jboss.container.deployments-dir": "/deployments",
+               "org.jboss.product": "openjdk",
+               "org.jboss.product.openjdk.version": "21",
+               "org.jboss.product.version": "21",
+               "org.opencontainers.image.documentation": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
+               "release": "3.1736923862",
+               "summary": "Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21",
+               "url": "https://access.redhat.com/containers/#/registry.access.redhat.com/ubi9/openjdk-21/images/1.21-3.1736923862",
+               "usage": "https://rh-openjdk.github.io/redhat-openjdk-containers/",
+               "vcs-ref": "56628532431819cede459a1d0fcf7d7f9834b70b",
+               "vcs-type": "git",
+               "vendor": "Red Hat, Inc.",
+               "version": "1.21"
+          },
+          "Annotations": {
+               "org.opencontainers.image.base.digest": "sha256:fd7cfddfc39399b84e4fdad98db7b882d3fe0166ee4627a72e516da72b4a13ff",
+               "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/openjdk-21:latest"
+          },
+          "ManifestType": "application/vnd.oci.image.manifest.v1+json",
+          "User": "0",
+          "History": [
+               {
+                    "created": "2024-10-29T11:08:41.492061346Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:25aa8753c1b1ee6ce04f347a0da4063c95bb641ddd1ef7c5ae606e3f1c57f728 in / ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:42.456062177Z",
+                    "created_by": "/bin/sh -c mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:42.826790924Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:5b1f650e1376d79fa3a65df4a154ea5166def95154b52c1c1097dfd8fc7d58eb in /tmp/tls-ca-bundle.pem ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273014438Z",
+                    "created_by": "/bin/sh -c #(nop) ADD multi:a7f6e4b1f953d844bd91c8bd526af2416424a94188a5d76eb815362138e3a15e in /etc/yum.repos.d/ ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273067858Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL maintainer=\"Red Hat, Inc.\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273169597Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL com.redhat.component=\"ubi9-minimal-container\"       name=\"ubi9-minimal\"       version=\"9.5\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273196376Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273233104Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL summary=\"Provides the latest release of the minimal Red Hat Universal Base Image 9.\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273334865Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL description=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273377517Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL io.k8s.display-name=\"Red Hat Universal Base Image 9 Minimal\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273398115Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL io.openshift.expose-services=\"\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273436156Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL io.openshift.tags=\"minimal rhel9\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273452272Z",
+                    "created_by": "/bin/sh -c #(nop) ENV container oci",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273504945Z",
+                    "created_by": "/bin/sh -c #(nop) ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:43.273512504Z",
+                    "created_by": "/bin/sh -c #(nop) CMD [\"/bin/bash\"]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:44.177493035Z",
+                    "created_by": "/bin/sh -c rm -rf /var/log/*",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:44.17755435Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL release=1312",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:44.53247226Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:8d478df9f2cae090172fd305492879280b699fd4bd8a5a3469e8585f73aa2c8e in /root/buildinfo/content_manifests/ubi9-minimal-container-9.5-1312.json ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:44.940007995Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:858e004db2c4a687697d9430fac21f77c63c987bcd22fbc2a229a138ffd54575 in /root/buildinfo/Dockerfile-ubi9-minimal-9.5-1312 ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:44.940306458Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2024-10-29T11:00:15\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"2880c598e7e5346be56208b9eca18526527ca1a2\" \"io.k8s.description\"=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi9-minimal/images/9.5-1312\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:45.872745574Z",
+                    "created_by": "/bin/sh -c rm -f '/etc/yum.repos.d/repo-a2577.repo' '/etc/yum.repos.d/repo-fa3d7.repo'",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:46.815088912Z",
+                    "created_by": "/bin/sh -c rm -f /tmp/tls-ca-bundle.pem",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2024-10-29T11:08:48.734417056Z",
+                    "created_by": "/bin/sh -c mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :"
+               },
+               {
+                    "created": "2025-01-15T07:09:19.54516513Z",
+                    "created_by": "/bin/sh -c mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:19.709401114Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:df13b6a4fdeac4626ab7cd7e99d16d30edc6e3e5441295ae7691bee26604a5b1 in /tmp/tls-ca-bundle.pem ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:19.91341112Z",
+                    "created_by": "/bin/sh -c #(nop) ADD multi:432f95c21dfbd63afc61b7083a417d16fcf1a5e8ecd3c94457995a0bea797f16 in /etc/yum.repos.d/ ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:19.913448303Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:20.07269236Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:54dcc7b102ac01bbd8885d099d35b4d9145300ae85275013fcf3cd9c10609ba9 in /tmp/scripts/jboss.container.util.pkg-update ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:20.072729389Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:36.788229968Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.util.pkg-update/execute.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:36.944430309Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:205100a0e2d33e5b57bbb2dbcc36d09e11101b48acc9579d67d7dc7af212040e in /tmp/scripts/jboss.container.user ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:36.944458233Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.102190565Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y shadow-utils             && microdnf clean all             && rpm -q shadow-utils",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.102282828Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             GECOS=\"Default user\"             HOME=\"/home/default\"             UID=\"185\"             USER=\"default\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.102343739Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.690645532Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.user/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.851491538Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:63a7daebc478c51d5c33022b9a40c8c7eaec0679bae8f1962dfc46bed02db66e in /tmp/scripts/jboss.container.openjdk.jdk ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:09:53.851538505Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.152097504Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y java-21-openjdk-devel             && microdnf clean all             && rpm -q java-21-openjdk-devel",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.15222297Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JAVA_HOME=\"/usr/lib/jvm/java-21\"             JAVA_VENDOR=\"openjdk\"             JAVA_VERSION=\"21\"             JBOSS_CONTAINER_OPENJDK_JDK_MODULE=\"/opt/jboss/container/openjdk/jdk\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.152326039Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL             org.jboss.product=\"openjdk\"             org.jboss.product.openjdk.version=\"21\"             org.jboss.product.version=\"21\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.152335282Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.703482701Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.openjdk.jdk/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.856121039Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:cd1afef66aa888dac52e0414a6272da62af535aad895c238e824e39da086e50e in /tmp/scripts/jboss.container.maven.module ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:16.856166295Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:17.412156089Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.maven.module/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:17.570635436Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:76319aedde1f49e260be955e706a92f4486819282a479da33363629e5a3e7ee0 in /tmp/scripts/jboss.container.maven ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:17.570684502Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:34.54387095Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y maven-openjdk21             && microdnf clean all             && rpm -q maven-openjdk21",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:34.543972495Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_MAVEN_38_MODULE=\"/opt/jboss/container/maven/38/\"             MAVEN_VERSION=\"3.8\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:34.54403025Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:35.047003642Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.maven/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:35.209777791Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:24dd93fb8c27b0aca3dfee5588f561542018f7a84a555a4952a160eebfa7ca6d in /tmp/scripts/jboss.container.util.tzdata ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:35.209824599Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:51.580064969Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.util.tzdata/execute.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:51.737839531Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:2414dfda6422253562590bd059810996411fe48ca4d065e9593190236959e306 in /tmp/scripts/jboss.container.s2i.core ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:10:51.737882074Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:07.984115054Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y findutils rsync             && microdnf clean all             && rpm -q findutils rsync",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:07.984198694Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_S2I_CORE_MODULE=\"/opt/jboss/container/s2i/core/\"             S2I_SOURCE_DEPLOYMENTS_FILTER=\"*.jar quarkus-app\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:07.984303732Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL             io.openshift.s2i.destination=\"/tmp\"             io.openshift.s2i.scripts-url=\"image:///usr/local/s2i\"             org.jboss.container.deployments-dir=\"/deployments\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:07.984316664Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:08.492164149Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.s2i.core/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:08.667132702Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:b7e8e60486dec224a8ccf478276404ea492be8c48775ab464c21a4795c4cb76b in /tmp/scripts/jboss.container.java.proxy ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:08.667206495Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_JAVA_PROXY_MODULE=\"/opt/jboss/container/java/proxy\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:08.667273961Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:09.190516514Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.java.proxy/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:09.361223981Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:e5cf9a3b6c5608edf6c26cca9a317960d25ba810a18b5fbfa6e0f7d95b1b2bcd in /tmp/scripts/jboss.container.java.jvm ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:09.361305Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_JAVA_JVM_MODULE=\"/opt/jboss/container/java/jvm\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:09.361378601Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:09.873960758Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.java.jvm/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.053098362Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:619913c97142c71c65016467b09205dd72824dbaed5db0122ba66851763894a3 in /tmp/scripts/jboss.container.util.logging ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.053188629Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_UTIL_LOGGING_MODULE=\"/opt/jboss/container/util/logging/\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.053266753Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.590465553Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.util.logging/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.759944096Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:c772def80c58b9ba2ecccd0c58711b6e8bcc40812b61e069b8fded023b0014dd in /tmp/scripts/jboss.container.maven.default ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:10.759995084Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:26.659879732Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y findutils             && microdnf clean all             && rpm -q findutils",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:26.660016866Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_MAVEN_DEFAULT_MODULE=\"/opt/jboss/container/maven/default/\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:26.660111595Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:27.211482676Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.maven.default/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:27.388259883Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:fcaabbf6fe5e52b5decb9ffa55c7b0cc59c8c827b4496ecbefec613a1b62aece in /tmp/scripts/jboss.container.maven.s2i ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:27.388324493Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:43.833322686Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y tar             && microdnf clean all             && rpm -q tar",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:43.833444939Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_MAVEN_S2I_MODULE=\"/opt/jboss/container/maven/s2i\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:43.833511404Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:44.352529413Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.maven.s2i/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:44.509521586Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:9f4a39ae8fe4337281a7003b162facaf2dfb25724a18172f1537c80b355238d3 in /tmp/scripts/jboss.container.java.run ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:44.509604272Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JAVA_DATA_DIR=\"/deployments/data\"             JBOSS_CONTAINER_JAVA_RUN_MODULE=\"/opt/jboss/container/java/run\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:44.509752408Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:45.033891885Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.java.run/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:45.20219453Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:1da9c9eed9ba99ea059e6feb07e74bb32a3590f0ec92ba985a8732731a161820 in /tmp/scripts/jboss.container.java.s2i.bash ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:11:45.202254008Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.381089615Z",
+                    "created_by": "/bin/sh -c microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y rsync             && microdnf clean all             && rpm -q rsync",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.381256391Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_CONTAINER_JAVA_S2I_MODULE=\"/opt/jboss/container/java/s2i\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.381319337Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.937091639Z",
+                    "created_by": "/bin/sh -c [ \"sh\", \"-x\", \"/tmp/scripts/jboss.container.java.s2i.bash/configure.sh\" ]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.937261265Z",
+                    "created_by": "/bin/sh -c #(nop) ENV             JBOSS_IMAGE_NAME=\"ubi9/openjdk-21\"             JBOSS_IMAGE_VERSION=\"1.21\"             LANG=\"C.utf8\"             PATH=\"$PATH:\"/usr/local/s2i\"\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.937462319Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL             com.redhat.component=\"openjdk-21-ubi9-container\"             com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"             description=\"Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21\"             io.cekit.version=\"4.13.0.dev0\"             io.k8s.description=\"Platform for building and running plain Java applications (fat-jar and flat classpath)\"             io.k8s.display-name=\"Java Applications\"             io.openshift.tags=\"builder,java\"             maintainer=\"Red Hat OpenJDK <openjdk@redhat.com>\"             name=\"ubi9/openjdk-21\"             org.opencontainers.image.documentation=\"https://rh-openjdk.github.io/redhat-openjdk-containers/\"             summary=\"Source To Image (S2I) image for Red Hat OpenShift providing OpenJDK 21\"             usage=\"https://rh-openjdk.github.io/redhat-openjdk-containers/\"             version=\"1.21\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.93752347Z",
+                    "created_by": "/bin/sh -c #(nop) EXPOSE 8080 8443",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:01.937575971Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:02.479046175Z",
+                    "created_by": "/bin/sh -c rm -rf \"/tmp/scripts\" \"/tmp/artifacts\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:02.994341441Z",
+                    "created_by": "/bin/sh -c rm -rf \"/var/cache/yum\" \"/var/lib/dnf\" \"/var/cache/apt\" \"/var/cache/dnf\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:02.994427091Z",
+                    "created_by": "/bin/sh -c #(nop) USER 185",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.032049834Z",
+                    "created_by": "/bin/sh -c #(nop) WORKDIR /home/default",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.069882665Z",
+                    "created_by": "/bin/sh -c #(nop) CMD [\"/usr/local/s2i/run\"]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.28094476Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:c2c5314e7f237e501ac0949b36f69baaef0d989dfc892f60246c49e5ed785f0d in /help.1 ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.509623365Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:91a42ad0a3efb2c0ad5a1ead746d236ee25b14afca8c6a32168b7952b2ba1987 in /root/buildinfo/content_manifests/openjdk-21-ubi9-container-1.21-3.1736923862.json ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.725963851Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:9fd8274aa6dbf549c3ac915a52365e00c957eef940b0ab753a95d0b8c2db7c43 in /root/buildinfo/Dockerfile-ubi9-openjdk-21-1.21-3.1736923862 ",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.763782868Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL \"release\"=\"3.1736923862\" \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2025-01-15T06:57:58\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"56628532431819cede459a1d0fcf7d7f9834b70b\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi9/openjdk-21/images/1.21-3.1736923862\"",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:03.926073276Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:04.576671471Z",
+                    "created_by": "/bin/sh -c rm -f '/etc/yum.repos.d/odcs-3813728-051ac.repo' '/etc/yum.repos.d/odcs-3813885-22029.repo'",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:05.234681188Z",
+                    "created_by": "/bin/sh -c rm -f /tmp/tls-ca-bundle.pem",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:05.273208075Z",
+                    "created_by": "/bin/sh -c #(nop) USER 185",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:05.415869518Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:06.091640919Z",
+                    "created_by": "/bin/sh -c mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-01-15T07:12:07.650773199Z",
+                    "created_by": "/bin/sh -c #(nop) USER 185",
+                    "comment": "FROM registry-proxy.engineering.redhat.com/rh-osbs/ubi9-minimal@sha256:db476d544c0bb716a4ba89248bde00d72724ebe015aabe5f026d40f02195d9e2"
+               },
+               {
+                    "created": "2025-02-17T12:26:29.499007966Z",
+                    "created_by": "/bin/sh -c #(nop) WORKDIR /app",
+                    "comment": "FROM registry.access.redhat.com/ubi9/openjdk-21:latest",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-02-17T12:26:34.874971434Z",
+                    "created_by": "/bin/sh -c dnf install -y unzip || true",
+                    "comment": "FROM f2cca0f2b28a"
+               },
+               {
+                    "created": "2025-02-17T12:26:37.000508345Z",
+                    "created_by": "/bin/sh -c mkdir -p /opt/gradle/",
+                    "comment": "FROM c3be91bb1344"
+               },
+               {
+                    "created": "2025-02-17T12:26:43.449449696Z",
+                    "created_by": "/bin/sh -c #(nop) COPY dir:def7de9f8f96a70919a9b8a583aceb4778dd52b7c010e049ef2b474d39b208c3 in /opt/gradle/ ",
+                    "comment": "FROM d7cf05c1753f"
+               },
+               {
+                    "created": "2025-02-17T12:26:45.376060685Z",
+                    "created_by": "/bin/sh -c #(nop) ENV GRADLE_HOME=/opt/gradle",
+                    "comment": "FROM ef54af24ad30",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-02-17T12:26:45.875273203Z",
+                    "created_by": "/bin/sh -c #(nop) ENV PATH=$PATH:$GRADLE_HOME/bin",
+                    "comment": "FROM 188dfb797869",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-02-17T12:26:47.000347188Z",
+                    "created_by": "/bin/sh -c #(nop) COPY file:32a679c74edc6b8c2b0e4e77f61b27c8f4078945cc326a525cd1ec7e95dd8f3e in /opt/gradle/ ",
+                    "comment": "FROM 2bad0b23eedf"
+               },
+               {
+                    "created": "2025-02-17T12:26:47.867869136Z",
+                    "created_by": "/bin/sh -c #(nop) USER root",
+                    "comment": "FROM f7802647e0b6",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-02-17T12:26:50.042287556Z",
+                    "created_by": "/bin/sh -c chmod -R 777 /opt/gradle",
+                    "comment": "FROM 00cec2d6656d"
+               },
+               {
+                    "created": "2025-02-17T12:26:53.001060113Z",
+                    "created_by": "/bin/sh -c #(nop) COPY file:c3d220a79e398f8740829ea8746930ac225ae9590f12b9001bc0ecefed216271 in /tmp ",
+                    "comment": "FROM f53d718fc75e"
+               },
+               {
+                    "created": "2025-02-17T12:26:53.439881058Z",
+                    "created_by": "/bin/sh -c #(nop) USER 0",
+                    "comment": "FROM c68168d45f72",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2025-02-17T12:26:55.000360321Z",
+                    "created_by": "/bin/sh -c cd /usr/lib/jvm/java-21/bin",
+                    "comment": "FROM 71e7b3384716"
+               },
+               {
+                    "created": "2025-02-17T12:26:59.000714321Z",
+                    "created_by": "/bin/sh -c yes | keytool -import -trustcacerts -file /tmp/gitlab.epay.sbi.crt -keystore /usr/lib/jvm/java-21/lib/security/cacerts -alias SBI-GITLAB -storepass changeit",
+                    "comment": "FROM 7b2d1a7bb8f9"
+               },
+               {
+                    "created": "2025-02-17T12:26:59.437137746Z",
+                    "created_by": "/bin/sh -c #(nop) CMD [\"bash\"]",
+                    "comment": "FROM ea3d886c09f7",
+                    "empty_layer": true
+               }
+          ],
+          "NamesHistory": [
+               "artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/ubi9/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v6",
+               "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6",
+               "registry.dev.sbiepay.sbi:8443/ubi9/gradle-8.9-jdk-21:v6"
+          ]
+     }
+]
+
+
+===========================
+
+
+Please check if this images perfectly fine as per our configuration like java.gradle.yml and base-setup-gradle-before-script.yml ....
+
+
+Please some commands to check the any other things if you want to checks and verify.
