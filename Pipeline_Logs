@@ -1,29 +1,267 @@
-# ci/common/workflow.yml
-# Shared pipeline-trigger rules for ALL app-repo CI orchestrators.
-# Goal: when a FEATURE branch has an OPEN merge request, run ONLY the
-# merge_request pipeline — never the duplicate branch pipeline.
-#
-# NOTE (GitLab behaviour): GitLab honours exactly ONE workflow: block — the one
-# in the TOP-LEVEL config. This file is pulled in via `include:` by each
-# orchestrator (java.yml, nodejs.yml, ...). It only takes effect if the APP
-# repo's own .gitlab-ci.yml does NOT define its own workflow: block. If an app
-# repo defines workflow: locally, that local block wins and these rules are
-# ignored for that repo.
-workflow:
-  rules:
-    # 1. Always allow downstream/triggered (parent->child) pipelines.
-    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
-      when: always
-    # 2. DEDUPE (feature branches ONLY): a push to a feature/* branch that
-    #    already has an open MR -> skip the branch pipeline; the merge_request
-    #    pipeline (rule 3) runs instead. Other branch types (bugfix, release,
-    #    hotfix, develop, main) are NOT deduplicated by this rule.
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
-      when: never
-    # 3. Run merge_request pipelines.
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: always
-    # 4. Run branch pipelines (only reached when the branch has NO open MR,
-    #    or the branch is not a feature/* branch).
-    - if: '$CI_COMMIT_BRANCH'
-      when: always
+
+
+Build Pipeline stages Error :
+
+
+Running with gitlab-runner 17.9.2 (14c5775c)
+  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:9d84e3c42636321c94fdf42b3e34fea559c16b0e06a07ffde266f6891bfd554e for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
+Using docker image sha256:4511164d4b592f8cb69c7ffe5cb2df5d1909c1e7924081721495a61e4b03f657 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
+Running on runner-6v7r1sqdv-project-2833-concurrent-0 via PE3DSOPGRUNNERS5...
+Getting source from Git repository
+00:06
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_operations_service/.git/
+Created fresh repository.
+Checking out 970a648c as detached HEAD (ref is feature/EPAY-123-gradle-test)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:18
+Using docker image sha256:9d84e3c42636321c94fdf42b3e34fea559c16b0e06a07ffde266f6891bfd554e for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21:v6 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/custom-ci/gradle-8.9-jdk-21@sha256:499185f03d42398d7e5be48f5997beb0ed8f6f3282e0f7d82f0ffa6a494c2d87 ...
+$ java -version
+openjdk version "21.0.5" 2024-10-15 LTS
+OpenJDK Runtime Environment (Red_Hat-21.0.5.0.11-1) (build 21.0.5+11-LTS)
+OpenJDK 64-Bit Server VM (Red_Hat-21.0.5.0.11-1) (build 21.0.5+11-LTS, mixed mode, sharing)
+$ gradle --version
+Welcome to Gradle 8.9!
+Here are the highlights of this release:
+ - Enhanced Error and Warning Messages
+ - IDE Integration Improvements
+ - Daemon JVM Information
+For more details see https://docs.gradle.org/8.9/release-notes.html
+------------------------------------------------------------
+Gradle 8.9
+------------------------------------------------------------
+Build time:    2024-07-11 14:37:41 UTC
+Revision:      d536ef36a19186ccc596d8817123e5445f30fef8
+Kotlin:        1.9.23
+Groovy:        3.0.21
+Ant:           Apache Ant(TM) version 1.10.13 compiled on January 4 2023
+Launcher JVM:  21.0.5 (Red Hat, Inc. 21.0.5+11-LTS)
+Daemon JVM:    /usr/lib/jvm/java-21-openjdk-21.0.5.0.11-2.el9.x86_64 (no JDK specified, using current Java home)
+OS:            Linux 5.14.0-611.36.1.el9_7.x86_64 amd64
+$ mkdir -p "${CI_PROJECT_DIR}/.gradle/init.d"
+$ cat > "${CI_PROJECT_DIR}/.gradle/init.d/epay-artifactory.init.gradle" << 'EOF' # collapsed multi-line command
+$ cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+$ chmod 644 "$CACERT_PATH"
+$ keytool -importcert -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal -file "$JF_ARTIFACTORY_CERT" -noprompt
+Certificate was added to keystore
+$ export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CI_PROJECT_DIR}/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit"
+$ keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+jfrog-internal, Jun 24, 2026, trustedCertEntry, 
+Certificate fingerprint (SHA-256): 95:A7:28:EE:11:00:19:F7:94:F4:B5:F7:98:0A:D5:C6:17:5D:8A:6B:F6:97:46:8E:00:CC:CB:D2:56:35:5E:66
+$ set -eo pipefail # collapsed multi-line command
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+FAILURE: Build failed with an exception.
+* Where:
+Build file '/builds/itepaypg-sbiepay2/application/backend/epay_operations_service/build.gradle' line: 3
+* What went wrong:
+Plugin [id: 'org.springframework.boot', version: '3.5.9'] was not found in any of the following sources:
+- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
+- Included Builds (No included builds contain this plugin)
+- Plugin Repositories (could not resolve plugin artifact 'org.springframework.boot:org.springframework.boot.gradle.plugin:3.5.9')
+  Searched in the following repositories:
+    maven(https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/)
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+BUILD FAILED in 12s
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: build.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_operations_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
+
+
+============================================================= build.gradle =======================
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${spring_boot}"
+	id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
+
+group = 'com.epay'
+version = "${version}"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+configurations.configureEach {
+	exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    exclude group: 'org.apache.logging.log4j'
+}
+configurations.configureEach {
+	resolutionStrategy {
+		force "org.antlr:antlr4-runtime:${antlr4}"
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-tomcat'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'org.springframework.integration:spring-integration-sftp'
+	implementation "commons-io:commons-io:${commons_io}"
+	implementation "org.apache.commons:commons-lang3:${commons_lang3}"
+	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
+	implementation "jakarta.persistence:jakarta.persistence-api:${jakarta_persistence}"
+	implementation "org.glassfish.web:jakarta.servlet.jsp.jstl:${jakarta_jstl}"
+	implementation "javax.servlet:javax.servlet-api:${javax_servlet_api}"
+	implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
+	implementation "com.opencsv:opencsv:${open_csv}"
+	implementation "org.apache.poi:poi-ooxml:${poi_ooxml}"
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.mockito:mockito-junit-jupiter'
+
+	implementation("org.apache.spark:spark-core_2.12:${apache_spark}") {
+		exclude group: 'org.eclipse.jetty'
+		exclude group: 'org.eclipse.jetty.aggregate'
+		exclude group: 'org.eclipse.jetty.jetty'
+	}
+	implementation("org.apache.spark:spark-sql_2.12:${apache_spark}") {
+		exclude group: 'org.eclipse.jetty'
+		exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+		exclude group: 'org.apache.logging.log4j', module: 'log4j-api'
+		exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+		exclude group: "org.slf4j"
+	}
+	implementation "software.amazon.awssdk:s3:${aws_s3}"
+	implementation 'org.hibernate.orm:hibernate-envers'
+
+	implementation "com.sbi.epay:logging-service:${epay_logging}"
+	implementation "com.sbi.epay:encryption-decryption-service:${epay_enc}"
+
+	implementation "ch.qos.logback:logback-classic:${logback_classic}"
+	implementation "net.logstash.logback:logstash-logback-encoder:${logback_encoder}"
+	implementation "org.slf4j:jul-to-slf4j:${jul_to_slf4j}"
+	implementation "org.slf4j:jcl-over-slf4j:${jul_to_slf4j}"
+
+	compileOnly 'org.projectlombok:lombok'
+	compileOnly "org.mapstruct:mapstruct:${mapstruct}"
+	compileOnly "org.projectlombok:lombok-mapstruct-binding:${lombok_mapstruct}"
+
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.liquibase:liquibase-core'
+
+	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
+	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
+	runtimeOnly "org.antlr:antlr4-runtime:${antlr4}"
+
+	implementation("com.jcraft:jsch:${jsch}")
+
+	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
+	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
+
+	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+bootRun {
+	jvmArgs += [
+			"--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
+			"--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+			"--add-exports", "java.base/sun.security.action=ALL-UNNAMED"
+	]
+}
+
+tasks.withType(JavaExec).configureEach {
+	jvmArgs += [
+			"--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
+			"--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+			"--add-exports", "java.base/sun.security.action=ALL-UNNAMED"
+	]
+}
+
+springBoot  {
+	buildInfo()
+}
+tasks.named('bootJar') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+
+
+
+=============================================  gradle.properties ===========
+
+version=1.0.0
+spring_boot=3.5.9
+dependency_plugin=1.1.7
+gorylenko_plugin=2.4.2
+swagger=2.6.0
+tomcat_jasper=10.1.20
+commons_io=2.18.0
+commons_lang3=3.18.0
+jakarta_jstl=3.0.1
+javax_servlet_api=4.0.1
+oracle_driver=23.5.0.24.07
+apache_spark=3.5.5
+jwt=0.12.6
+shedlock=5.9.0
+mapstruct=1.5.1.Final
+aws_s3=2.30.6
+epay_logging=1.0.0
+epay_cms=0.0.1
+jakarta_persistence=3.1.0
+logback_classic=1.5.14
+logback_encoder=7.4
+lombok_mapstruct=0.2.0
+jul_to_slf4j=2.0.9
+open_csv=5.12.0
+poi_ooxml=5.4.1
+jsch=0.1.55
+antlr4=4.13.1
+org.gradle.jvmargs=--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.base/sun.util.calendar=ALL-UNNAMED --add-exports=java.base/sun.security.action=ALL-UNNAMED
+epay_enc=1.0.0
+
+
+
+I want you to please help  me to troubleshoot this issue and fix this issue and provide the complete solution for this .
+
+And also please check the dependencies across all the version we are using which is supported by gradfle 8.9 or not , please check this from all the angles and provide the solution.
+
+FYI this is the same code was working with gradle 9.4 version.
