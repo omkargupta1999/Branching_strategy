@@ -1,239 +1,79 @@
-# ──────────────────────────────────────────────────────────────────────────────
-# sync-main-downstream.yml
-# Stage: sync   (add `sync` to your `stages:` list, after `release`)
-#
-# PURPOSE
-#   Whenever `main` changes — by MR merge, direct commit, or hotfix merge —
-#   open a Merge Request from `main` into `develop` and into EVERY `release/*`
-#   branch, then:
-#     • NO conflict  → merge the MR immediately (direct merge, no wait)
-#     • conflict     → leave MR open, ASSIGN to the Release Manager + label it,
-#                      so the RM resolves the conflict manually
-#
-# WHY MR, NOT A RAW PUSH/MERGE
-#   develop and release/* have intentionally diverged from main (unreleased work),
-#   so syncing main *into* them is a real merge that can conflict. We never let a
-#   bot force-push or auto-resolve on protected branches in a PCI-DSS context.
-#   Every sync is an auditable MR; clean ones merge via the API, conflicting ones
-#   go to a human. (GitLab API note: CI_JOB_TOKEN can't reliably merge protected
-#   branches and inherits the triggering user's rights — so we use a bot PAT.)
-#
-# SETUP (one-time; do via your group governance automation for all 55 repos)
-#   1. Service account `ci-orchestrator-bot` → PAT with `api` scope →
-#      store as MASKED + PROTECTED CI/CD variable SYNC_BOT_TOKEN
-#      (set at group itepaypg-sbiepay2/infra/devops so all repos inherit it).
-#   2. Add the bot to "Allowed to merge" on the protected rules for
-#      `develop` and `release/*` in each repo (explicit service identity,
-#      not via LDAP group).
-#   3. Set SYNC_RM_USER_ID to the Release Manager's GitLab numeric user ID
-#      (GET $CI_API_V4_URL/users?username=<rm_username> → "id").
-#      Optionally SYNC_RM_USER_ID can be a comma-separated list (multiple RMs).
-#   4. Fully air-gapped: only $CI_API_V4_URL (gitlab.sbi) is contacted. No internet.
-# ──────────────────────────────────────────────────────────────────────────────
-
-variables:
-  SYNC_SOURCE_BRANCH: "main"          # prod-truth branch we sync FROM
-  SYNC_EXTRA_TARGETS: "develop"       # always-synced targets beyond release/*
-  SYNC_RM_USER_ID: ""                 # REQUIRED (unless dry-run): RM user id(s), comma-sep
-  SYNC_CONFLICT_LABEL: "sync-conflict" # label applied to conflicting sync MRs
-  SYNC_STATUS_POLL_RETRIES: "12"      # how many times to poll mergeability
-  SYNC_STATUS_POLL_SLEEP: "5"         # seconds between polls (12×5 = 60s max wait)
-  # ── Testing controls ───────────────────────────────────────────────────────
-  # DRY RUN: when "true", the job ONLY logs what it would do. It performs read
-  # calls (discover branches, compare, check mergeability) but makes NO writes:
-  # no MR is created, nothing is merged, no assignment/label/note is made.
-  SYNC_DRY_RUN: "false"
-  # TARGET FILTER: optional substring. When set, only target branches whose name
-  # contains this string are processed. Use it to scope a test to ONE throwaway
-  # branch, e.g. SYNC_TARGET_FILTER="synctest" → only release/0.0.0-synctest.
-  # Leave empty in production so all develop + release/* are synced.
-  SYNC_TARGET_FILTER: ""
-
-sync-main-to-downstream:
-  stage: sync
-  tags: [deploy_runner]                 # internal runner tag
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  variables:
-    GIT_STRATEGY: none                  # API-only; no checkout needed
-  rules:
-    # Fire only on a real change landing on main. The title guard stops the job
-    # from reacting to its own sync-MR merge commits (loop prevention).
-    - if: '$CI_COMMIT_BRANCH == $SYNC_SOURCE_BRANCH && $CI_COMMIT_TITLE !~ /^chore\(sync\): main →/'
-      when: on_success
-    - when: never
-  script:
-    - set -euo pipefail
-    - |
-      : "${SYNC_BOT_TOKEN:?SYNC_BOT_TOKEN (service-account PAT) is required}"
-      DRY="${SYNC_DRY_RUN:-false}"
-      if [ "$DRY" = "true" ]; then
-        echo "════════════════════════════════════════════════════════"
-        echo " DRY RUN — no MRs will be created, merged, or assigned."
-        echo "════════════════════════════════════════════════════════"
-        : "${SYNC_RM_USER_ID:=0}"   # RM id not required for a dry run
-      else
-        : "${SYNC_RM_USER_ID:?SYNC_RM_USER_ID (Release Manager GitLab user id) is required}"
-      fi
-      API="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}"
-      AUTH=(--header "PRIVATE-TOKEN: ${SYNC_BOT_TOKEN}")
-      SRC="${SYNC_SOURCE_BRANCH}"
-      RETRIES="${SYNC_STATUS_POLL_RETRIES}"
-      SLEEP="${SYNC_STATUS_POLL_SLEEP}"
-
-      urlenc() { echo -n "$1" | sed 's|/|%2F|g'; }
-
-      # First RM id is the assignee; full list used for assignee_ids (multi-RM).
-      RM_PRIMARY="$(echo "$SYNC_RM_USER_ID" | cut -d',' -f1 | xargs)"
-      RM_IDS_JSON="$(echo "$SYNC_RM_USER_ID" | tr ',' '\n' | sed 's/ //g' | grep -n '' | sed 's/^[0-9]*://' | paste -sd, -)"
-
-      # ── 1. Discover targets: every release/* (paginated) + extras ────────────
-      targets=()
-      page=1
-      while :; do
-        resp=$(curl -sf "${AUTH[@]}" "${API}/repository/branches?per_page=100&page=${page}&search=^release/") || resp="[]"
-        names=$(echo "$resp" | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"//' || true)
-        [ -z "$names" ] && break
-        while read -r b; do [ -n "$b" ] && targets+=("$b"); done <<< "$names"
-        page=$((page+1))
-      done
-      IFS=',' read -ra extra <<< "${SYNC_EXTRA_TARGETS}"
-      for e in "${extra[@]}"; do e="$(echo "$e" | xargs)"; [ -n "$e" ] && targets+=("$e"); done
-
-      # Optional target filter (for scoped testing on one throwaway branch).
-      if [ -n "${SYNC_TARGET_FILTER}" ]; then
-        filtered=()
-        for t in "${targets[@]}"; do
-          case "$t" in *"${SYNC_TARGET_FILTER}"*) filtered+=("$t");; esac
-        done
-        targets=("${filtered[@]}")
-        echo "Target filter active: '${SYNC_TARGET_FILTER}' → ${#targets[@]} target(s)"
-      fi
-
-      echo "Sync source : ${SRC}"
-      printf 'Sync targets: %s\n' "${targets[*]:-<none>}"
-      echo "RM assignee : ${RM_PRIMARY} (all: ${RM_IDS_JSON})"
-      [ "$DRY" = "true" ] && echo "Mode        : DRY RUN (read-only)"
-
-      failures=0
-
-      # poll detailed_merge_status until it leaves the transient states
-      settle_status() {
-        local iid="$1" tries="$RETRIES" st=""
-        while [ "$tries" -gt 0 ]; do
-          mr=$(curl -sf "${AUTH[@]}" "${API}/merge_requests/${iid}") || mr='{}'
-          st=$(echo "$mr" | grep -o '"detailed_merge_status":"[^"]*"' | sed 's/.*:"//;s/"//' || true)
-          case "$st" in
-            checking|approvals_syncing|ci_still_running|commits_status|"" )
-              sleep "$SLEEP"; tries=$((tries-1)); continue;;
-            *) break;;
-          esac
-        done
-        echo "$st"
-      }
-
-      # ── 2. Per target: create/reuse MR, then merge-or-assign ─────────────────
-      for TGT in "${targets[@]}"; do
-        [ "$TGT" = "$SRC" ] && continue
-
-        if ! curl -sf "${AUTH[@]}" "${API}/repository/branches/$(urlenc "$TGT")" >/dev/null; then
-          echo "  • ${TGT}: branch not found, skipping"; continue
-        fi
-
-        # Already up to date? (no commits in TGT..SRC)
-        cmp=$(curl -sf "${AUTH[@]}" "${API}/repository/compare?from=$(urlenc "$TGT")&to=$(urlenc "$SRC")" || echo '{}')
-        cnt=$(echo "$cmp" | grep -o '"id":"[0-9a-f]\{40\}"' | wc -l | tr -d ' ')
-        if [ "$cnt" = "0" ]; then
-          echo "  ✅ ${TGT}: already in sync, no MR needed"; continue
-        fi
-
-        # Reuse open sync MR if one exists for this src→tgt
-        iid=$(curl -sf "${AUTH[@]}" \
-          "${API}/merge_requests?state=opened&source_branch=$(urlenc "$SRC")&target_branch=$(urlenc "$TGT")" \
-          | grep -o '"iid":[0-9]*' | head -n1 | sed 's/"iid"://' || true)
-
-        if [ -n "$iid" ]; then
-          echo "  ↺ ${TGT}: reusing open sync MR !${iid}"
-        elif [ "$DRY" = "true" ]; then
-          echo "  [DRY] ${TGT}: ${cnt} commit(s) behind main → WOULD open sync MR main → ${TGT}"
-          # In dry run we can't poll a real MR's mergeability, so report intent only.
-          continue
-        else
-          title="chore(sync): main → ${TGT} [${CI_COMMIT_SHORT_SHA}]"
-          desc="Automated sync of \`${SRC}\` into \`${TGT}\`.%0A%0ATriggered by ${CI_COMMIT_SHORT_SHA} on ${SRC}.%0A%0AClean syncs are merged automatically. If you are seeing this open with a conflict label, the Release Manager must resolve conflicts manually. Do NOT squash — preserve merge lineage for version/back-merge logic."
-          created=$(curl -sf "${AUTH[@]}" --request POST "${API}/merge_requests" \
-            --data "source_branch=$(urlenc "$SRC")" \
-            --data "target_branch=$(urlenc "$TGT")" \
-            --data "title=${title}" \
-            --data "description=${desc}" \
-            --data "remove_source_branch=false" \
-            --data "squash=false" || echo '{}')
-          iid=$(echo "$created" | grep -o '"iid":[0-9]*' | head -n1 | sed 's/"iid"://' || true)
-          if [ -z "$iid" ]; then
-            echo "  ✖ ${TGT}: MR creation failed"; failures=$((failures+1)); continue
-          fi
-          echo "  ➕ ${TGT}: opened sync MR !${iid}"
-        fi
-
-        # Wait for mergeability to settle, then act.
-        status="$(settle_status "$iid")"
-        echo "    ${TGT}: detailed_merge_status='${status}'"
-
-        if [ "$DRY" = "true" ]; then
-          case "$status" in
-            mergeable) echo "    [DRY] !${iid}: WOULD merge ${SRC} → ${TGT}";;
-            conflict)  echo "    [DRY] !${iid}: WOULD assign to RM + label '${SYNC_CONFLICT_LABEL}' (conflict)";;
-            *)         echo "    [DRY] !${iid}: WOULD assign to RM to inspect (status='${status}')";;
-          esac
-          continue
-        fi
-
-        case "$status" in
-          mergeable)
-            # Direct merge, no wait-for-pipeline.
-            if curl -sf "${AUTH[@]}" --request PUT "${API}/merge_requests/${iid}/merge" >/dev/null; then
-              echo "    ✔ !${iid}: merged ${SRC} → ${TGT}"
-            else
-              echo "    ⚠ !${iid}: clean but merge call rejected — assigning to RM"
-              curl -sf "${AUTH[@]}" --request PUT "${API}/merge_requests/${iid}" \
-                --data "add_labels=${SYNC_CONFLICT_LABEL}" \
-                --data "assignee_ids[]=${RM_PRIMARY}" >/dev/null || true
-              curl -sf "${AUTH[@]}" --request POST "${API}/merge_requests/${iid}/notes" \
-                --data "body=⚠️ Sync MR was mergeable but the API merge call was rejected (branch protection / push rule?). Assigned to Release Manager." >/dev/null || true
-              failures=$((failures+1))
-            fi
-            ;;
-          conflict)
-            echo "    ⚠ !${iid}: CONFLICT → assigning to Release Manager"
-            # label + assign
-            curl -sf "${AUTH[@]}" --request PUT "${API}/merge_requests/${iid}" \
-              --data "add_labels=${SYNC_CONFLICT_LABEL}" \
-              --data "assignee_ids[]=${RM_PRIMARY}" >/dev/null || true
-            # multi-RM: also set full assignee list if more than one provided
-            if echo "$SYNC_RM_USER_ID" | grep -q ','; then
-              data=""
-              for id in $(echo "$SYNC_RM_USER_ID" | tr ',' ' '); do data="${data} --data assignee_ids[]=$(echo "$id"|xargs)"; done
-              curl -sf "${AUTH[@]}" --request PUT "${API}/merge_requests/${iid}" $data >/dev/null || true
-            fi
-            curl -sf "${AUTH[@]}" --request POST "${API}/merge_requests/${iid}/notes" \
-              --data "body=🔧 Sync from \`${SRC}\` has **conflicts** with \`${TGT}\`. Assigned to the Release Manager for manual resolution. Resolve conflicts and merge; do not squash." >/dev/null || true
-            ;;
-          *)
-            echo "    ⚠ !${iid}: unexpected status '${status}' → assigning to RM to inspect"
-            curl -sf "${AUTH[@]}" --request PUT "${API}/merge_requests/${iid}" \
-              --data "add_labels=${SYNC_CONFLICT_LABEL}" \
-              --data "assignee_ids[]=${RM_PRIMARY}" >/dev/null || true
-            curl -sf "${AUTH[@]}" --request POST "${API}/merge_requests/${iid}/notes" \
-              --data "body=⚠️ Sync MR settled in unexpected state \`${status}\`. Assigned to Release Manager to inspect." >/dev/null || true
-            failures=$((failures+1))
-            ;;
-        esac
-      done
-
-      if [ "$failures" -gt 0 ]; then
-        echo "Completed with ${failures} issue(s) needing attention."; exit 1
-      fi
-      echo "Downstream sync complete."
-  # Advisory: prod has already deployed by the time main syncs downstream, so a
-  # sync hiccup should alert rather than fail the main pipeline. Flip to false
-  # once trusted if you want sync failures to hard-fail.
-  allow_failure: true
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ include "epaylite-bridge-txn-service.labels" . | nindent 4 }}
+{{ if $.Values.configMap.additionalLabels }}
+    {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
+{{ end }}
+{{ if $.Values.configMap.annotations }}
+  annotations:
+    {{ toYaml $.Values.configMap.annotations | nindent 4 }}
+{{ end }}
+data:
+  application.properties: |
+    
+    server.servlet.context-path=/epaylite-bridge-txn-service
+    server.port=8099
+    server.ssl.enabled=false
+    server.max-http-request-header-size=128KB
+    
+    security.cors.origin=*
+    security.allowed.origins=*
+    spring.application.name=/epaylite-brige-txn-service
+    
+    # Db connectivity
+    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    spring.datasource.username=${DB_USERNAME}
+    spring.datasource.password=${DB_PASSWORD}
+    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    spring.datasource.hikari.maxLifetime=300000
+    spring.datasource.hikari.idleTimeout=240000
+    spring.datasource.hikari.keepaliveTime=120000
+    spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto=none
+    spring.jpa.show-sql=false
+    spring.jpa.properties.hibernate.format_sql=true
+    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type=TIMESTAMP
+    spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+    spring.jpa.defer-datasource-initialization=true
+    spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+    spring.main.allow-bean-definition-overriding=true
+    
+    app.redirect.baseurl=https://dev.epay.sbi/epaylite-bridge-txn-service
+    
+    epay.encryption.default-key=default-secret-key-32-characters-long
+    epay.encryption.algorithm=AES
+    merchant.config.cache-enabled=true
+    merchant.config.cache-ttl-minutes=60
+    audit.enabled=true
+    audit.mask-sensitive-data=true
+    audit.log-request-payload=true
+    audit.log-response-payload=true
+    
+    # SBIEpay API Configuration
+    sbiepay.api.base-url=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092
+    sbiepay.api.timeout=5s
+    sbiepay.api.max-retries=2
+    sbiepay.api.epay-order-create-url=/api/transaction/v1/order/create
+    sbiepay.api.epay-order-status-url=/api/transaction/v1/order/status
+    sbiepay.api.access-token-url=/api/transaction/v1/token/access
+    
+    
+    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator=true
+    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold=50
+    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState=30s
+    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize=10
+    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls=5
+    resilience4j.retry.instances.sbiepayApi.maxAttempts=3
+    resilience4j.retry.instances.sbiepayApi.waitDuration=2s
+    
+    management.endpoints.web.exposure.include=health,info,metrics,prometheus,circuitbreakers
+    management.health.circuitbreakers.enabled=true
+    management.endpoint.health.show-details=always
+    management.metrics.export.prometheus.enabled=true
+    
+    springfox.documentation.enabled=false
+    springfox.documentation.swagger-ui.enabled=false
