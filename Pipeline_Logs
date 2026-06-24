@@ -1,105 +1,285 @@
-Stop — every single command returned `000`, and that completely changes the diagnosis. We've been chasing the wrong thing.
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "BOM:    %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom"
+BOM:    000
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "BOM:    %{http_code}\n" -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom"
+BOM:    000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "PLUGINS-REMOTE: %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/devsecops-maven-plugins/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+PLUGINS-REMOTE: 000
+[osuser@bastion Gradle]$ curl -s -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/api/repositories/itepaypg-sbiepay2-gradle-virtual" \
+> | python3 -m json.tool | grep -A40 repositories
+Expecting value: line 1 column 1 (char 0)
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/api/repositories/itepaypg-sbiepay2-gradle-virtual" | python3 -m json.tool | grep -A40 repositories
+Expecting value: line 1 column 1 (char 0)
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -sLO "https://plugins.gradle.org/m2/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -u "v1021577:" -T org.springframework.boot.gradle.plugin-3.5.9.pom \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-local/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+curl: Can't open 'org.springframework.boot.gradle.plugin-3.5.9.pom'!
+curl: try 'curl --help' or 'curl --manual' for more information
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -v -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
+*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (OUT), TLS alert, unknown CA (560):
+* SSL certificate problem: self signed certificate in certificate chain
+* Closing connection 0
+curl: (60) SSL certificate problem: self signed certificate in certificate chain
+More details here: https://curl.haxx.se/docs/sslcerts.html
 
-## What `000` means
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -v -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
+*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (OUT), TLS alert, unknown CA (560):
+* SSL certificate problem: self signed certificate in certificate chain
+* Closing connection 0
+curl: (60) SSL certificate problem: self signed certificate in certificate chain
+More details here: https://curl.haxx.se/docs/sslcerts.html
 
-`curl` exit code `000` is **not** an HTTP response. It means curl never got an HTTP status at all — the connection itself failed (DNS, TCP, TLS handshake, or proxy refusal). A `404` would mean "Artifactory answered, artifact missing." `000` means **Artifactory never answered.**
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ nslookup artifactory.jfrog.sbi
+Server:         10.189.53.150
+Address:        10.189.53.150#53
 
-Look at the evidence chain:
+Non-authoritative answer:
+Name:   artifactory.jfrog.sbi
+Address: 10.191.26.27
 
-1. `MARKER: 000`, `BOM: 000`, `PLUGINS-REMOTE: 000` — all three Artifactory calls failed identically at the connection layer.
-2. The API call returned non-JSON (`Expecting value: line 1 column 1`) — curl got something that wasn't JSON, almost certainly an empty body or a proxy error page, consistent with the connection failing.
-3. `curl -sLO "https://plugins.gradle.org/..."` produced **no file** — `curl: Can't open '...pom'!` on the upload step proves the download silently failed. That's expected: this is an air-gapped box, so plugins.gradle.org is unreachable. **But Artifactory on your own LAN should be reachable**, and it's also returning `000`.
-
-So the bastion you're running these from **cannot reach `artifactory.jfrog.sbi:443` over HTTPS at all** with this curl invocation. That's the real blocker, and it's why my repo-aggregation theory can't even be tested yet.
-
-## Step 1 — Find out why the connection fails
-
-Run these and paste the full output (don't suppress errors this time — drop the `-s`):
-
-```bash
-# Verbose — show exactly where it dies (DNS? TCP? TLS?)
-curl -v -u "v1021577:" \
-"https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
-```
-
-```bash
-# Does the name resolve?
-nslookup artifactory.jfrog.sbi
-getent hosts artifactory.jfrog.sbi
-```
-
-```bash
-# Is the port even open from here?
-curl -v https://artifactory.jfrog.sbi:443/ 2>&1 | head -20
-# or
-timeout 5 bash -c 'cat < /dev/null > /dev/tcp/artifactory.jfrog.sbi/443' && echo "PORT OPEN" || echo "PORT CLOSED/UNREACHABLE"
-```
-
-```bash
-# Is there a proxy env var redirecting/breaking this?
-env | grep -i proxy
-```
-
-The `-v` output is the key one. It will say one of:
-- `Could not resolve host` → DNS problem on the bastion.
-- `Connection refused` / `timed out` → network/firewall path from bastion to Artifactory.
-- `SSL certificate problem: self signed certificate` → TLS trust — the JFrog CA isn't trusted by curl on the bastion (this is **separate** from the JVM truststore your pipeline fixes). Add `--cacert /path/to/jfrog-ca.crt` or `-k` to test.
-- A `407` or proxy error → an HTTP proxy is intercepting.
-
-## Step 2 — Most likely cause, and the quick test
-
-Given this is air-gapped and the *pipeline* reaches Artifactory fine (the runner pulls images from `artifactory.jfrog.sbi:443` successfully — you can see it in the build log), but your *bastion* gets `000`, the two most probable causes are:
-
-**(a) TLS trust on the bastion.** curl uses the OS trust store, not Java's. The JFrog internal CA may not be in the bastion's OS bundle. Test:
-
-```bash
-curl -v -k -u "v1021577:" \
-"https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
-```
-
-If `-k` makes it work and return `OK`, it was pure TLS trust — and importantly, **the artifacts question is still open**, we just couldn't ask it. Re-run the marker check with `-k`:
-
-```bash
-curl -s -o /dev/null -w "MARKER: %{http_code}\n" -k -u "v1021577:" \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
-```
-
-**(b) The bastion sits on a different network segment** than the runners and genuinely has no route to Artifactory. In that case you must run the diagnostic curls from somewhere that does — ideally inside the build image on a runner.
-
-## Step 3 — The credential format may also be wrong
-
-You're passing `-u "v1021577:"` — username with an **empty password**. If JFrog expects a token or password, that's a `401`, not `000` — so it's not the current failure — but once the connection works, you'll likely need:
-
-```bash
-# Either user + token as password:
-curl -u "v1021577:<API_TOKEN>" ...
-# Or bearer token:
-curl -H "Authorization: Bearer <TOKEN>" ...
-```
-
-Use the same `JF_USER`/`JF_TOKEN` values the pipeline injects.
-
-## Why this matters for the actual build
-
-Here's the important reframe: **the connectivity failure is on the bastion, not in the pipeline.** The pipeline's `000`-equivalent is the `Plugin ... was not found` error, which *did* reach Artifactory (it names the searched repo URL in the response). So inside the runner, Artifactory **is** reachable, and the marker genuinely isn't being served there. The bastion just can't independently verify it because the bastion's own curl can't connect.
-
-So the cleanest path is to **run the marker check from inside the build image on a runner**, where we know the network and TLS already work:
-
-```bash
-podman run --rm -it \
-  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026 \
-  bash -lc '
-    curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "$JF_USER:$JF_TOKEN" \
+[osuser@bastion Gradle]$ getent hosts artifactory.jfrog.sbi
+10.191.26.27    artifactory.jfrog.sbi
+[osuser@bastion Gradle]$ curl -v https://artifactory.jfrog.sbi:443/ 2>&1 | head -20
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [25 bytes data]
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+[osuser@bastion Gradle]$ timeout 5 bash -c 'cat < /dev/null > /dev/tcp/artifactory.jfrog.sbi/443' && echo "PORT OPEN" || echo "PORT CLOSED/UNREACHABLE"
+PORT OPEN
+[osuser@bastion Gradle]$ curl -v -k -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
+*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+* TLSv1.3 (OUT), TLS handshake, [no content] (0):
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
+* ALPN, server accepted to use http/1.1
+* Server certificate:
+*  subject: CN=*.jfrog.sbi
+*  start date: Sep 16 09:26:28 2025 GMT
+*  expire date: Sep 16 18:29:59 2026 GMT
+*  issuer: ST=Maharashtra; postalCode=400614; OU=PE-III; O=SBI; C=IN; CN=SBI-CA
+*  SSL certificate verify result: self signed certificate in certificate chain (19), continuing anyway.
+* Server auth using Basic with user 'v1021577'
+* TLSv1.3 (OUT), TLS app data, [no content] (0):
+> GET /artifactory/api/system/ping HTTP/1.1
+> Host: artifactory.jfrog.sbi
+> Authorization: Basic djEwMjE1Nzc6
+> User-Agent: curl/7.61.1
+> Accept: */*
+>
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS app data, [no content] (0):
+< HTTP/1.1 401
+< Server: nginx/1.20.1
+< Date: Wed, 24 Jun 2026 07:11:27 GMT
+< Content-Type: application/json;charset=ISO-8859-1
+< Content-Length: 80
+< Connection: keep-alive
+* Authentication problem. Ignoring this.
+< WWW-Authenticate: Basic realm="Artifactory Realm"
+<
+{
+  "errors" : [ {
+    "status" : 401,
+    "message" : "Bad Credentials"
+  } ]
+* Connection #0 to host artifactory.jfrog.sbi left intact
+}[osuser@bastion Gradle]$ curl -v -k -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/api/system/ping"
+*   Trying 10.191.26.27...
+* TCP_NODELAY set
+* Connected to artifactory.jfrog.sbi (10.191.26.27) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+* TLSv1.3 (OUT), TLS handshake, [no content] (0):
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
+* ALPN, server accepted to use http/1.1
+* Server certificate:
+*  subject: CN=*.jfrog.sbi
+*  start date: Sep 16 09:26:28 2025 GMT
+*  expire date: Sep 16 18:29:59 2026 GMT
+*  issuer: ST=Maharashtra; postalCode=400614; OU=PE-III; O=SBI; C=IN; CN=SBI-CA
+*  SSL certificate verify result: self signed certificate in certificate chain (19), continuing anyway.
+* Server auth using Basic with user 'v1021577'
+* TLSv1.3 (OUT), TLS app data, [no content] (0):
+> GET /artifactory/api/system/ping HTTP/1.1
+> Host: artifactory.jfrog.sbi
+> Authorization: Basic djEwMjE1Nzc6Y21WbWRHdHVPakF4T2pFNE1UTTRNVGcxTWpZNlZsUnJZVkowUkRZMmR6aGxhR2N3Y0ZwNFlVVkxkSEpvT1djNQ==
+> User-Agent: curl/7.61.1
+> Accept: */*
+>
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS handshake, [no content] (0):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS app data, [no content] (0):
+< HTTP/1.1 200
+< Server: nginx/1.20.1
+< Date: Wed, 24 Jun 2026 07:11:39 GMT
+< Content-Type: text/plain
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< X-JFrog-Version: Artifactory/7.117.17 81717900
+< X-Artifactory-Id: 503dbbf967497cbe962047986257ec3867cd14d4
+< X-Artifactory-Node-Id: art3
+<
+* Connection #0 to host artifactory.jfrog.sbi left intact
+OK[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -k -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 401
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -k -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 200
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ podman run --rm -it \
+>   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026 \
+>   bash -lc '
+>     curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "$JF_USER:$JF_TOKEN" \
+>     "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+>   '
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+MARKER: 000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ podman run --rm -it   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026   bash -lc '
+    curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u ""v1021577:" \
     "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
   '
-```
-
-The image already trusts the JFrog/GitLab CA (baked into Java's cacerts per your inspect), though note curl uses the OS bundle — if curl fails inside the container too, add the cert or use `-k` for the test.
-
-## What to do right now
-
-1. Run the `curl -v` from Step 1 and the `nslookup` — paste the output. That tells us DNS vs TCP vs TLS in one shot.
-2. Try the `-k` version (Step 2a). If it returns real HTTP codes, we instantly get the marker/BOM answer we've been after and TLS-on-bastion is the only bastion-side issue.
-3. Fix the credential to use the real token (Step 3) once connecting.
-
-Don't deploy any artifacts or touch repo config yet — with `000` across the board we have zero confirmed information about what the virtual repo actually serves. The very first real HTTP status code you get back is what unblocks everything. Paste the `curl -v` output and I'll read it line by line.
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+bash: -c: line 3: unexpected EOF while looking for matching `"'
+bash: -c: line 5: syntax error: unexpected end of file
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ podman run --rm -it   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026   bash -lc '
+    curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u ""v1021577:" \
+    "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+  '
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+bash: -c: line 3: unexpected EOF while looking for matching `"'
+bash: -c: line 5: syntax error: unexpected end of file
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ podman run --rm -it   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026   bash -lc '
+    curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u ""v1021577:" \
+    "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+  '^C
