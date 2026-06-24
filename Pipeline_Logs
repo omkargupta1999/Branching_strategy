@@ -1,62 +1,28 @@
-[osuser@bastion Gradle]$ podman run --rm -it \
->   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v9 \
->   bash -lc '
->     echo "=== ENV PROXIES ==="; env | grep -i proxy
->     echo "=== GRADLE_OPTS ==="; echo "$GRADLE_OPTS"
->     echo "=== JAVA_TOOL_OPTIONS ==="; echo "$JAVA_TOOL_OPTIONS"
->     echo "=== /opt/gradle/gradle.properties ==="; cat /opt/gradle/gradle.properties 2>/dev/null
->     echo "=== ~/.gradle/gradle.properties ==="; cat ~/.gradle/gradle.properties 2>/dev/null
->     echo "=== JVM net props file ==="; cat "$JAVA_HOME/conf/net.properties" 2>/dev/null | grep -i proxy
->   '
-WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
-=== ENV PROXIES ===
-JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy
-=== GRADLE_OPTS ===
+[osuser@bastion Gradle_8.9]$ ll
+total 132928
+-rw-r----- 1 osuser osuser       672 Jun 24 13:29 Dockerfile
+-rw-r----- 1 osuser osuser 136114148 Jun 24 13:27 gradle-8.9-bin.zip
+[osuser@bastion Gradle_8.9]$
+[osuser@bastion Gradle_8.9]$
+[osuser@bastion Gradle_8.9]$ cat Dockerfile
+FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.24-2.1778501191
 
-=== JAVA_TOOL_OPTIONS ===
+LABEL maintainer="devops.sbiepay@sbi.co.in" \
+      image.name="epay-build-java-gradle" \
+      image.version="1.0.0" \
+      image.gradle.version="8.9.0" \
+      image.description="Java CI build: OPENJDK 21 + Gradle 8.9.0" \
+      image.base="ubi9/openjdk-21:1.24-2.1778501191"
 
-=== /opt/gradle/gradle.properties ===
-systemProp.http.proxyHost=serverswg.sbi.co.in
-systemProp.http.proxyPort=80
-systemProp.https.proxyHost=serverswg.sbi.co.in
-systemProp.https.proxyPort=9090
-systemProp.https.nonProxyHosts=gitlab.epay.sbi
-systemProp.https.nonProxyHosts=gitlab.epay.sbi
-systemProp.http.nonProxyHosts=gitlab.epay.sbi
-#systemProp.javax.net.ssl.trustStore=/etc/pki/tls/certs/cacerts
-#systemProp.javax.net.ssl.trustStoreType=pkcs12
-=== ~/.gradle/gradle.properties ===
-=== JVM net props file ===
-# For now, only the various proxy settings can be configured here.
-# Whether or not the DefaultProxySelector will default to System Proxy
-# specific proxy settings
-# (like http.proxyHost) do take precedence over the system settings
-# Proxy configuration for the various protocol handlers.
-# HTTP Proxy settings. proxyHost is the name of the proxy server
-# (e.g. proxy.mydomain.com), proxyPort is the port number to use (default
-# value is 80) and nonProxyHosts is a '|' separated list of hostnames which
-# should be accessed directly, ignoring the proxy server (default value is
-# http.proxyHost=
-# http.proxyPort=80
-http.nonProxyHosts=localhost|127.*|[::1]
-# HTTPS Proxy Settings. proxyHost is the name of the proxy server
-# (e.g. proxy.mydomain.com), proxyPort is the port number to use (default
-# value is 443). The HTTPS protocol handlers uses the http nonProxyHosts list.
-# https.proxyHost=
-# https.proxyPort=443
-# FTP Proxy settings. proxyHost is the name of the proxy server
-# (e.g. proxy.mydomain.com), proxyPort is the port number to use (default
-# value is 80) and nonProxyHosts is a '|' separated list of hostnames which
-# should be accessed directly, ignoring the proxy server (default value is
-# ftp.proxyHost=
-# ftp.proxyPort=80
-ftp.nonProxyHosts=localhost|127.*|[::1]
-# Socks proxy settings. socksProxyHost is the name of the proxy server
-# (e.g. socks.domain.com), socksProxyPort is the port number to use
-# socksProxyHost=
-# socksProxyPort=1080
-# when proxying HTTP or HTTPS.  For example, "Basic" results in effectively the
-# schemes that will be disabled when tunneling HTTPS over a proxy, HTTP CONNECT.
-# The 'jdk.http.auth.proxying.disabledSchemes' property lists the authentication
-# schemes that will be disabled when proxying HTTP.
-#jdk.http.auth.proxying.disabledSchemes=
+ARG GRADLE_VERSION=8.9.0
+
+ENV GRADLE_HOME=/opt/gradle \
+    PATH=/opt/gradle/bin:$PATH
+
+# Gradle pre-extracted on bastion: unzip gradle-9.x.x-bin.zip → gradle-9.x.x/
+COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+
+WORKDIR /workspace
+
+# Non-root user for OpenShift/Kubernetes security
+USER 1001
