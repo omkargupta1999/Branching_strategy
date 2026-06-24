@@ -1,28 +1,89 @@
-[osuser@bastion Gradle_8.9]$ ll
-total 132928
--rw-r----- 1 osuser osuser       672 Jun 24 13:29 Dockerfile
--rw-r----- 1 osuser osuser 136114148 Jun 24 13:27 gradle-8.9-bin.zip
-[osuser@bastion Gradle_8.9]$
-[osuser@bastion Gradle_8.9]$
-[osuser@bastion Gradle_8.9]$ cat Dockerfile
-FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.24-2.1778501191
+Got it. No proxy config in the image at all — correct approach for an air-gapped LAN where everything is internal. Gradle should connect directly to Artifactory without any proxy involvement.
 
+The only thing that matters then is: **make sure no proxy ends up in the image**. Since you're building `FROM ubi9/openjdk-21:1.24-2.1778501191` fresh (not from the broken v9), the bad `/opt/gradle/gradle.properties` from v9 won't be inherited. You just need to ensure the extracted Gradle zip also doesn't bring one in.
+
+## Check the zip first
+
+```bash
+cd ~/Gradle_8.9
+unzip -l gradle-8.9-bin.zip | grep "gradle.properties"
+```
+
+If that shows any `gradle.properties` inside the zip, check its contents:
+```bash
+unzip -p gradle-8.9-bin.zip "*/gradle.properties" 2>/dev/null | cat
+```
+
+The official Gradle 8.9 binary zip does **not** include a `gradle.properties` — so you should get nothing. That means after `COPY gradle-8.9/`, there will be no proxy config at all. Good.
+
+## Extract the zip
+
+```bash
+cd ~/Gradle_8.9
+unzip -q gradle-8.9-bin.zip
+ls -d gradle-*/
+# Should show: gradle-8.9/
+```
+
+## Fix the ARG version mismatch
+
+Your Dockerfile has `ARG GRADLE_VERSION=8.9.0` but the zip extracts to `gradle-8.9/` (not `gradle-8.9.0/`). That's the only change needed to the Dockerfile:
+
+```dockerfile
+FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.24-2.1778501191
 LABEL maintainer="devops.sbiepay@sbi.co.in" \
       image.name="epay-build-java-gradle" \
       image.version="1.0.0" \
-      image.gradle.version="8.9.0" \
-      image.description="Java CI build: OPENJDK 21 + Gradle 8.9.0" \
+      image.gradle.version="8.9" \
+      image.description="Java CI build: OPENJDK 21 + Gradle 8.9" \
       image.base="ubi9/openjdk-21:1.24-2.1778501191"
 
-ARG GRADLE_VERSION=8.9.0
-
+ARG GRADLE_VERSION=8.9
 ENV GRADLE_HOME=/opt/gradle \
     PATH=/opt/gradle/bin:$PATH
 
-# Gradle pre-extracted on bastion: unzip gradle-9.x.x-bin.zip → gradle-9.x.x/
 COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+RUN chmod -R a+rX /opt/gradle
 
 WORKDIR /workspace
-
-# Non-root user for OpenShift/Kubernetes security
 USER 1001
+```
+
+## Build, verify no proxy, push
+
+```bash
+cd ~/Gradle_8.9
+
+# Build
+podman build -t artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 .
+
+# Verify: no proxy anywhere in the image
+podman run --rm \
+  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 \
+  bash -lc '
+    echo "=== gradle version ==="; gradle --version | grep Gradle
+    echo "=== java version ==="; java -version
+    echo "=== proxy check in gradle dir ==="
+    find /opt/gradle -name "gradle.properties" | xargs cat 2>/dev/null || echo "NO gradle.properties found — GOOD"
+    echo "=== proxy env check ==="
+    env | grep -i proxy || echo "NO proxy env vars — GOOD"
+  '
+
+# Push
+podman login artifactory.jfrog.sbi:443
+podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10
+```
+
+Expected output from the verify step:
+```
+=== proxy check in gradle dir ===
+NO gradle.properties found — GOOD
+=== proxy env check ===
+NO proxy env vars — GOOD
+```
+
+That's the clean state. No proxy in the image means Gradle resolves Artifactory directly, exactly as your `settings.gradle`/init script intends.
+
+## Then update the pipeline and run
+
+Bump the image in `base-setup.java.gradle.yml` to `:v10` and trigger the pipeline. The `update-ca-trust` step in your `before_script` handles TLS trust at runtime as before — nothing changes there.
