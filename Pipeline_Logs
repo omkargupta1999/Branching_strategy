@@ -13,38 +13,36 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.properties: |
+  application.yaml: |
+    # Server / servlet container settings
+    server.port: 8101
+    server.servlet.context-path: /epaylite-bridge-mis-service
+    spring.application.name: epaylite-bridge-mis-service
 
-    server.port=8101
-    server.servlet.context-path=/epaylite-bridge-mis-service
-    spring.application.name=epaylite-bridge-mis-service
-    # Db connectivity
-    spring.jpa.show-sql=false
-    spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
-    spring.jpa.hibernate.ddl-auto=none
-    spring.jpa.defer-datasource-initialization=true
-    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    #spring.datasource.url= jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
-    #spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
+    # JPA / Hibernate behaviour
+    spring.jpa.show-sql: false
+    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto: none
+    spring.jpa.defer-datasource-initialization: true
 
+    # Database connectivity (Oracle)
+    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.url: jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
+    #spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
+    spring.datasource.username: EPAYBRIDGE
+    spring.datasource.password: Asdf_123
+    #spring.datasource.username: ${DB_USERNAME}
+    #spring.datasource.password: ${DB_PASSWORD}
+    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
 
-    spring.datasource.username=EPAYBRIDGE
-    spring.datasource.password=Asdf_123
-    #spring.datasource.username=${DB_USERNAME}
-    #spring.datasource.password=${DB_PASSWORD}
-  
-    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    # HikariCP connection pool (optional tuning)
+    spring.datasource.hikari.maximum-pool-size: 10
+    spring.datasource.hikari.minimum-idle: 5
+    spring.datasource.hikari.idle-timeout: 30000
+    spring.datasource.hikari.max-lifetime: 2000000
 
-    # Optional settings
-    spring.datasource.hikari.maximum-pool-size=10
-    spring.datasource.hikari.minimum-idle=5
-    spring.datasource.hikari.idle-timeout=30000
-    spring.datasource.hikari.max-lifetime=2000000
-    
-    #log config
-    logging.level.root=INFO
-    logging.level.com.sbi.epay=INFO
-    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
-    logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
-
- 
+    # Logging levels + patterns
+    logging.level.root: INFO
+    logging.level.com.sbi.epay: INFO
+    logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
