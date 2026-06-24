@@ -13,117 +13,118 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.properties: |
-    #server.port=8099
-    #server.servlet.context-path=/epaylite-bridge-mis-service
-        
-    #security.jwt.secret.issuer=https://sbi.epay.com
-    #security.jwt.secret.issuer=sbi.epay
-    #security.cors.origin=*
-    security.cors.allowed.origins=*
-    ##cors.origin=*
-    ##cors.allowed.origins=*
+  application.yaml: |
+    # Server / servlet container settings
+    #server.port: 8099
+    #server.servlet.context-path: /epaylite-bridge-mis-service
 
-    server.port=8099
-    server.servlet.context-path=/epaylite-bridge-mis-service
-    spring.application.name=epaylite-bridge-mis-service
-    # Db connectivity
-    spring.jpa.show-sql=true
-    spring.jpa.properties.hibernate.show_sql=true
-    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type=TIMESTAMP
-    spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
-    spring.jpa.hibernate.ddl-auto=update
-    spring.jpa.defer-datasource-initialization=true
-    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    #spring.datasource.url=jdbc:oracle:thin:@10.177.134.124:1590:epaydbdev1
-    #spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
+    # CORS / JWT (disabled / legacy)
+    #security.jwt.secret.issuer: https://sbi.epay.com
+    #security.jwt.secret.issuer: sbi.epay
+    #security.cors.origin: "*"
+    security.cors.allowed.origins: "*"
+    ##cors.origin: "*"
+    ##cors.allowed.origins: "*"
 
+    server.port: 8099
+    server.servlet.context-path: /epaylite-bridge-mis-service
+    spring.application.name: epaylite-bridge-mis-service
 
-    spring.datasource.username=EPAYBRIDGE
-    spring.datasource.password=Asdf_123
-    #spring.datasource.username=${DB_USERNAME}
-    #spring.datasource.password=${DB_PASSWORD}
-  
-    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    # JPA / Hibernate behaviour
+    spring.jpa.show-sql: true
+    spring.jpa.properties.hibernate.show_sql: true
+    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
+    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto: update
+    spring.jpa.defer-datasource-initialization: true
 
-    # Optional settings
-    spring.datasource.hikari.maximum-pool-size=10
-    spring.datasource.hikari.minimum-idle=5
-    spring.datasource.hikari.idle-timeout=30000
-    spring.datasource.hikari.max-lifetime=2000000
-    
-    #log config
-    logging.level.root=INFO
-    logging.level.com.sbi.epay=INFO
-    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
-    logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
+    # Database connectivity (Oracle)
+    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.url: jdbc:oracle:thin:@10.177.134.124:1590:epaydbdev1
+    #spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
+    spring.datasource.username: EPAYBRIDGE
+    spring.datasource.password: Asdf_123
+    #spring.datasource.username: ${DB_USERNAME}
+    #spring.datasource.password: ${DB_PASSWORD}
+    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
 
-    # Encryption Configuration
-    epay.encryption.default-key=default-secret-key-32-characters-long
-    epay.encryption.algorithm=AES
+    # HikariCP connection pool (optional tuning)
+    spring.datasource.hikari.maximum-pool-size: 10
+    spring.datasource.hikari.minimum-idle: 5
+    spring.datasource.hikari.idle-timeout: 30000
+    spring.datasource.hikari.max-lifetime: 2000000
 
-    # Merchant Configuration
-    merchant.config.cache-enabled=true
-    merchant.config.cache-ttl-minutes=60
+    # Logging levels + patterns
+    logging.level.root: INFO
+    logging.level.com.sbi.epay: INFO
+    logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
 
-    # Audit Configuration
-    audit.enabled=true
-    audit.mask-sensitive-data=true
-    audit.log-request-payload=true
-    audit.log-response-payload=true
+    # Encryption settings
+    epay.encryption.default-key: default-secret-key-32-characters-long
+    epay.encryption.algorithm: AES
 
-    # SBIEpay API Configuration
-    #sbiepay.api.base-url=https://uat.epay.sbi
-    sbiepay.api.base-url=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092
-    sbiepay.api.payment-endpoint=/api/transaction/v1/order/create
-    sbiepay.api.status-endpoint=/api/transaction/v1/order/status
-    sbiepay.api.refund-endpoint=/v2/payment/refund
-    sbiepay.api.api-key=${SBIEPAY_API_KEY:default-api-key}
-    sbiepay.api.api-secret=${SBIEPAY_API_SECRET:default-api-secret}
-    sbiepay.api.connect-timeout=10000
-    sbiepay.api.read-timeout=30000
-    sbiepay.api.epayEncryptUrl=/api/javasimulator/v1/crypto/encrypt
-    sbiepay.api.epayDecryptUrl=/api/javasimulator/v1/crypto/decrypt
+    # Merchant config cache
+    merchant.config.cache-enabled: true
+    merchant.config.cache-ttl-minutes: 60
 
-    # SBIEpay OAuth2 Hosted Access Token Service Configuration
-    #sbiepay.api.token-endpoint=https://uat.epay.sbi/api/transaction/v1/token/access
-    sbiepay.api.token-endpoint=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/transaction/v1/token/access
-    sbiepay.api.auth-client-id=${SBIEPAY_AUTH_CLIENT_ID:demo-client-id}
-    sbiepay.api.auth-client-secret=${SBIEPAY_AUTH_CLIENT_SECRET:demo-client-secret}
+    # Audit logging
+    audit.enabled: true
+    audit.mask-sensitive-data: true
+    audit.log-request-payload: true
+    audit.log-response-payload: true
 
-    # Resilience4j Configuration
-    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator=true
-    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold=50
-    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState=30s
-    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize=10
-    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls=5
+    # SBIEpay downstream API (base URL, endpoints, keys, timeouts)
+    #sbiepay.api.base-url: https://uat.epay.sbi
+    sbiepay.api.base-url: http://txn-transactionservice.dev-transaction.svc.cluster.local:9092
+    sbiepay.api.payment-endpoint: /api/transaction/v1/order/create
+    sbiepay.api.status-endpoint: /api/transaction/v1/order/status
+    sbiepay.api.refund-endpoint: /v2/payment/refund
+    sbiepay.api.api-key: ${SBIEPAY_API_KEY:default-api-key}
+    sbiepay.api.api-secret: ${SBIEPAY_API_SECRET:default-api-secret}
+    sbiepay.api.connect-timeout: 10000
+    sbiepay.api.read-timeout: 30000
+    sbiepay.api.epayEncryptUrl: /api/javasimulator/v1/crypto/encrypt
+    sbiepay.api.epayDecryptUrl: /api/javasimulator/v1/crypto/decrypt
 
-    resilience4j.retry.instances.sbiepayApi.maxAttempts=3
-    resilience4j.retry.instances.sbiepayApi.waitDuration=2s
+    # SBIEpay OAuth2 hosted access-token service
+    #sbiepay.api.token-endpoint: https://uat.epay.sbi/api/transaction/v1/token/access
+    sbiepay.api.token-endpoint: http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/transaction/v1/token/access
+    sbiepay.api.auth-client-id: ${SBIEPAY_AUTH_CLIENT_ID:demo-client-id}
+    sbiepay.api.auth-client-secret: ${SBIEPAY_AUTH_CLIENT_SECRET:demo-client-secret}
 
-    # Actuator Configuration (for monitoring circuit breakers)
-    management.endpoints.web.exposure.include=health,info,metrics,prometheus,circuitbreakers
-    management.health.circuitbreakers.enabled=true
-    management.endpoint.health.show-details=always
-    management.metrics.export.prometheus.enabled=true
+    # Resilience4j circuit breaker + retry (sbiepayApi instance)
+    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator: true
+    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold: 50
+    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState: 30s
+    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize: 10
+    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls: 5
+    resilience4j.retry.instances.sbiepayApi.maxAttempts: 3
+    resilience4j.retry.instances.sbiepayApi.waitDuration: 2s
 
-    # Swagger/OpenAPI Configuration (Temporarily disabled due to Spring Boot 2.7 compatibility)
-    # Access at https://merchant.sbiuat.bank.in/swagger-ui/ once enabled
-    springfox.documentation.enabled=false
-    springfox.documentation.swagger-ui.enabled=false
+    # Actuator / management endpoints + Prometheus metrics
+    management.endpoints.web.exposure.include: health,info,metrics,prometheus,circuitbreakers
+    management.health.circuitbreakers.enabled: true
+    management.endpoint.health.show-details: always
+    management.metrics.export.prometheus.enabled: true
 
-    # Security Configuration (Development Only - Disable Auto-Configuration)
-    spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
-    # Adapter Callback Configuration (Pay-Redirect Flow)
-    #adapter.callback.base-url=https://merchant.sbiuat.bank.in/api/legacy/payment
-    adapter.callback.base-url=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/legacy/payment
-    adapter.callback.endpoint=/payment-redirect-callback
-    adapter.callback.session-timeout-minutes=30
-    adapter.callback.max-callback-attempts=3
-    adapter.callback.enable-ssl-validation=true
+    # Springfox / Swagger (disabled)
+    springfox.documentation.enabled: false
+    springfox.documentation.swagger-ui.enabled: false
 
-    # Payment Session Configuration
-    payment.session.timeout-minutes=30
-    payment.session.max-attempts=3
-    payment.session.cleanup-schedule-minutes=60
-    redirectBaseURL=https://dev.epay.sbi/epay-bridge
+    # Spring Security auto-configuration disabled (dev only) — THIS is what fixes the 503
+    spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+
+    # Adapter callback (pay-redirect flow)
+    #adapter.callback.base-url: https://merchant.sbiuat.bank.in/api/legacy/payment
+    adapter.callback.base-url: http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/legacy/payment
+    adapter.callback.endpoint: /payment-redirect-callback
+    adapter.callback.session-timeout-minutes: 30
+    adapter.callback.max-callback-attempts: 3
+    adapter.callback.enable-ssl-validation: true
+
+    # Payment session lifecycle
+    payment.session.timeout-minutes: 30
+    payment.session.max-attempts: 3
+    payment.session.cleanup-schedule-minutes: 60
+    redirectBaseURL: https://dev.epay.sbi/epay-bridge
