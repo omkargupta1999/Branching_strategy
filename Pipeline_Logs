@@ -1,59 +1,3 @@
-[root@bastion ~]# oc logs -f epaybridgemis-6c6466d698-26qxv -n dev-bridge
-Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v3.5.9)
-
-{"@timestamp":"2026-06-24T12:06:06.36613158Z","@version":"1","message":"Starting EpayBridgeApplication vdev-b0f46401 using Java 21.0.8 with PID 1 (/home/default/epaylite-bridge-mis-service-dev-b0f46401.jar started by 1002090000 in /home/default)","logger_name":"com.epaybridge.epay.EpayBridgeApplication","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:06.403665784Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.epaybridge.epay.EpayBridgeApplication","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:13.12781841Z","@version":"1","message":"Starting service [Tomcat]","logger_name":"org.apache.catalina.core.StandardService","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:13.129117014Z","@version":"1","message":"Starting Servlet engine: [Apache Tomcat/10.1.50]","logger_name":"org.apache.catalina.core.StandardEngine","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:13.230742086Z","@version":"1","message":"Initializing Spring embedded WebApplicationContext","logger_name":"org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/epaylite-bridge-mis-service]","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
-{"@timestamp":"2026-06-24T12:06:15.493687601Z","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.168709639Z","@version":"1","message":"entering args (oracle.jdbc.internal.AbstractConnectionBuilder$1@5f93ec02)","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.169373859Z","@version":"1","message":"traceId=5E405EAF. ","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.175710883Z","@version":"1","message":"Session Attributes: \nsdu=8192, tdu=2097152\nnt: host=epaydbscandev.sbiepay.sbi, port=1524, socketOptions={0=YES, 1=NO, 17=0, 18=false, 2=30000, 20=true, 38=TLS, 23=40, 24=50, 40=false, 25=0}\n    socket=null\nclient profile={oracle.net.encryption_types_client=(), oracle.net.crypto_seed=, oracle.net.authentication_services=(), oracle.net.setFIPSMode=false, oracle.net.kerberos5_mutual_authentication=false, oracle.net.encryption_client=ACCEPTED, oracle.net.crypto_checksum_client=ACCEPTED, oracle.net.crypto_checksum_types_client=()}\nonBreakReset=false, dataEOF=false, negotiatedOptions=0x0, connected=false\nTTIINIT enabled=false, TTC cookie enabled=false\n","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.176307352Z","@version":"1","message":"traceId=5E405EAF, anoEnabled=true. ","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.177122685Z","@version":"1","message":"Connection establishment failed due to IOException, will be trying with next available connect option.","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.177352588Z","@version":"1","message":"Got Refused, SessionTraceId = 5E405EAF","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.177475411Z","@version":"1","message":"Outbound interrupt timer cancelled null","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.177665752Z","@version":"1","message":"Session Attributes: \nsdu=8192, tdu=2097152\nnt: host=epaydbscandev.sbiepay.sbi, port=1524, socketOptions={0=YES, 1=NO, 17=0, 18=false, 2=30000, 20=true, 38=TLS, 23=40, 24=50, 40=false, 25=0}\n    socket=null\nclient profile={oracle.net.encryption_types_client=(), oracle.net.crypto_seed=, oracle.net.authentication_services=(), oracle.net.setFIPSMode=false, oracle.net.kerberos5_mutual_authentication=false, oracle.net.encryption_client=ACCEPTED, oracle.net.crypto_checksum_client=ACCEPTED, oracle.net.crypto_checksum_types_client=()}\nonBreakReset=false, dataEOF=false, negotiatedOptions=0x0, connected=false\nTTIINIT enabled=false, TTC cookie enabled=false\n","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.178409454Z","@version":"1","message":"Got Redirect, SessionTraceId = 5E405EAF","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.178675524Z","@version":"1","message":"Session Attributes: \nsdu=8192, tdu=2097152\nnt: host=epaydbscandev.sbiepay.sbi, port=1524, socketOptions={0=YES, 1=NO, 17=0, 18=false, 2=30000, 20=true, 38=TLS, 23=40, 24=50, 40=false, 25=0}\n    socket=null\nclient profile={oracle.net.encryption_types_client=(), oracle.net.crypto_seed=, oracle.net.authentication_services=(), oracle.net.setFIPSMode=false, oracle.net.kerberos5_mutual_authentication=false, oracle.net.encryption_client=ACCEPTED, oracle.net.crypto_checksum_client=ACCEPTED, oracle.net.crypto_checksum_types_client=()}\nonBreakReset=false, dataEOF=false, negotiatedOptions=0x0, connected=false\nTTIINIT enabled=false, TTC cookie enabled=false\n","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.179090944Z","@version":"1","message":"Connection establishment failed due to IOException, will be trying with next available connect option.","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.179248641Z","@version":"1","message":"Got Refused, SessionTraceId = 5E405EAF","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.179430996Z","@version":"1","message":"Outbound interrupt timer cancelled null","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.179672437Z","@version":"1","message":"Session Attributes: \nsdu=8192, tdu=2097152\nnt: host=epaydbscandev.sbiepay.sbi, port=1524, socketOptions={0=YES, 1=NO, 17=0, 18=false, 2=30000, 20=true, 38=TLS, 23=40, 24=50, 40=false, 25=0}\n    socket=null\nclient profile={oracle.net.encryption_types_client=(), oracle.net.crypto_seed=, oracle.net.authentication_services=(), oracle.net.setFIPSMode=false, oracle.net.kerberos5_mutual_authentication=false, oracle.net.encryption_client=ACCEPTED, oracle.net.crypto_checksum_client=ACCEPTED, oracle.net.crypto_checksum_types_client=()}\nonBreakReset=false, dataEOF=false, negotiatedOptions=0x0, connected=false\nTTIINIT enabled=false, TTC cookie enabled=false\n","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.179924514Z","@version":"1","message":"Connection establishment failed due to IOException, will be trying with next available connect option.","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.18009913Z","@version":"1","message":"Got Refused, SessionTraceId = 5E405EAF","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.180197024Z","@version":"1","message":"Outbound interrupt timer cancelled null","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.180277499Z","@version":"1","message":"throwing","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"stack_trace":"java.sql.SQLRecoverableException: ORA-17002: I/O error: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\nhttps://docs.oracle.com/error-help/db/ora-17002/\n\tat oracle.jdbc.driver.T4CConnection.handleLogonIOException(T4CConnection.java:1660)\n\tat oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:1142)\n\tat oracle.jdbc.driver.PhysicalConnection.connect(PhysicalConnection.java:1206)\n\tat oracle.jdbc.driver.T4CDriverExtension.getConnection(T4CDriverExtension.java:105)\n\tat oracle.jdbc.driver.OracleDriver.connect(OracleDriver.java:886)\n\tat oracle.jdbc.driver.OracleDriver.connect(OracleDriver.java:693)\n\tat com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:144)\n\tat com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:370)\n\tat com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:207)\n\tat com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:488)\n\tat com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:576)\n\tat com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:97)\n\tat com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)\n\tat org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl.getConnection(DatasourceConnectionProviderImpl.java:126)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess.obtainConnection(JdbcEnvironmentInitiator.java:485)\n\tat org.hibernate.resource.transaction.backend.jdbc.internal.JdbcIsolationDelegate.delegateWork(JdbcIsolationDelegate.java:61)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.getJdbcEnvironmentUsingJdbcMetadata(JdbcEnvironmentInitiator.java:334)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.initiateService(JdbcEnvironmentInitiator.java:129)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.initiateService(JdbcEnvironmentInitiator.java:81)\n\tat org.hibernate.boot.registry.internal.StandardServiceRegistryImpl.initiateService(StandardServiceRegistryImpl.java:130)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.createService(AbstractServiceRegistryImpl.java:263)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.initializeService(AbstractServiceRegistryImpl.java:238)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.getService(AbstractServiceRegistryImpl.java:215)\n\tat org.hibernate.boot.model.relational.Database.<init>(Database.java:45)\n\tat org.hibernate.boot.internal.InFlightMetadataCollectorImpl.getDatabase(InFlightMetadataCollectorImpl.java:226)\n\tat org.hibernate.boot.internal.InFlightMetadataCollectorImpl.<init>(InFlightMetadataCollectorImpl.java:194)\n\tat org.hibernate.boot.model.process.spi.MetadataBuildingProcess.complete(MetadataBuildingProcess.java:171)\n\tat org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.metadata(EntityManagerFactoryBuilderImpl.java:1442)\n\tat org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1513)\n\tat org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)\n\tat org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)\n\tat org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)\n\tat org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)\n\tat org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)\n\tat org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)\n\tat org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:973)\n\tat org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)\n\tat org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)\n\tat org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)\n\tat org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:318)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)\n\tat com.epaybridge.epay.EpayBridgeApplication.main(EpayBridgeApplication.java:11)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:580)\n\tat org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:106)\n\tat org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)\n\tat org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)\nCaused by: java.io.IOException: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\n\tat oracle.jdbc.driver.T4CConnection.handleLogonIOException(T4CConnection.java:1655)\n\t... 55 common frames omitted\nCaused by: java.io.IOException: Connection reset, connect lapse 5 ms.\n\tat oracle.net.ns.NSProtocolNIO.negotiateConnection(NSProtocolNIO.java:263)\n\tat oracle.net.ns.NSProtocol.connect(NSProtocol.java:352)\n\tat oracle.jdbc.driver.T4CConnection.connectNetworkSessionProtocol(T4CConnection.java:3419)\n\tat oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:1018)\n\t... 54 common frames omitted\nCaused by: java.net.SocketException: Connection reset\n\tat java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401)\n\tat java.base/sun.nio.ch.SocketChannelImpl.blockingRead(SocketChannelImpl.java:1349)\n\tat java.base/sun.nio.ch.SocketInputStream.read(SocketInputStream.java:70)\n\tat oracle.net.nt.TimeoutSocketChannel.doBlockedRead(TimeoutSocketChannel.java:600)\n\tat oracle.net.nt.TimeoutSocketChannel.read(TimeoutSocketChannel.java:536)\n\tat oracle.net.ns.NSProtocolNIO.doSocketRead(NSProtocolNIO.java:1224)\n\tat oracle.net.ns.NIOPacket.readNIOPacket(NIOPacket.java:436)\n\tat oracle.net.ns.NSProtocolNIO.negotiateConnection(NSProtocolNIO.java:216)\n\t... 57 common frames omitted\n","application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:16.18706522Z","@version":"1","message":"properties={LOCALE=en, DriverVersion=23.5.0.24.07, java.library.path: =/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib, java.class.path: =epaylite-bridge-mis-service-dev-b0f46401.jar, java.version: =21.0.8}. ","logger_name":"oracle.jdbc","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:17.201067046Z","@version":"1","message":"SQL Error: 17002, SQLState: 08006","logger_name":"org.hibernate.engine.jdbc.spi.SqlExceptionHelper","thread_name":"main","level":"WARN","level_value":30000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:17.202403555Z","@version":"1","message":"ORA-17002: I/O error: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\nhttps://docs.oracle.com/error-help/db/ora-17002/","logger_name":"org.hibernate.engine.jdbc.spi.SqlExceptionHelper","thread_name":"main","level":"ERROR","level_value":40000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:17.204685436Z","@version":"1","message":"HHH000342: Could not obtain connection to query metadata","logger_name":"org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator","thread_name":"main","level":"WARN","level_value":30000,"stack_trace":"org.hibernate.exception.JDBCConnectionException: unable to obtain isolated JDBC connection [ORA-17002: I/O error: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\nhttps://docs.oracle.com/error-help/db/ora-17002/] [n/a]\n\tat org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:100)\n\tat org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:58)\n\tat org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:108)\n\tat org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:94)\n\tat org.hibernate.resource.transaction.backend.jdbc.internal.JdbcIsolationDelegate.delegateWork(JdbcIsolationDelegate.java:116)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.getJdbcEnvironmentUsingJdbcMetadata(JdbcEnvironmentInitiator.java:334)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.initiateService(JdbcEnvironmentInitiator.java:129)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.initiateService(JdbcEnvironmentInitiator.java:81)\n\tat org.hibernate.boot.registry.internal.StandardServiceRegistryImpl.initiateService(StandardServiceRegistryImpl.java:130)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.createService(AbstractServiceRegistryImpl.java:263)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.initializeService(AbstractServiceRegistryImpl.java:238)\n\tat org.hibernate.service.internal.AbstractServiceRegistryImpl.getService(AbstractServiceRegistryImpl.java:215)\n\tat org.hibernate.boot.model.relational.Database.<init>(Database.java:45)\n\tat org.hibernate.boot.internal.InFlightMetadataCollectorImpl.getDatabase(InFlightMetadataCollectorImpl.java:226)\n\tat org.hibernate.boot.internal.InFlightMetadataCollectorImpl.<init>(InFlightMetadataCollectorImpl.java:194)\n\tat org.hibernate.boot.model.process.spi.MetadataBuildingProcess.complete(MetadataBuildingProcess.java:171)\n\tat org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.metadata(EntityManagerFactoryBuilderImpl.java:1442)\n\tat org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1513)\n\tat org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)\n\tat org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)\n\tat org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)\n\tat org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)\n\tat org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)\n\tat org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)\n\tat org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)\n\tat org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:973)\n\tat org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)\n\tat org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)\n\tat org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)\n\tat org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:318)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)\n\tat org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)\n\tat com.epaybridge.epay.EpayBridgeApplication.main(EpayBridgeApplication.java:11)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:580)\n\tat org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:106)\n\tat org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)\n\tat org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)\nCaused by: java.sql.SQLRecoverableException: ORA-17002: I/O error: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\nhttps://docs.oracle.com/error-help/db/ora-17002/\n\tat oracle.jdbc.driver.T4CConnection.handleLogonIOException(T4CConnection.java:1660)\n\tat oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:1142)\n\tat oracle.jdbc.driver.PhysicalConnection.connect(PhysicalConnection.java:1206)\n\tat oracle.jdbc.driver.T4CDriverExtension.getConnection(T4CDriverExtension.java:105)\n\tat oracle.jdbc.driver.OracleDriver.connect(OracleDriver.java:886)\n\tat oracle.jdbc.driver.OracleDriver.connect(OracleDriver.java:693)\n\tat com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:144)\n\tat com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:370)\n\tat com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:207)\n\tat com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:488)\n\tat com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:576)\n\tat com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:97)\n\tat com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)\n\tat org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl.getConnection(DatasourceConnectionProviderImpl.java:126)\n\tat org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess.obtainConnection(JdbcEnvironmentInitiator.java:485)\n\tat org.hibernate.resource.transaction.backend.jdbc.internal.JdbcIsolationDelegate.delegateWork(JdbcIsolationDelegate.java:61)\n\t... 40 common frames omitted\nCaused by: java.io.IOException: Connection reset, connect lapse 5 ms., Authentication lapse 0 ms.\n\tat oracle.jdbc.driver.T4CConnection.handleLogonIOException(T4CConnection.java:1655)\n\t... 55 common frames omitted\nCaused by: java.io.IOException: Connection reset, connect lapse 5 ms.\n\tat oracle.net.ns.NSProtocolNIO.negotiateConnection(NSProtocolNIO.java:263)\n\tat oracle.net.ns.NSProtocol.connect(NSProtocol.java:352)\n\tat oracle.jdbc.driver.T4CConnection.connectNetworkSessionProtocol(T4CConnection.java:3419)\n\tat oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:1018)\n\t... 54 common frames omitted\nCaused by: java.net.SocketException: Connection reset\n\tat java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401)\n\tat java.base/sun.nio.ch.SocketChannelImpl.blockingRead(SocketChannelImpl.java:1349)\n\tat java.base/sun.nio.ch.SocketInputStream.read(SocketInputStream.java:70)\n\tat oracle.net.nt.TimeoutSocketChannel.doBlockedRead(TimeoutSocketChannel.java:600)\n\tat oracle.net.nt.TimeoutSocketChannel.read(TimeoutSocketChannel.java:536)\n\tat oracle.net.ns.NSProtocolNIO.doSocketRead(NSProtocolNIO.java:1224)\n\tat oracle.net.ns.NIOPacket.readNIOPacket(NIOPacket.java:436)\n\tat oracle.net.ns.NSProtocolNIO.negotiateConnection(NSProtocolNIO.java:216)\n\t... 57 common frames omitted\n","application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:17.290922821Z","@version":"1","message":"HHH90000025: OracleDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:21.089597297Z","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:24.163794929Z","@version":"1","message":"\n\nUsing generated security password: 9ffb652d-2d8f-46f2-8489-a4a18ecbf9ed\n\nThis generated password is for development use only. Your security configuration must be updated before running your application in production.\n","logger_name":"org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration","thread_name":"main","level":"WARN","level_value":30000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:24.1901247Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-{"@timestamp":"2026-06-24T12:06:25.720562112Z","@version":"1","message":"Started EpayBridgeApplication in 21.884 seconds (process running for 23.29)","logger_name":"com.epaybridge.epay.EpayBridgeApplication","thread_name":"main","level":"INFO","level_value":20000,"application":"epaylite_brige_txn_service","environment":"ENVIRONMENT:dev_IS_UNDEFINED"}
-
-
-
-
-
-
-=====================  Config.yml 
-
-
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -69,36 +13,117 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.yaml: |
-    # Server / servlet container settings
-    server.port: 8101
-    server.servlet.context-path: /epaylite-bridge-mis-service
-    spring.application.name: epaylite-bridge-mis-service
+  application.properties: |
+    #server.port=8099
+    #server.servlet.context-path=/epaylite-bridge-mis-service
+        
+    #security.jwt.secret.issuer=https://sbi.epay.com
+    #security.jwt.secret.issuer=sbi.epay
+    #security.cors.origin=*
+    security.cors.allowed.origins=*
+    ##cors.origin=*
+    ##cors.allowed.origins=*
 
-    # JPA / Hibernate behaviour
-    spring.jpa.show-sql: false
-    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
-    spring.jpa.hibernate.ddl-auto: none
-    spring.jpa.defer-datasource-initialization: true
+    server.port=8099
+    server.servlet.context-path=/epaylite-bridge-mis-service
+    spring.application.name=epaylite-bridge-mis-service
+    # Db connectivity
+    spring.jpa.show-sql=true
+    spring.jpa.properties.hibernate.show_sql=true
+    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type=TIMESTAMP
+    spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto=update
+    spring.jpa.defer-datasource-initialization=true
+    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.url=jdbc:oracle:thin:@10.177.134.124:1590:epaydbdev1
+    #spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
 
-    # Database connectivity (Oracle)
-    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    #spring.datasource.url: jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
-    #spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
-    spring.datasource.username: EPAYBRIDGE
-    spring.datasource.password: Asdf_123
-    #spring.datasource.username: ${DB_USERNAME}
-    #spring.datasource.password: ${DB_PASSWORD}
-    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
 
-    # HikariCP connection pool (optional tuning)
-    spring.datasource.hikari.maximum-pool-size: 10
-    spring.datasource.hikari.minimum-idle: 5
-    spring.datasource.hikari.idle-timeout: 30000
-    spring.datasource.hikari.max-lifetime: 2000000
+    spring.datasource.username=EPAYBRIDGE
+    spring.datasource.password=Asdf_123
+    #spring.datasource.username=${DB_USERNAME}
+    #spring.datasource.password=${DB_PASSWORD}
+  
+    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
-    # Logging levels + patterns
-    logging.level.root: INFO
-    logging.level.com.sbi.epay: INFO
-    logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
-    logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    # Optional settings
+    spring.datasource.hikari.maximum-pool-size=10
+    spring.datasource.hikari.minimum-idle=5
+    spring.datasource.hikari.idle-timeout=30000
+    spring.datasource.hikari.max-lifetime=2000000
+    
+    #log config
+    logging.level.root=INFO
+    logging.level.com.sbi.epay=INFO
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
+    logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
+
+    # Encryption Configuration
+    epay.encryption.default-key=default-secret-key-32-characters-long
+    epay.encryption.algorithm=AES
+
+    # Merchant Configuration
+    merchant.config.cache-enabled=true
+    merchant.config.cache-ttl-minutes=60
+
+    # Audit Configuration
+    audit.enabled=true
+    audit.mask-sensitive-data=true
+    audit.log-request-payload=true
+    audit.log-response-payload=true
+
+    # SBIEpay API Configuration
+    #sbiepay.api.base-url=https://uat.epay.sbi
+    sbiepay.api.base-url=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092
+    sbiepay.api.payment-endpoint=/api/transaction/v1/order/create
+    sbiepay.api.status-endpoint=/api/transaction/v1/order/status
+    sbiepay.api.refund-endpoint=/v2/payment/refund
+    sbiepay.api.api-key=${SBIEPAY_API_KEY:default-api-key}
+    sbiepay.api.api-secret=${SBIEPAY_API_SECRET:default-api-secret}
+    sbiepay.api.connect-timeout=10000
+    sbiepay.api.read-timeout=30000
+    sbiepay.api.epayEncryptUrl=/api/javasimulator/v1/crypto/encrypt
+    sbiepay.api.epayDecryptUrl=/api/javasimulator/v1/crypto/decrypt
+
+    # SBIEpay OAuth2 Hosted Access Token Service Configuration
+    #sbiepay.api.token-endpoint=https://uat.epay.sbi/api/transaction/v1/token/access
+    sbiepay.api.token-endpoint=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/transaction/v1/token/access
+    sbiepay.api.auth-client-id=${SBIEPAY_AUTH_CLIENT_ID:demo-client-id}
+    sbiepay.api.auth-client-secret=${SBIEPAY_AUTH_CLIENT_SECRET:demo-client-secret}
+
+    # Resilience4j Configuration
+    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator=true
+    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold=50
+    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState=30s
+    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize=10
+    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls=5
+
+    resilience4j.retry.instances.sbiepayApi.maxAttempts=3
+    resilience4j.retry.instances.sbiepayApi.waitDuration=2s
+
+    # Actuator Configuration (for monitoring circuit breakers)
+    management.endpoints.web.exposure.include=health,info,metrics,prometheus,circuitbreakers
+    management.health.circuitbreakers.enabled=true
+    management.endpoint.health.show-details=always
+    management.metrics.export.prometheus.enabled=true
+
+    # Swagger/OpenAPI Configuration (Temporarily disabled due to Spring Boot 2.7 compatibility)
+    # Access at https://merchant.sbiuat.bank.in/swagger-ui/ once enabled
+    springfox.documentation.enabled=false
+    springfox.documentation.swagger-ui.enabled=false
+
+    # Security Configuration (Development Only - Disable Auto-Configuration)
+    spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+    # Adapter Callback Configuration (Pay-Redirect Flow)
+    #adapter.callback.base-url=https://merchant.sbiuat.bank.in/api/legacy/payment
+    adapter.callback.base-url=http://txn-transactionservice.dev-transaction.svc.cluster.local:9092/api/legacy/payment
+    adapter.callback.endpoint=/payment-redirect-callback
+    adapter.callback.session-timeout-minutes=30
+    adapter.callback.max-callback-attempts=3
+    adapter.callback.enable-ssl-validation=true
+
+    # Payment Session Configuration
+    payment.session.timeout-minutes=30
+    payment.session.max-attempts=3
+    payment.session.cleanup-schedule-minutes=60
+    redirectBaseURL=https://dev.epay.sbi/epay-bridge
