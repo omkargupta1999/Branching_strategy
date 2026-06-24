@@ -1,89 +1,51 @@
-Got it. No proxy config in the image at all — correct approach for an air-gapped LAN where everything is internal. Gradle should connect directly to Artifactory without any proxy involvement.
-
-The only thing that matters then is: **make sure no proxy ends up in the image**. Since you're building `FROM ubi9/openjdk-21:1.24-2.1778501191` fresh (not from the broken v9), the bad `/opt/gradle/gradle.properties` from v9 won't be inherited. You just need to ensure the extracted Gradle zip also doesn't bring one in.
-
-## Check the zip first
-
-```bash
-cd ~/Gradle_8.9
-unzip -l gradle-8.9-bin.zip | grep "gradle.properties"
-```
-
-If that shows any `gradle.properties` inside the zip, check its contents:
-```bash
-unzip -p gradle-8.9-bin.zip "*/gradle.properties" 2>/dev/null | cat
-```
-
-The official Gradle 8.9 binary zip does **not** include a `gradle.properties` — so you should get nothing. That means after `COPY gradle-8.9/`, there will be no proxy config at all. Good.
-
-## Extract the zip
-
-```bash
-cd ~/Gradle_8.9
-unzip -q gradle-8.9-bin.zip
-ls -d gradle-*/
-# Should show: gradle-8.9/
-```
-
-## Fix the ARG version mismatch
-
-Your Dockerfile has `ARG GRADLE_VERSION=8.9.0` but the zip extracts to `gradle-8.9/` (not `gradle-8.9.0/`). That's the only change needed to the Dockerfile:
-
-```dockerfile
-FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.24-2.1778501191
-LABEL maintainer="devops.sbiepay@sbi.co.in" \
-      image.name="epay-build-java-gradle" \
-      image.version="1.0.0" \
-      image.gradle.version="8.9" \
-      image.description="Java CI build: OPENJDK 21 + Gradle 8.9" \
-      image.base="ubi9/openjdk-21:1.24-2.1778501191"
-
-ARG GRADLE_VERSION=8.9
-ENV GRADLE_HOME=/opt/gradle \
-    PATH=/opt/gradle/bin:$PATH
-
-COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
-RUN chmod -R a+rX /opt/gradle
-
-WORKDIR /workspace
-USER 1001
-```
-
-## Build, verify no proxy, push
-
-```bash
-cd ~/Gradle_8.9
-
-# Build
-podman build -t artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 .
-
-# Verify: no proxy anywhere in the image
-podman run --rm \
-  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 \
-  bash -lc '
-    echo "=== gradle version ==="; gradle --version | grep Gradle
-    echo "=== java version ==="; java -version
-    echo "=== proxy check in gradle dir ==="
-    find /opt/gradle -name "gradle.properties" | xargs cat 2>/dev/null || echo "NO gradle.properties found — GOOD"
-    echo "=== proxy env check ==="
-    env | grep -i proxy || echo "NO proxy env vars — GOOD"
-  '
-
-# Push
-podman login artifactory.jfrog.sbi:443
-podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10
-```
-
-Expected output from the verify step:
-```
+[osuser@bastion Gradle_8.9]$ podman build -t artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 .
+STEP 1/7: FROM artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.24-2.1778501191
+STEP 2/7: LABEL maintainer="devops.sbiepay@sbi.co.in"       image.name="epay-build-java-gradle"       image.version="1.0.0"       image.gradle.version="8.9"       image.description="Java CI build: OPENJDK 21 + Gradle 8.9"       image.base="ubi9/openjdk-21:1.24-2.1778501191"
+--> 1fadbfbbeb41
+STEP 3/7: ARG GRADLE_VERSION=8.9
+--> f2cd4f705fa8
+STEP 4/7: ENV GRADLE_HOME=/opt/gradle     PATH=/opt/gradle/bin:$PATH
+--> 24ce928b4ae4
+STEP 5/7: COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+--> f076bb7fd365
+STEP 6/7: WORKDIR /workspace
+--> ac6c8112dd1e
+STEP 7/7: USER 1001
+COMMIT artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10
+--> cfffe3775689
+Successfully tagged artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10
+cfffe3775689d91ecb7c1894f0436c52fdf8c092662f1f58a6dc8c677f9e40d8
+[osuser@bastion Gradle_8.9]$
+[osuser@bastion Gradle_8.9]$
+[osuser@bastion Gradle_8.9]$ # Verify: no proxy anywhere in the image
+[osuser@bastion Gradle_8.9]$ podman run --rm \
+>   artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 \
+>   bash -lc '
+>     echo "=== gradle version ==="; gradle --version | grep Gradle
+>     echo "=== java version ==="; java -version
+>     echo "=== proxy check in gradle dir ==="
+>     find /opt/gradle -name "gradle.properties" | xargs cat 2>/dev/null || echo "NO gradle.properties found — GOOD"
+>     echo "=== proxy env check ==="
+>     env | grep -i proxy || echo "NO proxy env vars — GOOD"
+>   '
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+=== gradle version ===
+Welcome to Gradle 8.9!
+Gradle 8.9
+=== java version ===
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment (Red_Hat-21.0.11.0.10-1) (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM (Red_Hat-21.0.11.0.10-1) (build 21.0.11+10-LTS, mixed mode, sharing)
 === proxy check in gradle dir ===
-NO gradle.properties found — GOOD
 === proxy env check ===
-NO proxy env vars — GOOD
-```
-
-That's the clean state. No proxy in the image means Gradle resolves Artifactory directly, exactly as your `settings.gradle`/init script intends.
-
-## Then update the pipeline and run
-
-Bump the image in `base-setup.java.gradle.yml` to `:v10` and trigger the pipeline. The `update-ca-trust` step in your `before_script` handles TLS trust at runtime as before — nothing changes there.
+JBOSS_CONTAINER_JAVA_PROXY_MODULE=/opt/jboss/container/java/proxy
+[osuser@bastion Gradle_8.9]$ podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10
+Getting image source signatures
+Error: trying to reuse blob sha256:04b86c83948d73ca72be6df1f4ea9f256c75a011d543c3990e53d86b1de53b78 at destination: pinging container registry artifactory.jfrog.sbi:443: Get "https://artifactory.jfrog.sbi:443/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
+[osuser@bastion Gradle_8.9]$ podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:v10 --tls-verify=false
+Getting image source signatures
+Copying blob 37de6f2febb8 done   |
+Copying blob 34f4a557df81 skipped: already exists
+Copying blob 4169280e8625 skipped: already exists
+Copying config cfffe37756 done   |
+Writing manifest to image destination
