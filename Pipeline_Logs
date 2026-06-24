@@ -1,10 +1,11 @@
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{ include "epaylite-bridge-mis-service.labels" . | nindent 4 }}
+    {{ include "epaylite-bridge-mis-report.labels" . | nindent 4 }}
 {{ if $.Values.configMap.additionalLabels }}
     {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
 {{ end }}
@@ -13,36 +14,50 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.yaml: |
-    # Server / servlet container settings
-    server.port: 8101
-    server.servlet.context-path: /epaylite-bridge-mis-service
-    spring.application.name: epaylite-bridge-mis-service
+  application.properties: |
 
-    # JPA / Hibernate behaviour
-    spring.jpa.show-sql: false
-    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
-    spring.jpa.hibernate.ddl-auto: none
-    spring.jpa.defer-datasource-initialization: true
+    server.port=8082
+    spring.application.name=epaylite-bridge-mis-report
+    
+    spring.jpa.show-sql=false
+    spring.jpa.hibernate.ddl-auto=none
+    spring.jpa.defer-datasource-initialization=true
+    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.url= jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
+    #spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
 
-    # Database connectivity (Oracle)
-    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    #spring.datasource.url: jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
-    #spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
-    spring.datasource.username: EPAYBRIDGE
-    spring.datasource.password: Asdf_123
-    #spring.datasource.username: ${DB_USERNAME}
-    #spring.datasource.password: ${DB_PASSWORD}
-    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
+    spring.datasource.username=EPAYBRIDGE
+    spring.datasource.password=Asdf_123
+    #spring.datasource.username=${DB_USERNAME}
+    #spring.datasource.password=${DB_PASSWORD}
 
-    # HikariCP connection pool (optional tuning)
-    spring.datasource.hikari.maximum-pool-size: 10
-    spring.datasource.hikari.minimum-idle: 5
-    spring.datasource.hikari.idle-timeout: 30000
-    spring.datasource.hikari.max-lifetime: 2000000
+    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+    logging.level.org.springframework=INFO
 
-    # Logging levels + patterns
-    logging.level.root: INFO
-    logging.level.com.sbi.epay: INFO
-    logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
-    logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    epay.encrypt.key = dlgKlchjWG+BZHqbhRKKRu7roYeJa1TvDLfan1njUt0=
+
+    #cron Expression
+    scheduler.cron=0 */1 * * * ?
+    epay.mis.cron.expression = 0/5 * * * * ?
+    epay.mis.status.code1=01
+    epay.mis.status.code2=05
+    epay.mis.fetch.limit=10
+    #s3bucket
+    aws.s3.region=
+    aws.s3.url=https://s3store-A9cl2-dr.bank.sbi/epay-dr-dev-logs
+    aws.s3.report.accessKey=DEWMC17721DCZDHWILAH
+    aws.s3.report.secretKey=tZnvn_96heY6jCc_hbsR3QBche0XCSyAk049bU5g
+    aws.s3.report.bucket=epay-dr-dev-logs
+    aws.s3.ops.accessKey=DEWMC17721DCZDHWILAH
+    aws.s3.ops.secretKey=tZnvn_96heY6jCc_hbsR3QBche0XCSyAk049bU5g
+    aws.s3.ops.bucket=epay-dr-dev-logs
+    report.local.storage.path=
+
+    #epay.token.url = https://dev.epay.sbi/api/transaction/v1/token/access
+    #epay.mis.report.url = https://dev.epay.sbi/api/transaction/v1/mis/report
+
+    epay.token.url = https://uat.epay.sbi/api/transaction/v1/token/access
+    epay.mis.report.url = https://uat.epay.sbi/api/transaction/v1/mis/report
+
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.OracleDialect
+    spring.jpa.properties.hibernate.jdbc.use_streams_for_binary=false
