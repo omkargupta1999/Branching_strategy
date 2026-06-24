@@ -1,122 +1,35 @@
-Same error, new image (`24062026`), and crucially you added `--info`. The error is byte-for-byte identical: the marker for `org.springframework.boot:3.5.9` is not served by `itepaypg-sbiepay2-gradle-virtual`. Let me give you the step-by-step to nail it down and fix it, because at this point we need to stop theorizing and run the discriminating tests.
-
-## Step 1 — Confirm what the virtual repo actually serves (the one test that settles it)
-
-Run this from the bastion or any host that reaches Artifactory, using the **same** `JF_USER` / `JF_TOKEN` the pipeline uses:
-
-```bash
-# The PLUGIN MARKER — this is the exact artifact the build couldn't resolve
-curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
-
-# The BOM/dependency artifact — this is almost certainly what you're seeing in the JFrog UI
-curl -s -o /dev/null -w "BOM:    %{http_code}\n" -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom"
-```
-
-My strong prediction: **`MARKER: 404`** and **`BOM: 200`**. That is the entire bug. When you browse JFrog and see "3.5.9 is there," you are looking at the BOM/starter (from the Maven Central remote), **not** the Gradle plugin marker (which only exists on plugins.gradle.org). The `plugins {}` block resolves the marker, and the marker is what's missing.
-
-## Step 2 — Find out *why* the marker is missing
-
-If Step 1 shows `MARKER: 404`, hit the underlying remote repos directly to locate where the marker should come from:
-
-```bash
-# Does the plugins remote have/can-it-fetch the marker?
-curl -s -o /dev/null -w "PLUGINS-REMOTE: %{http_code}\n" -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/devsecops-maven-plugins/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
-
-# And the aggregation list of the virtual repo — is devsecops-maven-plugins even included?
-curl -s -u "$JF_USER:$JF_TOKEN" \
-"https://artifactory.jfrog.sbi:443/artifactory/api/repositories/itepaypg-sbiepay2-gradle-virtual" \
-| python3 -m json.tool | grep -A40 repositories
-```
-
-Three possible outcomes:
-
-- **`PLUGINS-REMOTE: 200` but `MARKER: 404` from virtual** → the plugins remote is **not in the virtual repo's aggregation list**, or is ordered/filtered out. Fix: add `devsecops-maven-plugins` to `itepaypg-sbiepay2-gradle-virtual`'s included repositories (Artifactory UI → the virtual repo → Repositories → move it into "Selected").
-
-- **`PLUGINS-REMOTE: 404`** → the remote can't reach/cache plugins.gradle.org. In an air-gapped setup that's expected: the marker was never mirrored. Fix: populate it (Step 3).
-
-- **virtual repo JSON doesn't list the plugins remote at all** → confirmed aggregation gap, same fix as the first outcome.
-
-## Step 3 — Populate the marker (air-gapped reality)
-
-In a true air-gapped environment the remote can't pull from plugins.gradle.org on demand. The marker has to be brought in. Two options:
-
-**Option A — if the remote *can* reach upstream through a proxy:** just requesting it via the remote (the `PLUGINS-REMOTE` curl above) triggers the cache. Re-run Step 1; marker should now be `200`.
-
-**Option B — fully offline:** deploy the marker artifact manually into a local repo that the virtual aggregates. From a machine that has internet (or from where you stage artifacts):
-
-```bash
-# The marker POM is tiny — it just points at the real plugin jar coordinates
-# Fetch on a connected box:
-curl -sLO "https://plugins.gradle.org/m2/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
-
-# Deploy into your gradle-local (aggregated by the virtual):
-curl -u "$JF_USER:$JF_TOKEN" -T org.springframework.boot.gradle.plugin-3.5.9.pom \
-"https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-local/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
-```
-
-You also need the actual plugin JAR it references — `spring-boot-gradle-plugin-3.5.9.jar` under `org/springframework/boot/spring-boot-gradle-plugin/3.5.9/`. Mirror that the same way if the BOM remote doesn't already carry it.
-
-## Step 4 — Rule out the negative cache (cheap, do it anyway)
-
-Your `GRADLE_USER_HOME` is inside `$CI_PROJECT_DIR`, which is freshly cloned each run, so a *persisted* negative cache is unlikely — but if a previous job in the same runner workspace cached the miss, force a refresh. Add to the build invocation in `java.gradle.yml`:
-
-```bash
-gradle clean build -x test -Pversion="${VERSION}" --refresh-dependencies --info
-```
-
-If Step 1 already returns `MARKER: 200` and it still fails, this is the culprit. If Step 1 returns `404`, this won't help — fix the repo first.
-
-## Step 5 — Quick reproduction in the exact image (optional but decisive)
-
-This isolates the pipeline from runner quirks:
-
-```bash
-podman run --rm -it \
-  -e JF_USER -e JF_TOKEN \
-  -e JFROG_GRADLE_REPO="https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/" \
-  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-8.9-jdk-21:24062026 \
-  bash -lc '
-    mkdir -p /tmp/t && cd /tmp/t
-    cat > settings.gradle <<EOF
-pluginManagement { repositories { maven { url System.getenv("JFROG_GRADLE_REPO") } } }
-EOF
-    cat > build.gradle <<EOF
-plugins { id "org.springframework.boot" version "3.5.9" }
-EOF
-    gradle help --info 2>&1 | grep -i "spring\|resolve\|repositor"
-  '
-```
-
-(Note: the JFrog CA is already baked into this image at `/usr/lib/jvm/java-21/lib/security/cacerts` per your inspect — alias `SBI-GITLAB` covers GitLab, but you'll still need the JFrog cert for TLS; if it errors on SSL here, that confirms the runtime keytool import in `before_script` is doing real work and isn't redundant.)
-
-## On the "is everything Gradle 8.9 compatible" question — settled
-
-I've checked the full stack against 8.9 and **nothing in your `gradle.properties` or `build.gradle` is incompatible with Gradle 8.9**:
-
-| Component | Version | 8.9 verdict |
-|---|---|---|
-| `org.springframework.boot` plugin | 3.5.9 | Fine — requires Gradle 7.6.4+/8.4+, 8.9 qualifies. **This is a repo availability issue, not compatibility** |
-| `io.spring.dependency-management` | 1.1.7 | Fine |
-| Java toolchain | 21 | Fine — 8.9 fully supports JDK 21 toolchains |
-| `spark-core/sql_2.12` | 3.5.5 | Resolves fine on 8.9; runtime Jackson/Netty conflict risk (unrelated to build) |
-| mapstruct / lombok / shedlock / poi / oracle / aws-s3 | as listed | All resolve fine on 8.9 |
-| `gorylenko_plugin` 2.4.2 | declared in properties, **not applied** in `plugins{}` | No effect — dead property |
-
-The Gradle version is genuinely a red herring here. The "worked on 9.4" history is explained by the image confusion (your comments say the `:1.0.0` image is Gradle 9.4.1, but the active job runs the `gradle-8.9` image) plus repo/cache state at the time — not by any 8.9-vs-9.4 resolution difference. Marker resolution mechanics are identical across both.
-
-## What I'd fix in the config regardless of the above
-
-1. **Remove `flatDir { dirs "libs" }`** from the `dependencyResolutionManagement` block in the init script. Your own header says flatDir is desktop-only and must not be in CI, yet it's injected into every CI build. In a PCI-DSS pipeline that's an unprovenanced-artifact path — close it.
-
-2. **Reconcile the image-name lie.** The image is tagged `gradle-8.9` but the YAML comments describe it as Gradle 9.4.1. Either retag or fix the comments. This naming mismatch is exactly what sent everyone down the "8.9 broke it" path. The actual `gradle --version` in the log says 8.9, so the image content is 8.9 — update the comments.
-
-## Bottom line
-
-Run **Step 1**. One of two things happens:
-- `MARKER: 404` → it's a repository aggregation/mirroring gap. Fix with Step 2→3. This is what I expect.
-- `MARKER: 200` → it's a cache artifact. Fix with Step 4's `--refresh-dependencies`.
-
-Everything else — versions, Gradle 8.9 compatibility, the SSL keytool block — is sound. The single unresolved variable is whether your virtual repo serves that one `.pom` marker file, and the first curl answers it definitively. Paste me the `MARKER:` / `BOM:` / `PLUGINS-REMOTE:` codes and I'll tell you the exact next click.
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "MARKER: %{http_code}\n" -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+MARKER: 000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "BOM:    %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom"
+BOM:    000
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "BOM:    %{http_code}\n" -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/org/springframework/boot/spring-boot-dependencies/3.5.9/spring-boot-dependencies-3.5.9.pom"
+BOM:    000
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -o /dev/null -w "PLUGINS-REMOTE: %{http_code}\n" -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/devsecops-maven-plugins/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+PLUGINS-REMOTE: 000
+[osuser@bastion Gradle]$ curl -s -u "v1021577:" \
+> "https://artifactory.jfrog.sbi:443/artifactory/api/repositories/itepaypg-sbiepay2-gradle-virtual" \
+> | python3 -m json.tool | grep -A40 repositories
+Expecting value: line 1 column 1 (char 0)
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -s -u "v1021577:" "https://artifactory.jfrog.sbi:443/artifactory/api/repositories/itepaypg-sbiepay2-gradle-virtual" | python3 -m json.tool | grep -A40 repositories
+Expecting value: line 1 column 1 (char 0)
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -sLO "https://plugins.gradle.org/m2/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$
+[osuser@bastion Gradle]$ curl -u "v1021577:" -T org.springframework.boot.gradle.plugin-3.5.9.pom \
+> "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-local/org/springframework/boot/org.springframework.boot.gradle.plugin/3.5.9/org.springframework.boot.gradle.plugin-3.5.9.pom"
+curl: Can't open 'org.springframework.boot.gradle.plugin-3.5.9.pom'!
+curl: try 'curl --help' or 'curl --manual' for more information ------------- 
