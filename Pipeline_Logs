@@ -4,7 +4,7 @@ metadata:
   name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{ include "epaylite-bridge-status-service.labels" . | nindent 4 }}
+    {{ include "epaylite-bridge-mis-service.labels" . | nindent 4 }}
 {{ if $.Values.configMap.additionalLabels }}
     {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
 {{ end }}
@@ -13,94 +13,38 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.yaml: |
-    # Server / servlet container settings
-    server.servlet.context-path: /epaylite-bridge-status-service
-    server.port: 8100
-    server.ssl.enabled: false
-    server.max-http-request-header-size: 128KB
+  application.properties: |
 
-    # CORS / security origins
-    security.cors.origin: "*"
-    security.allowed.origins: "*"
+    server.port=8101
+    server.servlet.context-path=/epaylite-bridge-mis-service
+    spring.application.name=epaylite-bridge-mis-service
+    # Db connectivity
+    spring.jpa.show-sql=false
+    spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto=none
+    spring.jpa.defer-datasource-initialization=true
+    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    #spring.datasource.url= jdbc:oracle:thin:@//10.177.134.125:1590/epaydbdev2
+    #spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.124)(PORT=1590))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev1)))
 
-    # Spring profile + application identity
-    spring.profiles.active: dev
-    spring.application.name: /epaylite-bridge-status-service
 
-    # Database connectivity (Oracle + HikariCP pool)
-    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    spring.datasource.username: ${DB_USERNAME}
-    spring.datasource.password: ${DB_PASSWORD}
-    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
-    spring.datasource.hikari.maxLifetime: 300000
-    spring.datasource.hikari.idleTimeout: 240000
-    spring.datasource.hikari.keepaliveTime: 120000
+    spring.datasource.username=EPAYBRIDGE
+    spring.datasource.password=Asdf_123
+    #spring.datasource.username=${DB_USERNAME}
+    #spring.datasource.password=${DB_PASSWORD}
+  
+    spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
-    # JPA / Hibernate behaviour
-    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
-    spring.jpa.hibernate.ddl-auto: none
-    spring.jpa.show-sql: false
-    spring.jpa.properties.hibernate.format_sql: true
-    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
-    spring.jpa.properties.hibernate.jdbc.time_zone: UTC
-    spring.jpa.defer-datasource-initialization: true
+    # Optional settings
+    spring.datasource.hikari.maximum-pool-size=10
+    spring.datasource.hikari.minimum-idle=5
+    spring.datasource.hikari.idle-timeout=30000
+    spring.datasource.hikari.max-lifetime=2000000
+    
+    #log config
+    logging.level.root=INFO
+    logging.level.com.sbi.epay=INFO
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
+    logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n
 
-    # Spring auto-configuration overrides
-    spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
-    spring.main.allow-bean-definition-overriding: true
-
-    # Application redirect base URL
-    app.redirect.baseurl: https://dev.epay.sbi/epaylite-bridge-txn-service
-
-    # Encryption settings
-    epay.encryption.default-key: default-secret-key-32-characters-long
-    epay.encryption.algorithm: AES
-
-    # Merchant config cache
-    merchant.config.cache-enabled: true
-    merchant.config.cache-ttl-minutes: 60
-
-    # Audit logging
-    audit.enabled: true
-    audit.mask-sensitive-data: true
-    audit.log-request-payload: true
-    audit.log-response-payload: true
-
-    # SBIEpay downstream API (base URL, timeouts, endpoints)
-    sbiepay.api.base-url: https://uat.epay.sbi
-    sbiepay.api.connect-timeout: 10000
-    sbiepay.api.read-timeout: 30000
-    sbiepay.api.epayOrderCreateUrl: /api/transaction/v1/order/create
-    sbiepay.api.epayOrderStatusUrl: /api/transaction/v1/order/status
-    sbiepay.api.accessTokenUrl: /api/transaction/v1/token/access
-
-    # Resilience4j circuit breaker + retry (sbiepayApi instance)
-    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator: true
-    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold: 50
-    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState: 30s
-    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize: 10
-    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls: 5
-    resilience4j.retry.instances.sbiepayApi.maxAttempts: 3
-    resilience4j.retry.instances.sbiepayApi.waitDuration: 2s
-
-    # Actuator / management endpoints
-    management.endpoints.web.exposure.include: health,info,metrics,prometheus,circuitbreakers
-    management.health.circuitbreakers.enabled: true
-    management.endpoint.health.show-details: always
-
-    # Springfox / Swagger (disabled)
-    springfox.documentation.enabled: false
-    springfox.documentation.swagger-ui.enabled: false
-
-    # Adapter callback (legacy payment redirect)
-    adapter.callback.base-url: https://merchant.sbiuat.bank.in/api/legacy/payment
-    adapter.callback.endpoint: /payment-redirect-callback
-    adapter.callback.session-timeout-minutes: 30
-    adapter.callback.max-callback-attempts: 3
-    adapter.callback.enable-ssl-validation: true
-
-    # Payment session lifecycle
-    payment.session.timeout-minutes: 30
-    payment.session.max-attempts: 3
-    payment.session.cleanup-schedule-minutes: 60
+ 
