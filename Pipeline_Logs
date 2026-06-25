@@ -1,3 +1,37 @@
+[osuser@bastion Cert]$ oc create secret generic eiscert \
+>   --from-file=SBI_private.key=./SBI_private.key \
+>   --from-file=EIS_ENC_UAT.cer=./EIS_ENC_UAT.cer \
+>   --from-file=Sbi_digi_Private.key=./Sbi_digi_Private.key \
+>   --from-file=Sbi_digi_PublicKey.cer=./Sbi_digi_PublicKey.cer \
+>   --dry-run=client -o yaml | oc apply -f - -n dev-communication
+error: error reading ./SBI_private.key: no such file or directory
+error: no objects passed to apply
+[osuser@bastion Cert]$
+[osuser@bastion Cert]$
+[osuser@bastion Cert]$ oc get secret eiscert -n dev-communication -o jsonpath='{.data}' | jq keys
+[
+  "EIS_ENC_UAT.cer",
+  "SBI_private.key"
+]
+[osuser@bastion Cert]$ ll
+total 8
+-rw-r----- 1 osuser osuser 1704 Jun 25 15:13 Sbi_digi_Private.key
+-rw-r----- 1 osuser osuser 1883 Jun 25 15:13 Sbi_digi_PublicKey.cer
+[osuser@bastion Cert]$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Looking at your setup, you have two distinct certificate-handling mechanisms, and the new keys belong with the **`eiscert` secret pattern**, not the init-container/cacerts flow.
 
 ## Key distinction
