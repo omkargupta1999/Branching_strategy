@@ -1,57 +1,17 @@
-[osuser@bastion Cert]$ oc create secret generic eiscert \
->   --from-file=SBI_private.key=./SBI_private.key \
->   --from-file=EIS_ENC_UAT.cer=./EIS_ENC_UAT.cer \
->   --from-file=Sbi_digi_Private.key=./Sbi_digi_Private.key \
->   --from-file=Sbi_digi_PublicKey.cer=./Sbi_digi_PublicKey.cer \
->   --dry-run=client -o yaml | oc apply -f - -n dev-communication
-error: error reading ./SBI_private.key: no such file or directory
-error: no objects passed to apply
-[osuser@bastion Cert]$
-[osuser@bastion Cert]$
-[osuser@bastion Cert]$ oc get secret eiscert -n dev-communication -o jsonpath='{.data}' | jq keys
-[
-  "EIS_ENC_UAT.cer",
-  "SBI_private.key"
-]
-[osuser@bastion Cert]$ ll
-total 8
--rw-r----- 1 osuser osuser 1704 Jun 25 15:13 Sbi_digi_Private.key
--rw-r----- 1 osuser osuser 1883 Jun 25 15:13 Sbi_digi_PublicKey.cer
-[osuser@bastion Cert]$
+The error is because `SBI_private.key` and `EIS_ENC_UAT.cer` aren't in your `Cert` directory — you only have the two new files locally. You can't reference the existing two from disk.
 
+Two ways to handle it:
 
-
-
-
-
-
-
-
-
-
-
-
-
-Looking at your setup, you have two distinct certificate-handling mechanisms, and the new keys belong with the **`eiscert` secret pattern**, not the init-container/cacerts flow.
-
-## Key distinction
-
-Your init container imports `.crt`/`.cer` files into the JVM **truststore** (`cacerts`) — that's for TLS trust validation. But `SBI_private.key`, `EIS_ENC_UAT.cer`, and your new `Sbi_digi_Private.key`/`Sbi_digi_PublicKey.cer` are **application-level crypto material** read directly from `/certs` by your code (EIS signing/encryption). These must NOT go into cacerts.
-
-Notice your app already reads them from `/certs`, which is mounted from the **`eiscert`** secret:
-```yaml
-- mountPath: /certs
-  name: eiscert
-  readOnly: true
-```
-
-So the new keys follow the same path as `SBI_private.key` and `EIS_ENC_UAT.cer` — add them to the `eiscert` secret.
-
-## Steps
-
-**1. Add the two files to the `eiscert` secret.** Since you're air-gapped on the bastion, patch the existing secret (don't recreate — you'd lose existing keys):
+## Option A — Pull the existing keys out first, then recreate (full control)
 
 ```bash
+cd ~/Cert
+
+# Extract the two existing keys from the live secret to disk
+oc get secret eiscert -n dev-communication -o jsonpath='{.data.SBI_private\.key}' | base64 -d > SBI_private.key
+oc get secret eiscert -n dev-communication -o jsonpath='{.data.EIS_ENC_UAT\.cer}' | base64 -d > EIS_ENC_UAT.cer
+
+# Now all four files exist locally — recreate the secret
 oc create secret generic eiscert \
   --from-file=SBI_private.key=./SBI_private.key \
   --from-file=EIS_ENC_UAT.cer=./EIS_ENC_UAT.cer \
@@ -60,36 +20,33 @@ oc create secret generic eiscert \
   --dry-run=client -o yaml | oc apply -f - -n dev-communication
 ```
 
-The `--dry-run | apply` pattern is idempotent and keeps all four keys in one secret. (Verify the existing key filenames first with `oc get secret eiscert -n dev-communication -o jsonpath='{.data}' | jq keys` so you re-include whatever is already there.)
+## Option B — Patch in just the two new keys (don't touch existing)
 
-**2. No Deployment change needed for the mount.** The `eiscert` secret already mounts at `/certs`, so the new files appear as `/certs/Sbi_digi_Private.key` and `/certs/Sbi_digi_PublicKey.cer` automatically.
+This adds the new keys without re-reading the old ones, so there's no risk of corrupting them:
 
-**3. Add the paths to your ConfigMap** under the EIS services block, mirroring the existing structure:
+```bash
+cd ~/Cert
 
-```yaml
-    external:
-      api:
-        eis:
-          services:
-            source:
-              id: EY
-              destination: CRM
-            privateKey:
-              path: /certs/SBI_private.key
-            publicKey:
-              path: /certs/EIS_ENC_UAT.cer
-            digiSignPrivateKey:
-              path: /certs/Sbi_digi_Private.key
-            digiSignPublicKey:
-              path: /certs/Sbi_digi_PublicKey.cer
+oc patch secret eiscert -n dev-communication --type=merge -p "{\"data\":{
+  \"Sbi_digi_Private.key\":\"$(base64 -w0 Sbi_digi_Private.key)\",
+  \"Sbi_digi_PublicKey.cer\":\"$(base64 -w0 Sbi_digi_PublicKey.cer)\"
+}}"
 ```
 
-## Why not the init-container/`custom-certs-communication` path
+`base64 -w0` is required — without it, line-wrapped base64 breaks the JSON. (On macOS it's `base64 -i`, but on your Linux bastion `-w0` is correct.)
 
-That secret + init container exists to inject CA certs into the JVM truststore for outbound TLS. Putting a **private signing key** there would (a) run it through `keytool -import -trustcacerts`, which is wrong for a raw private key, and (b) the glob only matches `*.crt`/`*.cer`, so your `.key` would be silently skipped anyway. Keep crypto material the app reads by file path in `eiscert`.
+**Option B is the safer choice** — it never decodes/re-encodes the existing private key, so there's zero chance of altering `SBI_private.key`.
 
-## One PCI-DSS flag
+Verify after either:
 
-`eiscert` is a plain `Opaque` secret holding private keys at rest as base64 (not encrypted). If etcd encryption-at-rest isn't already enabled on this cluster, the digi-sign private key sitting there is worth raising — same class of concern as the hardcoded `secretKey`/`password` values already in this ConfigMap.
+```bash
+oc get secret eiscert -n dev-communication -o jsonpath='{.data}' | jq keys
+```
 
-Want a quick verification one-liner to confirm both new files are present and readable inside the running pod after rollout?
+You should see all four keys. Then clean up any extracted plaintext (`shred -u SBI_private.key` if you used Option A) since private keys shouldn't linger on the bastion.
+
+Then roll the deployment so the new mount picks up the files:
+
+```bash
+oc rollout restart deployment/<comm-deployment-name> -n dev-communication
+```
