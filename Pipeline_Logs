@@ -1,121 +1,372 @@
-[osuser@bastion ~]$ oc get po -n dev-bridge
-NAME                                                        READY   STATUS    RESTARTS   AGE
-epaybridgemis-bb8fb474-2gtlj                                2/2     Running   0          94m
-epaybridgemis-bb8fb474-zwcq2                                2/2     Running   0          94m
-epaybridgemisreport-6b9cfcb7b5-lfx4m                        2/2     Running   0          164m
-epaybridgemisreport-6b9cfcb7b5-q5btj                        2/2     Running   0          164m
-epaybridgestatus-epaybridgestatusservice-7b5f8df685-7dhrm   2/2     Running   0          2m11s
-epaybridgestatus-epaybridgestatusservice-7b5f8df685-zwsjm   2/2     Running   0          116s
-epaybridgetxn-epaylitebridgetxn-869f949b7b-98c4t            2/2     Running   0          85m
-epaybridgetxn-epaylitebridgetxn-869f949b7b-qgrnk            2/2     Running   0          85m
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get svc -n dev-bridge
-NAME                                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-epaybridgemis                              ClusterIP   172.30.95.206   <none>        8099/TCP   18h
-epaybridgemisreport                        ClusterIP   172.30.66.134   <none>        8099/TCP   18h
-epaybridgestatus-epaybridgestatusservice   ClusterIP   172.30.193.12   <none>        8099/TCP   2m15s
-epaybridgetxn-epaylitebridgetxn            ClusterIP   172.30.149.57   <none>        8099/TCP   105m
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get svc -n dev-bridge epaybridgestatus-epaybridgestatusservice -o yaml
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  annotations:
-    meta.helm.sh/release-name: epaybridgestatus
-    meta.helm.sh/release-namespace: dev-bridge
-  creationTimestamp: "2026-06-25T07:20:13Z"
+  name: {{ include "Epay_Communication_Service.fullname" . }}
   labels:
-    app.kubernetes.io/instance: epaybridgestatus
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: epaybridgestatusservice
-    app.kubernetes.io/version: 1.16.0
-    helm.sh/chart: epaybridgestatusservice-0.1.0
-  name: epaybridgestatus-epaybridgestatusservice
-  namespace: dev-bridge
-  resourceVersion: "837784931"
-  uid: cd83aa3c-aa5d-4d86-ac37-510c538c3d53
+    {{- include "Epay_Communication_Service.labels" . | nindent 4 }}
 spec:
-  clusterIP: 172.30.193.12
-  clusterIPs:
-  - 172.30.193.12
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  ports:
-  - name: 8099-tcp
-    port: 8099
-    protocol: TCP
-    targetPort: 8099
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
-    app.kubernetes.io/instance: epaybridgestatus
-    app.kubernetes.io/name: epaybridgestatusservice
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
-[osuser@bastion ~]$ oc get svc -n dev-bridge | grep status
-epaybridgestatus-epaybridgestatusservice   ClusterIP   172.30.193.12   <none>        8099/TCP   3m5s
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get svc epaybridgestatus-epaybridgestatusservice  -n dev-bridge -o yaml | grep -A5 ports
-  ports:
-  - name: 8099-tcp
-    port: 8099
-    protocol: TCP
-    targetPort: 8099
-  selector:
-[osuser@bastion ~]$ oc get virtualservice -n dev-bridge -o yaml | grep -A10 status
-      meta.helm.sh/release-name: epaybridgestatus
-      meta.helm.sh/release-namespace: dev-bridge
-    creationTimestamp: "2026-06-25T07:20:13Z"
-    generation: 1
-    labels:
-      app.kubernetes.io/managed-by: Helm
-    name: epaylitebridge-statusservice
-    namespace: dev-bridge
-    resourceVersion: "837784944"
-    uid: fdf90922-3407-4f2e-b004-a8965b5d3f11
-  spec:
-    gateways:
-    - dev-istio-system/dev-gateway
-    hosts:
-    - dev.epay.sbi
-    http:
-    - match:
---
-          prefix: /epaylite-bridge-status-service
-      route:
-      - destination:
-          host: epaybridgestatus-epaybridgestatusservice.dev-bridge.svc.cluster.local
-          port:
-            number: 8099
-- apiVersion: networking.istio.io/v1
-  kind: VirtualService
-  metadata:
-    annotations:
-      meta.helm.sh/release-name: epaybridgetxn
-      meta.helm.sh/release-namespace: dev-bridge
-    creationTimestamp: "2026-06-25T05:36:31Z"
-    generation: 1
-[osuser@bastion ~]$ oc get destinationrule -n dev-bridge -o yaml | grep -A10 status
-[osuser@bastion ~]$ oc get deploy epaybridgestatus-epaybridgestatusservice  -n dev-bridge -o yaml | grep -A8 readinessProbe
-[osuser@bastion ~]$ oc get deploy -n dev-bridge
-NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
-epaybridgemis                              2/2     2            2           18h
-epaybridgemisreport                        2/2     2            2           18h
-epaybridgestatus-epaybridgestatusservice   2/2     2            2           3m58s
-epaybridgetxn-epaylitebridgetxn            2/2     2            2           107m
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get endpoints -n dev-bridge | grep status
-epaybridgestatus-epaybridgestatusservice   172.16.23.207:8099,172.16.9.1:8099     4m10s
-[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge -- \
->   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
-Error from server (NotFound): pods "epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8" not found
-[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge --   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
-Error from server (NotFound): pods "epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-7b5f8df685-7dhrm  -n dev-bridge --   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
-200
-[osuser@bastion ~]$ oc get svc -n dev-bridge -o yaml | grep -B2 -A6 "name.*status\|status.*8" | grep -i port
+    matchLabels:
+      {{- include "Epay_Communication_Service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "Epay_Communication_Service.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "Epay_Communication_Service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.initContainer.enabled }}
+      initContainers:
+        - name: import-certs
+          image: {{ .Values.initContainer.image }}
+          securityContext:
+            runAsNonRoot: true
+            #runAsUser: 1001190000    
+            allowPrivilegeEscalation: false
+            #runAsUser: 0
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              echo "[INFO] Preparing shared cacerts volume..."
+              for C in \
+                "$JAVA_HOME/lib/security/cacerts" \
+                "/usr/lib/jvm/java-21/lib/security/cacerts" \
+                "/etc/pki/java/cacerts"; do
+                if [ -r "$C" ]; then
+                  echo "[INFO] Using truststore at $C"
+                  mkdir -p /cacerts/data
+                  cp "$C" /cacerts/data/cacerts
+                  chmod 660 /cacerts/data/cacerts
+                  break
+                fi
+              done
+              
+              echo "[INFO] Importing custom certificates..."
+              for f in /etc/custom-certs-communication/*.crt /etc/custom-certs-communication/*.cer /certs/*.crt /certs/*.cer; do
+                [ -e "$f" ] || continue
+                base="$(basename "$f")"
+                alias="$(echo "$base" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-')"
+                echo "[INFO] Importing $base as alias $alias"
+                keytool -import -trustcacerts -file "$f" \
+                  -alias "$alias" \
+                  -keystore /cacerts/data/cacerts \
+                  -storepass {{ .Values.initContainer.truststorePassword }} -noprompt || true
+              done
+              
+          volumeMounts:
+            # - name: dcms-txn-cert
+            #   mountPath: /certs
+            - name: custom-certs-communication
+              mountPath: /etc/custom-certs-communication
+            - name: cacerts
+              mountPath: /cacerts            
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ tpl .Values.image.repository $ }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+          - name: JAVA_TOOL_OPTIONS
+            value: "-Djavax.net.ssl.trustStore=/cacerts/data/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
+          - name: SPRING_CONFIG_LOCATION
+            value: file:/opt/gradle/
+            # - name: DB_USERNAME
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: my-secrets-operation-service-secret
+            #       key: DB_USERNAME
+            # - name: DB_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: my-secrets-operation-service-secret
+            #       key: DB_PASSWORD
+            #- name: JAVA_OPTS
+              #value: "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+              #value: "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.base/sun.util.calendar=ALL-UNNAMED --add-exports=java.base/sun.security.action=ALL-UNNAMED"
+          volumeMounts:
+            - mountPath: /opt/gradle
+              name: config
+            - mountPath: /certs
+              name: eiscert
+              readOnly: true
+            {{- if .Values.customCertsCommunication.enabled }}
+            - name: custom-certs-communication
+              mountPath: {{ .Values.customCertsCommunication.mountPaths }}
+              readOnly: true
+            {{- end }}
+            - name: cacerts
+              mountPath: /cacerts
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 420
+            name: comm-config
+        - name: eiscert
+          secret:
+            secretName: eiscert
+        {{- if .Values.customCertsCommunication.enabled }}
+        - name: custom-certs-communication
+          secret:
+            secretName: {{ .Values.customCertsCommunication.secretName }} 
+        {{- end }}
+        - name: cacerts
+          emptyDir: {}
+
+====================================================================================
+
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ include "Epay_Communication_Service.labels" . | nindent 4 }}
+{{ if $.Values.configMap.additionalLabels }}
+    {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
+{{ end }}
+{{ if $.Values.configMap.annotations }}
+  annotations:
+    {{ toYaml $.Values.configMap.annotations | nindent 4 }}
+{{ end }}
+data:
+  application.yml: |
+    server:
+      servlet:
+        context-path: /api/communication/v1
+      port: 9098
+
+    spring:
+      application:
+        name: epay_communication_service
+      profiles:
+        active: ""
+
+      datasource:
+        driver-class-name: oracle.jdbc.OracleDriver
+        url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+        username: EPAYCOMM
+        password: Lkjh_123
+
+      jpa:
+        properties:
+          hibernate:
+            jdbc:
+              batch_size: 1000
+              order_updates: true
+              order_inserts: true
+              batch_versioned_data: true
+            show_sql: true
+            format_sql: true
+        show-sql: true
+
+      liquibase:
+        change-log: classpath:db/changelog/db.changelog-master.xml
+        enabled: true
+        drop-first: false
+
+      kafka:
+        bootstrapServers: dev-kafka-cluster-kafka-bootstrap.dev-kafka.svc.cluster.local:9092
+
+        properties:
+          security.protocol: PLAINTEXT
+          # ssl:
+          #   truststore:
+          #     location: /certs/kafka/cluster-ca.p12
+          #     password: pbUnnCLwMfNm
+          #     type: PKCS12
+          #   keystore:
+          #     location: /certs/kafka/client-ca.p12
+          #     password: MvgumtgtCJiq
+          #     type: PKCS12
+
+        consumer:
+          groupId: communication-consumers
+          keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+          valueDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+          autoOffsetReset: latest
+          enableAutoCommit: true
+          autoCommitInterval: 100
+          sessionTimeoutMS: 300000
+          requestTimeoutMS: 420000
+          fetchMaxWaitMS: 200
+          maxPollRecords: 5
+          retryMaxAttempts: 3
+          retryBackOffInitialIntervalMS: 10000
+          retryBackOffMaxIntervalMS: 30000
+          retryBackOffMultiplier: 2
+          spring.json.trusted.packages: com.epay.communication
+          numberOfConsumers: 1
+
+        producer:
+          keyDeserializer: org.apache.kafka.common.serialization.StringSerializer
+          valueDeserializer: org.apache.kafka.common.serialization.StringSerializer
+          acks: all
+          retries: 3
+          batchSize: 1000
+          lingerMs: 1
+          bufferMemory: 33554432
+
+        topic:
+          partitions: 4
+          replicationFactor: 1
+          gstInvoiceDownload: gst_invoice_download_topic
+          gstReportStatusTopic: gst_report_status_topic
+          ekuberReportConfirmation: ekuber_report_confirmation_topic
+
+    security:
+      cors:
+        allowed:
+      #health endpoint will not require the Origin header.
+          endpoints: /actuator/health, /actuator/health/readiness, /actuator/health/liveness, /actuator/masterdata/refresh/*, /sftp/**
+          origins: "*"
+        origin: "*"
+      jwt:
+        secret:
+          issuer: sbi.epay
+          key: bsrfgskjfhsdjkhkflkdlksdlfkskfwperip3ke3le3lmldrnkfnhiewjfejfokepfkldkfoikfokork3dklwedlsvflvkfkvlkdfvodkvcdokro3
+      whitelist:
+        urls: /webjars/, /actuator/health, /swagger-resources/, /v3/api-docs/**, /swagger-ui/**, /index.html, /login, /consent/privacy-notice, /consent/**, /sftp/**, /testconsent/**
+
+    servlet:
+      multipart:
+        max-file-size: 50MB
+        max-request-size: 50MB
+
+    external:
+      #External Base Path
+      api:
+        eis:
+          services:
+            source:
+              id: EY
+              destination: CRM
+            privateKey:
+              path: /certs/SBI_private.key
+            publicKey:
+              path: /certs/EIS_ENC_UAT.cer
+        services:
+          endpoint:
+            consentEis: https://eissiuat.sbi.co.in/gen6/gateway
+    scheduled:
+      gstn:
+        monitor:
+          time: 0 */30 * * * *
+      ekuber:
+        cron: 0 */1 * * * *
+      consent:
+        cron: 0 * * * * *
+    queue:
+      threadPool:
+        size:
+          core: 5
+          max: 10
+          batch: 1000
+    
+    sftp:
+      dir: /home/default/COMM
+      clients:
+        GST:
+          host: localhost
+          port: 2222
+          username: root
+          password: root
+          file:
+            upload: upload
+            success: success
+            error: error
+            archive: archive
+        GBSS:
+          host: localhost
+          port: 2222
+          username: root
+          password: root
+      gstIn:
+        baseDir: gstIn/
+        file:
+          upload: upload
+          success: success
+          error: error
+          archive: archive
+      ekuber:
+        path:
+          report:
+            out: GBSS/eKuber/report/OUT # For S3 upload
+          ack:
+            in: GBSS/eKuber/ack/IN
+            out: GBSS/eKuber/ack/OUT
+    aws:
+      s3:
+        url: https://s3store.bank.sbi
+        region: ap-south-1
+        accessKey: IDHJO1513FFMMNLPR9BC
+        secretKey: avXqEPv5B_QqqPK0D1VJzP3pSyAA4x31Zu_KucQ9
+        bucket: epay-nonprod-s3bucket
+
+    gst:
+      report:
+        retry:
+          max: 3
+          delay: 3000
+        encryption:
+          key: key/EPY_20190528_20190528_PRI.key
+
+    logging:
+      level:
+        liquibase: DEBUG
+        org.apache.kafka: ERROR
+        com.epay.communication: DEBUG
+    max:
+      gstn:
+        allowed: 10
+    
+==============================
+            
+[osuser@bastion ~]$ oc get secret  -n dev-communication
+NAME                                         TYPE                             DATA   AGE
+custom-certs-communication                   Opaque                           2      44d
+
+			
+			
+This is the existing secret is created 	
+			
+			
+============================================
+
+
+Now I have to add these two certificate as well in this services like SBI_private.key .......We are mananging and all the certificate through init containers and common secret somethings like that ...Now please help me understand how i can add there certificate now in our existing setup.
+
+            digiSignPrivateKey:
+              path: /certs/Sbi_digi_Private.key
+            digiSignPublicKey:
+              path: /certs/Sbi_digi_PublicKey.cer
