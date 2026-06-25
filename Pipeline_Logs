@@ -1,48 +1,121 @@
-503 with `upstream connect error... delayed connect error: Connection refused` — this is a routing/networking error, not an application crash. The app is up (we saw it start), so the proxy can't reach the pod's port. Let me narrow it down.
-
-The key phrase is **"Connection refused"** at the upstream. That means the Istio/OpenShift router found a pod but the connection to the container port was refused. Most common causes, in order of likelihood for your setup:
-
-**1. Service port → container port mismatch.** Your app listens on **8100** (`server.port: 8100`, and the log shows `http-nio-8100`). If the Kubernetes `Service` `targetPort` or the `VirtualService`/`DestinationRule` points at a different port (8099, 8080, etc.), Istio connects to a closed port → "Connection refused." Check:
-```bash
-oc get svc -n dev-bridge | grep status
-oc get svc <status-svc-name> -n dev-bridge -o yaml | grep -A5 ports
-```
-The `targetPort` must be **8100**, and the Service selector must match the pod labels.
-
-**2. Context-path mismatch.** Your URL is `/epaylite-bridge-status-service/home`. The app's context-path is `/epaylite-bridge-status-service` (correct match), so the *path* is probably fine — but confirm a `/home` endpoint actually exists in the app. A missing route gives 404, though, not 503, so this is secondary.
-
-**3. VirtualService host/subset pointing at the wrong target.** You hit this exact class of bug before — the epaylite-bridge-txn-service 503 was a `VirtualService` host mismatch (hardcoded `serviceName` vs. computed fullname). Worth checking the status-service VirtualService resolves to the right Service:
-```bash
-oc get virtualservice -n dev-bridge -o yaml | grep -A10 status
-oc get destinationrule -n dev-bridge -o yaml | grep -A10 status
-```
-
-**4. Readiness probe failing → endpoint not in rotation.** If the pod is `2/2 Running` but the readiness probe targets a port/path that returns non-200, the Service has **no ready endpoints** and Istio refuses upstream. Check:
-```bash
-oc get endpoints <status-svc-name> -n dev-bridge
-```
-If this shows `<none>` or no addresses, that's your 503. Then check the probe:
-```bash
-oc get deploy <status-deploy> -n dev-bridge -o yaml | grep -A8 readinessProbe
-```
-Note: your config disables Spring Security (`spring.autoconfigure.exclude=...SecurityAutoConfiguration`) and exposes actuator health — so a readiness probe on `/epaylite-bridge-status-service/actuator/health` should return 200. If the probe path is wrong (missing context-path prefix, or pointing at `/actuator/health` without the prefix), it fails and the pod never becomes a ready endpoint.
-
-Fastest triage — run these three and it'll tell you which layer is broken:
-```bash
-# 1. Does the Service have ready endpoints?
-oc get endpoints -n dev-bridge | grep status
-
-# 2. Can you reach the app directly inside the pod? (bypasses Istio entirely)
-oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge -- \
-  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
-
-# 3. What port is the Service sending to?
-oc get svc -n dev-bridge -o yaml | grep -B2 -A6 "name.*status\|status.*8" | grep -i port
-```
-
-Interpretation:
-- If **#2 returns 200** but the browser still 503s → the problem is the Service/VirtualService/port wiring (causes 1 or 3), not the app.
-- If **#2 fails or hangs** → the app isn't serving on that port/path, so the probe fails too and there are no endpoints (cause 4).
-- If **#1 shows no endpoints** → readiness probe is failing; fix the probe path/port.
-
-Given the app logged a clean start on 8100, my strongest bet is a **Service `targetPort` or VirtualService still pointing at 8099** (the txn-service port) instead of 8100 — easy to miss when status-service uses a different port than the others. Paste the output of those three commands and I'll pinpoint it.
+[osuser@bastion ~]$ oc get po -n dev-bridge
+NAME                                                        READY   STATUS    RESTARTS   AGE
+epaybridgemis-bb8fb474-2gtlj                                2/2     Running   0          94m
+epaybridgemis-bb8fb474-zwcq2                                2/2     Running   0          94m
+epaybridgemisreport-6b9cfcb7b5-lfx4m                        2/2     Running   0          164m
+epaybridgemisreport-6b9cfcb7b5-q5btj                        2/2     Running   0          164m
+epaybridgestatus-epaybridgestatusservice-7b5f8df685-7dhrm   2/2     Running   0          2m11s
+epaybridgestatus-epaybridgestatusservice-7b5f8df685-zwsjm   2/2     Running   0          116s
+epaybridgetxn-epaylitebridgetxn-869f949b7b-98c4t            2/2     Running   0          85m
+epaybridgetxn-epaylitebridgetxn-869f949b7b-qgrnk            2/2     Running   0          85m
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get svc -n dev-bridge
+NAME                                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+epaybridgemis                              ClusterIP   172.30.95.206   <none>        8099/TCP   18h
+epaybridgemisreport                        ClusterIP   172.30.66.134   <none>        8099/TCP   18h
+epaybridgestatus-epaybridgestatusservice   ClusterIP   172.30.193.12   <none>        8099/TCP   2m15s
+epaybridgetxn-epaylitebridgetxn            ClusterIP   172.30.149.57   <none>        8099/TCP   105m
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get svc -n dev-bridge epaybridgestatus-epaybridgestatusservice -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: epaybridgestatus
+    meta.helm.sh/release-namespace: dev-bridge
+  creationTimestamp: "2026-06-25T07:20:13Z"
+  labels:
+    app.kubernetes.io/instance: epaybridgestatus
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: epaybridgestatusservice
+    app.kubernetes.io/version: 1.16.0
+    helm.sh/chart: epaybridgestatusservice-0.1.0
+  name: epaybridgestatus-epaybridgestatusservice
+  namespace: dev-bridge
+  resourceVersion: "837784931"
+  uid: cd83aa3c-aa5d-4d86-ac37-510c538c3d53
+spec:
+  clusterIP: 172.30.193.12
+  clusterIPs:
+  - 172.30.193.12
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: 8099-tcp
+    port: 8099
+    protocol: TCP
+    targetPort: 8099
+  selector:
+    app.kubernetes.io/instance: epaybridgestatus
+    app.kubernetes.io/name: epaybridgestatusservice
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+[osuser@bastion ~]$ oc get svc -n dev-bridge | grep status
+epaybridgestatus-epaybridgestatusservice   ClusterIP   172.30.193.12   <none>        8099/TCP   3m5s
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get svc epaybridgestatus-epaybridgestatusservice  -n dev-bridge -o yaml | grep -A5 ports
+  ports:
+  - name: 8099-tcp
+    port: 8099
+    protocol: TCP
+    targetPort: 8099
+  selector:
+[osuser@bastion ~]$ oc get virtualservice -n dev-bridge -o yaml | grep -A10 status
+      meta.helm.sh/release-name: epaybridgestatus
+      meta.helm.sh/release-namespace: dev-bridge
+    creationTimestamp: "2026-06-25T07:20:13Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    name: epaylitebridge-statusservice
+    namespace: dev-bridge
+    resourceVersion: "837784944"
+    uid: fdf90922-3407-4f2e-b004-a8965b5d3f11
+  spec:
+    gateways:
+    - dev-istio-system/dev-gateway
+    hosts:
+    - dev.epay.sbi
+    http:
+    - match:
+--
+          prefix: /epaylite-bridge-status-service
+      route:
+      - destination:
+          host: epaybridgestatus-epaybridgestatusservice.dev-bridge.svc.cluster.local
+          port:
+            number: 8099
+- apiVersion: networking.istio.io/v1
+  kind: VirtualService
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: epaybridgetxn
+      meta.helm.sh/release-namespace: dev-bridge
+    creationTimestamp: "2026-06-25T05:36:31Z"
+    generation: 1
+[osuser@bastion ~]$ oc get destinationrule -n dev-bridge -o yaml | grep -A10 status
+[osuser@bastion ~]$ oc get deploy epaybridgestatus-epaybridgestatusservice  -n dev-bridge -o yaml | grep -A8 readinessProbe
+[osuser@bastion ~]$ oc get deploy -n dev-bridge
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+epaybridgemis                              2/2     2            2           18h
+epaybridgemisreport                        2/2     2            2           18h
+epaybridgestatus-epaybridgestatusservice   2/2     2            2           3m58s
+epaybridgetxn-epaylitebridgetxn            2/2     2            2           107m
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get endpoints -n dev-bridge | grep status
+epaybridgestatus-epaybridgestatusservice   172.16.23.207:8099,172.16.9.1:8099     4m10s
+[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge -- \
+>   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
+Error from server (NotFound): pods "epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8" not found
+[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge --   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
+Error from server (NotFound): pods "epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8" not found
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -it epaybridgestatus-epaybridgestatusservice-7b5f8df685-7dhrm  -n dev-bridge --   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
+200
+[osuser@bastion ~]$ oc get svc -n dev-bridge -o yaml | grep -B2 -A6 "name.*status\|status.*8" | grep -i port
