@@ -1,21 +1,48 @@
-https://dev.epay.sbi/epaylite-bridge-status-service/home
+503 with `upstream connect error... delayed connect error: Connection refused` — this is a routing/networking error, not an application crash. The app is up (we saw it start), so the proxy can't reach the pod's port. Let me narrow it down.
 
+The key phrase is **"Connection refused"** at the upstream. That means the Istio/OpenShift router found a pod but the connection to the container port was refused. Most common causes, in order of likelihood for your setup:
 
---------------
+**1. Service port → container port mismatch.** Your app listens on **8100** (`server.port: 8100`, and the log shows `http-nio-8100`). If the Kubernetes `Service` `targetPort` or the `VirtualService`/`DestinationRule` points at a different port (8099, 8080, etc.), Istio connects to a closed port → "Connection refused." Check:
+```bash
+oc get svc -n dev-bridge | grep status
+oc get svc <status-svc-name> -n dev-bridge -o yaml | grep -A5 ports
+```
+The `targetPort` must be **8100**, and the Service selector must match the pod labels.
 
-Request URL
-https://dev.epay.sbi/epaylite-bridge-status-service/home
-Request Method
-GET
-Status Code
-503 Service Unavailable
-Remote Address
-10.191.199.96:443
-Referrer Policy
-strict-origin-when-cross-origin
+**2. Context-path mismatch.** Your URL is `/epaylite-bridge-status-service/home`. The app's context-path is `/epaylite-bridge-status-service` (correct match), so the *path* is probably fine — but confirm a `/home` endpoint actually exists in the app. A missing route gives 404, though, not 503, so this is secondary.
 
+**3. VirtualService host/subset pointing at the wrong target.** You hit this exact class of bug before — the epaylite-bridge-txn-service 503 was a `VirtualService` host mismatch (hardcoded `serviceName` vs. computed fullname). Worth checking the status-service VirtualService resolves to the right Service:
+```bash
+oc get virtualservice -n dev-bridge -o yaml | grep -A10 status
+oc get destinationrule -n dev-bridge -o yaml | grep -A10 status
+```
 
-===================== 
+**4. Readiness probe failing → endpoint not in rotation.** If the pod is `2/2 Running` but the readiness probe targets a port/path that returns non-200, the Service has **no ready endpoints** and Istio refuses upstream. Check:
+```bash
+oc get endpoints <status-svc-name> -n dev-bridge
+```
+If this shows `<none>` or no addresses, that's your 503. Then check the probe:
+```bash
+oc get deploy <status-deploy> -n dev-bridge -o yaml | grep -A8 readinessProbe
+```
+Note: your config disables Spring Security (`spring.autoconfigure.exclude=...SecurityAutoConfiguration`) and exposes actuator health — so a readiness probe on `/epaylite-bridge-status-service/actuator/health` should return 200. If the probe path is wrong (missing context-path prefix, or pointing at `/actuator/health` without the prefix), it fails and the pod never becomes a ready endpoint.
 
+Fastest triage — run these three and it'll tell you which layer is broken:
+```bash
+# 1. Does the Service have ready endpoints?
+oc get endpoints -n dev-bridge | grep status
 
-upstream connect error or disconnect/reset before headers. retried and the latest reset reason: remote connection failure, transport failure reason: delayed connect error: Connection refused
+# 2. Can you reach the app directly inside the pod? (bypasses Istio entirely)
+oc exec -it epaybridgestatus-epaybridgestatusservice-56f9df459f-lb4k8 -n dev-bridge -- \
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/epaylite-bridge-status-service/actuator/health
+
+# 3. What port is the Service sending to?
+oc get svc -n dev-bridge -o yaml | grep -B2 -A6 "name.*status\|status.*8" | grep -i port
+```
+
+Interpretation:
+- If **#2 returns 200** but the browser still 503s → the problem is the Service/VirtualService/port wiring (causes 1 or 3), not the app.
+- If **#2 fails or hangs** → the app isn't serving on that port/path, so the probe fails too and there are no endpoints (cause 4).
+- If **#1 shows no endpoints** → readiness probe is failing; fix the probe path/port.
+
+Given the app logged a clean start on 8100, my strongest bet is a **Service `targetPort` or VirtualService still pointing at 8099** (the txn-service port) instead of 8100 — easy to miss when status-service uses a different port than the others. Paste the output of those three commands and I'll pinpoint it.
