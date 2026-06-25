@@ -1,52 +1,8 @@
-The error is because `SBI_private.key` and `EIS_ENC_UAT.cer` aren't in your `Cert` directory — you only have the two new files locally. You can't reference the existing two from disk.
+Request Failed — Network or CORS
+The browser blocked or could not complete this request: Failed to fetch
+Common causes:
 
-Two ways to handle it:
-
-## Option A — Pull the existing keys out first, then recreate (full control)
-
-```bash
-cd ~/Cert
-
-# Extract the two existing keys from the live secret to disk
-oc get secret eiscert -n dev-communication -o jsonpath='{.data.SBI_private\.key}' | base64 -d > SBI_private.key
-oc get secret eiscert -n dev-communication -o jsonpath='{.data.EIS_ENC_UAT\.cer}' | base64 -d > EIS_ENC_UAT.cer
-
-# Now all four files exist locally — recreate the secret
-oc create secret generic eiscert \
-  --from-file=SBI_private.key=./SBI_private.key \
-  --from-file=EIS_ENC_UAT.cer=./EIS_ENC_UAT.cer \
-  --from-file=Sbi_digi_Private.key=./Sbi_digi_Private.key \
-  --from-file=Sbi_digi_PublicKey.cer=./Sbi_digi_PublicKey.cer \
-  --dry-run=client -o yaml | oc apply -f - -n dev-communication
-```
-
-## Option B — Patch in just the two new keys (don't touch existing)
-
-This adds the new keys without re-reading the old ones, so there's no risk of corrupting them:
-
-```bash
-cd ~/Cert
-
-oc patch secret eiscert -n dev-communication --type=merge -p "{\"data\":{
-  \"Sbi_digi_Private.key\":\"$(base64 -w0 Sbi_digi_Private.key)\",
-  \"Sbi_digi_PublicKey.cer\":\"$(base64 -w0 Sbi_digi_PublicKey.cer)\"
-}}"
-```
-
-`base64 -w0` is required — without it, line-wrapped base64 breaks the JSON. (On macOS it's `base64 -i`, but on your Linux bastion `-w0` is correct.)
-
-**Option B is the safer choice** — it never decodes/re-encodes the existing private key, so there's zero chance of altering `SBI_private.key`.
-
-Verify after either:
-
-```bash
-oc get secret eiscert -n dev-communication -o jsonpath='{.data}' | jq keys
-```
-
-You should see all four keys. Then clean up any extracted plaintext (`shred -u SBI_private.key` if you used Option A) since private keys shouldn't linger on the bastion.
-
-Then roll the deployment so the new mount picks up the files:
-
-```bash
-oc rollout restart deployment/<comm-deployment-name> -n dev-communication
-```
+CORS: the API did not return Access-Control-Allow-Origin for this origin. Browsers enforce this; the request may actually reach the server but the response is hidden from JavaScript.
+Network: host unreachable, DNS failure, or offline (relevant in air-gapped networks — confirm the host resolves internally).
+Mixed content: calling http:// from an https:// page.
+Workarounds: use the Chrome Extension build (bypasses CORS via host permissions), run a local CORS proxy, or for throwaway testing launch Chrome with --disable-web-security --user-data-dir=%TEMP%\relaypad (never browse normally in that profile).
