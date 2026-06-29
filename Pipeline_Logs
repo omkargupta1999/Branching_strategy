@@ -1,16 +1,7 @@
-$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
-RELEASE_NAME=stubsservice
-SERVICE_NAME=epay_stubs_service
-ENV=perf
-WARNING: Using insecure TLS client config. Setting this option is not supported!
-Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
-You have access to 217 projects, the list has been suppressed. You can list all projects with 'oc projects'
-Using project "default".
-Welcome! See 'oc help' to get started.
-Synced perf/charts/epay_stubs_service/values.yaml to origin/main
-Deploying with image tag from values.yaml: 3.3.6-rc.2
-Release "stubsservice" does not exist. Installing it now.
-Error: Unable to continue with install: VirtualService "stubsservice" in namespace "perf-simulators" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "stubsservice": current value is "stubs"
-Cleaning up project directory and file based variables
-00:02
-ERROR: Job failed: exit code 1
+oc get virtualservice -A | grep stubs
+
+helm list -A
+
+oc get virtualservice stubsservice -n perf-simulators -o yaml
+
+helm upgrade --install ...   # the exact command from your CI job
