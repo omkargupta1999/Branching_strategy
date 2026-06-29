@@ -1,161 +1,71 @@
-#!/usr/bin/env bash
-#
-# db_handshake_probe.sh
-# -----------------------------------------------------------------------------
-# READ-ONLY diagnostic for the dev-bridge Oracle "connection reset" issue.
-#
-# For every application pod in the namespace it:
-#   1. auto-detects the app container (skips istio-proxy / sidecars)
-#   2. TCP-probes the SCAN listener        (epaydbscandev.sbiepay.sbi:1524)
-#   3. TCP-probes the redirected node VIP   (10.177.134.150:1581)
-#   4. runs an openssl s_client against the VIP and classifies the result:
-#        BANNER  -> server spoke back (handshake progressed)
-#        RESET   -> connection reset during negotiation  <-- the failure
-#        REFUSED -> TCP refused
-#        TIMEOUT -> no response
-#   5. tallies a per-pod PASS/FAIL summary table at the end.
-#
-# It performs NO writes: no DB logon, no config change, no oc apply/patch/delete.
-# Only `oc get`, `oc exec ... <read-only probe>`. Safe to run in dev.
-#
-# Usage:
-#   ./db_handshake_probe.sh
-#   NAMESPACE=dev-bridge VIP=10.177.134.150 VIP_PORT=1581 ./db_handshake_probe.sh
-# -----------------------------------------------------------------------------
+[osuser@bastion ~]$ sh ./db_handshake_probe.sh
+Oracle handshake probe — namespace=dev-bridge
+SCAN=epaydbscandev.sbiepay.sbi:1524   VIP=10.177.134.150:1581   timeout=5s
+Run at: 2026-06-29T12:17:42Z
+------------------------------------------------------------------------
+epaybridgemis-8c9df8fff-476qp  (container: epaybridgemis)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgemis-8c9df8fff-5mxbz  (container: epaybridgemis)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgemisreport-769f6fd759-22jgr  (container: epaybridgemisreport)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgemisreport-769f6fd759-9hlql  (container: epaybridgemisreport)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgestatus-epaybridgestatusservice-5f968f6cf4-9sbxt  (container: epaybridgestatusservice)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgestatus-epaybridgestatusservice-5f968f6cf4-nrrjf  (container: epaybridgestatusservice)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56  (container: epaylitebridgetxn)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
+epaybridgetxn-epaylitebridgetxn-764cf97f4f-t5fdm  (container: epaylitebridgetxn)
+   SCAN 1524   : OPEN
+   VIP  1581   : OPEN
+   TLS/NS probe: NO_OPENSSL
+------------------------------------------------------------------------
 
-set -u
+SUMMARY
+POD                                                        SCAN     VIP      TLS/NS
+---------------------------------------------------------- ------   ------   ------
+epaybridgemis-8c9df8fff-476qp                              OPEN     OPEN     NO_OPENSSL
+epaybridgemis-8c9df8fff-5mxbz                              OPEN     OPEN     NO_OPENSSL
+epaybridgemisreport-769f6fd759-22jgr                       OPEN     OPEN     NO_OPENSSL
+epaybridgemisreport-769f6fd759-9hlql                       OPEN     OPEN     NO_OPENSSL
+epaybridgestatus-epaybridgestatusservice-5f968f6cf4-9sbxt  OPEN     OPEN     NO_OPENSSL
+epaybridgestatus-epaybridgestatusservice-5f968f6cf4-nrrjf  OPEN     OPEN     NO_OPENSSL
+epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56           OPEN     OPEN     NO_OPENSSL
+epaybridgetxn-epaylitebridgetxn-764cf97f4f-t5fdm           OPEN     OPEN     NO_OPENSSL
 
-# ---- Config (override via env) ----------------------------------------------
-NAMESPACE="${NAMESPACE:-dev-bridge}"
-SCAN_HOST="${SCAN_HOST:-epaydbscandev.sbiepay.sbi}"
-SCAN_PORT="${SCAN_PORT:-1524}"
-VIP="${VIP:-10.177.134.150}"
-VIP_PORT="${VIP_PORT:-1581}"
-TIMEOUT="${TIMEOUT:-5}"          # seconds per probe
-OC="${OC:-oc}"
+How to read this:
+  SCAN=OPEN, VIP=OPEN, TLS/NS=RESET  -> TCP path is fine; the redirected
+    instance/VIP is tearing down the Oracle handshake. This is the reported
+    failure and is a DATABASE-SIDE issue (session/process cap, listener
+    rate-limit, or unhealthy local listener on the VIP node).
+  VIP=REFUSED/TIMEOUT                 -> the redirect target is unreachable;
+    network/firewall whitelist for the VIP redirect port.
+  TLS/NS=BANNER                       -> handshake progressed; problem is
+    elsewhere (auth/credentials), not transport.
 
-# ---- Output helpers ---------------------------------------------------------
-if [ -t 1 ]; then
-  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[36m'; N=$'\033[0m'; BOLD=$'\033[1m'
-else
-  R=""; G=""; Y=""; B=""; N=""; BOLD=""
-fi
-
-hr(){ printf '%s\n' "------------------------------------------------------------------------"; }
-
-echo "${BOLD}Oracle handshake probe — namespace=${NAMESPACE}${N}"
-echo "SCAN=${SCAN_HOST}:${SCAN_PORT}   VIP=${VIP}:${VIP_PORT}   timeout=${TIMEOUT}s"
-echo "Run at: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-hr
-
-# ---- Collect running pods ---------------------------------------------------
-PODS="$($OC get pods -n "$NAMESPACE" --field-selector=status.phase=Running \
-        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null)"
-
-if [ -z "$PODS" ]; then
-  echo "${R}No running pods found in namespace ${NAMESPACE}.${N}"
-  exit 1
-fi
-
-# Summary accumulator: "pod|scan|vip|tls"
-declare -a SUMMARY=()
-
-# A pod-side probe script. Tries bash /dev/tcp first; falls back to openssl
-# for the TLS/NS classification. Emits three tokens: SCAN_RESULT VIP_RESULT TLS_RESULT
-read -r -d '' REMOTE_PROBE <<'EOS'
-SCAN_HOST="$1"; SCAN_PORT="$2"; VIP="$3"; VIP_PORT="$4"; T="$5"
-
-tcp_check() {
-  # $1 host $2 port -> echo OPEN|REFUSED|TIMEOUT
-  if timeout "$T" bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null; then
-    exec 3>&- 3<&- 2>/dev/null
-    echo OPEN
-  else
-    rc=$?
-    if [ "$rc" -ge 124 ]; then echo TIMEOUT; else echo REFUSED; fi
-  fi
-}
-
-SCAN_RES="$(tcp_check "$SCAN_HOST" "$SCAN_PORT")"
-VIP_RES="$(tcp_check "$VIP" "$VIP_PORT")"
-
-# TLS / NS-layer classification against the VIP using openssl, if present.
-TLS_RES="NO_OPENSSL"
-if command -v openssl >/dev/null 2>&1; then
-  OUT="$(echo | timeout "$T" openssl s_client -connect "$VIP:$VIP_PORT" 2>&1)"
-  if echo "$OUT" | grep -qiE 'CONNECTED|CERTIFICATE|BEGIN CERTIFICATE|SSL-Session|server certificate'; then
-    TLS_RES="BANNER"
-  elif echo "$OUT" | grep -qiE 'connection reset|reset by peer'; then
-    TLS_RES="RESET"
-  elif echo "$OUT" | grep -qiE 'connect:errno|Connection refused'; then
-    TLS_RES="REFUSED"
-  elif echo "$OUT" | grep -qiE 'timed out|timeout'; then
-    TLS_RES="TIMEOUT"
-  else
-    # openssl "CONNECTED" then immediate close with no cert = handshake torn down
-    if echo "$OUT" | grep -qi 'CONNECTED'; then TLS_RES="RESET"; else TLS_RES="UNKNOWN"; fi
-  fi
-fi
-
-echo "$SCAN_RES $VIP_RES $TLS_RES"
-EOS
-
-# ---- Iterate pods -----------------------------------------------------------
-for POD in $PODS; do
-  # Detect app container: prefer one whose name is NOT istio-proxy/istio-init.
-  CONTAINER="$($OC get pod "$POD" -n "$NAMESPACE" \
-      -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}' 2>/dev/null \
-      | grep -viE 'istio-proxy|istio-init|^istio' | head -n1)"
-  [ -z "$CONTAINER" ] && CONTAINER="$($OC get pod "$POD" -n "$NAMESPACE" \
-      -o jsonpath='{.spec.containers[0].name}' 2>/dev/null)"
-
-  printf "%s%s%s  (container: %s)\n" "$B" "$POD" "$N" "$CONTAINER"
-
-  RAW="$($OC exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- \
-        bash -c "$REMOTE_PROBE" _ "$SCAN_HOST" "$SCAN_PORT" "$VIP" "$VIP_PORT" "$TIMEOUT" 2>/dev/null)"
-
-  if [ -z "$RAW" ]; then
-    echo "   ${Y}probe produced no output (no bash/openssl in container, or exec denied)${N}"
-    SUMMARY+=("$POD|ERR|ERR|ERR")
-    hr
-    continue
-  fi
-
-  SCAN_RES="$(echo "$RAW" | awk '{print $1}')"
-  VIP_RES="$(echo  "$RAW" | awk '{print $2}')"
-  TLS_RES="$(echo  "$RAW" | awk '{print $3}')"
-
-  color_for(){ case "$1" in OPEN|BANNER) printf "%s" "$G";; RESET|REFUSED|TIMEOUT|ERR) printf "%s" "$R";; *) printf "%s" "$Y";; esac; }
-
-  printf "   SCAN %-7s: %s%s%s\n" "$SCAN_PORT" "$(color_for "$SCAN_RES")" "$SCAN_RES" "$N"
-  printf "   VIP  %-7s: %s%s%s\n" "$VIP_PORT"  "$(color_for "$VIP_RES")"  "$VIP_RES"  "$N"
-  printf "   TLS/NS probe: %s%s%s\n" "$(color_for "$TLS_RES")" "$TLS_RES" "$N"
-
-  SUMMARY+=("$POD|$SCAN_RES|$VIP_RES|$TLS_RES")
-  hr
-done
-
-# ---- Summary table ----------------------------------------------------------
-echo
-echo "${BOLD}SUMMARY${N}"
-printf "%-58s %-8s %-8s %-8s\n" "POD" "SCAN" "VIP" "TLS/NS"
-printf "%-58s %-8s %-8s %-8s\n" "----------------------------------------------------------" "------" "------" "------"
-for row in "${SUMMARY[@]}"; do
-  IFS='|' read -r p s v t <<<"$row"
-  printf "%-58s %-8s %-8s %-8s\n" "$p" "$s" "$v" "$t"
-done
-
-echo
-echo "${BOLD}How to read this:${N}"
-echo "  SCAN=OPEN, VIP=OPEN, TLS/NS=RESET  -> TCP path is fine; the redirected"
-echo "    instance/VIP is tearing down the Oracle handshake. This is the reported"
-echo "    failure and is a DATABASE-SIDE issue (session/process cap, listener"
-echo "    rate-limit, or unhealthy local listener on the VIP node)."
-echo "  VIP=REFUSED/TIMEOUT                 -> the redirect target is unreachable;"
-echo "    network/firewall whitelist for the VIP redirect port."
-echo "  TLS/NS=BANNER                       -> handshake progressed; problem is"
-echo "    elsewhere (auth/credentials), not transport."
-echo
-echo "Hand the SUMMARY table to the DBA together with the ask to check, on the"
-echo "instance behind ${VIP}:  v\$resource_limit (processes/sessions), the DB"
-echo "user profile SESSIONS_PER_USER, and listener RATE_LIMIT/CONNECTION_RATE."
+Hand the SUMMARY table to the DBA together with the ask to check, on the
+instance behind 10.177.134.150:  v$resource_limit (processes/sessions), the DB
+user profile SESSIONS_PER_USER, and listener RATE_LIMIT/CONNECTION_RATE.
