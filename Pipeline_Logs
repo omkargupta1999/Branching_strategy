@@ -1,19 +1,24 @@
-POD=epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56
-CON=epaylitebridgetxn
-oc exec -n dev-bridge $POD -c $CON -- bash -c '
-  J=$(find / -name "*.jar" 2>/dev/null | grep -iE "ojdbc|oracle" | head -1)
-  echo "driver: $J"
-  cat > /tmp/T.java <<'"'"'EOF'"'"'
-import java.sql.*;
-public class T {
-  public static void main(String[] a) throws Exception {
-    String url="jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))";
-    long t=System.currentTimeMillis();
-    try (Connection c=DriverManager.getConnection(url,System.getenv("DB_USERNAME"),System.getenv("DB_PASSWORD"))) {
-      System.out.println("CONNECTED ok in "+(System.currentTimeMillis()-t)+"ms");
-    } catch (Exception e){ System.out.println("FAILED in "+(System.currentTimeMillis()-t)+"ms: "+e.getMessage()); }
-  }
-}
-EOF
-  cd /tmp && javac -cp "$J" T.java 2>/dev/null && java -cp "$J:/tmp" T
-'
+[osuser@bastion ~]$ POD=epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56
+[osuser@bastion ~]$ CON=epaylitebridgetxn
+[osuser@bastion ~]$ oc exec -n dev-bridge $POD -c $CON -- bash -c '
+>   J=$(find / -name "*.jar" 2>/dev/null | grep -iE "ojdbc|oracle" | head -1)
+>   echo "driver: $J"
+>   cat > /tmp/T.java <<'"'"'EOF'"'"'
+> import java.sql.*;
+> public class T {
+>   public static void main(String[] a) throws Exception {
+>     String url="jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))";
+>     long t=System.currentTimeMillis();
+>     try (Connection c=DriverManager.getConnection(url,System.getenv("DB_USERNAME"),System.getenv("DB_PASSWORD"))) {
+>       System.out.println("CONNECTED ok in "+(System.currentTimeMillis()-t)+"ms");
+>     } catch (Exception e){ System.out.println("FAILED in "+(System.currentTimeMillis()-t)+"ms: "+e.getMessage()); }
+>   }
+> }
+> EOF
+>   cd /tmp && javac -cp "$J" T.java 2>/dev/null && java -cp "$J:/tmp" T
+> '
+driver:
+FAILED in 31ms: No suitable driver found for jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
