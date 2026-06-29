@@ -1,7 +1,76 @@
-oc get virtualservice -A | grep stubs
-
-helm list -A
-
-oc get virtualservice stubsservice -n perf-simulators -o yaml
-
-helm upgrade --install ...   # the exact command from your CI job
+[osuser@bastion ~]$ oc get virtualservice -A | grep stubs
+[osuser@bastion ~]$
+[osuser@bastion ~]$  helm list -A
+NAME                                    NAMESPACE               REVISION        UPDATED                                 STATUS          CHART                                           APP VERSION
+admin                                   pre-prod-admin          145             2026-05-15 13:41:08.657365412 +0000 UTC deployed        adminservice-0.1.0                              1.16.0
+admin                                   perf-admin              125             2026-06-06 07:29:57.333960534 +0000 UTC deployed        adminservice-0.1.0                              1.16.0
+admin-portal                            pre-prod-admin          6               2026-03-16 10:19:10.843550142 +0000 UTC deployed        adminportalservice-0.1.0                        1.16.0
+demo                                    perf-simulators         29              2026-05-29 11:24:47.021343154 +0000 UTC deployed        merchantsimulaterfe-0.1.0                       1.16.0
+demo                                    pre-prod-simulators     23              2026-03-13 09:30:12.612528566 +0000 UTC deployed        merchantsimulator-0.1.0                         1.16.0
+epay-cluster-base                       pre-prod-epay-common    8               2025-09-04 15:30:32.332355344 +0000 UTC deployed        epay_cluster_base-0.1.0                         1.0.0
+epay-common                             perf-epay-common        29              2026-05-14 08:48:58.863829462 +0000 UTC deployed        epay_common-0.1.0                               1.0.0
+epay-common                             pre-prod-epay-common    67              2026-01-21 10:45:52.867763618 +0000 UTC deployed        epay_common-0.1.0                               1.0.0
+epay-merchant-simulator                 pre-prod-frontend       1               2025-08-28 10:15:37.567343941 +0000 UTC failed          epay_merchant_simulator-0.1.0                   1.16.0
+epaysecrets                             pre-prod-epay-common    14              2026-02-12 07:33:18.761246377 +0000 UTC failed          epay_secrets-0.1.0                              1.0.0
+gemfire-crd                             preprod-cache-operator  1               2025-06-13 17:26:48.107904169 +0530 IST deployed        gemfire-crd-2.4.0                               2.4.0
+gemfire-operator                        preprod-cache-operator  1               2025-06-13 17:34:57.100348559 +0530 IST deployed        gemfire-operator-2.4.0                          2.4.0
+istio-cni                               istio-cni               122             2026-06-29 07:51:56.741899857 +0000 UTC deployed        cni-1.27.3                                      1.27.3
+javasimulator                           perf-simulators         4               2026-02-03 10:56:30.284395758 +0000 UTC deployed        javautilityapisimulator-0.1.0                   1.16.0
+javasimulator                           pre-prod-simulators     13              2025-12-20 07:32:56.002225423 +0000 UTC deployed        javautilityapisimulator-0.1.0                   1.16.0
+kms                                     pre-prod-kms            10              2026-05-07 12:16:22.636035611 +0000 UTC deployed        kmsservice-0.1.0                                1.16.0
+kms                                     perf-kms                71              2026-06-06 07:32:34.732449172 +0000 UTC deployed        kmsservice-0.1.0                                1.16.0
+maintenancefe                           pre-prod-frontend       16              2026-05-20 06:30:11.092581153 +0000 UTC deployed        maintenance-frontend-0.1.0                      1.16.0
+merchant                                pre-prod-merchant       57              2026-05-15 11:59:02.096176371 +0000 UTC deployed        merchantservice-0.1.0                           1.16.0
+merchant                                pre-prod-frontend       4               2025-08-28 07:51:30.314997786 +0000 UTC failed          merchantsimulaterfe-0.1.0                       1.16.0
+merchant                                perf-merchant           110             2026-06-06 08:05:27.652889606 +0000 UTC deployed        merchantservice-0.1.0                           1.16.0
+merchantfe                              perf-frontend           59              2026-03-09 14:35:51.508991263 +0000 UTC deployed        merchant-frontend-0.1.0                         1.16.0
+merchantfe                              pre-prod-frontend       23              2026-05-15 10:09:18.906484825 +0000 UTC deployed        merchant-frontend-0.1.0                         1.16.0
+my-secrets                              perf-secrets            2               2025-10-14 18:33:58.024955989 +0530 IST deployed        microservice-secrets-0.1.0                      1.0.0
+my-secrets                              pre-prod-secrets        1               2025-09-30 12:12:21.332022481 +0530 IST deployed        microservice-secrets-0.1.0                      1.0.0
+notify                                  pre-prod-notification   9               2026-05-07 12:19:44.72842161 +0000 UTC  deployed        notificationservice-0.1.0                       1.16.0
+notify                                  perf-notification       2               2026-05-08 06:29:37.53863103 +0000 UTC  deployed        notificationservice-0.1.0                       1.16.0
+ops                                     perf-rns                24              2026-05-07 12:27:17.011055271 +0000 UTC failed          operationsservice-0.1.0                         1.16.0
+ops                                     pre-prod-rns            60              2026-05-25 12:53:40.551340778 +0000 UTC deployed        operationsservice-0.1.0                         1.16.0
+orderhash                               perf-simulators         11              2026-03-10 10:25:34.155008127 +0000 UTC deployed        orderhash-0.1.0                                 1.16.0
+orderhash                               pre-prod-simulators     20              2026-05-07 12:20:52.766992478 +0000 UTC deployed        orderhash-0.1.0                                 1.16.0
+payment                                 pre-prod-transaction    87              2026-05-16 07:54:59.660613509 +0000 UTC deployed        paymentservice-0.1.0                            1.16.0
+payment                                 perf-transaction        247             2026-06-06 08:46:10.774373718 +0000 UTC deployed        paymentservice-0.1.0                            1.16.0
+perf                                    perf-simulators         6               2026-05-08 06:29:52.420978317 +0000 UTC deployed        perfsimulator-0.1.0                             1.16.0
+perf-istio-istiod                       perf-istio-system       227243          2026-06-29 07:54:22.143601815 +0000 UTC deployed        istiod-1.24.4                                   1.24.4
+pooling                                 pre-prod-offline-jobs   6               2026-02-13 07:51:10.718829424 +0000 UTC deployed        gatewaypooling-0.1.0                            1.16.0
+pre-prod-istio-istiod                   pre-prod-istio-system   11504           2026-06-29 07:51:58.166416679 +0000 UTC deployed        istiod-1.24.6                                   1.24.6
+refund                                  pre-prod-rns            32              2026-05-21 06:57:00.13212393 +0000 UTC  deployed        refundservice-0.1.0                             1.16.0
+refund                                  perf-rns                13              2026-05-08 06:30:01.476865192 +0000 UTC deployed        refundservice-0.1.0                             1.16.0
+report                                  pre-prod-merchant       56              2026-05-18 10:41:12.158074684 +0000 UTC deployed        reportservice-0.1.0                             1.16.0
+report                                  perf-merchant           57              2026-05-08 06:30:10.829681406 +0000 UTC deployed        reportservice-0.1.0                             1.16.0
+stackrox-central-services               stackrox                1               2025-05-09 10:19:33.018132647 +0000 UTC deployed        stackrox-central-services-400.7.1               4.7.1
+stackrox-secured-cluster-services       stackrox                5               2026-06-24 10:49:40.35032331 +0000 UTC  deployed        stackrox-secured-cluster-services-400.7.1       4.7.1
+transactionfe                           perf-frontend           35              2026-06-04 07:02:52.13634413 +0000 UTC  deployed        transaction-frontend-0.1.0                      1.16.0
+transactionfe                           pre-prod-frontend       19              2026-05-22 11:30:21.348189201 +0000 UTC deployed        transaction-frontend-0.1.0                      1.16.0
+txn                                     perf-transaction        326             2026-06-06 07:26:29.016097746 +0000 UTC deployed        transactionservice-0.1.0                        1.16.0
+txn                                     pre-prod-transaction    101             2026-05-30 13:00:40.677080405 +0000 UTC deployed        transactionservice-0.1.0                        1.16.0
+websitefe                               pre-prod-frontend       12              2026-05-07 12:22:52.382705232 +0000 UTC deployed        epay-website-0.1.0                              1.16.0
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$  helm list -A | grep -i perf
+admin                                   perf-admin              125             2026-06-06 07:29:57.333960534 +0000 UTC deployed        adminservice-0.1.0                              1.16.0
+demo                                    perf-simulators         29              2026-05-29 11:24:47.021343154 +0000 UTC deployed        merchantsimulaterfe-0.1.0                       1.16.0
+epay-common                             perf-epay-common        29              2026-05-14 08:48:58.863829462 +0000 UTC deployed        epay_common-0.1.0                               1.0.0
+javasimulator                           perf-simulators         4               2026-02-03 10:56:30.284395758 +0000 UTC deployed        javautilityapisimulator-0.1.0                   1.16.0
+kms                                     perf-kms                71              2026-06-06 07:32:34.732449172 +0000 UTC deployed        kmsservice-0.1.0                                1.16.0
+merchant                                perf-merchant           110             2026-06-06 08:05:27.652889606 +0000 UTC deployed        merchantservice-0.1.0                           1.16.0
+merchantfe                              perf-frontend           59              2026-03-09 14:35:51.508991263 +0000 UTC deployed        merchant-frontend-0.1.0                         1.16.0
+my-secrets                              perf-secrets            2               2025-10-14 18:33:58.024955989 +0530 IST deployed        microservice-secrets-0.1.0                      1.0.0
+notify                                  perf-notification       2               2026-05-08 06:29:37.53863103 +0000 UTC  deployed        notificationservice-0.1.0                       1.16.0
+ops                                     perf-rns                24              2026-05-07 12:27:17.011055271 +0000 UTC failed          operationsservice-0.1.0                         1.16.0
+orderhash                               perf-simulators         11              2026-03-10 10:25:34.155008127 +0000 UTC deployed        orderhash-0.1.0                                 1.16.0
+payment                                 perf-transaction        247             2026-06-06 08:46:10.774373718 +0000 UTC deployed        paymentservice-0.1.0                            1.16.0
+perf                                    perf-simulators         6               2026-05-08 06:29:52.420978317 +0000 UTC deployed        perfsimulator-0.1.0                             1.16.0
+perf-istio-istiod                       perf-istio-system       227243          2026-06-29 07:54:22.143601815 +0000 UTC deployed        istiod-1.24.4                                   1.24.4
+refund                                  perf-rns                13              2026-05-08 06:30:01.476865192 +0000 UTC deployed        refundservice-0.1.0                             1.16.0
+report                                  perf-merchant           57              2026-05-08 06:30:10.829681406 +0000 UTC deployed        reportservice-0.1.0                             1.16.0
+transactionfe                           perf-frontend           35              2026-06-04 07:02:52.13634413 +0000 UTC  deployed        transaction-frontend-0.1.0                      1.16.0
+txn                                     perf-transaction        326             2026-06-06 07:26:29.016097746 +0000 UTC deployed        transactionservice-0.1.0                        1.16.0
+[osuser@bastion ~]$ oc get virtualservice stubsservice -n perf-simulators -o yaml
+Error from server (NotFound): virtualservices.networking.istio.io "stubsservice" not found
+[osuser@bastion ~]$
