@@ -48,3 +48,102 @@ Error from server (BadRequest): container echo | openssl s_client -connect 10.17
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
 Error from server (BadRequest): container echo | openssl s_client -connect epaydbscandev.sbiepay.sbi:1524 2>&1 | head -20 is not valid for pod epaybridgestatus-epaybridgestatusservice-5f968f6cf4-9sbxt
 [osuser@bastion ~]$
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++ Configmap.yml ----------------------
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ include "epaylite-bridge-txn-service.labels" . | nindent 4 }}
+{{ if $.Values.configMap.additionalLabels }}
+    {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
+{{ end }}
+{{ if $.Values.configMap.annotations }}
+  annotations:
+    {{ toYaml $.Values.configMap.annotations | nindent 4 }}
+{{ end }}
+data:
+  application.yaml: |
+    # Server / servlet container settings
+    server.servlet.context-path: /epaylite-bridge-txn-service
+    server.port: 8099
+
+    # Spring profile + application identity
+    spring.profiles.active: dev
+    spring.application.name: epaylite-brige-txn-service
+
+    # CORS / security origins
+    security.cors.allowed.origins: "*"
+    security.cors.origin: "*"
+
+    # Database connectivity (Oracle + HikariCP pool)
+    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
+    spring.datasource.url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+    spring.datasource.username: ${DB_USERNAME}
+    spring.datasource.password: ${DB_PASSWORD}
+    spring.datasource.hikari.maxLifetime: 300000
+    spring.datasource.hikari.idleTimeout: 240000
+    spring.datasource.hikari.keepaliveTime: 120000
+
+    # JPA / Hibernate behaviour
+    spring.jpa.database-platform: org.hibernate.dialect.OracleDialect
+    spring.jpa.hibernate.ddl-auto: none
+    spring.jpa.show-sql: false
+    spring.jpa.properties.hibernate.format_sql: true
+    spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
+    spring.jpa.properties.hibernate.jdbc.time_zone: UTC
+    spring.jpa.defer-datasource-initialization: true
+
+    # Spring auto-configuration overrides
+    spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+    spring.main.allow-bean-definition-overriding: true
+
+    # Application redirect base URL
+    app.redirect.baseurl: https://dev.epay.sbi/epaylite-bridge-txn-service
+
+    # Encryption settings
+    epay.encryption.default-key: default-secret-key-32-characters-long
+    epay.encryption.algorithm: AES
+
+    # Merchant config cache
+    merchant.config.cache-enabled: true
+    merchant.config.cache-ttl-minutes: 60
+
+    # Audit logging
+    audit.enabled: true
+    audit.mask-sensitive-data: true
+    audit.log-request-payload: true
+    audit.log-response-payload: true
+
+    # SBIEpay downstream API (URLs, timeout, retries)
+    sbiepay.api.base-url: http://txn-transactionservice.dev-transaction.svc.cluster.local:9092
+    sbiepay.api.timeout: 5s
+    sbiepay.api.max-retries: 2
+    sbiepay.api.epay-order-create-url: /api/transaction/v1/order/create
+    sbiepay.api.epay-order-status-url: /api/transaction/v1/order/status
+    sbiepay.api.access-token-url: /api/transaction/v1/token/access
+
+    # Resilience4j circuit breaker + retry (sbiepayApi instance)
+    resilience4j.circuitbreaker.instances.sbiepayApi.registerHealthIndicator: true
+    resilience4j.circuitbreaker.instances.sbiepayApi.failureRateThreshold: 50
+    resilience4j.circuitbreaker.instances.sbiepayApi.waitDurationInOpenState: 30s
+    resilience4j.circuitbreaker.instances.sbiepayApi.slidingWindowSize: 10
+    resilience4j.circuitbreaker.instances.sbiepayApi.minimumNumberOfCalls: 5
+    resilience4j.retry.instances.sbiepayApi.maxAttempts: 3
+    resilience4j.retry.instances.sbiepayApi.waitDuration: 2s
+
+    # Actuator / management endpoints + Prometheus metrics
+    management.endpoints.web.exposure.include: health,info,metrics,prometheus,circuitbreakers
+    management.endpoint.health.show-details: always
+    management.health.circuitbreakers.enabled: true
+    management.metrics.export.prometheus.enabled: true
+
+    # Springfox / Swagger (disabled)
+    springfox.documentation.enabled: false
+    springfox.documentation.swagger-ui.enabled: false
