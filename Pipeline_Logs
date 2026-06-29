@@ -1,71 +1,19 @@
-[osuser@bastion ~]$ sh ./db_handshake_probe.sh
-Oracle handshake probe — namespace=dev-bridge
-SCAN=epaydbscandev.sbiepay.sbi:1524   VIP=10.177.134.150:1581   timeout=5s
-Run at: 2026-06-29T12:17:42Z
-------------------------------------------------------------------------
-epaybridgemis-8c9df8fff-476qp  (container: epaybridgemis)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgemis-8c9df8fff-5mxbz  (container: epaybridgemis)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgemisreport-769f6fd759-22jgr  (container: epaybridgemisreport)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgemisreport-769f6fd759-9hlql  (container: epaybridgemisreport)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgestatus-epaybridgestatusservice-5f968f6cf4-9sbxt  (container: epaybridgestatusservice)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgestatus-epaybridgestatusservice-5f968f6cf4-nrrjf  (container: epaybridgestatusservice)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56  (container: epaylitebridgetxn)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-epaybridgetxn-epaylitebridgetxn-764cf97f4f-t5fdm  (container: epaylitebridgetxn)
-   SCAN 1524   : OPEN
-   VIP  1581   : OPEN
-   TLS/NS probe: NO_OPENSSL
-------------------------------------------------------------------------
-
-SUMMARY
-POD                                                        SCAN     VIP      TLS/NS
----------------------------------------------------------- ------   ------   ------
-epaybridgemis-8c9df8fff-476qp                              OPEN     OPEN     NO_OPENSSL
-epaybridgemis-8c9df8fff-5mxbz                              OPEN     OPEN     NO_OPENSSL
-epaybridgemisreport-769f6fd759-22jgr                       OPEN     OPEN     NO_OPENSSL
-epaybridgemisreport-769f6fd759-9hlql                       OPEN     OPEN     NO_OPENSSL
-epaybridgestatus-epaybridgestatusservice-5f968f6cf4-9sbxt  OPEN     OPEN     NO_OPENSSL
-epaybridgestatus-epaybridgestatusservice-5f968f6cf4-nrrjf  OPEN     OPEN     NO_OPENSSL
-epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56           OPEN     OPEN     NO_OPENSSL
-epaybridgetxn-epaylitebridgetxn-764cf97f4f-t5fdm           OPEN     OPEN     NO_OPENSSL
-
-How to read this:
-  SCAN=OPEN, VIP=OPEN, TLS/NS=RESET  -> TCP path is fine; the redirected
-    instance/VIP is tearing down the Oracle handshake. This is the reported
-    failure and is a DATABASE-SIDE issue (session/process cap, listener
-    rate-limit, or unhealthy local listener on the VIP node).
-  VIP=REFUSED/TIMEOUT                 -> the redirect target is unreachable;
-    network/firewall whitelist for the VIP redirect port.
-  TLS/NS=BANNER                       -> handshake progressed; problem is
-    elsewhere (auth/credentials), not transport.
-
-Hand the SUMMARY table to the DBA together with the ask to check, on the
-instance behind 10.177.134.150:  v$resource_limit (processes/sessions), the DB
-user profile SESSIONS_PER_USER, and listener RATE_LIMIT/CONNECTION_RATE.
+POD=epaybridgetxn-epaylitebridgetxn-764cf97f4f-snr56
+CON=epaylitebridgetxn
+oc exec -n dev-bridge $POD -c $CON -- bash -c '
+  J=$(find / -name "*.jar" 2>/dev/null | grep -iE "ojdbc|oracle" | head -1)
+  echo "driver: $J"
+  cat > /tmp/T.java <<'"'"'EOF'"'"'
+import java.sql.*;
+public class T {
+  public static void main(String[] a) throws Exception {
+    String url="jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))";
+    long t=System.currentTimeMillis();
+    try (Connection c=DriverManager.getConnection(url,System.getenv("DB_USERNAME"),System.getenv("DB_PASSWORD"))) {
+      System.out.println("CONNECTED ok in "+(System.currentTimeMillis()-t)+"ms");
+    } catch (Exception e){ System.out.println("FAILED in "+(System.currentTimeMillis()-t)+"ms: "+e.getMessage()); }
+  }
+}
+EOF
+  cd /tmp && javac -cp "$J" T.java 2>/dev/null && java -cp "$J:/tmp" T
+'
