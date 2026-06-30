@@ -1,56 +1,98 @@
-Running with gitlab-runner 17.9.2 (14c5775c)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.9.2 )
-Using docker image sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 for artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper:x86_64-v17.9.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab-runner-helper/gitlab-runner-helper@sha256:47dfd72820e9c3b93c84dcdc2e689ba1236880b4c01de59bbf0a26f9e72b2a35 ...
-Running on runner-ktjck3d-w-project-2833-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:03
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_operations_service/.git/
-Created fresh repository.
-Checking out 0474e125 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:05
-Using docker image sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global --add safe.directory '*'
-$ set -eo pipefail # collapsed multi-line command
-Merge commit title: EAS-000|OG|fix: update dockerfile
-❌ ERROR: Cannot determine release version from merge commit title.
-   Title was  : EAS-000|OG|fix: update dockerfile
-   Expected   : "Merge branch 'release/X.Y.Z' into 'main'"
-   OR         : "Merge branch 'hotfix/X.Y.Z' into 'main'"
-   Root cause : Squash or rebase merge was used on Protected branch 'main'.
-   Fix        : GitLab → Project → Settings → General → Merge requests
-                Merge method → select 'Merge commit'
-                Re-raise the MR and merge again.
-Uploading artifacts for failed job
-00:01
-Uploading artifacts...
-WARNING: version.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_operations_service) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+# # ci/version/semver.yml  |  Stage: .pre
+# # Computes VERSION string based on branch/pipeline context → version.env
+# # Consumed by ALL downstream jobs via dotenv artifact
+# # NOTE: This job ONLY computes the version. Git tags are created in ci/release/tag.yml
+
+# version:
+#   stage: version
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   tags:
+#     - common_runner
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global --add safe.directory '*'
+#   script:
+#     - |
+#       set -e
+#       git fetch --tags
+
+#       if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+#         VERSION="mr-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+#         VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         RELEASE_VERSION="${BASH_REMATCH[1]}"
+#         RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+#         NEW_RC=$((RC_COUNT + 1))
+#         VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^hotfix\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         VERSION="${BASH_REMATCH[1]}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+#         LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+#         VERSION="${LAST_TAG#v}"
+
+#       else
+#         VERSION="${CI_COMMIT_SHORT_SHA}"
+#       fi
+#       #newly added-----------------------------------------
+#       echo "BRANCH_USED=$CI_COMMIT_BRANCH" >> version.env
+      
+#       #-=--------------------------------------------------
+
+#       echo "VERSION=$VERSION" >> version.env
+#       echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA" >> version.env
+#       echo "Generated VERSION=$VERSION"
+#   artifacts:
+#     reports:
+#       dotenv: version.env
+#     expire_in: 1 week
 
 
-
-
-================================ version configuration ======
+# ci/version/semver.yml  |  Stage: version
+# Computes VERSION string based on branch/pipeline context → version.env
+# Consumed by ALL downstream jobs via dotenv artifact
+# NOTE: This job ONLY computes the version. Git tags created in ci/release/tag.yml
+#
+# ── VERSION output per context ────────────────────────────────────────────────
+#
+# Pipeline Source      Branch / Context                   VERSION
+# ──────────────────── ────────────────────────────────── ──────────────────────────────────────
+# merge_request_event  <any source> → <any target>        mr-<src>-<tgt>-<IID>-<short-sha>
+#                      e.g. feature/payment → develop     mr-feature-payment-develop-47-abc1234
+#                      e.g. bugfix/fix → release/1.0.0   mr-bugfix-fix-release-1.0.0-8-abc1234
+#                      e.g. hotfix/1.0.1 → main          mr-hotfix-1.0.1-main-12-abc1234
+# push                 feature/*                          feature-<name>-<short-sha>
+# push                 bugfix/*                           bugfix-<name>-<short-sha>
+# push                 hotfix/*                           hotfix-<version>-<short-sha>
+# push                 develop                            dev-<short-sha>
+# push                 release/1.0.0                      1.0.0-rc.1  (auto-incremented)
+# push                 main ← release/1.1.0               1.1.0  (from CI_COMMIT_TITLE)
+# push                 main ← hotfix/1.0.1                1.0.1  (from CI_COMMIT_TITLE)
+# unknown              any                                <short-sha>
+#
+# ── Branch name cleaning ──────────────────────────────────────────────────────
+# Applied to all branch-name-based versions and MR source/target:
+#   /  → -    (forward slash removed)
+#   Special chars → -
+#   Uppercase → lowercase
+#   Consecutive dashes collapsed
+#   Max 40 chars (before appending fixed suffixes)
+# Keeps all VERSION strings well within Docker image tag limit of 128 chars.
+#
+# ── main merge — how source branch is identified ──────────────────────────────
+# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME is NOT available in post-merge push pipeline.
+# CI_COMMIT_TITLE IS available — GitLab sets it to the merge commit subject:
+#   "Merge branch 'release/1.1.0' into 'main'"
+#   "Merge branch 'hotfix/1.0.1' into 'main'"
+# Source branch always present in standard merge commit (GitLab default format).
+# Squash / rebase merges are NOT permitted on Protected branch 'main' (bank policy).
+# If commit title does not match expected format → version job fails → pipeline fails.
+# RC tag fallback intentionally NOT used — multiple active release branches make
+# RC tag lookup ambiguous (e.g. 1.1.0-rc.3 and 1.2.0-rc.1 may both exist).
 
 version:
   stage: version
@@ -178,6 +220,3 @@ version:
     expire_in: 1 day
   rules:                             ## Ensure version job is included in all pipeline types.
    - when: on_success
-
-
-
