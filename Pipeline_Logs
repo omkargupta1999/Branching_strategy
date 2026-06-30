@@ -1,21 +1,52 @@
-Since these features were available earlier, it's better to highlight that this is a regression rather than a feature request.
+# =============================================================================
+# Hardened Oracle JDBC datasource block for dev-bridge services
+# Apply to BOTH ConfigMaps:
+#   - epaybridgetxn-config     (application.yaml)
+#   - epaybridgestatus-config  (application.yaml)
+#   - (and the mis / misreport configs if they use the same single-address URL)
+#
+# WHY THIS CHANGE
+#   The DB is Oracle 19c RAC (nodes epaydbdev1 / epaydbdev2). The old URL used a
+#   single TCP ADDRESS to the SCAN name. The SCAN redirects new connections to a
+#   node VIP; when a redirect lands on a VIP/listener that is mid-failover or
+#   whose service registration is flapping (observed: 10.177.134.150:1581), the
+#   endpoint accepts the TCP socket but RSTs during NS negotiation -> ORA-17002.
+#   Live sessions exist (gv$session shows all pods connected), so this only hits
+#   pool top-up/replacement connections, intermittently.
+#
+#   Listing all three SCAN IPs with LOAD_BALANCE+FAILOVER plus RETRY_COUNT /
+#   RETRY_DELAY makes the thin driver transparently re-attempt instead of
+#   surfacing a single reset to HikariCP as a failed connection-add.
+#
+# NOTE: keep the whole DESCRIPT+CONNECT_DATA on logical one value; YAML folding
+#   below uses a quoted single line to avoid whitespace being injected into the
+#   TNS descriptor. Do NOT reformat into a multi-line literal block.
+# =============================================================================
 
-Hi GitLab Team,
+    # ----- Database connectivity (Oracle 19c RAC + HikariCP pool) -----
+    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
+    spring.datasource.url: "jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3000)(ADDRESS_LIST=(LOAD_BALANCE=on)(FAILOVER=on)(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.152)(PORT=1524))(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.153)(PORT=1524))(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.154)(PORT=1524)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))"
+    spring.datasource.username: ${DB_USERNAME}
+    spring.datasource.password: ${DB_PASSWORD}
 
-We have observed that some GitLab features that were previously available in our GitLab instance are no longer visible.
+    # ----- HikariCP pool sizing (was unset -> defaulted to 10/pod) -----
+    # Caps total sessions across the fleet and reduces churn while the RAC
+    # VIP/listener state is being corrected. Tune per service if needed.
+    spring.datasource.hikari.maximum-pool-size: 5
+    spring.datasource.hikari.minimum-idle: 2
+    spring.datasource.hikari.connection-timeout: 30000
+    spring.datasource.hikari.maxLifetime: 300000
+    spring.datasource.hikari.idleTimeout: 240000
+    spring.datasource.hikari.keepaliveTime: 120000
 
-Specifically:
-
-* **Push Rules** – The Push Rules settings are no longer available under the project/group settings, so we are unable to configure push rule policies.
-* **Epics** – The **Epics** section is no longer visible under the **Plan** menu, preventing us from accessing and managing epics.
-
-These features were available earlier and were being used. We have not made any intentional changes on our side that would explain their disappearance.
-
-Could you please help us investigate why these features are no longer available? Please let us know if this is related to a licensing change, configuration update, permission change, or any other issue. If any additional information is required from our side, we will be happy to provide it.
-
-Thank you for your support.
-
-Regards,
-Omkar Gupta
-
-This version makes it clear that the functionality has **disappeared unexpectedly**, which should help the GitLab team focus on identifying configuration, licensing, or upgrade-related changes rather than treating it as a request to enable new features.
+# -----------------------------------------------------------------------------
+# OPTIONAL (preferred long-term): resolve the SCAN name instead of pinning IPs.
+# If the pods' DNS reliably resolves epaydbscandev.sbiepay.sbi to all 3 SCAN IPs,
+# you can use a single HOST entry and let SCAN do the load-balancing:
+#
+#   spring.datasource.url: "jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(RETRY_DELAY=3)(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))"
+#
+# Pinning the 3 IPs is more robust in an air-gapped env if DNS only returns one
+# A-record at a time; DNS-based SCAN is cleaner if round-robin DNS is healthy.
+# Confirm with: getent hosts epaydbscandev.sbiepay.sbi  (expect 3 lines)
+# -----------------------------------------------------------------------------
