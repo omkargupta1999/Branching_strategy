@@ -1,15 +1,21 @@
+Since these features were available earlier, it's better to highlight that this is a regression rather than a feature request.
+
 Hi GitLab Team,
 
-We have observed that a couple of GitLab features are not available in our current GitLab instance.
+We have observed that some GitLab features that were previously available in our GitLab instance are no longer visible.
 
-1. **Push Rules** – The Push Rules settings are not visible under the project or group settings, so we are unable to configure repository push restrictions.
-2. **Epics** – The **Epics** section is not available under the **Plan** menu, preventing us from creating and managing epics.
+Specifically:
 
-Could you please confirm whether these features are disabled, restricted by licensing, or require any additional configuration or permissions to be enabled?
+* **Push Rules** – The Push Rules settings are no longer available under the project/group settings, so we are unable to configure push rule policies.
+* **Epics** – The **Epics** section is no longer visible under the **Plan** menu, preventing us from accessing and managing epics.
 
-If they should be available, please help us enable them or advise on the necessary steps.
+These features were available earlier and were being used. We have not made any intentional changes on our side that would explain their disappearance.
+
+Could you please help us investigate why these features are no longer available? Please let us know if this is related to a licensing change, configuration update, permission change, or any other issue. If any additional information is required from our side, we will be happy to provide it.
 
 Thank you for your support.
 
 Regards,
 Omkar Gupta
+
+This version makes it clear that the functionality has **disappeared unexpectedly**, which should help the GitLab team focus on identifying configuration, licensing, or upgrade-related changes rather than treating it as a request to enable new features.
