@@ -1,52 +1,103 @@
-# =============================================================================
-# Hardened Oracle JDBC datasource block for dev-bridge services
-# Apply to BOTH ConfigMaps:
-#   - epaybridgetxn-config     (application.yaml)
-#   - epaybridgestatus-config  (application.yaml)
-#   - (and the mis / misreport configs if they use the same single-address URL)
-#
-# WHY THIS CHANGE
-#   The DB is Oracle 19c RAC (nodes epaydbdev1 / epaydbdev2). The old URL used a
-#   single TCP ADDRESS to the SCAN name. The SCAN redirects new connections to a
-#   node VIP; when a redirect lands on a VIP/listener that is mid-failover or
-#   whose service registration is flapping (observed: 10.177.134.150:1581), the
-#   endpoint accepts the TCP socket but RSTs during NS negotiation -> ORA-17002.
-#   Live sessions exist (gv$session shows all pods connected), so this only hits
-#   pool top-up/replacement connections, intermittently.
-#
-#   Listing all three SCAN IPs with LOAD_BALANCE+FAILOVER plus RETRY_COUNT /
-#   RETRY_DELAY makes the thin driver transparently re-attempt instead of
-#   surfacing a single reset to HikariCP as a failed connection-add.
-#
-# NOTE: keep the whole DESCRIPT+CONNECT_DATA on logical one value; YAML folding
-#   below uses a quoted single line to avoid whitespace being injected into the
-#   TNS descriptor. Do NOT reformat into a multi-line literal block.
-# =============================================================================
-
-    # ----- Database connectivity (Oracle 19c RAC + HikariCP pool) -----
-    spring.datasource.driver-class-name: oracle.jdbc.OracleDriver
-    spring.datasource.url: "jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3000)(ADDRESS_LIST=(LOAD_BALANCE=on)(FAILOVER=on)(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.152)(PORT=1524))(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.153)(PORT=1524))(ADDRESS=(PROTOCOL=TCP)(HOST=10.177.134.154)(PORT=1524)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))"
-    spring.datasource.username: ${DB_USERNAME}
-    spring.datasource.password: ${DB_PASSWORD}
-
-    # ----- HikariCP pool sizing (was unset -> defaulted to 10/pod) -----
-    # Caps total sessions across the fleet and reduces churn while the RAC
-    # VIP/listener state is being corrected. Tune per service if needed.
-    spring.datasource.hikari.maximum-pool-size: 5
-    spring.datasource.hikari.minimum-idle: 2
-    spring.datasource.hikari.connection-timeout: 30000
-    spring.datasource.hikari.maxLifetime: 300000
-    spring.datasource.hikari.idleTimeout: 240000
-    spring.datasource.hikari.keepaliveTime: 120000
-
-# -----------------------------------------------------------------------------
-# OPTIONAL (preferred long-term): resolve the SCAN name instead of pinning IPs.
-# If the pods' DNS reliably resolves epaydbscandev.sbiepay.sbi to all 3 SCAN IPs,
-# you can use a single HOST entry and let SCAN do the load-balancing:
-#
-#   spring.datasource.url: "jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(RETRY_DELAY=3)(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))"
-#
-# Pinning the 3 IPs is more robust in an air-gapped env if DNS only returns one
-# A-record at a time; DNS-based SCAN is cleaner if round-robin DNS is healthy.
-# Confirm with: getent hosts epaydbscandev.sbiepay.sbi  (expect 3 lines)
-# -----------------------------------------------------------------------------
+# Deployment definition
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "Epay_Payment_Service.fullname" . }}
+  labels:
+    {{- include "Epay_Payment_Service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "Epay_Payment_Service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "Epay_Payment_Service.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "Epay_Payment_Service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ tpl .Values.image.repository $ }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              # path: {{ .Values.prefixName }}/actuator/health
+              # port: {{ .Values.service.port }}
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.readinessProbe.httpGet.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              # path: {{ .Values.prefixName }}/actuator/health
+              # port: {{ .Values.service.port }}
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.livenessProbe.httpGet.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
+            failureThreshold: 6
+            successThreshold: 1
+          {{- end }}                   
+          env:
+          - name: SPRING_CONFIG_LOCATION
+            value: file:/opt/gradle/
+          - name: spring.datasource.username
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-payment-service-secret
+                key: spring.datasource.username
+          - name: spring.datasource.password
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-payment-service-secret
+                key: spring.datasource.password
+          volumeMounts:
+            - name: config
+              mountPath: "/opt/gradle"
+            - name: payment-upivpaqr-cert
+              readOnly: true
+              mountPath: /certs
+            - mountPath: /certs
+              name: eiscert
+              readOnly: true  
+      volumes:
+        - name: config
+          configMap:
+            name: payment-config
+        - name: payment-upivpaqr-cert
+          secret:
+            secretName: payment-upivpaqr
+            defaultMode: 444
+        - name: eiscert
+          secret:
+            secretName: eiscert     
+      
