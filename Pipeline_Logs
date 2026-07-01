@@ -1,117 +1,17 @@
-# Deployment definition
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "Epay_Payment_Service.fullname" . }}
-  labels:
-    {{- include "Epay_Payment_Service.labels" . | nindent 4 }}
-spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "Epay_Payment_Service.selectorLabels" . | nindent 6 }}
-  template:
-    metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      labels:
-        {{- include "Epay_Payment_Service.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-    spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "Epay_Payment_Service.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ tpl .Values.image.repository $ }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-          {{- if .Values.readinessProbe.enabled }}
-          readinessProbe:
-            httpGet:
-              # path: {{ .Values.prefixName }}/actuator/health
-              # port: {{ .Values.service.port }}
-              path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.readinessProbe.httpGet.port }}
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-            successThreshold: 1
-          {{- end }}
-          {{- if .Values.livenessProbe.enabled }}
-          livenessProbe:
-            httpGet:
-              # path: {{ .Values.prefixName }}/actuator/health
-              # port: {{ .Values.service.port }}
-              path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.livenessProbe.httpGet.port }}
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 10
-            failureThreshold: 6
-            successThreshold: 1
-          {{- end }}                   
-          env:
-          - name: SPRING_CONFIG_LOCATION
-            value: file:/opt/gradle/
-          - name: spring.datasource.username
-            valueFrom:
-              secretKeyRef:
-                name: my-secrets-payment-service-secret
-                key: spring.datasource.username
-          - name: spring.datasource.password
-            valueFrom:
-              secretKeyRef:
-                name: my-secrets-payment-service-secret
-                key: spring.datasource.password
-          volumeMounts:
-            - name: config
-              mountPath: "/opt/gradle"
-            - name: payment-upivpaqr-cert
-              readOnly: true
-              mountPath: /certs
-            - name: eiscert
-              mountPath: /certs
-              readOnly: true
-      volumes:
-        - name: config
-          configMap:
-            name: payment-config
-        - name: payment-upivpaqr-cert
-          secret:
-            secretName: payment-upivpaqr
-            defaultMode: 444
-        - name: eiscert
-          secret:
-            secretName: eiscert      
-  ===================================
-
-[osuser@bastion ~]$ oc exec -it payment-paymentservice-55c489bb7f-27rbp  -n sit-transaction -- sh
-sh-5.1$
-sh-5.1$ cd /certs/
-sh-5.1$
-sh-5.1$ ls
-0x1D883787-pub.asc  0x1D883787-sec.asc  SBI0000000032588_UAT_1224_PublicKey.asc  SBIEPAY_NEW.key  sbiepay_newpg.jks
-sh-5.1$
-sh-5.1$
-sh-5.1$
-
-=============================================================================================
-
-
+Service=epay_stubs_service | ENV=dev | VERSION=
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=stubsservice
+SERVICE_NAME=epay_stubs_service
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 217 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_stubs_service/values.yaml to origin/main
+Deploying with image tag from values.yaml: mr-feature-epay-201-stub-service-add-testba-develop-36-fe155ab9
+Release "stubsservice" does not exist. Installing it now.
+Error: Unable to continue with install: VirtualService "stubs-stubsservice" in namespace "dev-simulators" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "stubsservice": current value is "stubs"
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
