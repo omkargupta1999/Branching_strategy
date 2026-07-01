@@ -86,9 +86,9 @@ spec:
             - name: payment-upivpaqr-cert
               readOnly: true
               mountPath: /certs
-            - mountPath: /certs
-              name: eiscert
-              readOnly: true  
+            - name: eiscert
+              mountPath: /certs
+              readOnly: true
       volumes:
         - name: config
           configMap:
@@ -99,5 +99,19 @@ spec:
             defaultMode: 444
         - name: eiscert
           secret:
-            secretName: eiscert     
-      
+            secretName: eiscert      
+  ===================================
+
+[osuser@bastion ~]$ oc exec -it payment-paymentservice-55c489bb7f-27rbp  -n sit-transaction -- sh
+sh-5.1$
+sh-5.1$ cd /certs/
+sh-5.1$
+sh-5.1$ ls
+0x1D883787-pub.asc  0x1D883787-sec.asc  SBI0000000032588_UAT_1224_PublicKey.asc  SBIEPAY_NEW.key  sbiepay_newpg.jks
+sh-5.1$
+sh-5.1$
+sh-5.1$
+
+=============================================================================================
+
+
