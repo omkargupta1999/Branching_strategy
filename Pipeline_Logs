@@ -1,32 +1,19 @@
-Subject: RE: WB-10166-20260630-00233 — Confirmed authorized diagnostic activity (false positive)
+Deploy staged error:
 
-Dear SOC Team,
-
-Thank you for the alert. I can confirm the flagged activity is legitimate and authorized. It was executed by me from the dev bastion as part of an active troubleshooting effort, and it is a false-positive match on the reverse-shell signature. Details below.
-
-1. What the activity was
-The command was a read-only network-connectivity diagnostic, run to investigate intermittent Oracle "ORA-17002: connection reset" errors affecting the epaylite-bridge microservices in the dev-bridge namespace on OpenShift. The script probes TCP reachability from the application pods to the Oracle RAC SCAN listener (epaydbscandev.sbiepay.sbi:1524) and the database node VIP (10.177.134.150:1581), and reports OPEN / REFUSED / TIMEOUT for each. This was one step in diagnosing a database-side RAC VIP/listener issue.
-
-2. Why it triggered the "Bash-Based Reverse Shell Execution" signature
-The script uses Bash's built-in /dev/tcp pseudo-device to test whether a port is reachable:
-    timeout "$T" bash -c "exec 3<>/dev/tcp/$host/$port"
-The combination of exec with /dev/tcp is the same syntax used by malicious reverse-shell one-liners, so the signature matched on pattern alone. The intent and behaviour here are different:
-  - It connects only to internal, known database infrastructure inside the air-gapped zone (the Oracle SCAN name and DB VIP), not to any external or attacker-controlled host.
-  - It opens file descriptor 3, immediately closes it (exec 3>&- 3<&-), and prints a status word. No shell, stdin, or stdout is ever bound to the socket.
-  - There is no interactive shell, no redirection of a shell over the connection (no bash -i, no 0>&1) — i.e. none of the elements that constitute an actual reverse shell.
-  - The tool reported desktopCount 0 and medium severity, consistent with a signature/string match rather than observed payload delivery or lateral movement.
-
-3. Provenance
-  - Executed by: osuser on bastion.dev.sbiepay.sbi (10.177.142.133), my authorized account.
-  - Context: active investigation of the dev-bridge ORA-17002 connection-reset issue (ref: <INSERT CHANGE/INCIDENT TICKET #>).
-  - Timeframe: consistent with the alert timestamp (2026-06-30T10:11 UTC).
-
-4. Confirmation and next steps
-This was authorized, benign diagnostic activity and did not compromise the bastion or any target system. To avoid re-triggering the signature, I will replace the /dev/tcp probe with an equivalent method that does not match the reverse-shell pattern (e.g. a Python socket check or nc) for any further testing.
-
-Please let me know if you require the full script, command output, or any additional evidence for closure of WB-10166-20260630-00233, and I will provide it.
-
-Best regards,
-<YOUR NAME>
-Sr. DevOps / Platform Engineer, SBIePay 2.0
-<CONTACT>
+Service=epay_stubs_service | ENV=dev | VERSION=mr-feature-epay-201-stub-service-add-testba-develop-36-fe155ab9
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=stubs
+SERVICE_NAME=epay_stubs_service
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 217 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_stubs_service/values.yaml to origin/main
+Deploying with image tag from values.yaml: mr-feature-epay-201-stub-service-add-testba-develop-36-fe155ab9
+Release "stubs" does not exist. Installing it now.
+Error: Unable to continue with install: VirtualService "stubs-stubsservice" in namespace "dev-simulators" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "stubs": current value is "stubsservice"
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
