@@ -1,8 +1,5 @@
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.yml'
-
-variables:
-  RELEASE_NAME: stubsservice
-  CHART_NAME: stubsservice
+spec:
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
