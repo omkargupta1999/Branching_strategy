@@ -1,17 +1,37 @@
-Service=epay_stubs_service | ENV=dev | VERSION=
-$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
-RELEASE_NAME=stubsservice
-SERVICE_NAME=epay_stubs_service
-ENV=dev
-WARNING: Using insecure TLS client config. Setting this option is not supported!
-Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
-You have access to 217 projects, the list has been suppressed. You can list all projects with 'oc projects'
-Using project "default".
-Welcome! See 'oc help' to get started.
-Synced dev/charts/epay_stubs_service/values.yaml to origin/main
-Deploying with image tag from values.yaml: mr-feature-epay-201-stub-service-add-testba-develop-36-fe155ab9
-Release "stubsservice" does not exist. Installing it now.
-Error: Unable to continue with install: VirtualService "stubs-stubsservice" in namespace "dev-simulators" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "stubsservice": current value is "stubs"
-Cleaning up project directory and file based variables
-00:00
-ERROR: Job failed: exit code 1
+Madam / Dear Sir,
+
+There is detection from the XDR tool for workbench alert detection for WB-10166-20260630-00233
+
+SOC Observations:
+Detection for possible compromised system that allows remote execution of bash commands on the target system.
+workbenchId
+workbenchLink
+severity
+signature
+description
+detail.alertTriggerTimestamp
+detail.impactScope{}.entityType
+detail.impactScope{}.entityValue
+detail.impactScope{}.entityValue.ips{}
+detail.impactScope{}.entityValue.name
+name
+impactScope.desktopCount
+detail.indicators{}.objectValue
+values(workbenchName)
+WB-10166-20260630-00233
+https://portal.in.xdr.trendmicro.com/index.html#/workbench/alerts/WB-10166-20260630-00233?ref=3276068322cd76781ef6f780f60d73d030bfd08f
+medium
+Detection for possible compromised system that allows remote execution of bash commands on the target system.
+Bash-Based Reverse Shell Execution
+2026-06-30T10:11:35.988Z
+account
+osuser
+10.177.142.133
+bastion.dev.sbiepay.sbi
+Bash-Based Reverse Shell Execution
+0
+oc exec -n dev-bridge epaybridgestatus-epaybridgestatusservice-cc8564d4c-2jbnz -c epaybridgestatusservice -- bash -c SCAN_HOST="$1"; SCAN_PORT="$2"; VIP="$3"; VIP_PORT="$4"; T="$5" tcp_check() { # $1 host $2 port -> echo OPEN|REFUSED|TIMEOUT if timeout "$T" bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null; then exec 3>&- 3<&- 2>/dev/null echo OPEN else rc=$? if [ "$rc" -ge 124 ]; then echo TIMEOUT; else echo REFUSED; fi fi } SCAN_RES="$(tcp_check "$SCAN_HOST" "$SCAN_PORT")" VIP_RES="$(tcp_check "$VIP" "$VIP_PORT")" # TLS / NS-layer classification against the VIP using openssl, if present. TLS_RES="NO_OPENSSL" if command -v openssl >/dev/null 2>&1; then OUT="$(echo | timeout "$T" openssl s_client -connect "$VIP:$VIP_PORT" 2>&1)" if echo "$OUT" | grep -qiE 'CONNECTED|CERTIFICATE|BEGIN CERTIFICATE|SSL-Session|server certificate'; then TLS_RES="BANNER" elif echo "$OUT" | grep -qiE 'connection reset|reset by peer'; then TLS_RES="RESET" elif echo "$OUT" | grep -qiE 'connect:errno|Connection refused'; then TLS_RES="REFUSED" elif echo "$OUT" | grep -qiE 'timed out|timeout'; then TLS_RES="TIMEOUT" else # openssl "CONNECTED" then immediate close with no cert = handshake torn down if echo "$OUT" | grep -qi 'CONNECTED'; then TLS_RES="RESET"; else TLS_RES="UNKNOWN"; fi fi fi echo "$SCAN_RES $VIP_RES $TLS_RES" _ epaydbscandev.sbiepay.sbi 1524 10.177.134.150 1581 5
+Bash-Based Reverse Shell Execution
+
+Kindly confirm if the above activity is legitimate or not.
+Kindly let us know why there is a reverse shell execution 
