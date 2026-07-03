@@ -1,153 +1,714 @@
-Good topic to map out properly. Since I can't reach your cluster directly, the fastest way to do this right is: you run a set of `oc` commands, paste me the output, and I'll walk through what each piece is telling us about your actual setup — rather than me explaining a generic Loki architecture that may not match your config.
-
-Here's the full picture first, then the commands grouped by layer.
-
-## The full picture (what "logging & observability" means on OCP)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Cluster Logging Operator (CLO)                │
-│                                                                     │
-│  ClusterLogForwarder (CR)  ──defines pipelines──►  where logs go   │
-│         ▲                                                          │
-│         │ reads from                                               │
-│  Collector DaemonSet (Vector, one pod per node)                    │
-│         │ tails                                                    │
-│  /var/log/containers/*, /var/log/audit/*, journald                 │
-│                                                                     │
-└──────────────────────────────┬─────────────────────────────────────┘
-                                │ forwards to
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                          Loki Operator                              │
-│                                                                     │
-│  LokiStack (CR) ─── size, storage, tenants, retention               │
-│         │                                                           │
-│    ┌────┴─────┬──────────┬───────────┬─────────────┬───────────┐  │
-│ distributor  ingester   querier   query-frontend  compactor  gateway│
-│                                                                     │
-│         │ writes chunks/index to                                    │
-│         ▼                                                           │
-│  Object storage (ODF/Noobaa, S3, Azure Blob, GCS, Swift...)          │
-└──────────────────────────────┬─────────────────────────────────────┘
-                                │
-                                ▼
-              OpenShift Console "Logging" plugin  (or your Grafana)
-```
-
-Separately, but often confused with "logging," there's the **metrics** side (Cluster Monitoring Operator → Prometheus/Thanos/Alertmanager) — I'll include a quick check for that too since real observability is both, and Loki can even alert via its own Ruler component wired to Alertmanager.
-
-Now the commands. Run these as your cluster-admin (or a role with sufficient view access) and share the output — I'll interpret each block.
-
----
-
-### Phase 1 — What's actually installed
-
-```bash
-# Which logging/observability operators are subscribed
-oc get subscriptions -A | grep -iE "logging|loki|elasticsearch|tempo"
-
-# Their current install state and version
-oc get csv -A | grep -iE "logging|loki|elasticsearch"
-
-# The core CRs that define your setup
-oc get clusterlogforwarder -A
-oc get lokistack -A
-oc get clusterlogging -A          # legacy CR, may or may not exist depending on your CLO version
-```
-
-This tells us: which operator generation you're on (5.x legacy `ClusterLogging`-driven model vs 6.x `ClusterLogForwarder`-only model), and whether you're on Loki (modern) or still have Elasticsearch remnants.
-
----
-
-### Phase 2 — LokiStack detail (the Loki cluster itself)
-
-```bash
-oc get lokistack <name> -n openshift-logging -o yaml
-```
-
-Specifically check inside that output for:
-- `spec.size` — e.g. `1x.demo`, `1x.extra-small`, `1x.small`, `1x.medium` (drives replica counts of each Loki component)
-- `spec.storage` — which object storage secret it's using
-- `spec.limits` — retention/ingestion limits per tenant
-- `status.componentStatus` — health of distributor/ingester/querier/compactor/gateway/indexGateway
-
-```bash
-# All the actual Loki component pods
-oc get pods -n openshift-logging -l app.kubernetes.io/instance=<lokistack-name>
-
-# Quick health check across them
-oc get pods -n openshift-logging -o wide | grep -iE "distributor|ingester|querier|compactor|gateway"
-```
-
----
-
-### Phase 3 — The collector (how logs get from pods into Loki)
-
-```bash
-oc get clusterlogforwarder instance -n openshift-logging -o yaml
-```
-This CR is the actual routing table — it defines **inputs** (application/infrastructure/audit), **outputs** (your lokistack, and possibly external syslog/Kafka/HTTP if you forward anywhere else), and **pipelines** connecting them.
-
-```bash
-# Collector daemonset — should have one pod per node
-oc get ds -n openshift-logging
-oc get pods -n openshift-logging -l component=collector -o wide
-
-# Spot-check a collector pod's own logs for forwarding errors
-oc logs -n openshift-logging <collector-pod-name> --tail=100
-```
-
----
-
-### Phase 4 — Storage backend
-
-```bash
-# Which secret LokiStack references for object storage
-oc get lokistack <name> -n openshift-logging -o jsonpath='{.spec.storage.secret.name}'
-
-# Inspect that secret's keys (not values) to see provider type
-oc get secret <secret-name> -n openshift-logging -o jsonpath='{.data}' | tr ',' '\n'
-
-# If using OpenShift Data Foundation / Noobaa as the S3-compatible backend
-oc get objectbucketclaim -A
-```
-
-In an air-gapped environment this is usually ODF/Noobaa or an internal S3-compatible endpoint rather than public cloud storage — worth confirming since that also affects your retention/compaction sizing.
-
----
-
-### Phase 5 — Visualization
-
-```bash
-# Console logging plugin (built-in UI under Observe > Logs)
-oc get consoleplugin | grep -i logging
-oc get pods -n openshift-logging -l app.kubernetes.io/component=lokistack-gateway
-
-# If you're also running your own Grafana (separate from the built-in console plugin)
-oc get pods -A -l app.kubernetes.io/name=grafana
-oc get route -A | grep -i grafana
-```
-
----
-
-### Phase 6 — Multi-tenancy / RBAC on who can read logs
-
-```bash
-oc get clusterrole | grep -i cluster-logging
-oc get clusterrolebinding | grep -i cluster-logging-view
-```
-Loki on OCP is tenant-partitioned by default into `application`, `infrastructure`, and `audit` — worth knowing who's bound to `cluster-logging-application-view` vs the infra/audit equivalents, especially under PCI-DSS since audit logs should have a much tighter read list than application logs.
-
----
-
-### Phase 7 (bonus) — Where this connects to metrics/alerting
-
-```bash
-oc get pods -n openshift-monitoring | grep -iE "prometheus|alertmanager|thanos"
-oc get prometheusrule -n openshift-logging          # Loki-based alerting rules, if configured
-```
-
----
-
-Run whichever phases are relevant (all of Phase 1–3 at minimum gives me enough to explain your actual topology), paste the output here, and I'll break down exactly how logs are flowing through your specific setup — sizing, retention, any misconfig, and where the gaps are versus a hardened PCI-DSS logging posture.
+[osuser@bastion ~]$ oc get subscriptions -A | grep -iE "logging|loki|elasticsearch|tempo"
+openshift-logging                          cluster-logging                   cluster-logging                   cs-redhat-operator-index-up-4.18   stable-6.4
+openshift-operators-redhat                 loki-operator                     loki-operator                     cs-redhat-operator-index-up-4.18   stable-6.4
+openshift-tempo-operator                   tempo-product                     tempo-product                     cs-redhat-operator-index-up-4.18   stable
+[osuser@bastion ~]$ oc get csv -A | grep -iE "logging|loki|elasticsearch"
+bookinfo                                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+bookinfo                                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+cert-manager-operator                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+cert-manager-operator                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+cert-manager                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+cert-manager                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+deepak                                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+deepak                                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+default                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+default                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-admin                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-admin                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-bridge                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-bridge                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-cache                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-cache                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-cdc-redhat                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-cdc-redhat                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-cdc                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-cdc                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-communication                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-communication                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-epay-admin-service                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-epay-admin-service                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-epay-common                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-epay-common                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-epaybridge                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-epaybridge                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-frontend                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-frontend                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-gemfire                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-gemfire                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-integration                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-integration                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-istio-system                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-istio-system                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-kafka                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-kafka                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-kms                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-kms                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-merchant-simulator                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-merchant-simulator                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-merchant                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-merchant                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-notification                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-notification                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-offline-jobs                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-offline-jobs                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-rns                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-rns                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-sbiepay                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-sbiepay                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-secrets                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-secrets                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-simulators                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-simulators                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-spark-operator                                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-spark-operator                                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-spark                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-spark                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dev-transaction                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dev-transaction                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+devops-admin                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+devops-admin                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+discovery                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+discovery                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+dynatrace                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+dynatrace                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-admin                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-admin                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-bridge                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-bridge                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-epay-common                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-epay-common                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-frontend                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-frontend                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-gemfire                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-gemfire                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-istio-system                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-istio-system                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-kafka                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-kafka                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-kms                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-kms                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-merchant                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-merchant                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-notification                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-notification                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-rns                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-rns                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-secrets                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-secrets                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-simulators                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-simulators                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+int-transaction                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+int-transaction                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+istio-cni                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+istio-cni                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+istio-system                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+istio-system                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+kiali                                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+kiali                                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+knative-eventing                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+knative-eventing                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+knative-serving                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+knative-serving                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+kube-node-lease                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+kube-node-lease                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+kube-public                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+kube-public                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+kube-system                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+kube-system                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+lb-service                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+lb-service                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+ldap-sync                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+ldap-sync                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+logging-test                                       amq-streams-console.v3.0.1-3            Streams for Apache Kafka Console                 3.0.1-3          amq-streams-console.v2.9.0-5            Succeeded
+logging-test                                       amqstreams.v3.0.1-2                     Streams for Apache Kafka                         3.0.1-2          amqstreams.v2.9.0-1                     Succeeded
+logging-test                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+logging-test                                       cluster-observability-operator.v1.2.2   Cluster Observability Operator                   1.2.2            cluster-observability-operator.v1.1.1   Succeeded
+logging-test                                       jaeger-operator.v1.65.0-4               Red Hat OpenShift distributed tracing platform   1.65.0-4         jaeger-operator.v1.65.0-3               Succeeded
+logging-test                                       kiali-operator.v2.17.2                  Kiali Operator                                   2.17.2           kiali-operator.v2.11.4                  Succeeded
+logging-test                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+logging-test                                       network-observability-operator.v1.9.3   Network Observability                            1.9.3            network-observability-operator.v1.9.2   Succeeded
+logging-test                                       openshift-gitops-operator.v1.19.0       Red Hat OpenShift GitOps                         1.19.0           openshift-gitops-operator.v1.18.1       Succeeded
+logging-test                                       quay-operator.v3.15.2                   Red Hat Quay                                     3.15.2           quay-operator.v3.15.1                   Succeeded
+logging-test                                       servicemeshoperator3.v3.2.0             Red Hat OpenShift Service Mesh 3                 3.2.0            servicemeshoperator3.v3.0.3             Succeeded
+logging-test                                       tempo-operator.v0.19.0-2                Tempo Operator                                   0.19.0-2         tempo-operator.v0.18.0-1                Succeeded
+my-app                                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+my-app                                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+nginx-apps                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+nginx-apps                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-apiserver-operator                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-apiserver-operator                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-apiserver                                cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-apiserver                                loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-authentication-operator                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-authentication-operator                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-authentication                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-authentication                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-catalogd                                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-catalogd                                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cloud-controller-manager-operator        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cloud-controller-manager-operator        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cloud-controller-manager                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cloud-controller-manager                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cloud-credential-operator                cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cloud-credential-operator                loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cloud-network-config-controller          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cloud-network-config-controller          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cloud-platform-infra                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cloud-platform-infra                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-csi-drivers                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-csi-drivers                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-machine-approver                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-machine-approver                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-node-tuning-operator             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-node-tuning-operator             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-observability-operator           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-observability-operator           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-olm-operator                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-olm-operator                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-samples-operator                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-samples-operator                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-storage-operator                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-storage-operator                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-cluster-version                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-cluster-version                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-config-managed                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-config-managed                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-config-operator                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-config-operator                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-config                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-config                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-console-operator                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-console-operator                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-console-user-settings                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-console-user-settings                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-console                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-console                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-controller-manager-operator              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-controller-manager-operator              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-controller-manager                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-controller-manager                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-2qms9                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-2qms9                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-2wt78                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-2wt78                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-4m5d8                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-4m5d8                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-8jclj                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-8jclj                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-9ghn9                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-9ghn9                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-bnfp2                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-bnfp2                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-fts95                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-fts95                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-g8d5x                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-g8d5x                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-gpp72                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-gpp72                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-jmrpl                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-jmrpl                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-kq4lj                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-kq4lj                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-ng95f                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-ng95f                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-rr2r2                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-rr2r2                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-sxvt6                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-sxvt6                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-t8q42                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-t8q42                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-wrkww                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-wrkww                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-x64qg                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-x64qg                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-debug-zsljt                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-debug-zsljt                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-distributed-tracing                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-distributed-tracing                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-dns-operator                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-dns-operator                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-dns                                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-dns                                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-etcd-operator                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-etcd-operator                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-etcd                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-etcd                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-gitops-operator                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-gitops-operator                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-gitops                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-gitops                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-host-network                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-host-network                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-image-registry                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-image-registry                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-infra                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-infra                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-ingress-canary                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-ingress-canary                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-ingress-operator                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-ingress-operator                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-ingress                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-ingress                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-insights                                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-insights                                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kni-infra                                cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kni-infra                                loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-apiserver-operator                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-apiserver-operator                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-apiserver                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-apiserver                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-controller-manager-operator         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-controller-manager-operator         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-controller-manager                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-controller-manager                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-scheduler-operator                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-scheduler-operator                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-scheduler                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-scheduler                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-storage-version-migrator-operator   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-storage-version-migrator-operator   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-kube-storage-version-migrator            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-kube-storage-version-migrator            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-logging                                  amq-streams-console.v3.0.1-3            Streams for Apache Kafka Console                 3.0.1-3          amq-streams-console.v2.9.0-5            Succeeded
+openshift-logging                                  amqstreams.v3.0.1-2                     Streams for Apache Kafka                         3.0.1-2          amqstreams.v2.9.0-1                     Succeeded
+openshift-logging                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-logging                                  cluster-observability-operator.v1.2.2   Cluster Observability Operator                   1.2.2            cluster-observability-operator.v1.1.1   Succeeded
+openshift-logging                                  jaeger-operator.v1.65.0-4               Red Hat OpenShift distributed tracing platform   1.65.0-4         jaeger-operator.v1.65.0-3               Succeeded
+openshift-logging                                  kiali-operator.v2.17.2                  Kiali Operator                                   2.17.2           kiali-operator.v2.11.4                  Succeeded
+openshift-logging                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-logging                                  network-observability-operator.v1.9.3   Network Observability                            1.9.3            network-observability-operator.v1.9.2   Succeeded
+openshift-logging                                  openshift-gitops-operator.v1.19.0       Red Hat OpenShift GitOps                         1.19.0           openshift-gitops-operator.v1.18.1       Succeeded
+openshift-logging                                  quay-operator.v3.15.2                   Red Hat Quay                                     3.15.2           quay-operator.v3.15.1                   Succeeded
+openshift-logging                                  servicemeshoperator3.v3.2.0             Red Hat OpenShift Service Mesh 3                 3.2.0            servicemeshoperator3.v3.0.3             Succeeded
+openshift-logging                                  tempo-operator.v0.19.0-2                Tempo Operator                                   0.19.0-2         tempo-operator.v0.18.0-1                Succeeded
+openshift-machine-api                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-machine-api                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-machine-config-operator                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-machine-config-operator                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-marketplace                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-marketplace                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-monitoring                               cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-monitoring                               loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-multus                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-multus                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-28xw6                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-28xw6                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-6wwv2                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-6wwv2                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-76m2d                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-76m2d                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-ctn2d                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-ctn2d                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-cz6zg                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-cz6zg                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-nq4xw                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-nq4xw                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-must-gather-r9b47                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-must-gather-r9b47                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-netobserv-operator                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-netobserv-operator                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-network-console                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-network-console                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-network-diagnostics                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-network-diagnostics                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-network-node-identity                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-network-node-identity                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-network-operator                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-network-operator                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-node                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-node                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-nutanix-infra                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-nutanix-infra                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-oauth-apiserver                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-oauth-apiserver                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-openstack-infra                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-openstack-infra                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-operator-controller                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-operator-controller                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-operator-lifecycle-manager               cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-operator-lifecycle-manager               loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-operators-redhat                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-operators-redhat                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-operators                                cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-operators                                loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-ovirt-infra                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-ovirt-infra                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-ovn-kubernetes                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-ovn-kubernetes                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-route-controller-manager                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-route-controller-manager                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-serverless                               cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-serverless                               loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-service-ca-operator                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-service-ca-operator                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-service-ca                               cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-service-ca                               loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-tempo-operator                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-tempo-operator                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-user-workload-monitoring                 cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-user-workload-monitoring                 loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift-vsphere-infra                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift-vsphere-infra                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+openshift                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+openshift                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+perf-admin                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+perf-admin                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+perf-kms                                           cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+perf-kms                                           loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+perf-merchant                                      cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+perf-merchant                                      loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+perf-simulators                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+perf-simulators                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+perf-transaction                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+perf-transaction                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+pre-prod-kafka                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+pre-prod-kafka                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+preprod-transaction                                cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+preprod-transaction                                loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+quay-enterprise                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+quay-enterprise                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-admin                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-admin                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-bridge                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-bridge                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-communication                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-communication                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-epay-common                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-epay-common                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-frontend                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-frontend                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-gemfire                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-gemfire                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-integration                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-integration                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-istio-system                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-istio-system                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-kafka                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-kafka                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-kms                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-kms                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-merchant                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-merchant                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-notification                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-notification                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-offline-jobs                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-offline-jobs                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-rns                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-rns                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-sbiepay                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-sbiepay                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-secrets                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-secrets                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-simulators                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-simulators                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+sit-transaction                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+sit-transaction                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+spark-operator                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+spark-operator                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+stoarges3                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+stoarges3                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+streams-kafka-console                              cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+streams-kafka-console                              loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+telnet                                             cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+telnet                                             loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+tracing-system                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+tracing-system                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+trident-pvc                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+trident-pvc                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+trident                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+trident                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-admin                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-admin                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-bridge                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-bridge                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-common                                         cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-common                                         loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-communication                                  cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-communication                                  loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-epay-common                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-epay-common                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-frontend                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-frontend                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-gemfire                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-gemfire                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-integration                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-integration                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-istio-system                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-istio-system                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-kafka                                          cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-kafka                                          loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-kms                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-kms                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-merchant                                       cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-merchant                                       loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-notification                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-notification                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-offline-jobs                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-offline-jobs                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-rns                                            cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-rns                                            loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-sbiepay-test                                   cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-sbiepay-test                                   loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-sbiepay                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-sbiepay                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-secrets                                        cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-secrets                                        loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-simulators                                     cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-simulators                                     loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+uat-transaction                                    cluster-logging.v6.4.1                  Red Hat OpenShift Logging                        6.4.1            cluster-logging.v6.4.0                  Succeeded
+uat-transaction                                    loki-operator.v6.4.1                    Loki Operator                                    6.4.1            loki-operator.v6.4.0                    Succeeded
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get clusterlogforwarder -A
+No resources found
+[osuser@bastion ~]$ oc get lokistack -A
+NAMESPACE           NAME           AGE
+openshift-logging   logging-loki   233d
+[osuser@bastion ~]$ oc get clusterlogging -A
+NAMESPACE           NAME           MANAGEMENT STATE
+openshift-logging   instance       Managed
+openshift-logging   instance-new   Managed
+openshift-logging   logging        Managed
+[osuser@bastion ~]$ oc get lokistack openshift-logging -n openshift-logging -o yaml
+Error from server (NotFound): lokistacks.loki.grafana.com "openshift-logging" not found
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get lokistack logging-loki  -n openshift-logging -o yaml
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  annotations:
+    loki.grafana.com/certRotationRequiredAt: "2026-06-15T15:49:31Z"
+    loki.grafana.com/rulesDiscoveredAt: "2026-07-03T01:54:08Z"
+  creationTimestamp: "2025-11-11T08:27:54Z"
+  generation: 1
+  name: logging-loki
+  namespace: openshift-logging
+  resourceVersion: "854276032"
+  uid: c3f7404f-ddba-48e8-9730-1ba0222a9a5e
+spec:
+  hashRing:
+    type: memberlist
+  limits:
+    global:
+      retention:
+        days: 7
+  managementState: Managed
+  rules:
+    enabled: true
+  size: 1x.extra-small
+  storage:
+    schemas:
+    - effectiveDate: "2024-09-27"
+      version: v13
+    secret:
+      name: logging-loki-s3-secret-new
+      type: s3
+    tls:
+      caName: loki-s3-ca-dev
+  storageClassName: thin-csi
+  template:
+    compactor:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    distributor:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    gateway:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    indexGateway:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    ingester:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    querier:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    queryFrontend:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+    ruler:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+  tenants:
+    mode: openshift-logging
+status:
+  components:
+    compactor:
+      Ready:
+      - logging-loki-compactor-0
+    distributor:
+      Ready:
+      - logging-loki-distributor-6d64b75c6c-7dhsq
+      - logging-loki-distributor-6d64b75c6c-wf8xf
+    gateway:
+      Ready:
+      - logging-loki-gateway-6c7d66d8f7-2pxwb
+      - logging-loki-gateway-6c7d66d8f7-pwqbr
+    indexGateway:
+      Ready:
+      - logging-loki-index-gateway-0
+      - logging-loki-index-gateway-1
+    ingester:
+      Ready:
+      - logging-loki-ingester-1
+      - logging-loki-ingester-0
+    querier:
+      Ready:
+      - logging-loki-querier-6785c6c985-s5l97
+      - logging-loki-querier-6785c6c985-zs9cr
+    queryFrontend:
+      Ready:
+      - logging-loki-query-frontend-75c5d8d5fb-99797
+      - logging-loki-query-frontend-75c5d8d5fb-wtwg2
+    ruler:
+      Ready:
+      - logging-loki-ruler-0
+      - logging-loki-ruler-1
+  conditions:
+  - lastTransitionTime: "2026-07-03T05:30:02Z"
+    message: All components ready
+    reason: ReadyComponents
+    status: "True"
+    type: Ready
+  - lastTransitionTime: "2026-06-15T15:52:55Z"
+    message: One or more LokiStack components pending on dependencies
+    reason: PendingComponents
+    status: "False"
+    type: Pending
+  - lastTransitionTime: "2026-04-22T07:20:11Z"
+    message: One or more LokiStack components failed
+    reason: FailedComponents
+    status: "False"
+    type: Failed
+  networkPolicyRuleSet: None
+  storage:
+    credentialMode: static
+    schemas:
+    - effectiveDate: "2024-09-27"
+      version: v13
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get pods -n openshift-logging -l app.kubernetes.io/instance=logging-loki
+NAME                                           READY   STATUS    RESTARTS      AGE
+logging-loki-compactor-0                       1/1     Running   0             17d
+logging-loki-distributor-6d64b75c6c-7dhsq      1/1     Running   0             17d
+logging-loki-distributor-6d64b75c6c-wf8xf      1/1     Running   0             17d
+logging-loki-gateway-6c7d66d8f7-2pxwb          2/2     Running   0             17d
+logging-loki-gateway-6c7d66d8f7-pwqbr          2/2     Running   1 (17d ago)   17d
+logging-loki-index-gateway-0                   1/1     Running   0             17d
+logging-loki-index-gateway-1                   1/1     Running   0             17d
+logging-loki-ingester-0                        1/1     Running   0             17d
+logging-loki-ingester-1                        1/1     Running   0             17d
+logging-loki-querier-6785c6c985-s5l97          1/1     Running   0             17d
+logging-loki-querier-6785c6c985-zs9cr          1/1     Running   0             17d
+logging-loki-query-frontend-75c5d8d5fb-99797   1/1     Running   0             17d
+logging-loki-query-frontend-75c5d8d5fb-wtwg2   1/1     Running   0             17d
+logging-loki-ruler-0                           1/1     Running   0             17d
+logging-loki-ruler-1                           1/1     Running   0             17d
+[osuser@bastion ~]$ oc get pods -n openshift-logging -o wide | grep -iE "distributor|ingester|querier|compactor|gateway"
+logging-loki-compactor-0                       1/1     Running   0             17d    172.16.10.62    infra3.dev.sbiepay.sbi    <none>           <none>
+logging-loki-distributor-6d64b75c6c-7dhsq      1/1     Running   0             17d    172.16.6.42     infra1.dev.sbiepay.sbi    <none>           <none>
+logging-loki-distributor-6d64b75c6c-wf8xf      1/1     Running   0             17d    172.16.12.55    infra2.dev.sbiepay.sbi    <none>           <none>
+logging-loki-gateway-6c7d66d8f7-2pxwb          2/2     Running   0             17d    172.16.6.41     infra1.dev.sbiepay.sbi    <none>           <none>
+logging-loki-gateway-6c7d66d8f7-pwqbr          2/2     Running   1 (17d ago)   17d    172.16.12.56    infra2.dev.sbiepay.sbi    <none>           <none>
+logging-loki-index-gateway-0                   1/1     Running   0             17d    172.16.10.63    infra3.dev.sbiepay.sbi    <none>           <none>
+logging-loki-index-gateway-1                   1/1     Running   0             17d    172.16.6.43     infra1.dev.sbiepay.sbi    <none>           <none>
+logging-loki-ingester-0                        1/1     Running   0             17d    172.16.12.59    infra2.dev.sbiepay.sbi    <none>           <none>
+logging-loki-ingester-1                        1/1     Running   0             17d    172.16.6.45     infra1.dev.sbiepay.sbi    <none>           <none>
+logging-loki-querier-6785c6c985-s5l97          1/1     Running   0             17d    172.16.12.57    infra2.dev.sbiepay.sbi    <none>           <none>
+logging-loki-querier-6785c6c985-zs9cr          1/1     Running   0             17d    172.16.10.60    infra3.dev.sbiepay.sbi    <none>           <none>
+[osuser@bastion ~]$ oc get clusterlogforwarder instance -n openshift-logging -o yaml
+Error from server (NotFound): clusterlogforwarders.logging.openshift.io "instance" not found
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get clusterlogforwarder  -n openshift-logging -o yaml
+apiVersion: v1
+items: []
+kind: List
+metadata:
+  resourceVersion: ""
+[osuser@bastion ~]$ oc get ds -n openshift-logging
+NAME                      DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+collector                 18        18        18      18           18          kubernetes.io/os=linux   147d
+logging                   18        18        18      18           18          kubernetes.io/os=linux   122d
+splunk-integration-siem   18        18        18      18           18          kubernetes.io/os=linux   153d
+[osuser@bastion ~]$ oc get pods -n openshift-logging -l component=collector -o wide
+No resources found in openshift-logging namespace.
+[osuser@bastion ~]$ oc logs -n openshift-logging <collector-pod-name> --tail=100
+-bash: collector-pod-name: No such file or directory
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get objectbucketclaim -A
+error: the server doesn't have a resource type "objectbucketclaim"
+[osuser@bastion ~]$ oc get consoleplugin | grep -i logging
+logging-view-plugin         232d
+[osuser@bastion ~]$ oc get pods -n openshift-logging -l app.kubernetes.io/component=lokistack-gateway
+NAME                                    READY   STATUS    RESTARTS      AGE
+logging-loki-gateway-6c7d66d8f7-2pxwb   2/2     Running   0             17d
+logging-loki-gateway-6c7d66d8f7-pwqbr   2/2     Running   1 (17d ago)   17d
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get pods -A -l app.kubernetes.io/name=grafana
+NAMESPACE         NAME                       READY   STATUS    RESTARTS   AGE
+uat-epay-common   grafana-647846d5f4-5tlpj   0/1     Pending   0          84d
+[osuser@bastion ~]$ oc get route -A | grep -i grafana
+dev-kafka                            grafana-route                       grafana-route-dev-kafka.apps.dev.sbiepay.sbi                                                    grafana                                      grafana    edge                   None
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get clusterrole | grep -i cluster-logging
+cluster-logging-application-view                                                                     2025-11-13T06:44:11Z
+cluster-logging-audit-view                                                                           2025-11-13T06:44:11Z
+cluster-logging-infrastructure-view                                                                  2025-11-13T06:44:11Z
+cluster-logging-write-application-logs                                                               2025-11-03T13:23:05Z
+cluster-logging-write-audit-logs                                                                     2025-11-03T13:23:06Z
+cluster-logging-write-infrastructure-logs                                                            2025-11-03T13:23:05Z
+cluster-logging.v6.4.1-ad2Murs3dAz6CkD6MOD8xLkhsr22MlQMjXM2l2                                        2026-01-22T09:49:02Z
+[osuser@bastion ~]$ oc get clusterrolebinding | grep -i cluster-logging-view
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get pods -n openshift-monitoring | grep -iE "prometheus|alertmanager|thanos"
+alertmanager-main-0                                      6/6     Running   0             80d
+alertmanager-main-1                                      6/6     Running   0             27d
+prometheus-k8s-0                                         6/6     Running   5 (8d ago)    79d
+prometheus-k8s-1                                         6/6     Running   5 (8d ago)    79d
+prometheus-operator-6c4dff46df-sthmj                     2/2     Running   0             80d
+prometheus-operator-admission-webhook-6d6fd65f65-ht6wz   1/1     Running   1 (75d ago)   80d
+prometheus-operator-admission-webhook-6d6fd65f65-knmkn   1/1     Running   0             27d
+thanos-querier-769f98bcf7-4jlnt                          6/6     Running   1 (75d ago)   79d
+thanos-querier-769f98bcf7-v692p                          6/6     Running   0             79d
+[osuser@bastion ~]$ oc get prometheusrule -n openshift-logging          # Loki-based alerting rules, if configured
+Error from server (Forbidden): prometheusrules.monitoring.coreos.com is forbidden: User "V1021008" cannot list resource "prometheusrules" in API group "monitoring.coreos.com" in the namespace "openshift-logging"
+[osuser@bastion ~]$
