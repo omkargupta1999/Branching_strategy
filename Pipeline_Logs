@@ -1,1 +1,268 @@
-^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+# # ci/version/semver.yml  |  Stage: .pre
+# # Computes VERSION string based on branch/pipeline context → version.env
+# # Consumed by ALL downstream jobs via dotenv artifact
+# # NOTE: This job ONLY computes the version. Git tags are created in ci/release/tag.yml
+
+# version:
+#   stage: version
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   tags:
+#     - common_runner
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global --add safe.directory '*'
+#   script:
+#     - |
+#       set -e
+#       git fetch --tags
+
+#       if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+#         VERSION="mr-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+#         VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         RELEASE_VERSION="${BASH_REMATCH[1]}"
+#         RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+#         NEW_RC=$((RC_COUNT + 1))
+#         VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^hotfix\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         VERSION="${BASH_REMATCH[1]}"
+
+#       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+#         LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+#         VERSION="${LAST_TAG#v}"
+
+#       else
+#         VERSION="${CI_COMMIT_SHORT_SHA}"
+#       fi
+#       #newly added-----------------------------------------
+#       echo "BRANCH_USED=$CI_COMMIT_BRANCH" >> version.env
+      
+#       #-=--------------------------------------------------
+
+#       echo "VERSION=$VERSION" >> version.env
+#       echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA" >> version.env
+#       echo "Generated VERSION=$VERSION"
+#   artifacts:
+#     reports:
+#       dotenv: version.env
+#     expire_in: 1 week
+
+
+# ci/version/semver.yml  |  Stage: version
+# Computes VERSION string based on branch/pipeline context → version.env
+# Consumed by ALL downstream jobs via dotenv artifact
+# NOTE: This job ONLY computes the version. Git tags created in ci/release/tag.yml
+#
+# ── VERSION output per context ────────────────────────────────────────────────
+#
+# Pipeline Source      Branch / Context                   VERSION
+# ──────────────────── ────────────────────────────────── ──────────────────────────────────────
+# merge_request_event  <any source> → <any target>        mr-<src branch>-<tgt branch>-<MR ID>-<short-sha>
+# push                 feature/*                          <branch-name>-<short-sha>
+# push                 bugfix/*                           <branch-name>-<short-sha>
+# push                 hotfix/*                           <branch-name>-<short-sha>
+# push                 release/*                          <branch-name>-<short-sha>
+# push                 develop                            dev-<short-sha>
+# push                 sit-integration                    sit-<short-sha>
+# push                 main ← release/*                   automated semver version ( eg. 1.1.0, 1.2.0, 2.0.0)
+# push                 main ← hotfix/*                    automated semver version ( eg. 1.1.1,1.2.1, 1.2.2)
+# unknown              any                                unknown-<short-sha>
+
+#
+# ── Branch name cleaning ──────────────────────────────────────────────────────
+# Applied to all branch-name-based versions and MR source/target:
+#   /  → -    (forward slash removed)
+#   Special chars → -
+#   Uppercase → lowercase
+#   Consecutive dashes collapsed
+#   Max 40 chars (before appending fixed suffixes)
+# Keeps all VERSION strings well within Docker image tag limit of 128 chars.
+#
+# ── main merge — how source branch is identified ──────────────────────────────
+# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME is NOT available in post-merge push pipeline.
+# CI_COMMIT_TITLE IS available — GitLab sets it to the merge commit subject:
+#   "Merge branch 'release/*' into 'main'"
+#   "Merge branch 'hotfix/*' into 'main'"
+# Source branch always present in standard merge commit (GitLab default format).
+# Squash / rebase merges are NOT permitted on Protected branch 'main' (bank policy).
+# If commit title does not match expected format → version job fails → pipeline fails.
+
+
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  #image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/hi/git:2.54.0
+  variables:
+    GIT_DEPTH: "0"    # full clone required — accurate RC tag counting
+  tags:
+    - common_runner
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+  script:
+    - |
+      set -eo pipefail
+      git fetch --tags
+
+      # ── Helper: clean branch name for use in VERSION string ───────────────
+      # Replaces special chars with dash, lowercases, collapses dashes, max 40 chars
+      # Ensures VERSION is safe for Docker image tag (128 char limit)
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
+
+      # ── MR pipeline ────────────────────────────────────────────────────────
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        # All MR types use same pattern — source + target embedded for traceability
+        # CI_MERGE_REQUEST_SOURCE_BRANCH_NAME and TARGET available in MR pipelines
+        SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+        TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+    
+      # ── feature/*, bugfix/*, hotfix/*, release/* push ──────────────────────
+      # One condition covers all four — same version pattern: <branch>-<sha>
+      # branch builds carry SHA-based identity like every other working branch.
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix|release)\/ ]]; then
+        BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
+        VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
+
+      # ── develop push ───────────────────────────────────────────────────────      
+      elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+
+      # ── sit-integration push ───────────────────────────────────────────────
+      # Stable formal SIT surface (Option 7) — same treatment as develop
+      elif [[ "$CI_COMMIT_BRANCH" == "sit-integration" ]]; then
+        VERSION="sit-${CI_COMMIT_SHORT_SHA}"  
+      
+      # ── main push ──────────────────────────────────────────────────────────
+      # Post-merge to main from release/* or hotfix/*
+      # CI_COMMIT_TITLE = GitLab predefined variable = merge commit subject line
+      # GitLab format: "Merge branch 'release/*' into 'main'"
+      #                "Merge branch 'hotfix/*' into 'main'"
+      # Source branch name always in title for standard merge commits.
+      # Squash/rebase not permitted on Protected 'main' (bank policy + GitLab setting).
+      # If title format not matched → version job fails → entire pipeline fails.
+      elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        echo "Merge commit title: $CI_COMMIT_TITLE"
+
+        # ── Idempotency guard ────────────────────────────────────────────────
+        # Pipeline retry after ci/release/tag.yml has already tagged this SHA:
+        # reuse the existing semver — never compute a second bump.
+        EXISTING_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+        if [[ -n "$EXISTING_TAG" ]]; then
+          VERSION="$EXISTING_TAG"
+          echo "Semver tag ${EXISTING_TAG} already points at HEAD — reusing (pipeline retry)."
+        
+        # ── Gate 1: merge commit from an ALLOWED source (release/* | hotfix/*) ─
+        # Bump type is decided by the source branch name; new semver computed
+        # from the latest existing tag (Option 7 branch names carry no version).
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '(release|hotfix)/"; then
+          SRC_BRANCH=$(echo "$CI_COMMIT_TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
+
+          case "$SRC_BRANCH" in
+            release/major-*)        BUMP="major" ;;
+            release/minor-*)        BUMP="minor" ;;
+            hotfix/*)               BUMP="patch" ;;
+            *)
+              echo "❌ ERROR: Unsupported source branch '${SRC_BRANCH}' merged to main."
+              echo "   Only release/* (minor/major) and hotfix/* (patch) may merge to main."
+              exit 1
+              ;;
+          esac                
+
+          # Latest semver tag — bare format per BR-v12 (1.2.0); legacy v-prefixed
+          # tags also matched (prefix stripped) so history migration is seamless.
+          LAST_TAG=$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' \
+                     | sed 's/^v//' | sort -V | tail -1 || true)
+
+          if [[ -z "$LAST_TAG" ]]; then
+            VERSION="1.0.0"
+            echo "No prior semver tag found — starting at ${VERSION}"
+          else
+            IFS=. read -r MAJ MIN PAT <<< "$LAST_TAG"
+            case "$BUMP" in
+              major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
+              minor) MIN=$((MIN + 1)); PAT=0 ;;
+              patch) PAT=$((PAT + 1)) ;;
+            esac
+            VERSION="${MAJ}.${MIN}.${PAT}"
+          fi
+          echo "Semver: ${LAST_TAG:-<none>} → ${VERSION}  (${BUMP} bump from ${SRC_BRANCH})"
+          echo "VERSION_BUMP=${BUMP}"              >> version.env
+          echo "VERSION_SOURCE_BRANCH=${SRC_BRANCH}" >> version.env
+
+        # ── Gate 2: merge commit, but from a FORBIDDEN source branch ─────────
+        # e.g. feature/* or develop merged directly to main. Different incident
+        # to a squash merge — this is a protected-branch policy breach.
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '"; then
+          echo "❌ ERROR: Merge to main from unsupported source branch."
+          echo "   Title was : $CI_COMMIT_TITLE"
+          echo "   Only release/* (minor/major bump) and hotfix/* (patch bump)"
+          echo "   may merge to main (BR-v12 / Option 7)."
+          echo ""
+          echo "   Root cause : Protected-branch / MR-approval policy breach."
+          echo "   Fix        : Review MR approval rules and protected branch"
+          echo "                settings for 'main'; revert the offending merge."
+          exit 1
+
+        # ── Gate 3: not a standard merge commit at all ───────────────────────
+        else
+          # Source branch not found in commit title.
+          # Squash or rebase merge was used — NOT permitted on Protected main branch.
+          echo "❌ ERROR: Cannot determine source branch from merge commit title."
+          echo "   Title was  : $CI_COMMIT_TITLE"
+          echo "   Expected   : \"Merge branch 'release/…' into 'main'\""
+          echo "   OR         : \"Merge branch 'hotfix/…' into 'main'\""
+          echo ""
+          echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
+          echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
+          echo "                Merge method → select 'Merge commit'"
+          echo "                Re-raise the MR and merge again."
+          exit 1
+        fi
+
+      # ── Unknown branch ─────────────────────────────────────────────────────
+      # Should not occur in normal flow — all configured branches handled above.
+      # Catches manual pipeline run on unrecognised branch.
+      else
+        echo "⚠️  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
+        VERSION="unknown-${CI_COMMIT_SHORT_SHA}"  
+      fi
+
+      # ── Write dotenv ────────────────────────────────────────────────────────
+      # BRANCH_USED: use source branch for MR pipeline (CI_COMMIT_BRANCH is empty in MR)
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
+      else
+        echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
+      fi
+      echo "VERSION=$VERSION"                           >> version.env
+      echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
+
+      # ── Summary ─────────────────────────────────────────────────────────────
+      echo "──────────────────────────────────────────────────────"
+      echo "Source  : ${CI_PIPELINE_SOURCE}"
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "Branch  : ${CI_COMMIT_BRANCH}"
+      fi
+      echo "VERSION : ${VERSION}"
+      echo "──────────────────────────────────────────────────────"
+
+  artifacts:
+    reports:
+      dotenv: version.env
+    expire_in: 1 day
+  rules:                             ## Ensure version job is included in all pipeline types.
+   - when: on_success
