@@ -1,40 +1,11 @@
-
-
-
-
-# Branch name (Application subgroup level) - This is my current regex we are using for branch creation FYI.
-
-^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$
-
-But Now there is some changes for branch creation below .. 
-
-
-----------------
-
-
-release/{DEMANDid}_minor_EPAY   ---- example: release/DM2026068056-minor-EPAY-BPCl-offline-refund
-
-bugfix/EPAY_id_desc
-
-hotfix/EPAY_id_desc
-
-please provide the updated regex accordingly which we will use for branch cetion.
-
-
-I also if we are going to update the regex then based on this where else we have to make the changes in our current cicd-templates yaml to replaces the existing regex logic to new updated regex which should fuction the same way like it was working for current regex.
-
-And Also please tell me the impact of this changes like is any logic will be impact or something in pipeline.
-
-And also we have to work on versing for main branch all others branches we will follow the same versing logic but for main we have to changes the logic ...As i told you versiong will be handled by our code only from semver for main ...like 
-
-from the main branch we will be bump the major and minor version and if any hotfix is merging then it will considered the pathches version and will increase the Z values by +1.
-
-Please let me know the complete things in proper way so that i can implement this in our environment , there is no chance of error so please giving anything please check everything and all the logics and angles if all are correct and not impact the existing setup.
-
-
-
-
-
-
-
-
+#Event                 Branch                             Version(generated in version Job)
+# merge_request_event  <any source> → <any target>        mr-<src branch>-<tgt branch>-<MR ID>-<short-sha>
+# push                 feature/*                          <branch-name>-<short-sha>
+# push                 bugfix/*                           <branch-name>-<short-sha>
+# push                 hotfix/*                           <branch-name>-<short-sha>
+# push                 release/*                          <branch-name>-<short-sha>
+# push                 develop                            dev-<short-sha>
+# push                 sit-integration                    sit-<short-sha>
+# push                 main ← release/*                   automated semver version ( eg. 1.1.0, 1.2.0, 2.0.0)
+# push                 main ← hotfix/*                    automated semver version ( eg. 1.1.1,1.2.1, 1.2.2)
+# unknown              any                                unknown-<short-sha>
