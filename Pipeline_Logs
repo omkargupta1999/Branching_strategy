@@ -1,11 +1,1 @@
-^(main|develop|release/DM[0-9]+-(major|minor)-EPAY-[a-z0-9-]+|feature/EPAY-[0-9]+-[a-z0-9-]+|bugfix/EPAY-[0-9]+-[a-z0-9-]+|hotfix/EPAY-[0-9]+-[a-z0-9-]+)$
-
-There is some changes in regex as well.
-
-1. For all the branching regex "EPAY" should be after the / .... like release/EPAY, bugfix/EPAY , hotfix/EPAY and feature/EPAY then after all the above regex we can add.
-2. [a-z0-9-]  this should we acceptable both lower and upper case ...should not be case sensitive.
-3. In description section inregex formats it should accept both like underscroe(_) and hifan(-) both in the regex.
-4. we have to add one more regex which will be fixed only "sit-integration"
-
-
-So i want you to please fist share the complete and updated regex which should be covers all the criteria and also share the complete details with examples of that regex for each branch.
+^(main|develop|sit-integration|release/DM[0-9]+-(major|minor)-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
