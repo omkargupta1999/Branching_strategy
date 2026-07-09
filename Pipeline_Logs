@@ -1,486 +1,120 @@
-semver.yaml ---------------------------
+Here's the complete test plan, sequenced so failures surface early and cheap. Run it on **one pilot repo** before touching the other 54.
 
+## Step 0 — Prerequisites (do these first, or everything else is noise)
 
-# ci/version/semver.yml  |  Stage: version
-# Computes VERSION string based on branch/pipeline context → version.env
-# Consumed by ALL downstream jobs via dotenv artifact
-# NOTE: This job ONLY computes the version. Git tags created in ci/release/tag.yml
-#
-# ── VERSION output per context ────────────────────────────────────────────────
-#
-# Pipeline Source      Branch / Context                   VERSION
-# ──────────────────── ────────────────────────────────── ──────────────────────────────────────
-# merge_request_event  <any source> → <any target>        mr-<src branch>-<tgt branch>-<MR ID>-<short-sha>
-# push                 feature/*                          <branch-name>-<short-sha>
-# push                 bugfix/*                           <branch-name>-<short-sha>
-# push                 hotfix/*                           <branch-name>-<short-sha>
-# push                 release/*                          <branch-name>-<short-sha>
-# push                 develop                            dev-<short-sha>
-# push                 sit-integration                    sit-<short-sha>
-# push                 main ← release/major-*             major bump (last_tag + 1.0.0)
-# push                 main ← release/minor-*             minor bump (last_tag + 0.1.0)
-# push                 main ← hotfix/*                    patch bump (last_tag + 0.0.1)
-# unknown              any                                unknown-<short-sha>
-#
-# ── Tag format ────────────────────────────────────────────────────────────────
-# Tags are BARE semver: 1.2.0  (NO 'v' prefix — branch/tag regex disallows it).
-# Both the idempotency guard and the LAST_TAG lookup below match bare-only, and
-# ci/release/tag.yml creates bare tags. These three MUST stay consistent.
-#
-# ── Branch name cleaning ──────────────────────────────────────────────────────
-#   /  → -    Special chars → -    Uppercase → lowercase
-#   Consecutive dashes collapsed    Max 40 chars
-# Keeps all VERSION strings well within the Docker image tag limit of 128 chars.
-#
-# ── main merge — how source branch is identified (Approach 1) ─────────────────
-# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME is NOT available in post-merge push pipeline.
-# CI_COMMIT_TITLE IS available — GitLab sets it to the merge commit subject:
-#   "Merge branch 'release/minor-DM…-EPAY-…' into 'main'"
-#   "Merge branch 'hotfix/EPAY-…' into 'main'"
-# Squash/rebase merges are NOT permitted on Protected branch 'main' (bank policy).
-# LOAD-BEARING: Settings → Merge requests → Merge method MUST be 'Merge commit'.
-# If commit title does not match expected format → version job fails → pipeline fails.
+Confirm before you start:
+- **`main` merge method = "Merge commit"** (Settings → Merge requests). This is load-bearing for Approach 1 — if it's squash or rebase, every main merge fails at Gate 3.
+- **`GITLAB_CI_DEPLOY_TOKEN`** exists, masked+protected, with `write_repository` scope (for tag push).
+- **Branch push-rule regex** is applied.
+- **Bootstrap a known tag** (bare, no `v`):
+  ```bash
+  git tag 4.2.7 && git push origin 4.2.7
+  ```
+  Without this, everything starts from the `1.0.0` baseline and your bump assertions won't match.
 
-version:
-  stage: version
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  variables:
-    GIT_DEPTH: "0"            # full clone required — accurate tag lookup
-    INITIAL_VERSION: "1.0.0"  # baseline when repo has no semver tag yet
-  tags:
-    - common_runner
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-  script:
-    - |
-      set -eo pipefail
-      git fetch --tags
+## Step 1 — Non-main branches (fast, no merges needed)
 
-      # ── Helper: clean branch name for use in VERSION string ───────────────
-      clean_branch() {
-        echo "$1"                        \
-          | sed 's/[^a-zA-Z0-9._-]/-/g' \
-          | tr '[:upper:]' '[:lower:]'   \
-          | sed 's/--*/-/g'              \
-          | sed 's/^-//; s/-$//'         \
-          | cut -c1-40
-      }
+Just push a commit to each branch and read the `version` job log. No deploys yet.
 
-      # ── MR pipeline ────────────────────────────────────────────────────────
-      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
-        SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
-        TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
-        VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+| # | Create & push branch | Expected VERSION | Expected deploy buttons |
+|---|---|---|---|
+| 1 | `feature/EPAY-1234-payment-service` | `feature-epay-1234-payment-service-<sha>` | none |
+| 2 | `bugfix/EPAY-4567-null_pointer_fix` | `bugfix-epay-4567-null_pointer_fix-<sha>` | none |
+| 3 | `hotfix/EPAY-6789-timeout-fix` | `hotfix-epay-6789-timeout-fix-<sha>` | none |
+| 4 | `release/minor-DM2026068056-EPAY-bpcl-offline-refund` | `release-minor-dm2026068056-epay-bpcl-off-<sha>` | **sit, uat, int, perf, preprod-dc, preprod-dr** |
+| 5 | `release/major-DM2026070021-EPAY-wallet-revamp` | `release-major-dm2026070021-epay-wallet-r-<sha>` | same six |
+| 6 | `develop` | `dev-<sha>` | `deploy-dev` (manual) |
+| 7 | `sit-integration` | `sit-<sha>` | `deploy-sit` (manual) |
 
-      # ── feature/*, bugfix/*, hotfix/*, release/* push ──────────────────────
-      # One condition covers all four — same pattern: <branch>-<sha>
-      elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix|release)\/ ]]; then
-        BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
-        VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
+Watch for: the branch name gets **lowercased and truncated to 40 chars** before the SHA. Note test 4 and 5 — the name is cut mid-word (`...bpcl-off`, `...wallet-r`). That's expected, not a bug.
 
-      # ── develop push ───────────────────────────────────────────────────────
-      elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-        VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+**Also confirm here:** no `create-prod-tag` job runs on any of these (it's gated on `main` push only), and `image:push` is **skipped** for feature/bugfix/hotfix but **runs** for release/develop.
 
-      # ── sit-integration push ───────────────────────────────────────────────
-      elif [[ "$CI_COMMIT_BRANCH" == "sit-integration" ]]; then
-        VERSION="sit-${CI_COMMIT_SHORT_SHA}"
+## Step 2 — MR pipelines
 
-      # ── main push ──────────────────────────────────────────────────────────
-      elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
-        echo "Merge commit title: $CI_COMMIT_TITLE"
+| # | Open MR | Expected VERSION | Expected buttons |
+|---|---|---|---|
+| 8 | `feature/EPAY-1234-x` → `develop` | `mr-feature-epay-1234-x-develop-<iid>-<sha>` | `deploy-dev` |
+| 9 | `bugfix/EPAY-4567-y` → `release/minor-DM...` | `mr-bugfix-...-release-...-<iid>-<sha>` | `deploy-sit`, `deploy-uat` |
+| 10 | `hotfix/EPAY-6789-z` → `main` | `mr-hotfix-...-main-<iid>-<sha>` | **`deploy-hotfix-preprod-smoke`** only |
 
-        # ── Idempotency guard ────────────────────────────────────────────────
-        # Retry after ci/release/tag.yml already tagged this SHA:
-        # reuse the existing semver — never compute a second bump.
-        # BARE tags only (no v-prefix) — must match LAST_TAG lookup + tag.yml.
-        EXISTING_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
-        if [[ -n "$EXISTING_TAG" ]]; then
-          VERSION="$EXISTING_TAG"
-          echo "Semver tag ${EXISTING_TAG} already points at HEAD — reusing (pipeline retry)."
+Test 10 is the only deploy button that exists on an MR pipeline before merge. Confirm it forwards `ENV=pre-prod`.
 
-        # ── Gate 1: merge commit from an ALLOWED source (release/* | hotfix/*) ─
-        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '(release|hotfix)/"; then
-          SRC_BRANCH=$(echo "$CI_COMMIT_TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
+## Step 3 — The main bumps (the core of it)
 
-          # ── Gate 1a: extraction sanity — title matched but yielded nothing ──
-          # Guards against malformed/unusual titles that pass the grep but whose
-          # quoted branch name cannot be extracted (empty SRC_BRANCH would
-          # otherwise fall to the case default with a confusing message).
-          if [[ -z "$SRC_BRANCH" ]]; then
-            echo "❌ ERROR: Malformed merge commit title — source branch not extractable."
-            echo "   Title was : $CI_COMMIT_TITLE"
-            exit 1
-          fi
+This is what actually matters. Merge each, **using a real merge commit** (no squash), and check both the version *and* that a bare tag was pushed.
 
-          case "$SRC_BRANCH" in
-            release/major-*)  BUMP="major" ;;
-            release/minor-*)  BUMP="minor" ;;
-            hotfix/*)         BUMP="patch" ;;
-            *)
-              echo "❌ ERROR: Unsupported source branch '${SRC_BRANCH}' merged to main."
-              echo "   Only release/major-*, release/minor-* and hotfix/* may merge to main."
-              exit 1
-              ;;
-          esac
+| # | Merge to main | Last tag before | Expected VERSION | Expected tag created |
+|---|---|---|---|---|
+| 11 | `release/minor-DM2026068056-EPAY-...` | `4.2.7` | `4.3.0` | `4.3.0` (bare, no `v`) |
+| 12 | `release/major-DM2026070021-EPAY-...` | `4.3.0` | `5.0.0` | `5.0.0` |
+| 13 | `hotfix/EPAY-6789-timeout-fix` | `5.0.0` | `5.0.1` | `5.0.1` |
 
-          # ── Latest BARE semver tag (no v-prefix) ─────────────────────────────
-          LAST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+For each, verify in the job log:
+- `version` job prints `Semver: 4.2.7 → 4.3.0  (minor bump from release/minor-DM...)`
+- `create-prod-tag` prints `✅ Production tag created: 4.3.0`
+- Run `git tag -l` on the repo — confirm **bare** `4.3.0`, not `v4.3.0`
+- `deploy-prod-dc`, `deploy-prod-dr`, `deploy-int` buttons appear
 
-          if [[ -z "$LAST_TAG" ]]; then
-            VERSION="${INITIAL_VERSION}"
-            echo "No prior semver tag found — starting at ${VERSION}"
-          else
-            IFS=. read -r MAJ MIN PAT <<< "$LAST_TAG"
-            case "$BUMP" in
-              major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
-              minor) MIN=$((MIN + 1)); PAT=0 ;;
-              patch) PAT=$((PAT + 1)) ;;
-            esac
-            VERSION="${MAJ}.${MIN}.${PAT}"
-          fi
-          echo "Semver: ${LAST_TAG:-<none>} → ${VERSION}  (${BUMP} bump from ${SRC_BRANCH})"
-          echo "VERSION_BUMP=${BUMP}"                >> version.env
-          echo "VERSION_SOURCE_BRANCH=${SRC_BRANCH}" >> version.env
+## Step 4 — Baseline test (fresh repo, no tags)
 
-        # ── Gate 2: merge commit, but from a FORBIDDEN source branch ─────────
-        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '"; then
-          echo "❌ ERROR: Merge to main from unsupported source branch."
-          echo "   Title was : $CI_COMMIT_TITLE"
-          echo "   Only release/* (minor/major bump) and hotfix/* (patch bump)"
-          echo "   may merge to main."
-          echo ""
-          echo "   Root cause : Protected-branch / MR-approval policy breach."
-          echo "   Fix        : Review MR approval rules and protected branch"
-          echo "                settings for 'main'; revert the offending merge."
-          exit 1
+| # | Setup | Merge | Expected |
+|---|---|---|---|
+| 14 | Repo with **zero** semver tags | any `release/minor-...` → main | `1.0.0` exactly, tag `1.0.0` |
 
-        # ── Gate 3: not a standard merge commit at all ───────────────────────
-        else
-          echo "❌ ERROR: Cannot determine source branch from merge commit title."
-          echo "   Title was  : $CI_COMMIT_TITLE"
-          echo "   Expected   : \"Merge branch 'release/…' into 'main'\""
-          echo "   OR         : \"Merge branch 'hotfix/…' into 'main'\""
-          echo ""
-          echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
-          echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
-          echo "                Merge method → select 'Merge commit'"
-          echo "                Re-raise the MR and merge again."
-          exit 1
-        fi
+Delete your bootstrap tag temporarily, or use a second scratch repo.
 
-      # ── Unknown branch ─────────────────────────────────────────────────────
-      else
-        echo "⚠️  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
-        VERSION="unknown-${CI_COMMIT_SHORT_SHA}"
-      fi
+## Step 5 — Failure gates (must fail — this is the point)
 
-      # ── Write dotenv ────────────────────────────────────────────────────────
-      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
-        echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
-      else
-        echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
-      fi
-      echo "VERSION=$VERSION"                           >> version.env
-      echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
+These prove the guards work. **All three must fail the pipeline.** If any of them *passes*, that's your bug.
 
-      # ── Summary ─────────────────────────────────────────────────────────────
-      echo "──────────────────────────────────────────────────────"
-      echo "Source  : ${CI_PIPELINE_SOURCE}"
-      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
-        echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
-      else
-        echo "Branch  : ${CI_COMMIT_BRANCH}"
-      fi
-      echo "VERSION : ${VERSION}"
-      echo "──────────────────────────────────────────────────────"
+| # | Test | How | Expected failure |
+|---|---|---|---|
+| 15 | **Gate 3 — squash** | Temporarily set main merge method to "Squash", merge a release, then set it back | version job fails: *"Squash or rebase merge was used"* |
+| 16 | **Gate 2 — forbidden source** | Merge `feature/EPAY-1-x` directly to main | version job fails: *"Merge to main from unsupported source branch"* |
+| 17 | **Invalid release type** | Try creating `release/patch-DM1-EPAY-x` | rejected by **push rule** (never reaches CI) |
 
-  artifacts:
-    reports:
-      dotenv: version.env
-    expire_in: 1 day
-  rules:                             ## version job runs in all pipeline types
-    - when: on_success
+Test 15 is the most important one you'll run. It confirms your load-bearing merge-method setting is actually guarded rather than silently producing wrong versions.
 
+## Step 6 — Idempotency & concurrency
 
+| # | Test | Expected |
+|---|---|---|
+| 18 | **Retry** a completed main pipeline | version job: *"Semver tag 4.3.0 already points at HEAD — reusing"*. `create-prod-tag`: *"idempotent skip"*. **No double-bump, no error.** |
+| 19 | **Parallel merges** (if you can stage two release merges seconds apart) | One tags successfully. The other either serializes behind `prod-tag-lock` or fails with *"exists on a DIFFERENT commit — re-run"*. Re-running it computes from the new tag. |
 
-==================
+Test 18 is easy and catches the nastiest class of bug (silent double-bump). Do it.
 
-tag.yml ---------------
+## Step 7 — Deployment (end to end)
 
-# ci/release/tag.yml  |  Stage: release
-# Creates git tags on post-merge pipelines ONLY — never on MR pipelines.
-# Prod tag → auto on merge to main (marks deployment approval — already CAB approved).
-#
-# CHANGES for Approach-1 / new branch strategy / bare tags:
-#   * Prod tag is now BARE (X.Y.Z), NOT v-prefixed — matches semver.yml's tag
-#     lookup + idempotency guard and the branch-name regex (no 'v' allowed).
-#   * create-rc-tag is DISABLED: the new release branch names carry no version,
-#     and Approach-1 versioning drops RC tags entirely (release push = <branch>-<sha>).
-#     Kept below (commented) for reference only.
+Pick **one** service, then:
 
-.git_tag_base:
-  stage: release
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - common_runner
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global --add safe.directory '*'
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-    - git fetch --tags
+| # | Test | Verify |
+|---|---|---|
+| 20 | Click `deploy-sit` on a release push | Downstream deployment pipeline triggers, receives `VERSION=release-minor-dm...-<sha>` and `ENV=sit` |
+| 21 | Click `deploy-preprod-dc` | receives `ENV=pre-prod-dc` |
+| 22 | Click `deploy-preprod-dr` | receives `ENV=pre-prod` (the DR cluster — confirm it lands on the **DR** cluster, not DC) |
+| 23 | Click `deploy-prod-dc` on a main pipeline | receives `ENV=prod-dc`, `VERSION=4.3.0` (bare semver) |
+| 24 | Confirm image exists in JFrog | tag `4.3.0` for the prod build; `release-minor-dm...-<sha>` for the release build |
 
-# ── RC tag — DISABLED (RC versioning dropped under Approach-1) ─────────────────
-# Old logic parsed the branch name for a version; new release names
-# (release/minor-DM…-EPAY-…) carry none, so this is intentionally removed.
-# create-rc-tag:
-#   extends: .git_tag_base
-#   script:
-#     - |
-#       RELEASE_VERSION=$(echo "$CI_COMMIT_BRANCH" | sed 's|release/||')
-#       RC_COUNT=$(git tag -l "${RELEASE_VERSION}-rc.*" | wc -l)
-#       NEW_RC=$((RC_COUNT + 1))
-#       RC_TAG="${RELEASE_VERSION}-rc.${NEW_RC}"
-#       git tag -a "$RC_TAG" -m "RC ${NEW_RC} — auto on merge to $CI_COMMIT_BRANCH"
-#       git push origin "$RC_TAG"
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"'
-#       when: on_success
-#     - when: never
+Test 22 specifically — since `pre-prod` and `pre-prod-dr` were a point of confusion, verify the DR deploy actually reaches the DR cluster and not preprod-DC.
 
-# ── Prod tag — auto on merge to main (BARE tag, no v-prefix) ──────────────────
-create-prod-tag:
-  extends: .git_tag_base
-  resource_group: prod-tag-lock      # serialise concurrent main pipelines
-  interruptible: false               # never cancel a tag push mid-flight
-  allow_failure: false               # deploy stage must not unlock without the tag
-  script:
-    - |
-      set -eo pipefail
-      # VERSION is the bare semver computed by ci/version/semver.yml (e.g. 1.2.0)
-      if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-        echo "VERSION '$VERSION' is not a clean X.Y.Z — nothing to tag. Skipping."
-        exit 0
-      fi
-      PROD_TAG="${VERSION}"
-      echo "Creating production tag: $PROD_TAG"
-      if git rev-parse "$PROD_TAG" >/dev/null 2>&1; then
-        EXISTING_SHA=$(git rev-parse "${PROD_TAG}^{commit}")
-        if [ "$EXISTING_SHA" = "$CI_COMMIT_SHA" ]; then
-          echo "Tag $PROD_TAG already on this commit — idempotent skip."
-          exit 0
-        fi
-        echo "❌ ERROR: $PROD_TAG exists on a DIFFERENT commit ($EXISTING_SHA)." >&2
-        echo "   Parallel release raced us. Re-run the FULL pipeline to recompute." >&2
-        exit 1
-      fi
-      git tag -a "$PROD_TAG" -m "Production ${VERSION} — merged to main [$(date -u '+%Y-%m-%d %H:%M UTC')] | pipeline ${CI_PIPELINE_ID}"
-      git push origin "$PROD_TAG"
-      echo "✅ Production tag created: $PROD_TAG"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
-    - when: never
+---
 
+## The minimum viable pass
 
+If you're time-constrained and want the highest-confidence subset, run these **five**:
 
-=====================================
+1. **Test 11** (minor → `4.3.0` + bare tag) — proves versioning, tagging, title parsing, dotenv, all at once
+2. **Test 15** (squash → Gate 3 fires) — proves it fails safe
+3. **Test 18** (retry → no double-bump) — proves idempotency
+4. **Test 4** (release push → six deploy buttons appear) — proves the new prefix rule works
+5. **Test 23** (prod deploy receives `VERSION=4.3.0`) — proves end-to-end delivery
 
-deploy.jobs.yml ---------------
+Those five cover every mechanism. Everything else is edge-case hardening.
 
-# ci/deploy/deploy.jobs.yml
-# All deploy trigger jobs — tech-stack agnostic.
-# Included by EVERY CI orchestrator template (java, nodejs, python, php, dotnet, react).
-#
-# All jobs extend .trigger_cd (single base template in trigger.cd.yml).
-# Job-specific behaviour sits here: rules, manual_confirmation, variables.
-#
-# ── Release branch gating ─────────────────────────────────────────────────────
-# Deploy rules match on the PREFIX only:  /^release\//
-# The exact release naming (release/(major|minor)-DM<digits>-EPAY-<desc>) is
-# enforced ONCE, by the GitLab Push Rule branch regex — a malformed release
-# branch cannot be created in the first place. Do NOT duplicate that regex here:
-# it would have to stay in lockstep across 6 rules + the push rule, and a missed
-# edit silently removes a deploy button (this exact drift caused the old
-# release/0.0.0 incident). Push rule = single source of truth for branch names.
-#
-# ── CHART_NAME ────────────────────────────────────────────────────────────────
-# Defined in each APP REPO's .gitlab-ci.yml, not in orchestrators.
-#
-#   # epay_transaction_service/.gitlab-ci.yml
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
-#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+---
 
-# ── DEV — auto on develop push ────────────────────────────────────────────────
-deploy-dev:
-  extends: .trigger_cd
-  variables:
-    ENV:          dev
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-    VERSION: "${VERSION}"
-  rules:
-    # # - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
-    # #   when: on_success
-    # - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/ &&  $CI_PIPELINE_SOURCE == "push"'
-    #   when: on_success
-    # - if: '$CI_PIPELINE_SOURCE =~ "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-    #   when: on_success
-    # - when: never
+Two things to have open while testing: the **`version` job log** (it prints `Semver: <last> → <new> (<bump> from <branch>)`, which tells you instantly whether the bump math and source detection worked), and **`git tag -l`** on the repo (confirms bare tags, no `v`).
 
-    # MR opened/updated
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && 
-           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && 
-           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-      when: manual
-
-    # MR merged -> develop push
-    - if: '$CI_PIPELINE_SOURCE == "push" && 
-           $CI_COMMIT_BRANCH == "develop"'
-      when: manual
-    - when: never
-
-# ── SIT — manual, Release Manager ─────────────────────────────────────────────
-deploy-sit:
-  extends: .trigger_cd
-  variables:
-    ENV:          sit
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── UAT — manual, Release Manager ─────────────────────────────────────────────
-deploy-uat:
-  extends: .trigger_cd
-  variables:
-    ENV:          uat
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── INT — manual, Release Manager ─────────────────────────────────────────────
-deploy-int:
-  extends: .trigger_cd
-  variables:
-    ENV:          int
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Performance Testing — manual, Release Manager ─────────────────────────────
-deploy-perf:
-  extends: .trigger_cd
-  variables:
-    ENV:          perf
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DC — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dc:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Preprod DR — manual, RM with confirmation ─────────────────────────────────
-deploy-preprod-dr:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          pre-prod       # correct: 'pre-prod' IS the DR cluster env name
-                                 # (deploy-preprod-dc targets 'pre-prod-dc')
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Hotfix preprod smoke — manual, RM on hotfix MR pipeline only ──────────────
-# Triggered on MR from hotfix/* → main (before merge)
-# Allows smoke test on preprod before hotfix merges to main
-deploy-hotfix-preprod-smoke:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    # ENV:          pre-prod-dc  ## changing pre-prod-dc to pre-prod
-    ENV: pre-prod
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DC — manual, Bank team only (Protected Environment enforces gate) ─────
-deploy-prod-dc:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
-deploy-prod-dr:
-  extends: .trigger_cd
-  when: manual
-  allow_failure: true
-  variables:
-    ENV:          prod-dr
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
+And before any of this: run `python test_semver.py --baseline 1.0.0` locally once more against the exact `semver.yml` you committed. That's 17 scenarios in two seconds, offline — it'll catch a logic regression before you spend a pipeline run on it. The live tests then only need to prove the *environment* behaves (tokens, merge method, deploy triggers), not the logic.
