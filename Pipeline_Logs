@@ -1,120 +1,17 @@
-Here's the complete test plan, sequenced so failures surface early and cheap. Run it on **one pilot repo** before touching the other 54.
-
-## Step 0 — Prerequisites (do these first, or everything else is noise)
-
-Confirm before you start:
-- **`main` merge method = "Merge commit"** (Settings → Merge requests). This is load-bearing for Approach 1 — if it's squash or rebase, every main merge fails at Gate 3.
-- **`GITLAB_CI_DEPLOY_TOKEN`** exists, masked+protected, with `write_repository` scope (for tag push).
-- **Branch push-rule regex** is applied.
-- **Bootstrap a known tag** (bare, no `v`):
-  ```bash
-  git tag 4.2.7 && git push origin 4.2.7
-  ```
-  Without this, everything starts from the `1.0.0` baseline and your bump assertions won't match.
-
-## Step 1 — Non-main branches (fast, no merges needed)
-
-Just push a commit to each branch and read the `version` job log. No deploys yet.
-
-| # | Create & push branch | Expected VERSION | Expected deploy buttons |
-|---|---|---|---|
-| 1 | `feature/EPAY-1234-payment-service` | `feature-epay-1234-payment-service-<sha>` | none |
-| 2 | `bugfix/EPAY-4567-null_pointer_fix` | `bugfix-epay-4567-null_pointer_fix-<sha>` | none |
-| 3 | `hotfix/EPAY-6789-timeout-fix` | `hotfix-epay-6789-timeout-fix-<sha>` | none |
-| 4 | `release/minor-DM2026068056-EPAY-bpcl-offline-refund` | `release-minor-dm2026068056-epay-bpcl-off-<sha>` | **sit, uat, int, perf, preprod-dc, preprod-dr** |
-| 5 | `release/major-DM2026070021-EPAY-wallet-revamp` | `release-major-dm2026070021-epay-wallet-r-<sha>` | same six |
-| 6 | `develop` | `dev-<sha>` | `deploy-dev` (manual) |
-| 7 | `sit-integration` | `sit-<sha>` | `deploy-sit` (manual) |
-
-Watch for: the branch name gets **lowercased and truncated to 40 chars** before the SHA. Note test 4 and 5 — the name is cut mid-word (`...bpcl-off`, `...wallet-r`). That's expected, not a bug.
-
-**Also confirm here:** no `create-prod-tag` job runs on any of these (it's gated on `main` push only), and `image:push` is **skipped** for feature/bugfix/hotfix but **runs** for release/develop.
-
-## Step 2 — MR pipelines
-
-| # | Open MR | Expected VERSION | Expected buttons |
-|---|---|---|---|
-| 8 | `feature/EPAY-1234-x` → `develop` | `mr-feature-epay-1234-x-develop-<iid>-<sha>` | `deploy-dev` |
-| 9 | `bugfix/EPAY-4567-y` → `release/minor-DM...` | `mr-bugfix-...-release-...-<iid>-<sha>` | `deploy-sit`, `deploy-uat` |
-| 10 | `hotfix/EPAY-6789-z` → `main` | `mr-hotfix-...-main-<iid>-<sha>` | **`deploy-hotfix-preprod-smoke`** only |
-
-Test 10 is the only deploy button that exists on an MR pipeline before merge. Confirm it forwards `ENV=pre-prod`.
-
-## Step 3 — The main bumps (the core of it)
-
-This is what actually matters. Merge each, **using a real merge commit** (no squash), and check both the version *and* that a bare tag was pushed.
-
-| # | Merge to main | Last tag before | Expected VERSION | Expected tag created |
-|---|---|---|---|---|
-| 11 | `release/minor-DM2026068056-EPAY-...` | `4.2.7` | `4.3.0` | `4.3.0` (bare, no `v`) |
-| 12 | `release/major-DM2026070021-EPAY-...` | `4.3.0` | `5.0.0` | `5.0.0` |
-| 13 | `hotfix/EPAY-6789-timeout-fix` | `5.0.0` | `5.0.1` | `5.0.1` |
-
-For each, verify in the job log:
-- `version` job prints `Semver: 4.2.7 → 4.3.0  (minor bump from release/minor-DM...)`
-- `create-prod-tag` prints `✅ Production tag created: 4.3.0`
-- Run `git tag -l` on the repo — confirm **bare** `4.3.0`, not `v4.3.0`
-- `deploy-prod-dc`, `deploy-prod-dr`, `deploy-int` buttons appear
-
-## Step 4 — Baseline test (fresh repo, no tags)
-
-| # | Setup | Merge | Expected |
-|---|---|---|---|
-| 14 | Repo with **zero** semver tags | any `release/minor-...` → main | `1.0.0` exactly, tag `1.0.0` |
-
-Delete your bootstrap tag temporarily, or use a second scratch repo.
-
-## Step 5 — Failure gates (must fail — this is the point)
-
-These prove the guards work. **All three must fail the pipeline.** If any of them *passes*, that's your bug.
-
-| # | Test | How | Expected failure |
-|---|---|---|---|
-| 15 | **Gate 3 — squash** | Temporarily set main merge method to "Squash", merge a release, then set it back | version job fails: *"Squash or rebase merge was used"* |
-| 16 | **Gate 2 — forbidden source** | Merge `feature/EPAY-1-x` directly to main | version job fails: *"Merge to main from unsupported source branch"* |
-| 17 | **Invalid release type** | Try creating `release/patch-DM1-EPAY-x` | rejected by **push rule** (never reaches CI) |
-
-Test 15 is the most important one you'll run. It confirms your load-bearing merge-method setting is actually guarded rather than silently producing wrong versions.
-
-## Step 6 — Idempotency & concurrency
-
-| # | Test | Expected |
-|---|---|---|
-| 18 | **Retry** a completed main pipeline | version job: *"Semver tag 4.3.0 already points at HEAD — reusing"*. `create-prod-tag`: *"idempotent skip"*. **No double-bump, no error.** |
-| 19 | **Parallel merges** (if you can stage two release merges seconds apart) | One tags successfully. The other either serializes behind `prod-tag-lock` or fails with *"exists on a DIFFERENT commit — re-run"*. Re-running it computes from the new tag. |
-
-Test 18 is easy and catches the nastiest class of bug (silent double-bump). Do it.
-
-## Step 7 — Deployment (end to end)
-
-Pick **one** service, then:
-
-| # | Test | Verify |
-|---|---|---|
-| 20 | Click `deploy-sit` on a release push | Downstream deployment pipeline triggers, receives `VERSION=release-minor-dm...-<sha>` and `ENV=sit` |
-| 21 | Click `deploy-preprod-dc` | receives `ENV=pre-prod-dc` |
-| 22 | Click `deploy-preprod-dr` | receives `ENV=pre-prod` (the DR cluster — confirm it lands on the **DR** cluster, not DC) |
-| 23 | Click `deploy-prod-dc` on a main pipeline | receives `ENV=prod-dc`, `VERSION=4.3.0` (bare semver) |
-| 24 | Confirm image exists in JFrog | tag `4.3.0` for the prod build; `release-minor-dm...-<sha>` for the release build |
-
-Test 22 specifically — since `pre-prod` and `pre-prod-dr` were a point of confusion, verify the DR deploy actually reaches the DR cluster and not preprod-DC.
-
----
-
-## The minimum viable pass
-
-If you're time-constrained and want the highest-confidence subset, run these **five**:
-
-1. **Test 11** (minor → `4.3.0` + bare tag) — proves versioning, tagging, title parsing, dotenv, all at once
-2. **Test 15** (squash → Gate 3 fires) — proves it fails safe
-3. **Test 18** (retry → no double-bump) — proves idempotency
-4. **Test 4** (release push → six deploy buttons appear) — proves the new prefix rule works
-5. **Test 23** (prod deploy receives `VERSION=4.3.0`) — proves end-to-end delivery
-
-Those five cover every mechanism. Everything else is edge-case hardening.
-
----
-
-Two things to have open while testing: the **`version` job log** (it prints `Semver: <last> → <new> (<bump> from <branch>)`, which tells you instantly whether the bump math and source detection worked), and **`git tag -l`** on the repo (confirms bare tags, no `v`).
-
-And before any of this: run `python test_semver.py --baseline 1.0.0` locally once more against the exact `semver.yml` you committed. That's 17 scenarios in two seconds, offline — it'll catch a logic regression before you spend a pipeline run on it. The live tests then only need to prove the *environment* behaves (tokens, merge method, deploy triggers), not the logic.
+For the Grievance Details section, keep it factual, chronological, and focused on Amazon's failure to provide the contracted service. Here's a concise but comprehensive summary you can paste:
+Grievance Details
+I purchased a mobile phone worth ₹84,999 from Amazon (Order ID: 406-2205182-7184346). I intentionally selected my office address as the delivery location and clearly communicated to Amazon that the package must be delivered before 6:00 PM, as my office closes at that time.
+Despite my repeated requests, Amazon repeatedly attempted delivery after office hours and failed to deliver the package. Thereafter, the order was marked as "Delivery On Hold" due to Amazon's own delivery failure, even though I was available during the requested delivery window.
+Over the following days, Amazon Customer Support, the Grievance Team, the Social Media Team, and the concerned Delivery Station repeatedly informed me that the issue had been "escalated" and the delivery had been "rescheduled for today." However, each day ended without any delivery, phone call from the delivery associate, or meaningful update.
+I have made numerous calls to Amazon Customer Support, sent multiple emails, and received several generic responses from different Amazon teams. Despite these repeated escalations, Amazon has failed to provide:
+A clear reason for the repeated delivery failure.
+A confirmed delivery date and time.
+A callback from the delivery station or delivery associate.
+An option to collect the package directly from the delivery station.
+This has caused significant inconvenience, unnecessary stress, and considerable loss of time. I have acted in good faith and fully cooperated throughout the process, but Amazon has failed to fulfil its delivery obligation or provide a satisfactory resolution.
+Relief Sought:
+Immediate delivery of my order without further delay.
+A written explanation for the repeated delivery failures.
+Compensation for the inconvenience, repeated follow-ups, and deficiency in service.
+Appropriate action against the concerned delivery station to prevent similar issues for other customers.
+This version is appropriate for the National Consumer Helpline because it sticks to verifiable facts, clearly explains the deficiency in service, and specifies the remedy you are seeking.
