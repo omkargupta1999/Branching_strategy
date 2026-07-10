@@ -1,17 +1,42 @@
-For the Grievance Details section, keep it factual, chronological, and focused on Amazon's failure to provide the contracted service. Here's a concise but comprehensive summary you can paste:
-Grievance Details
-I purchased a mobile phone worth ₹84,999 from Amazon (Order ID: 406-2205182-7184346). I intentionally selected my office address as the delivery location and clearly communicated to Amazon that the package must be delivered before 6:00 PM, as my office closes at that time.
-Despite my repeated requests, Amazon repeatedly attempted delivery after office hours and failed to deliver the package. Thereafter, the order was marked as "Delivery On Hold" due to Amazon's own delivery failure, even though I was available during the requested delivery window.
-Over the following days, Amazon Customer Support, the Grievance Team, the Social Media Team, and the concerned Delivery Station repeatedly informed me that the issue had been "escalated" and the delivery had been "rescheduled for today." However, each day ended without any delivery, phone call from the delivery associate, or meaningful update.
-I have made numerous calls to Amazon Customer Support, sent multiple emails, and received several generic responses from different Amazon teams. Despite these repeated escalations, Amazon has failed to provide:
-A clear reason for the repeated delivery failure.
-A confirmed delivery date and time.
-A callback from the delivery station or delivery associate.
-An option to collect the package directly from the delivery station.
-This has caused significant inconvenience, unnecessary stress, and considerable loss of time. I have acted in good faith and fully cooperated throughout the process, but Amazon has failed to fulfil its delivery obligation or provide a satisfactory resolution.
-Relief Sought:
-Immediate delivery of my order without further delay.
-A written explanation for the repeated delivery failures.
-Compensation for the inconvenience, repeated follow-ups, and deficiency in service.
-Appropriate action against the concerned delivery station to prevent similar issues for other customers.
-This version is appropriate for the National Consumer Helpline because it sticks to verifiable facts, clearly explains the deficiency in service, and specifies the remedy you are seeking.
+SBIePay 2.0 DC-DR Drill – Delay Update
+
+Dear Sir/Madam,
+
+This is to update you on the DC-to-DR switchover drill carried out today for SBIePay 2.0. The switchover was completed successfully; however, we encountered a delay during execution, and we would like to share the details along with our observations for improvement.
+
+Issue 1: Slow Base Image Pull
+During pipeline execution, we observed that the GitLab Runner helper base image took approximately 45-50 seconds to pull from our Artifactory registry before the deployment job could proceed. This added avoidable latency at the start of every job run.
+
+Issue 2: DNS Resolution Failure (gitlab.sbi)
+One of the pipeline jobs failed with the error "Could not resolve host: gitlab.sbi" while attempting to fetch the source repository from the DR-side runner. This is a transient DNS resolution issue on the runner/network side. As a result, the job had to be manually re-triggered, and it completed successfully on the second attempt.
+
+Impact
+These two issues together contributed to the overall delay in completing the drill within the originally planned time window. The switchover itself was validated successfully once the pipeline completed.
+
+Scope of Improvement
+1. Pre-warm/cache the GitLab Runner helper image on DR runners so it does not need to be pulled fresh during time-critical drills.
+2. Investigate and stabilize DNS resolution for gitlab.sbi from the DR runner network - likely a resolver/hosts-file or CoreDNS configuration gap specific to the DR side.
+3. Add a retry-with-backoff mechanism in the pipeline for transient git-fetch/DNS failures, so jobs self-recover without manual re-triggering.
+4. Include a pre-drill runner health check (DNS resolution + registry connectivity) as a checklist item before future DC-DR drills.
+
+We will work with the infra team to address these gaps before the next scheduled drill. Please let us know if you need any further details.
+
+Regards,
+DevSecOps Team
+
+,...
+
+
+Dear Sir/Madam,
+
+The DC-to-DR switchover drill for SBIePay 2.0 was completed successfully today, though with some delay due to two issues:
+
+1. Base image pull for the pipeline runner took ~45-50 seconds, adding latency.
+2. One job failed with "Could not resolve host: gitlab.sbi" (a transient DNS issue), requiring a manual re-trigger; it succeeded on the second run.
+
+Scope of improvement: pre-cache runner images on DR, fix DNS resolution stability on the DR network, and add auto-retry for transient pipeline failures.
+
+We will work on these before the next drill. Happy to share further details if needed.
+
+Regards,
+DevSecOps Team
