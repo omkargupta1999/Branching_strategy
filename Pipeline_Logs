@@ -1,289 +1,48 @@
-#!/usr/bin/env python3
-"""
-jfrog_image_inventory.py
-
-Fetches a full inventory of Docker images (repo/name/tag/size/created/modified/sha256)
-from a JFrog Artifactory Docker repo using AQL, cross-checks tag lists via the Docker
-Registry v2 API, and writes a CSV + JSONL report.
-
-House style:
-  - Pure Python 3.11 stdlib only (urllib, json, ssl, csv) -- no pip/requests, air-gapped safe
-  - ssl._create_unverified_context() for self-signed gitlab.sbi / JFrog certs
-  - CONFIG block at top
-  - log() writes timestamped output to console + dated file under LOG_DIR
-  - argparse flags: --repo (single repo test before sweep), --image (single image),
-    --verify (cross-check AQL results against registry API tag list), --dry-run (no writes,
-    print only), --output (override output dir)
-  - Paginated / bulk-safe: AQL query pulls everything in one call; registry API tags
-    paginated via Link header just in case
-  - Idempotent: re-running just re-generates the report, no state mutation
-
-Usage:
-  python311\\python.exe jfrog_image_inventory.py --repo docker-local
-  python311\\python.exe jfrog_image_inventory.py --repo docker-local --image itepaypg-sbiepay2/backend/foo-service --verify
-  python311\\python.exe jfrog_image_inventory.py --repo docker-local --dry-run
-"""
-
-import argparse
-import csv
-import json
-import ssl
-import sys
-import urllib.request
-import urllib.error
-from datetime import datetime
-from pathlib import Path
-
-# ---------------------------------------------------------------------------
-# CONFIG
-# ---------------------------------------------------------------------------
-CONFIG = {
-    "JFROG_HOST": "https://artifactory.jfrog.sbi:443",
-    "JFROG_USER": "svc-devops-bot",              # <-- update
-    "JFROG_API_KEY": "REPLACE_ME",               # <-- prefer env var override below
-    "DOCKER_REPO": "itepaypg-sbiepay2-docker-local",
-    "PATH_PREFIX": "app/backend",                 # base folder under the docker repo
-    "LOG_DIR": r"D:\Mr Om\Python_script",
-    "OUTPUT_DIR": r"D:\Mr Om\Python_script\reports",
-    "PAGE_SIZE": 1000,
-    "TIMEOUT_SEC": 30,
-}
-
-# Allow overriding creds via environment without editing the file (safer for a shared bastion)
-import os  # noqa: E402
-CONFIG["JFROG_USER"] = os.environ.get("JFROG_USER", CONFIG["JFROG_USER"])
-CONFIG["JFROG_API_KEY"] = os.environ.get("JFROG_API_KEY", CONFIG["JFROG_API_KEY"])
-
-SSL_CTX = ssl._create_unverified_context()
-
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-def log(msg, level="INFO"):
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[{ts}] [{level}] {msg}"
-    print(line)
-    try:
-        log_dir = Path(CONFIG["LOG_DIR"])
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / f"jfrog_image_inventory_{datetime.now().strftime('%Y%m%d')}.log"
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(line + "\n")
-    except Exception as e:
-        print(f"[{ts}] [WARN] could not write to log file: {e}")
+=============== Gettings the logs error:
 
 
-# ---------------------------------------------------------------------------
-# HTTP helpers
-# ---------------------------------------------------------------------------
-def _auth_header():
-    import base64
-    token = base64.b64encode(
-        f"{CONFIG['JFROG_USER']}:{CONFIG['JFROG_API_KEY']}".encode()
-    ).decode()
-    return {"Authorization": f"Basic {token}"}
+[2026-07-14 16:31:49] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:32:00] [INFO] AQL returned 0 manifest.json entries for repo 'docker-local'
+[2026-07-14 16:32:00] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:32:00] [INFO] Dry-run mode: skipping report file writes. Sample of first 5 rows:
+[2026-07-14 16:32:34] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:32:39] [ERROR] AQL query failed (status=401): b'{\n  "errors" : [ {\n    "status" : 401,\n    "message" : "Bad Credentials"\n  } ]\n}'
+[2026-07-14 16:32:39] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:32:39] [INFO] CSV report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163239.csv
+[2026-07-14 16:32:40] [INFO] JSONL report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163239.jsonl
+[2026-07-14 16:32:40] [INFO] Summary: 0 image:tag entries, 0 unique images, total size 0.00 GB
+[2026-07-14 16:35:23] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:35:24] [INFO] AQL returned 0 manifest.json entries for repo 'docker-local'
+[2026-07-14 16:35:24] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:35:24] [INFO] Dry-run mode: skipping report file writes. Sample of first 5 rows:
+[2026-07-14 16:35:53] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:35:54] [INFO] AQL returned 0 manifest.json entries for repo 'docker-local'
+[2026-07-14 16:35:54] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:35:54] [INFO] CSV report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163554.csv
+[2026-07-14 16:35:54] [INFO] JSONL report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163554.jsonl
+[2026-07-14 16:35:54] [INFO] Summary: 0 image:tag entries, 0 unique images, total size 0.00 GB
 
 
-def _request(url, method="GET", data=None, extra_headers=None, accept=None):
-    headers = _auth_header()
-    if accept:
-        headers["Accept"] = accept
-    if extra_headers:
-        headers.update(extra_headers)
+===================================
 
-    body = None
-    if data is not None:
-        body = data.encode("utf-8") if isinstance(data, str) else data
+D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --repo docker-local --dry-run
+[2026-07-14 16:35:23] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:35:24] [INFO] AQL returned 0 manifest.json entries for repo 'docker-local'
+[2026-07-14 16:35:24] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:35:24] [INFO] Dry-run mode: skipping report file writes. Sample of first 5 rows:
 
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=CONFIG["TIMEOUT_SEC"], context=SSL_CTX) as resp:
-            raw = resp.read()
-            return resp.status, dict(resp.getheaders()), raw
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        return e.code, dict(e.headers or {}), raw
-    except urllib.error.URLError as e:
-        log(f"URL error calling {url}: {e}", "ERROR")
-        return None, {}, b""
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --repo docker-local          
+[2026-07-14 16:35:53] [INFO] Starting inventory for repo='docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:35:54] [INFO] AQL returned 0 manifest.json entries for repo 'docker-local'
+[2026-07-14 16:35:54] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:35:54] [INFO] CSV report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163554.csv
+[2026-07-14 16:35:54] [INFO] JSONL report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_docker-local_20260714_163554.jsonl
+[2026-07-14 16:35:54] [INFO] Summary: 0 image:tag entries, 0 unique images, total size 0.00 GB
+
+D:\Mr Om\Python_script>
 
 
-# ---------------------------------------------------------------------------
-# AQL bulk fetch — one call gets manifest.json entries for the whole repo
-# ---------------------------------------------------------------------------
-def aql_fetch_manifests(docker_repo, path_prefix=None, image_filter=None):
-    # path_prefix scopes to a base folder (e.g. "app/backend") so we don't sweep the whole repo.
-    # image_filter further narrows to one service under that prefix (test-before-sweep).
-    if image_filter:
-        match_path = f"{path_prefix}/{image_filter}*" if path_prefix else f"{image_filter}*"
-    elif path_prefix:
-        match_path = f"{path_prefix}/*"
-    else:
-        match_path = None
-
-    aql = (
-        'items.find({'
-        f'"repo":"{docker_repo}","name":"manifest.json"'
-        + (f',"path":{{"$match":"{match_path}"}}' if match_path else "")
-        + '}).include("name","repo","path","size","created","modified","sha256")'
-    )
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/search/aql"
-    status, _, raw = _request(url, method="POST", data=aql, accept="application/json",
-                               extra_headers={"Content-Type": "text/plain"})
-    if status != 200:
-        log(f"AQL query failed (status={status}): {raw[:300]}", "ERROR")
-        return []
-    try:
-        results = json.loads(raw).get("results", [])
-    except json.JSONDecodeError as e:
-        log(f"Failed to parse AQL response: {e}", "ERROR")
-        return []
-    log(f"AQL returned {len(results)} manifest.json entries for repo '{docker_repo}'")
-    return results
 
 
-# ---------------------------------------------------------------------------
-# Docker Registry v2 API — paginated catalog + tag list (used for --verify)
-# ---------------------------------------------------------------------------
-def registry_catalog(docker_repo, page_size):
-    images = []
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/docker/{docker_repo}/v2/_catalog?n={page_size}"
-    while url:
-        status, headers, raw = _request(url, accept="application/json")
-        if status != 200:
-            log(f"Registry catalog call failed (status={status}) at {url}", "ERROR")
-            break
-        try:
-            images.extend(json.loads(raw).get("repositories", []))
-        except json.JSONDecodeError:
-            log("Failed to parse catalog response", "ERROR")
-            break
-        link = headers.get("Link")
-        url = None
-        if link and 'rel="next"' in link:
-            # Link header format: </v2/_catalog?...>; rel="next"
-            path = link[link.find("<") + 1: link.find(">")]
-            url = f"{CONFIG['JFROG_HOST']}/artifactory{path}" if path.startswith("/artifactory") else \
-                  f"{CONFIG['JFROG_HOST']}{path}"
-    return images
-
-
-def registry_tags(docker_repo, image_name):
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/docker/{docker_repo}/v2/{image_name}/tags/list"
-    status, _, raw = _request(url, accept="application/json")
-    if status != 200:
-        log(f"Tag list failed for {image_name} (status={status})", "WARN")
-        return []
-    try:
-        return json.loads(raw).get("tags", []) or []
-    except json.JSONDecodeError:
-        return []
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-def main():
-    parser = argparse.ArgumentParser(description="JFrog Docker image inventory (AQL-based)")
-    parser.add_argument("--repo", default=CONFIG["DOCKER_REPO"], help="Docker repo name in Artifactory")
-    parser.add_argument("--path-prefix", default=CONFIG["PATH_PREFIX"],
-                         help='Base folder under the repo to scope the scan, e.g. "app/backend". '
-                              'Pass "" to scan the whole repo.')
-    parser.add_argument("--image", default=None,
-                         help="Restrict to single service/image name under path-prefix (test-before-sweep)")
-    parser.add_argument("--tag-prefix", default=None,
-                         help='Only include tags starting with this prefix, e.g. "mr-"')
-    parser.add_argument("--verify", action="store_true",
-                         help="Cross-check AQL results against Docker Registry v2 tag list per image")
-    parser.add_argument("--dry-run", action="store_true", help="Print summary only, do not write report files")
-    parser.add_argument("--output", default=CONFIG["OUTPUT_DIR"], help="Output directory for CSV/JSONL report")
-    args = parser.parse_args()
-
-    if CONFIG["JFROG_API_KEY"] == "REPLACE_ME":
-        log("JFROG_API_KEY not set — export JFROG_API_KEY env var or edit CONFIG block", "ERROR")
-        sys.exit(1)
-
-    log(f"Starting inventory for repo='{args.repo}' path_prefix='{args.path_prefix}' "
-        f"image_filter='{args.image}' tag_prefix='{args.tag_prefix}' verify={args.verify}")
-
-    manifests = aql_fetch_manifests(args.repo, path_prefix=args.path_prefix or None,
-                                     image_filter=args.image)
-
-    rows = []
-    for item in manifests:
-        path = item.get("path", "")            # e.g. "app/backend/foo-service/mr-1.4.2"
-        parts = path.rsplit("/", 1)
-        image_name = parts[0] if len(parts) == 2 else path
-        tag = parts[1] if len(parts) == 2 else "unknown"
-        rows.append({
-            "image": image_name,
-            "tag": tag,
-            "size_bytes": item.get("size"),
-            "created": item.get("created"),
-            "modified": item.get("modified"),
-            "sha256": item.get("sha256"),
-            "repo": item.get("repo"),
-        })
-
-    log(f"Parsed {len(rows)} image:tag entries from AQL results")
-
-    if args.tag_prefix:
-        before = len(rows)
-        rows = [r for r in rows if r["tag"].startswith(args.tag_prefix)]
-        log(f"Filtered by tag prefix '{args.tag_prefix}': {before} -> {len(rows)} entries")
-
-    if rows:
-        per_service = {}
-        for r in rows:
-            per_service.setdefault(r["image"], 0)
-            per_service[r["image"]] += 1
-        log(f"Breakdown across {len(per_service)} service(s):")
-        for svc, count in sorted(per_service.items()):
-            log(f"  {svc}: {count} tag(s)")
-
-    if args.verify:
-        images = sorted(set(r["image"] for r in rows))
-        log(f"Verifying {len(images)} unique images against Docker Registry v2 tag lists...")
-        mismatches = 0
-        for img in images:
-            reg_tags = set(registry_tags(args.repo, img))
-            aql_tags = set(r["tag"] for r in rows if r["image"] == img)
-            missing_in_registry = aql_tags - reg_tags
-            missing_in_aql = reg_tags - aql_tags
-            if missing_in_registry or missing_in_aql:
-                mismatches += 1
-                log(f"MISMATCH {img}: only-in-AQL={sorted(missing_in_registry)} "
-                    f"only-in-registry={sorted(missing_in_aql)}", "WARN")
-        log(f"Verification complete: {mismatches} image(s) with tag mismatches out of {len(images)}")
-
-    if args.dry_run:
-        log("Dry-run mode: skipping report file writes. Sample of first 5 rows:")
-        for r in rows[:5]:
-            log(f"  {r}")
-        return
-
-    out_dir = Path(args.output)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    csv_path = out_dir / f"jfrog_image_inventory_{args.repo}_{ts}.csv"
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["repo", "image", "tag", "size_bytes",
-                                                "created", "modified", "sha256"])
-        writer.writeheader()
-        writer.writerows(rows)
-    log(f"CSV report written: {csv_path}")
-
-    jsonl_path = out_dir / f"jfrog_image_inventory_{args.repo}_{ts}.jsonl"
-    with open(jsonl_path, "w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r) + "\n")
-    log(f"JSONL report written: {jsonl_path}")
-
-    total_size = sum(r["size_bytes"] or 0 for r in rows)
-    log(f"Summary: {len(rows)} image:tag entries, {len(set(r['image'] for r in rows))} unique images, "
-        f"total size {total_size / (1024**3):.2f} GB")
-
-
-if __name__ == "__main__":
-    main()
+Not getting anything in generated reports file.
