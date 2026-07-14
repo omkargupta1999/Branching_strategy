@@ -1,32 +1,426 @@
-D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --dry-run
-[2026-07-14 17:00:50] [INFO] Starting inventory repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image='None' tag_contains=[] tag_prefix='None' verify=False auth_method=basic
-[2026-07-14 17:00:50] [ERROR] Repo 'itepaypg-sbiepay2-docker-local' not found in this instance!
-[2026-07-14 17:00:50] [ERROR] Available Docker repos: []
-[2026-07-14 17:00:50] [ERROR] Sanity check failed — aborting before running AQL. Fix the issue above and re-run.
+#!/usr/bin/env python3
+"""
+jfrog_image_inventory.py
 
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --dry-run
-D:\Mr Om\Python_script>  python311\\python.exe jfrog_image_inventory.py --image epay_admin_portal_service --dry-run
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>
-D:\Mr Om\Python_script>  python311\\python.exe jfrog_image_inventory.py --image epay_admin_portal_service --dry-run
-[2026-07-14 17:01:42] [INFO] Starting inventory repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image='epay_admin_portal_service' tag_contains=[] tag_prefix='None' verify=False auth_method=basic
-[2026-07-14 17:01:42] [ERROR] Repo 'itepaypg-sbiepay2-docker-local' not found in this instance!
-[2026-07-14 17:01:42] [ERROR] Available Docker repos: []
-[2026-07-14 17:01:42] [ERROR] Sanity check failed — aborting before running AQL. Fix the issue above and re-run.
+Fetches a full inventory of Docker images from a JFrog Artifactory Docker repo using AQL,
+optionally cross-checks tag lists via the Docker Registry v2 API, and writes CSV + JSONL
+reports.
 
-D:\Mr Om\Python_script>  python311\\python.exe jfrog_image_inventory.py --tag-contains "mr-feature,v-feature,feature"
-[2026-07-14 17:02:14] [INFO] Starting inventory repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image='None' tag_contains=['mr-feature', 'v-feature', 'feature'] tag_prefix='None' verify=False auth_method=basic
-[2026-07-14 17:02:15] [ERROR] Repo 'itepaypg-sbiepay2-docker-local' not found in this instance!
-[2026-07-14 17:02:15] [ERROR] Available Docker repos: []
-[2026-07-14 17:02:15] [ERROR] Sanity check failed — aborting before running AQL. Fix the issue above and re-run.
+What it reports per image:tag:
+  repo, image (service), tag, category (mr-feature / v-feature / feature / other),
+  image_size_bytes (REAL size = sum of all layer/blob files under the tag folder),
+  created, modified, manifest_sha256
 
-D:\Mr Om\Python_script>  python311\\python.exe jfrog_image_inventory.py --tag-contains "feature" --verify
-[2026-07-14 17:03:02] [INFO] Starting inventory repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image='None' tag_contains=['feature'] tag_prefix='None' verify=True auth_method=basic
-[2026-07-14 17:03:18] [ERROR] Repo 'itepaypg-sbiepay2-docker-local' not found in this instance!
-[2026-07-14 17:03:18] [ERROR] Available Docker repos: []
-[2026-07-14 17:03:18] [ERROR] Sanity check failed — aborting before running AQL. Fix the issue above and re-run.
+House style:
+  - Pure Python 3.11 stdlib only (urllib, json, ssl, csv) -- no pip/requests, air-gapped safe
+  - ssl._create_unverified_context() for self-signed gitlab.sbi / JFrog certs
+  - CONFIG block at top; env-var overrides for creds
+  - log() writes timestamped output to console + dated file under LOG_DIR
+  - argparse-driven; --dry-run default-safe; --image single-service test-before-sweep
+  - Idempotent: re-running just re-generates the report
 
-D:\Mr Om\Python_script>
+Tag filtering:
+  --tag-contains "mr-feature,v-feature,feature"   (match if tag contains ANY of these)
+  --tag-prefix   "mr-"                              (match if tag STARTS WITH this)
+  (If both given, a tag must satisfy both. If neither, all tags are included.)
+
+Usage:
+  python311\\python.exe jfrog_image_inventory.py --dry-run
+  python311\\python.exe jfrog_image_inventory.py --image epay_admin_portal_service --dry-run
+  python311\\python.exe jfrog_image_inventory.py --tag-contains "mr-feature,v-feature,feature"
+  python311\\python.exe jfrog_image_inventory.py --tag-contains "feature" --verify
+"""
+
+import argparse
+import csv
+import json
+import os
+import ssl
+import sys
+import urllib.request
+import urllib.error
+from datetime import datetime
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# CONFIG
+# ---------------------------------------------------------------------------
+CONFIG = {
+    "JFROG_HOST": "https://artifactory.jfrog.sbi:443",
+    "JFROG_USER": "v1021577",                      # <-- update (used for AUTH_METHOD=basic)
+    "JFROG_API_KEY": "REPLACE_ME",                 # <-- prefer env var override below
+    "AUTH_METHOD": "basic",                        # "basic" (user:apikey) or "bearer" (identity token)
+    "DOCKER_REPO": "itepaypg-sbiepay2-docker-local",
+    "PATH_PREFIX": "app/backend",                  # base folder under the docker repo
+    # Default tag categories of interest, MOST-SPECIFIC FIRST (first match wins for 'category'):
+    "TAG_CATEGORIES": ["mr-feature", "v-feature", "feature"],
+    "LOG_DIR": r"D:\Mr Om\Python_script",
+    "OUTPUT_DIR": r"D:\Mr Om\Python_script\reports",
+    "PAGE_SIZE": 1000,
+    "TIMEOUT_SEC": 30,
+}
+
+CONFIG["JFROG_USER"] = os.environ.get("JFROG_USER", CONFIG["JFROG_USER"])
+CONFIG["JFROG_API_KEY"] = os.environ.get("JFROG_API_KEY", CONFIG["JFROG_API_KEY"])
+CONFIG["AUTH_METHOD"] = os.environ.get("JFROG_AUTH_METHOD", CONFIG["AUTH_METHOD"])
+
+SSL_CTX = ssl._create_unverified_context()
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+def log(msg, level="INFO"):
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] [{level}] {msg}"
+    print(line)
+    try:
+        log_dir = Path(CONFIG["LOG_DIR"])
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / f"jfrog_image_inventory_{datetime.now().strftime('%Y%m%d')}.log"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception as e:
+        print(f"[{ts}] [WARN] could not write to log file: {e}")
+
+
+# ---------------------------------------------------------------------------
+# HTTP helpers
+# ---------------------------------------------------------------------------
+def _auth_header():
+    if CONFIG["AUTH_METHOD"].lower() == "bearer":
+        return {"Authorization": f"Bearer {CONFIG['JFROG_API_KEY']}"}
+    import base64
+    token = base64.b64encode(
+        f"{CONFIG['JFROG_USER']}:{CONFIG['JFROG_API_KEY']}".encode()
+    ).decode()
+    return {"Authorization": f"Basic {token}"}
+
+
+def _request(url, method="GET", data=None, extra_headers=None, accept=None):
+    headers = _auth_header()
+    if accept:
+        headers["Accept"] = accept
+    if extra_headers:
+        headers.update(extra_headers)
+
+    body = None
+    if data is not None:
+        body = data.encode("utf-8") if isinstance(data, str) else data
+
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=CONFIG["TIMEOUT_SEC"], context=SSL_CTX) as resp:
+            return resp.status, dict(resp.getheaders()), resp.read()
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers or {}), e.read()
+    except urllib.error.URLError as e:
+        log(f"URL error calling {url}: {e}", "ERROR")
+        return None, {}, b""
+
+
+# ---------------------------------------------------------------------------
+# Startup sanity check
+# ---------------------------------------------------------------------------
+def sanity_check(docker_repo):
+    """Non-fatal pre-flight. Hard-fails ONLY on genuine auth errors (401/403).
+    Everything else is a warning: the AQL query is the authoritative path and does
+    not depend on repo type, so we never block it just because /api/repositories
+    doesn't list the repo the way we expect (e.g. remote/virtual/federated repos,
+    or an instance that ignores the type filter)."""
+    # NOTE: no ?type=local filter — that filter returned [] on this instance even
+    # though the repo clearly exists and AQL works against it.
+    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/repositories"
+    status, _, raw = _request(url, accept="application/json")
+
+    if status in (401, 403):
+        log(f"AUTH FAILED (status={status}): {raw[:300]}", "ERROR")
+        log("Check JFROG_USER / JFROG_API_KEY env vars are set in THIS shell session, "
+            "and confirm AUTH_METHOD (basic vs bearer) matches your credential type "
+            "(API Key = basic, Identity/Access Token = bearer).", "ERROR")
+        return False  # only auth is a hard stop
+
+    if status is None or status >= 400:
+        log(f"Could not list repositories (status={status}) — skipping repo existence check, "
+            f"will rely on the AQL query result instead.", "WARN")
+        return True
+
+    try:
+        repos = json.loads(raw)
+    except json.JSONDecodeError:
+        log("Could not parse /api/repositories response — skipping repo existence check.", "WARN")
+        return True
+
+    keys = [r.get("key") for r in repos]
+    if docker_repo not in keys:
+        docker_repos = [r.get("key") for r in repos
+                        if (r.get("packageType") or "").lower() == "docker"]
+        log(f"Repo '{docker_repo}' not listed by /api/repositories (it may be a remote/virtual/"
+            f"federated repo, or the API omitted it) — proceeding anyway; AQL will confirm.", "WARN")
+        if docker_repos:
+            log(f"Docker repos the API did list: {docker_repos}", "INFO")
+        return True
+
+    log(f"Sanity check passed: authenticated OK, repo '{docker_repo}' exists.")
+    return True
+
+
+# ---------------------------------------------------------------------------
+# AQL bulk fetch — pull EVERY file under the scope, then aggregate per tag folder
+# so we can compute real image size (sum of layer blobs) and grab the manifest sha.
+# ---------------------------------------------------------------------------
+def aql_fetch_items(docker_repo, path_prefix=None, image_filter=None):
+    if image_filter:
+        # Defend against the user passing the full path (e.g. "app/backend/epay_admin_service").
+        # Strip a leading path_prefix if they included it, so we never double-prepend.
+        clean = image_filter
+        if path_prefix and clean.startswith(path_prefix.rstrip("/") + "/"):
+            clean = clean[len(path_prefix.rstrip("/") + "/"):]
+        clean = clean.strip("/")
+        match_path = f"{path_prefix}/{clean}/*" if path_prefix else f"{clean}/*"
+    elif path_prefix:
+        match_path = f"{path_prefix}/*"
+    else:
+        match_path = None
+
+    aql = (
+        'items.find({'
+        f'"repo":"{docker_repo}"'
+        + (f',"path":{{"$match":"{match_path}"}}' if match_path else "")
+        + '}).include("name","repo","path","size","created","modified","sha256")'
+    )
+    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/search/aql"
+    status, _, raw = _request(url, method="POST", data=aql, accept="application/json",
+                              extra_headers={"Content-Type": "text/plain"})
+    if status != 200:
+        log(f"AQL query failed (status={status}): {raw[:300]}", "ERROR")
+        return []
+    try:
+        results = json.loads(raw).get("results", [])
+    except json.JSONDecodeError as e:
+        log(f"Failed to parse AQL response: {e}", "ERROR")
+        return []
+    log(f"AQL returned {len(results)} file entries for repo '{docker_repo}' (scope={match_path})")
+    return results
+
+
+def aggregate_by_tag(items):
+    """Group raw AQL file rows by their tag folder (path). Each path like
+    'app/backend/epay_admin_service/mr-feature-...-<sha>' is one image:tag.
+    Image size = sum of ALL file sizes in that folder (layers + config + manifest)."""
+    by_path = {}
+    for it in items:
+        path = it.get("path", "")
+        if not path:
+            continue
+        entry = by_path.setdefault(path, {
+            "image_size_bytes": 0,
+            "created": it.get("created"),
+            "modified": it.get("modified"),
+            "manifest_sha256": None,
+        })
+        entry["image_size_bytes"] += it.get("size") or 0
+        if it.get("created") and (entry["created"] is None or it["created"] < entry["created"]):
+            entry["created"] = it["created"]
+        if it.get("modified") and (entry["modified"] is None or it["modified"] > entry["modified"]):
+            entry["modified"] = it["modified"]
+        if it.get("name") == "manifest.json":
+            entry["manifest_sha256"] = it.get("sha256")
+
+    rows = []
+    for path, agg in by_path.items():
+        parts = path.rsplit("/", 1)
+        image_name = parts[0] if len(parts) == 2 else path
+        tag = parts[1] if len(parts) == 2 else "unknown"
+        rows.append({
+            "repo": CONFIG["DOCKER_REPO"],
+            "image": image_name,
+            "tag": tag,
+            "image_size_bytes": agg["image_size_bytes"],
+            "created": agg["created"],
+            "modified": agg["modified"],
+            "manifest_sha256": agg["manifest_sha256"],
+        })
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Tag categorisation & filtering
+# ---------------------------------------------------------------------------
+def categorise_tag(tag, categories):
+    """Return the first category substring that appears in the tag, else 'other'.
+    categories are checked in order, so put more specific ones first
+    (e.g. 'mr-feature' before 'feature')."""
+    low = tag.lower()
+    for cat in categories:
+        if cat.lower() in low:
+            return cat
+    return "other"
+
+
+def tag_matches(tag, contains_list, prefix):
+    ok = True
+    if contains_list:
+        low = tag.lower()
+        ok = any(c.lower() in low for c in contains_list)
+    if ok and prefix:
+        ok = tag.startswith(prefix)
+    return ok
+
+
+# ---------------------------------------------------------------------------
+# Docker Registry v2 API — tag list (used for --verify)
+# ---------------------------------------------------------------------------
+def registry_tags(docker_repo, image_name):
+    # image_name here is the full path under repo, e.g. app/backend/epay_admin_service
+    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/docker/{docker_repo}/v2/{image_name}/tags/list"
+    status, _, raw = _request(url, accept="application/json")
+    if status != 200:
+        log(f"Tag list failed for {image_name} (status={status})", "WARN")
+        return []
+    try:
+        return json.loads(raw).get("tags", []) or []
+    except json.JSONDecodeError:
+        return []
+
+
+def human_size(nbytes):
+    n = float(nbytes)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(n) < 1024.0:
+            return f"{n:.2f} {unit}"
+        n /= 1024.0
+    return f"{n:.2f} PB"
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+def main():
+    parser = argparse.ArgumentParser(description="JFrog Docker image inventory (AQL-based)")
+    parser.add_argument("--repo", default=CONFIG["DOCKER_REPO"], help="Docker repo name in Artifactory")
+    parser.add_argument("--path-prefix", default=CONFIG["PATH_PREFIX"],
+                        help='Base folder under the repo, e.g. "app/backend". Pass "" to scan whole repo.')
+    parser.add_argument("--image", default=None,
+                        help="Single service name under path-prefix (test-before-sweep). "
+                             "You may pass just the service name OR the full path; the prefix is de-duped.")
+    parser.add_argument("--tag-contains", default=None,
+                        help='Comma-separated substrings; keep a tag if it contains ANY of them. '
+                             'e.g. "mr-feature,v-feature,feature"')
+    parser.add_argument("--tag-prefix", default=None, help='Keep only tags STARTING WITH this, e.g. "mr-"')
+    parser.add_argument("--categories", default=",".join(CONFIG["TAG_CATEGORIES"]),
+                        help='Comma-separated category substrings for the "category" column, '
+                             'most-specific first. Default: "mr-feature,v-feature,feature"')
+    parser.add_argument("--verify", action="store_true",
+                        help="Cross-check AQL results against Docker Registry v2 tag list per image")
+    parser.add_argument("--dry-run", action="store_true", help="Print summary only, do not write report files")
+    parser.add_argument("--output", default=CONFIG["OUTPUT_DIR"], help="Output directory for reports")
+    args = parser.parse_args()
+
+    if CONFIG["JFROG_API_KEY"] == "REPLACE_ME":
+        log("JFROG_API_KEY not set — export JFROG_API_KEY env var or edit CONFIG block", "ERROR")
+        sys.exit(1)
+
+    CONFIG["DOCKER_REPO"] = args.repo
+    contains_list = [s.strip() for s in args.tag_contains.split(",") if s.strip()] if args.tag_contains else []
+    categories = [s.strip() for s in args.categories.split(",") if s.strip()]
+
+    log(f"Starting inventory repo='{args.repo}' path_prefix='{args.path_prefix}' image='{args.image}' "
+        f"tag_contains={contains_list} tag_prefix='{args.tag_prefix}' verify={args.verify} "
+        f"auth_method={CONFIG['AUTH_METHOD']}")
+
+    if not sanity_check(args.repo):
+        log("Sanity check failed — aborting before running AQL. Fix the issue above and re-run.", "ERROR")
+        sys.exit(1)
+
+    items = aql_fetch_items(args.repo, path_prefix=args.path_prefix or None, image_filter=args.image)
+    if not items:
+        log("AQL returned 0 files. If auth was OK, the likely causes are: wrong --repo name, "
+            "wrong --path-prefix, or (for --image) a service name that doesn't exist under the prefix. "
+            "Try re-running with --path-prefix \"\" to scan the whole repo, or browse "
+            f"{CONFIG['JFROG_HOST']}/artifactory/{args.repo}/ in a browser to confirm the folder layout.",
+            "WARN")
+    rows = aggregate_by_tag(items)
+    log(f"Aggregated into {len(rows)} image:tag entries")
+
+    # Filter
+    if contains_list or args.tag_prefix:
+        before = len(rows)
+        rows = [r for r in rows if tag_matches(r["tag"], contains_list, args.tag_prefix)]
+        log(f"Filtered by tag rules: {before} -> {len(rows)} entries")
+
+    # Categorise
+    for r in rows:
+        r["category"] = categorise_tag(r["tag"], categories)
+
+    if not rows:
+        log("No matching image:tag entries after filtering. Nothing to report.", "WARN")
+        if args.dry_run:
+            return
+
+    # Per-service breakdown
+    if rows:
+        per_service = {}
+        for r in rows:
+            per_service.setdefault(r["image"], {"count": 0, "size": 0})
+            per_service[r["image"]]["count"] += 1
+            per_service[r["image"]]["size"] += r["image_size_bytes"]
+        log(f"Breakdown across {len(per_service)} service(s):")
+        for svc, agg in sorted(per_service.items()):
+            log(f"  {svc}: {agg['count']} tag(s), {human_size(agg['size'])}")
+
+        per_cat = {}
+        for r in rows:
+            per_cat.setdefault(r["category"], 0)
+            per_cat[r["category"]] += 1
+        log("Category breakdown: " + ", ".join(f"{k}={v}" for k, v in sorted(per_cat.items())))
+
+    # Verify
+    if args.verify and rows:
+        images = sorted(set(r["image"] for r in rows))
+        log(f"Verifying {len(images)} unique images against Docker Registry v2 tag lists...")
+        mismatches = 0
+        for img in images:
+            reg_tags = set(registry_tags(args.repo, img))
+            aql_tags = set(r["tag"] for r in rows if r["image"] == img)
+            missing_in_registry = aql_tags - reg_tags
+            if missing_in_registry:
+                mismatches += 1
+                log(f"MISMATCH {img}: tags in AQL but not in registry = {sorted(missing_in_registry)}", "WARN")
+        log(f"Verification complete: {mismatches} image(s) with mismatches out of {len(images)}")
+
+    if args.dry_run:
+        log("Dry-run mode: skipping report file writes. Sample of first 8 rows:")
+        for r in rows[:8]:
+            log(f"  {r['image'].split('/')[-1]} | {r['tag']} | {r['category']} | {human_size(r['image_size_bytes'])}")
+        return
+
+    # Write reports
+    out_dir = Path(args.output)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    label = "filtered" if (contains_list or args.tag_prefix) else "all"
+
+    fields = ["repo", "image", "tag", "category", "image_size_bytes",
+              "created", "modified", "manifest_sha256"]
+    csv_path = out_dir / f"jfrog_image_inventory_{args.repo}_{label}_{ts}.csv"
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        for r in sorted(rows, key=lambda x: (x["image"], x["tag"])):
+            writer.writerow({k: r.get(k) for k in fields})
+    log(f"CSV report written: {csv_path}")
+
+    jsonl_path = out_dir / f"jfrog_image_inventory_{args.repo}_{label}_{ts}.jsonl"
+    with open(jsonl_path, "w", encoding="utf-8") as f:
+        for r in sorted(rows, key=lambda x: (x["image"], x["tag"])):
+            f.write(json.dumps(r) + "\n")
+    log(f"JSONL report written: {jsonl_path}")
+
+    total_size = sum(r["image_size_bytes"] for r in rows)
+    log(f"Summary: {len(rows)} image:tag entries, {len(set(r['image'] for r in rows))} unique images, "
+        f"total size {human_size(total_size)}")
+
+
+if __name__ == "__main__":
+    main()
