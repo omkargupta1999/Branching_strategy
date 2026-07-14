@@ -1,3 +1,109 @@
+D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --repo itepaypg-sbiepay2-docker-local  --dry-run
+[2026-07-14 16:39:06] [INFO] Starting inventory for repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:39:06] [INFO] AQL returned 1894 manifest.json entries for repo 'itepaypg-sbiepay2-docker-local'
+[2026-07-14 16:39:06] [INFO] Parsed 1894 image:tag entries from AQL results
+[2026-07-14 16:39:06] [INFO] Breakdown across 23 service(s):
+[2026-07-14 16:39:06] [INFO]   app/backend/epay_admin_portal_service: 10 tag(s)
+[2026-07-14 16:39:06] [INFO]   app/backend/epay_admin_service: 336 tag(s)
+[2026-07-14 16:39:06] [INFO]   app/backend/epay_communication_service: 105 tag(s)
+[2026-07-14 16:39:06] [INFO]   app/backend/epay_integration_service: 20 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_key_managment: 34 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_merchant_service: 169 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_operations_service: 91 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_otherinb_service: 3 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_payment_service: 233 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_refund_service: 46 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_reports_service: 226 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_stubs_service: 20 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epay_transaction_service: 288 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epaybridge-key-gen-service: 1 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epaylite-bridge-mis-report: 89 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epaylite-bridge-mis-service: 30 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epaylite-bridge-status-service: 29 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/epaylite-bridge-txn-service: 99 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/java-utility-api-simulator: 43 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/java_utility_api_simulator: 5 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/merchant_api_simulator_nodejs: 5 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/merchant_api_simulator_php: 6 tag(s)
+[2026-07-14 16:39:07] [INFO]   app/backend/transaction_job_service: 6 tag(s)
+[2026-07-14 16:39:07] [INFO] Dry-run mode: skipping report file writes. Sample of first 5 rows:
+[2026-07-14 16:39:07] [INFO]   {'image': 'app/backend/epay_admin_portal_service', 'tag': 'a3524f08', 'size_bytes': 917, 'created': '2026-05-05T13:14:41.523+05:30', 'modified': '2026-05-05T13:14:41.514+05:30', 'sha256': '32f4ade4c361496a38a7d1625ff8664257e8361fe38f2f6d8de70fd65210d4a0', 'repo': 'itepaypg-sbiepay2-docker-local'}
+[2026-07-14 16:39:07] [INFO]   {'image': 'app/backend/epay_admin_portal_service', 'tag': 'dev-287f26b3', 'size_bytes': 917, 'created': '2026-06-12T14:30:09.303+05:30', 'modified': '2026-06-12T14:30:09.299+05:30', 'sha256': 'c20d0e0ebeba615a9c438006ce21781dac682f8ca276c68d57161d6ed1f78628', 'repo': 'itepaypg-sbiepay2-docker-local'}
+[2026-07-14 16:39:07] [INFO]   {'image': 'app/backend/epay_admin_portal_service', 'tag': 'dev-f4f45ec2', 'size_bytes': 918, 'created': '2026-07-10T18:05:33.284+05:30', 'modified': '2026-07-10T18:05:33.284+05:30', 'sha256': '050440f31dc3f9734af60bdd78c8f5e795667ffcbb77147898e9f5ba3f2b7555', 'repo': 'itepaypg-sbiepay2-docker-local'}
+[2026-07-14 16:39:07] [INFO]   {'image': 'app/backend/epay_admin_portal_service', 'tag': 'feature-epay-151-masters-framework-desig-71b5c33d', 'size_bytes': 917, 'created': '2026-06-12T18:02:15.362+05:30', 'modified': '2026-06-12T18:02:15.346+05:30', 'sha256': 'b88efd4252fa7edcb63b1b3bfc68bf2ccc745d1a8f18ad337d6007c520102e9c', 'repo': 'itepaypg-sbiepay2-docker-local'}
+[2026-07-14 16:39:07] [INFO]   {'image': 'app/backend/epay_admin_portal_service', 'tag': 'feature-epay-151-masters-framework-desig-81a1ead1', 'size_bytes': 917, 'created': '2026-06-12T15:39:59.012+05:30', 'modified': '2026-06-12T15:39:58.998+05:30', 'sha256': 'f6c146e550c2328c0b2b9070ff7524d1a0b66bbfc70241bed9b00b5c4e24408f', 'repo': 'itepaypg-sbiepay2-docker-local'}
+
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>
+D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --repo itepaypg-sbiepay2-docker-local           
+[2026-07-14 16:40:42] [INFO] Starting inventory for repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image_filter='None' tag_prefix='None' verify=False
+[2026-07-14 16:40:53] [INFO] AQL returned 1894 manifest.json entries for repo 'itepaypg-sbiepay2-docker-local'
+[2026-07-14 16:40:53] [INFO] Parsed 1894 image:tag entries from AQL results
+[2026-07-14 16:40:53] [INFO] Breakdown across 23 service(s):
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_admin_portal_service: 10 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_admin_service: 336 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_communication_service: 105 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_integration_service: 20 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_key_managment: 34 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_merchant_service: 169 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_operations_service: 91 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_otherinb_service: 3 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_payment_service: 233 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_refund_service: 46 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_reports_service: 226 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_stubs_service: 20 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epay_transaction_service: 288 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epaybridge-key-gen-service: 1 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epaylite-bridge-mis-report: 89 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epaylite-bridge-mis-service: 30 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epaylite-bridge-status-service: 29 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/epaylite-bridge-txn-service: 99 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/java-utility-api-simulator: 43 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/java_utility_api_simulator: 5 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/merchant_api_simulator_nodejs: 5 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/merchant_api_simulator_php: 6 tag(s)
+[2026-07-14 16:40:53] [INFO]   app/backend/transaction_job_service: 6 tag(s)
+[2026-07-14 16:40:53] [INFO] CSV report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_itepaypg-sbiepay2-docker-local_20260714_164053.csv
+[2026-07-14 16:40:53] [INFO] JSONL report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_itepaypg-sbiepay2-docker-local_20260714_164053.jsonl
+[2026-07-14 16:40:53] [INFO] Summary: 1894 image:tag entries, 23 unique images, total size 0.00 GB
+
+D:\Mr Om\Python_script>python311\\python.exe jfrog_image_inventory.py --repo itepaypg-sbiepay2-docker-local  --image app/backend/epay_admin_portal_service  --verify
+[2026-07-14 16:43:24] [INFO] Starting inventory for repo='itepaypg-sbiepay2-docker-local' path_prefix='app/backend' image_filter='app/backend/epay_admin_portal_service' tag_prefix='None' verify=True
+[2026-07-14 16:43:40] [INFO] AQL returned 0 manifest.json entries for repo 'itepaypg-sbiepay2-docker-local'
+[2026-07-14 16:43:40] [INFO] Parsed 0 image:tag entries from AQL results
+[2026-07-14 16:43:40] [INFO] Verifying 0 unique images against Docker Registry v2 tag lists...
+[2026-07-14 16:43:40] [INFO] Verification complete: 0 image(s) with tag mismatches out of 0
+[2026-07-14 16:43:40] [INFO] CSV report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_itepaypg-sbiepay2-docker-local_20260714_164340.csv
+[2026-07-14 16:43:40] [INFO] JSONL report written: D:\Mr Om\Python_script\reports\jfrog_image_inventory_itepaypg-sbiepay2-docker-local_20260714_164340.jsonl
+[2026-07-14 16:43:40] [INFO] Summary: 0 image:tag entries, 0 unique images, total size 0.00 GB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+========================================= Working python script -----------------------
+
+
 #!/usr/bin/env python3
 """
 jfrog_image_inventory.py
@@ -39,9 +145,8 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 CONFIG = {
     "JFROG_HOST": "https://artifactory.jfrog.sbi:443",
-    "JFROG_USER": "svc-devops-bot",              # <-- update (only used for AUTH_METHOD=basic)
-    "JFROG_API_KEY": "REPLACE_ME",               # <-- prefer env var override below
-    "AUTH_METHOD": "basic",                       # "basic" (user:apikey) or "bearer" (identity token)
+    "JFROG_USER": "v1021577",              # <-- update
+    "JFROG_API_KEY": "Given the actual token value",               # <-- prefer env var override below
     "DOCKER_REPO": "itepaypg-sbiepay2-docker-local",
     "PATH_PREFIX": "app/backend",                 # base folder under the docker repo
     "LOG_DIR": r"D:\Mr Om\Python_script",
@@ -54,7 +159,6 @@ CONFIG = {
 import os  # noqa: E402
 CONFIG["JFROG_USER"] = os.environ.get("JFROG_USER", CONFIG["JFROG_USER"])
 CONFIG["JFROG_API_KEY"] = os.environ.get("JFROG_API_KEY", CONFIG["JFROG_API_KEY"])
-CONFIG["AUTH_METHOD"] = os.environ.get("JFROG_AUTH_METHOD", CONFIG["AUTH_METHOD"])
 
 SSL_CTX = ssl._create_unverified_context()
 
@@ -79,8 +183,6 @@ def log(msg, level="INFO"):
 # HTTP helpers
 # ---------------------------------------------------------------------------
 def _auth_header():
-    if CONFIG["AUTH_METHOD"].lower() == "bearer":
-        return {"Authorization": f"Bearer {CONFIG['JFROG_API_KEY']}"}
     import base64
     token = base64.b64encode(
         f"{CONFIG['JFROG_USER']}:{CONFIG['JFROG_API_KEY']}".encode()
@@ -115,39 +217,6 @@ def _request(url, method="GET", data=None, extra_headers=None, accept=None):
 # ---------------------------------------------------------------------------
 # AQL bulk fetch — one call gets manifest.json entries for the whole repo
 # ---------------------------------------------------------------------------
-def sanity_check(docker_repo):
-    """Verify auth works and the repo actually exists, before running AQL that
-    would otherwise silently return 0 rows on a bad repo name."""
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/repositories?type=local"
-    status, _, raw = _request(url, accept="application/json")
-
-    if status in (401, 403):
-        log(f"AUTH FAILED (status={status}): {raw[:300]}", "ERROR")
-        log("Check JFROG_USER / JFROG_API_KEY env vars are set in THIS shell session, "
-            "and confirm AUTH_METHOD (basic vs bearer) matches your credential type "
-            "(API Key = basic, Identity/Access Token = bearer).", "ERROR")
-        return False
-    if status is None or status >= 400:
-        log(f"Could not reach {url} (status={status}): {raw[:300]}", "ERROR")
-        return False
-
-    try:
-        repos = json.loads(raw)
-    except json.JSONDecodeError:
-        log("Could not parse /api/repositories response", "ERROR")
-        return False
-
-    repo_names = [r.get("key") for r in repos]
-    if docker_repo not in repo_names:
-        docker_repos = [r.get("key") for r in repos if r.get("packageType") == "Docker"]
-        log(f"Repo '{docker_repo}' not found in this instance!", "ERROR")
-        log(f"Available Docker repos: {docker_repos}", "ERROR")
-        return False
-
-    log(f"Sanity check passed: authenticated OK, repo '{docker_repo}' exists.")
-    return True
-
-
 def aql_fetch_manifests(docker_repo, path_prefix=None, image_filter=None):
     # path_prefix scopes to a base folder (e.g. "app/backend") so we don't sweep the whole repo.
     # image_filter further narrows to one service under that prefix (test-before-sweep).
@@ -241,12 +310,7 @@ def main():
         sys.exit(1)
 
     log(f"Starting inventory for repo='{args.repo}' path_prefix='{args.path_prefix}' "
-        f"image_filter='{args.image}' tag_prefix='{args.tag_prefix}' verify={args.verify} "
-        f"auth_method={CONFIG['AUTH_METHOD']}")
-
-    if not sanity_check(args.repo):
-        log("Sanity check failed — aborting before running AQL. Fix the issue above and re-run.", "ERROR")
-        sys.exit(1)
+        f"image_filter='{args.image}' tag_prefix='{args.tag_prefix}' verify={args.verify}")
 
     manifests = aql_fetch_manifests(args.repo, path_prefix=args.path_prefix or None,
                                      image_filter=args.image)
