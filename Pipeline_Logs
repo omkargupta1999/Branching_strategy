@@ -1,42 +1,78 @@
-SBIePay 2.0 DC-DR Drill – Delay Update
+Since you're air-gapped, I'll stick to `curl` + `jq` (both usually preinstalled, no pip/npm needed). JFrog gives you a few different APIs depending on what "details" you want — repo browsing, Docker registry API, or AQL for bulk metadata. Here's the full toolkit:
 
-Dear Sir/Madam,
+## 1. List all repositories (to confirm your docker repo name/type)
 
-This is to update you on the DC-to-DR switchover drill carried out today for SBIePay 2.0. The switchover was completed successfully; however, we encountered a delay during execution, and we would like to share the details along with our observations for improvement.
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  "https://<jfrog-host>/artifactory/api/repositories?type=local" | jq '.[] | select(.packageType=="Docker")'
+```
 
-Issue 1: Slow Base Image Pull
-During pipeline execution, we observed that the GitLab Runner helper base image took approximately 45-50 seconds to pull from our Artifactory registry before the deployment job could proceed. This added avoidable latency at the start of every job run.
+## 2. List all images (repositories/folders) inside the docker repo
 
-Issue 2: DNS Resolution Failure (gitlab.sbi)
-One of the pipeline jobs failed with the error "Could not resolve host: gitlab.sbi" while attempting to fetch the source repository from the DR-side runner. This is a transient DNS resolution issue on the runner/network side. As a result, the job had to be manually re-triggered, and it completed successfully on the second attempt.
+Using the **Docker Registry API v2** (built into Artifactory):
 
-Impact
-These two issues together contributed to the overall delay in completing the drill within the originally planned time window. The switchover itself was validated successfully once the pipeline completed.
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  "https://<jfrog-host>/artifactory/api/docker/<docker-repo-name>/v2/_catalog?n=1000" | jq
+```
 
-Scope of Improvement
-1. Pre-warm/cache the GitLab Runner helper image on DR runners so it does not need to be pulled fresh during time-critical drills.
-2. Investigate and stabilize DNS resolution for gitlab.sbi from the DR runner network - likely a resolver/hosts-file or CoreDNS configuration gap specific to the DR side.
-3. Add a retry-with-backoff mechanism in the pipeline for transient git-fetch/DNS failures, so jobs self-recover without manual re-triggering.
-4. Include a pre-drill runner health check (DNS resolution + registry connectivity) as a checklist item before future DC-DR drills.
+> `n=1000` sets page size — if you have more images, use the `Link` header in the response for pagination.
 
-We will work with the infra team to address these gaps before the next scheduled drill. Please let us know if you need any further details.
+## 3. List all tags for a specific image
 
-Regards,
-DevSecOps Team
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  "https://<jfrog-host>/artifactory/api/docker/<docker-repo-name>/v2/<image-name>/tags/list" | jq
+```
 
-,...
+## 4. Get manifest details (digest, layers, size) for a specific tag
 
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+  "https://<jfrog-host>/artifactory/api/docker/<docker-repo-name>/v2/<image-name>/manifests/<tag>" | jq
+```
 
-Dear Sir/Madam,
+For just the digest (via HEAD, faster):
 
-The DC-to-DR switchover drill for SBIePay 2.0 was completed successfully today, though with some delay due to two issues:
+```bash
+curl -s -k -I -u "$JFROG_USER:$JFROG_API_KEY" \
+  -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+  "https://<jfrog-host>/artifactory/api/docker/<docker-repo-name>/v2/<image-name>/manifests/<tag>"
+```
 
-1. Base image pull for the pipeline runner took ~45-50 seconds, adding latency.
-2. One job failed with "Could not resolve host: gitlab.sbi" (a transient DNS issue), requiring a manual re-trigger; it succeeded on the second run.
+## 5. Bulk metadata dump (best for your use case — all images at once)
 
-Scope of improvement: pre-cache runner images on DR, fix DNS resolution stability on the DR network, and add auto-retry for transient pipeline failures.
+This is the most useful one for a full inventory: **AQL (Artifactory Query Language)** pulls path, size, created date, modified date, checksums for everything in one shot:
 
-We will work on these before the next drill. Happy to share further details if needed.
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  -H "Content-Type: text/plain" \
+  -X POST "https://<jfrog-host>/artifactory/api/search/aql" \
+  -d 'items.find({"repo":"<docker-repo-name>"}).include("name","repo","path","size","created","modified","sha256")' \
+  | jq '.results'
+```
 
-Regards,
-DevSecOps Team
+Filter to only `manifest.json` files to get one row per image:tag (avoids layer blob clutter):
+
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  -H "Content-Type: text/plain" \
+  -X POST "https://<jfrog-host>/artifactory/api/search/aql" \
+  -d 'items.find({"repo":"<docker-repo-name>","name":"manifest.json"}).include("name","repo","path","size","created","modified")' \
+  | jq -r '.results[] | [.path, .size, .created] | @tsv'
+```
+
+## 6. Storage summary (repo size, image count) — quick sanity check
+
+```bash
+curl -s -k -u "$JFROG_USER:$JFROG_API_KEY" \
+  "https://<jfrog-host>/artifactory/api/storage/<docker-repo-name>?list&deep=1&listFolders=1" | jq
+```
+
+### Notes for your setup
+- Use `-k` since `gitlab.sbi`/JFrog likely runs self-signed certs internally (consistent with your other tooling).
+- Prefer `$JFROG_API_KEY` (or an Artifactory **access token**) over a personal password — check if your bastion already has one exported as an env var.
+- The AQL query (#5) is the one I'd actually script — you can pipe the `manifest.json` output into a CSV/report loop matching your `apply_repo_governance.py` / `log()` house style (stdout + dated file under `D:\Mr Om\Python_script\`).
+
+Want me to wrap the AQL + tags-list calls into a stdlib-only Python script (matching your usual `CONFIG` block, `--repo` flag, `ssl._create_unverified_context()` pattern) that dumps a full image inventory report?
