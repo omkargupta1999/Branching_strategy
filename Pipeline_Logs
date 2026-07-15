@@ -1,268 +1,729 @@
-#!/usr/bin/env python3
-"""
-jfrog_delete_image_tag.py
 
-Deletes a single Docker image TAG (the whole tag folder: manifest + config + layer refs)
-from a JFrog Artifactory Docker repo. Layer blobs are reclaimed later by Artifactory GC.
+I am sharing the curent configuration of semver.yaml, tag.yaml and deploy.jobs.yml and  ............
 
-SAFETY DESIGN (audit-first house style):
-  - DRY-RUN IS THE DEFAULT. Nothing is deleted unless you pass --apply.
-  - One tag per invocation. You must give BOTH --image and --tag explicitly.
-  - Pre-delete it GETs the folder to confirm the tag exists and shows what will go.
-  - Every real delete is journalled to a JSONL rollback record (path, digest, timestamp,
-    HTTP status) so you have an audit trail of exactly what was removed.
-  - Refuses to touch anything outside the configured PATH_PREFIX unless --allow-any-path.
+First i want you to please update this configuration in our memory everythings and refer this one only ...and also i want you to please update description for 
+all the yamls according and remove the unwanted description which is not relatable, currently only focused on uncommented stages only ..and keep the commented stages like that only.
 
-  NOTE: Artifactory tag deletion is PERMANENT (no recycle bin unless trashcan is enabled
-  on the instance). There is no automated 'undo' — the JSONL journal is a record, not a
-  restore. Re-pushing the image from the pipeline is the recovery path.
+After this chat I will share you the a snapshot for your reference which will consist of which stage to run during the MR raised and MR Merged...
+And here we have mentioned both source and target branch from where we are merging...
 
-House style: pure stdlib, ssl._create_unverified_context(), CONFIG block, log() to console +
-dated file, argparse flags, env-var cred override.
-
-Usage:
-  # 1. Dry-run (default) — shows what WOULD be deleted, deletes nothing:
-  python311\\python.exe jfrog_delete_image_tag.py --image epay_admin_portal_service --tag feature-epay-151-masters-framework-desig-71b5c33d
-
-  # 2. Actually delete (requires --apply AND interactive yes):
-  python311\\python.exe jfrog_delete_image_tag.py --image epay_admin_portal_service --tag feature-epay-151-masters-framework-desig-71b5c33d --apply
-"""
-
-import argparse
-import json
-import os
-import ssl
-import sys
-import urllib.request
-import urllib.error
-from datetime import datetime
-from pathlib import Path
-
-# ---------------------------------------------------------------------------
-# CONFIG
-# ---------------------------------------------------------------------------
-CONFIG = {
-    "JFROG_HOST": "https://artifactory.jfrog.sbi:443",
-    "JFROG_USER": "v1021577",                      # <-- used for AUTH_METHOD=basic
-    "JFROG_API_KEY": "REPLACE_ME",                 # <-- prefer env var override below
-    "AUTH_METHOD": "basic",                        # "basic" or "bearer"
-    "DOCKER_REPO": "itepaypg-sbiepay2-docker-local",
-    "PATH_PREFIX": "app/backend",                  # deletions confined to under here by default
-    "LOG_DIR": r"D:\Mr Om\Python_script",
-    "JOURNAL_DIR": r"D:\Mr Om\Python_script\delete_journals",
-    "TIMEOUT_SEC": 30,
-}
-
-CONFIG["JFROG_USER"] = os.environ.get("JFROG_USER", CONFIG["JFROG_USER"])
-CONFIG["JFROG_API_KEY"] = os.environ.get("JFROG_API_KEY", CONFIG["JFROG_API_KEY"])
-CONFIG["AUTH_METHOD"] = os.environ.get("JFROG_AUTH_METHOD", CONFIG["AUTH_METHOD"])
-
-SSL_CTX = ssl._create_unverified_context()
+So according to that snapshot we have to enable all that stages which is mentined in that images snapshot and according to that you will share the complete 
+yamls files with all the description and updated yml accordingly.
+ 
 
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-def log(msg, level="INFO"):
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[{ts}] [{level}] {msg}"
-    print(line)
-    try:
-        log_dir = Path(CONFIG["LOG_DIR"])
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / f"jfrog_delete_image_tag_{datetime.now().strftime('%Y%m%d')}.log"
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(line + "\n")
-    except Exception as e:
-        print(f"[{ts}] [WARN] could not write to log file: {e}")
+------------------------------------------------------semver.yml --------------
 
+# # ci/version/semver.yml  |  Stage: .pre
+# # Computes VERSION string based on branch/pipeline context → version.env
+# # Consumed by ALL downstream jobs via dotenv artifact
+# # NOTE: This job ONLY computes the version. Git tags are created in ci/release/tag.yml
 
-# ---------------------------------------------------------------------------
-# HTTP
-# ---------------------------------------------------------------------------
-def _auth_header():
-    if CONFIG["AUTH_METHOD"].lower() == "bearer":
-        return {"Authorization": f"Bearer {CONFIG['JFROG_API_KEY']}"}
-    import base64
-    token = base64.b64encode(
-        f"{CONFIG['JFROG_USER']}:{CONFIG['JFROG_API_KEY']}".encode()
-    ).decode()
-    return {"Authorization": f"Basic {token}"}
+# version:
+#   stage: version
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   tags:
+#     - common_runner
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global --add safe.directory '*'
+#   script:
+#     - |
+#       set -e
+#       git fetch --tags
 
+#       if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+#         VERSION="mr-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
 
-def _request(url, method="GET", accept=None):
-    headers = _auth_header()
-    if accept:
-        headers["Accept"] = accept
-    req = urllib.request.Request(url, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=CONFIG["TIMEOUT_SEC"], context=SSL_CTX) as resp:
-            return resp.status, resp.read()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read()
-    except urllib.error.URLError as e:
-        log(f"URL error calling {url}: {e}", "ERROR")
-        return None, b""
+#       elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+#         VERSION="dev-${CI_COMMIT_SHORT_SHA}"
 
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^release\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         RELEASE_VERSION="${BASH_REMATCH[1]}"
+#         RC_COUNT=$(git tag -l "v${RELEASE_VERSION}-rc.*" | wc -l)
+#         NEW_RC=$((RC_COUNT + 1))
+#         VERSION="${RELEASE_VERSION}-rc.${NEW_RC}"
 
-# ---------------------------------------------------------------------------
-# Inspect the tag folder before deleting
-# ---------------------------------------------------------------------------
-def get_tag_info(repo, folder_path):
-    """folder_path e.g. app/backend/epay_admin_portal_service/<tag>."""
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/storage/{repo}/{folder_path}"
-    status, raw = _request(url, accept="application/json")
-    if status != 200:
-        return status, None
-    try:
-        return status, json.loads(raw)
-    except json.JSONDecodeError:
-        return status, None
+#       elif [[ "$CI_COMMIT_BRANCH" =~ ^hotfix\/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+#         VERSION="${BASH_REMATCH[1]}"
 
+#       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+#         LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+#         VERSION="${LAST_TAG#v}"
 
-def get_manifest_digest(repo, image, tag):
-    """Best-effort fetch of the manifest digest for the audit record."""
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/api/docker/{repo}/v2/{image}/manifests/{tag}"
-    headers = _auth_header()
-    headers["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
-    req = urllib.request.Request(url, headers=headers, method="HEAD")
-    try:
-        with urllib.request.urlopen(req, timeout=CONFIG["TIMEOUT_SEC"], context=SSL_CTX) as resp:
-            return resp.headers.get("Docker-Content-Digest")
-    except Exception:
-        return None
+#       else
+#         VERSION="${CI_COMMIT_SHORT_SHA}"
+#       fi
+#       #newly added-----------------------------------------
+#       echo "BRANCH_USED=$CI_COMMIT_BRANCH" >> version.env
+      
+#       #-=--------------------------------------------------
 
+#       echo "VERSION=$VERSION" >> version.env
+#       echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA" >> version.env
+#       echo "Generated VERSION=$VERSION"
+#   artifacts:
+#     reports:
+#       dotenv: version.env
+#     expire_in: 1 week
 
-# ---------------------------------------------------------------------------
-# Journal
-# ---------------------------------------------------------------------------
-def journal_write(record):
-    jdir = Path(CONFIG["JOURNAL_DIR"])
-    jdir.mkdir(parents=True, exist_ok=True)
-    jpath = jdir / f"delete_journal_{datetime.now().strftime('%Y%m%d')}.jsonl"
-    with open(jpath, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record) + "\n")
-    return jpath
+# ci/version/semver.yml  |  Stage: version
+# Computes VERSION string based on branch/pipeline context → version.env
+# Consumed by ALL downstream jobs via dotenv artifact
+# NOTE: This job ONLY computes the version. Git tags created in ci/release/tag.yml
+#
+# ── VERSION output per context ────────────────────────────────────────────────
+#
+# Pipeline Source      Branch / Context                   VERSION
+# ──────────────────── ────────────────────────────────── ──────────────────────────────────────
+# merge_request_event  <any source> → <any target>        mr-<src branch>-<tgt branch>-<MR ID>-<short-sha>
+# push                 feature/*                          <branch-name>-<short-sha>
+# push                 bugfix/*                           <branch-name>-<short-sha>
+# push                 hotfix/*                           <branch-name>-<short-sha>
+# push                 release/*                          <branch-name>-<short-sha>
+# push                 develop                            dev-<short-sha>
+# push                 sit-integration                    sit-<short-sha>
+# push                 main ← release/major-*             major bump (last_tag + 1.0.0)
+# push                 main ← release/minor-*             minor bump (last_tag + 0.1.0)
+# push                 main ← hotfix/*                    patch bump (last_tag + 0.0.1)
+# unknown              any                                unknown-<short-sha>
+#
+# ── Tag format ────────────────────────────────────────────────────────────────
+# Tags are BARE semver: 1.2.0  (NO 'v' prefix — branch/tag regex disallows it).
+# Both the idempotency guard and the LAST_TAG lookup below match bare-only, and
+# ci/release/tag.yml creates bare tags. These three MUST stay consistent.
+#
+# ── Branch name cleaning ──────────────────────────────────────────────────────
+#   /  → -    Special chars → -    Uppercase → lowercase
+#   Consecutive dashes collapsed    Max 40 chars
+# Keeps all VERSION strings well within the Docker image tag limit of 128 chars.
+#
+# ── main merge — how source branch is identified (Approach 1) ─────────────────
+# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME is NOT available in post-merge push pipeline.
+# CI_COMMIT_TITLE IS available — GitLab sets it to the merge commit subject:
+#   "Merge branch 'release/minor-DM…-EPAY-…' into 'main'"
+#   "Merge branch 'hotfix/EPAY-…' into 'main'"
+# Squash/rebase merges are NOT permitted on Protected branch 'main' (bank policy).
+# LOAD-BEARING: Settings → Merge requests → Merge method MUST be 'Merge commit'.
+# If commit title does not match expected format → version job fails → pipeline fails.
 
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  variables:
+    GIT_DEPTH: "0"            # full clone required — accurate tag lookup
+    INITIAL_VERSION: "1.0.0"  # baseline when repo has no semver tag yet
+  tags:
+    - common_runner
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+  script:
+    - |
+      set -eo pipefail
+      git fetch --tags
 
-# ---------------------------------------------------------------------------
-# Delete
-# ---------------------------------------------------------------------------
-def delete_tag(repo, folder_path):
-    url = f"{CONFIG['JFROG_HOST']}/artifactory/{repo}/{folder_path}"
-    status, raw = _request(url, method="DELETE")
-    return status, raw, url
+      # ── Helper: clean branch name for use in VERSION string ───────────────
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
 
+      # ── MR pipeline ────────────────────────────────────────────────────────
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+        TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-def main():
-    parser = argparse.ArgumentParser(description="Delete a single JFrog Docker image tag (dry-run by default)")
-    parser.add_argument("--repo", default=CONFIG["DOCKER_REPO"], help="Docker repo name")
-    parser.add_argument("--path-prefix", default=CONFIG["PATH_PREFIX"],
-                        help='Base folder, e.g. "app/backend". Deletions confined here unless --allow-any-path.')
-    parser.add_argument("--image", required=True,
-                        help="Service/image name under path-prefix, e.g. epay_admin_portal_service "
-                             "(you may also pass the full path; prefix is de-duped).")
-    parser.add_argument("--tag", required=True, help="Exact tag to delete (the folder name).")
-    parser.add_argument("--apply", action="store_true",
-                        help="Actually delete. Without this, runs dry-run and deletes nothing.")
-    parser.add_argument("--allow-any-path", action="store_true",
-                        help="Permit deleting outside path-prefix (off by default as a guardrail).")
-    parser.add_argument("--yes", action="store_true",
-                        help="Skip the interactive confirmation prompt (for scripted use). Still needs --apply.")
-    args = parser.parse_args()
+      # ── feature/*, bugfix/*, hotfix/*, release/* push ──────────────────────
+      # One condition covers all four — same pattern: <branch>-<sha>
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix|release)\/ ]]; then
+        BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
+        VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
 
-    if CONFIG["JFROG_API_KEY"] == "REPLACE_ME":
-        log("JFROG_API_KEY not set — export JFROG_API_KEY env var or edit CONFIG block", "ERROR")
-        sys.exit(1)
+      # ── develop push ───────────────────────────────────────────────────────
+      elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        VERSION="dev-${CI_COMMIT_SHORT_SHA}"
 
-    CONFIG["DOCKER_REPO"] = args.repo
+      # ── sit-integration push ───────────────────────────────────────────────
+      elif [[ "$CI_COMMIT_BRANCH" == "sit-integration" ]]; then
+        VERSION="sit-${CI_COMMIT_SHORT_SHA}"
 
-    # Normalise image path (de-dupe prefix)
-    image = args.image
-    prefix = (args.path_prefix or "").rstrip("/")
-    if prefix and image.startswith(prefix + "/"):
-        image = image[len(prefix) + 1:]
-    image = image.strip("/")
-    full_image = f"{prefix}/{image}" if prefix else image
-    folder_path = f"{full_image}/{args.tag}"
+      # ── main push ──────────────────────────────────────────────────────────
+      elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        echo "Merge commit title: $CI_COMMIT_TITLE"
 
-    log(f"Target repo='{args.repo}' image='{full_image}' tag='{args.tag}'")
-    log(f"Full folder path to delete: {args.repo}/{folder_path}")
+        # ── Idempotency guard ────────────────────────────────────────────────
+        # Retry after ci/release/tag.yml already tagged this SHA:
+        # reuse the existing semver — never compute a second bump.
+        # BARE tags only (no v-prefix) — must match LAST_TAG lookup + tag.yml.
+        EXISTING_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+        if [[ -n "$EXISTING_TAG" ]]; then
+          VERSION="$EXISTING_TAG"
+          echo "Semver tag ${EXISTING_TAG} already points at HEAD — reusing (pipeline retry)."
 
-    # Guardrail: confine to prefix
-    if prefix and not folder_path.startswith(prefix + "/") and not args.allow_any_path:
-        log(f"Refusing: target is outside path-prefix '{prefix}'. Use --allow-any-path to override.", "ERROR")
-        sys.exit(1)
+        # ── Gate 1: merge commit from an ALLOWED source (release/* | hotfix/*) ─
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '(release|hotfix)/"; then
+          SRC_BRANCH=$(echo "$CI_COMMIT_TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
 
-    # Confirm the tag exists first
-    status, info = get_tag_info(args.repo, folder_path)
-    if status == 404:
-        log(f"Tag folder not found (404): {args.repo}/{folder_path}. Nothing to delete. "
-            f"Check the exact tag spelling.", "ERROR")
-        sys.exit(1)
-    if status in (401, 403):
-        log(f"AUTH FAILED (status={status}) — check creds / AUTH_METHOD.", "ERROR")
-        sys.exit(1)
-    if status != 200:
-        log(f"Could not inspect tag folder (status={status}). Aborting for safety.", "ERROR")
-        sys.exit(1)
+          # ── Gate 1a: extraction sanity — title matched but yielded nothing ──
+          # Guards against malformed/unusual titles that pass the grep but whose
+          # quoted branch name cannot be extracted (empty SRC_BRANCH would
+          # otherwise fall to the case default with a confusing message).
+          if [[ -z "$SRC_BRANCH" ]]; then
+            echo "   ERROR: Malformed merge commit title — source branch not extractable."
+            echo "   Title was : $CI_COMMIT_TITLE"
+            exit 1
+          fi
 
-    children = info.get("children", []) if info else []
-    log(f"Tag folder exists. Contains {len(children)} file(s): "
-        f"{[c.get('uri') for c in children][:10]}")
+          case "$SRC_BRANCH" in
+            release/major-*)  BUMP="major" ;;
+            release/minor-*)  BUMP="minor" ;;
+            hotfix/*)         BUMP="patch" ;;
+            *)
+              echo "   ERROR: Unsupported source branch '${SRC_BRANCH}' merged to main."
+              echo "   Only release/major-*, release/minor-* and hotfix/* may merge to main."
+              exit 1
+              ;;
+          esac
 
-    digest = get_manifest_digest(args.repo, full_image, args.tag)
-    log(f"Manifest digest: {digest or 'unavailable'}")
+          # ── Latest BARE semver tag (no v-prefix) ─────────────────────────────
+          LAST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
 
-    if not args.apply:
-        log("DRY-RUN (default): no deletion performed. Re-run with --apply to actually delete.", "WARN")
-        log(f"Would DELETE: {CONFIG['JFROG_HOST']}/artifactory/{args.repo}/{folder_path}")
-        return
+          if [[ -z "$LAST_TAG" ]]; then
+            VERSION="${INITIAL_VERSION}"
+            echo "No prior semver tag found — starting at ${VERSION}"
+          else
+            IFS=. read -r MAJ MIN PAT <<< "$LAST_TAG"
+            case "$BUMP" in
+              major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
+              minor) MIN=$((MIN + 1)); PAT=0 ;;
+              patch) PAT=$((PAT + 1)) ;;
+            esac
+            VERSION="${MAJ}.${MIN}.${PAT}"
+          fi
+          echo "Semver: ${LAST_TAG:-<none>} → ${VERSION}  (${BUMP} bump from ${SRC_BRANCH})"
+          echo "VERSION_BUMP=${BUMP}"                >> version.env
+          echo "VERSION_SOURCE_BRANCH=${SRC_BRANCH}" >> version.env
 
-    # Interactive confirmation
-    if not args.yes:
-        print("")
-        print("  !!! PERMANENT DELETE — no recycle bin unless trashcan is enabled !!!")
-        print(f"  Repo : {args.repo}")
-        print(f"  Image: {full_image}")
-        print(f"  Tag  : {args.tag}")
-        print(f"  Digest: {digest or 'unavailable'}")
-        confirm = input("  Type the exact tag name to confirm deletion: ").strip()
-        if confirm != args.tag:
-            log("Confirmation did not match tag name. Aborting — nothing deleted.", "WARN")
-            sys.exit(1)
+        # ── Gate 2: merge commit, but from a FORBIDDEN source branch ─────────
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '"; then
+          echo "   ERROR: Merge to main from unsupported source branch."
+          echo "   Title was : $CI_COMMIT_TITLE"
+          echo "   Only release/* (minor/major bump) and hotfix/* (patch bump)"
+          echo "   may merge to main."
+          echo ""
+          echo "   Root cause : Protected-branch / MR-approval policy breach."
+          echo "   Fix        : Review MR approval rules and protected branch"
+          echo "                settings for 'main'; revert the offending merge."
+          exit 1
 
-    # Journal BEFORE delete (record intent), then update with result
-    record = {
-        "timestamp": datetime.now().isoformat(),
-        "action": "delete_tag",
-        "repo": args.repo,
-        "image": full_image,
-        "tag": args.tag,
-        "folder_path": folder_path,
-        "manifest_digest": digest,
-        "children_count": len(children),
-        "status": "attempting",
-    }
-    jpath = journal_write(record)
+        # ── Gate 3: not a standard merge commit at all ───────────────────────
+        else
+          echo "   ERROR: Cannot determine source branch from merge commit title."
+          echo "   Title was  : $CI_COMMIT_TITLE"
+          echo "   Expected   : \"Merge branch 'release/…' into 'main'\""
+          echo "   OR         : \"Merge branch 'hotfix/…' into 'main'\""
+          echo ""
+          echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
+          echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
+          echo "                Merge method → select 'Merge commit'"
+          echo "                Re-raise the MR and merge again."
+          exit 1
+        fi
 
-    status, raw, url = delete_tag(args.repo, folder_path)
-    record["status"] = "deleted" if status in (200, 202, 204) else f"failed_{status}"
-    record["response"] = (raw[:200].decode("utf-8", "replace") if raw else "")
-    journal_write(record)
+      # ── Unknown branch ─────────────────────────────────────────────────────
+      else
+        echo "  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
+        VERSION="unknown-${CI_COMMIT_SHORT_SHA}"
+      fi
 
-    if status in (200, 202, 204):
-        log(f"DELETED successfully (status={status}): {args.repo}/{folder_path}")
-        log(f"Journalled to: {jpath}")
-        log("Note: layer blobs are reclaimed later by Artifactory garbage collection.")
-    else:
-        log(f"DELETE FAILED (status={status}): {raw[:300]}", "ERROR")
-        log(f"Journalled the failed attempt to: {jpath}")
-        sys.exit(1)
+      # ── Write dotenv ────────────────────────────────────────────────────────
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
+      else
+        echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
+      fi
+      echo "VERSION=$VERSION"                           >> version.env
+      echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
 
+      # ── Summary ─────────────────────────────────────────────────────────────
+      echo "──────────────────────────────────────────────────────"
+      echo "Source  : ${CI_PIPELINE_SOURCE}"
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "Branch  : ${CI_COMMIT_BRANCH}"
+      fi
+      echo "VERSION : ${VERSION}"
+      echo "──────────────────────────────────────────────────────"
 
-if __name__ == "__main__":
-    main()
+  artifacts:
+    reports:
+      dotenv: version.env
+    expire_in: 1 day
+  rules:                             ## version job runs in all pipeline types
+    - when: on_success
+
+------------------------------------ deploy.jobs.yml ---------------------------------
+
+# ci/deploy/deploy.jobs.yml
+# All deploy trigger jobs — tech-stack agnostic.
+# Included by EVERY CI orchestrator template (java, nodejs, python, php, dotnet, react).
+#
+# All jobs extend .trigger_cd (single base template in trigger.cd.yml).
+# Job-specific behaviour sits here: rules, manual_confirmation, variables.
+#
+# ── Release branch gating ─────────────────────────────────────────────────────
+# Deploy rules match on the PREFIX only:  /^release\//
+# The exact release naming (release/(major|minor)-DM<digits>-EPAY-<desc>) is
+# enforced ONCE, by the GitLab Push Rule branch regex — a malformed release
+# branch cannot be created in the first place. Do NOT duplicate that regex here:
+# it would have to stay in lockstep across 6 rules + the push rule, and a missed
+# edit silently removes a deploy button (this exact drift caused the old
+# release/0.0.0 incident). Push rule = single source of truth for branch names.
+#
+# ── CHART_NAME ────────────────────────────────────────────────────────────────
+# Defined in each APP REPO's .gitlab-ci.yml, not in orchestrators.
+#
+#   # epay_transaction_service/.gitlab-ci.yml
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
+#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+
+# ── DEV — auto on develop push ────────────────────────────────────────────────
+deploy-dev:
+  extends: .trigger_cd
+  variables:
+    ENV:          dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION: "${VERSION}"
+  rules:
+    # # - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
+    # #   when: on_success
+    # - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/ &&  $CI_PIPELINE_SOURCE == "push"'
+    #   when: on_success
+    # - if: '$CI_PIPELINE_SOURCE =~ "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+    #   when: on_success
+    # - when: never
+
+    # MR opened/updated
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && 
+           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ && 
+           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: manual
+
+    # MR merged -> develop push
+    - if: '$CI_PIPELINE_SOURCE == "push" && 
+           $CI_COMMIT_BRANCH == "develop"'
+      when: manual
+    - when: never
+
+# ── SIT — manual, Release Manager ─────────────────────────────────────────────
+deploy-sit:
+  extends: .trigger_cd
+  variables:
+    ENV:          sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH == "sit-integration"'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── UAT — manual, Release Manager ─────────────────────────────────────────────
+deploy-uat:
+  extends: .trigger_cd
+  variables:
+    ENV:          uat
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── INT — manual, Release Manager ─────────────────────────────────────────────
+deploy-int:
+  extends: .trigger_cd
+  variables:
+    ENV:          int
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Performance Testing — manual, Release Manager ─────────────────────────────
+deploy-perf:
+  extends: .trigger_cd
+  variables:
+    ENV:          perf
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DC — manual, RM with confirmation ─────────────────────────────────
+deploy-preprod-dc:
+  extends: .trigger_cd
+  when: manual
+  allow_failure: true
+  variables:
+    ENV:          pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DR — manual, RM with confirmation ─────────────────────────────────
+deploy-preprod-dr:
+  extends: .trigger_cd
+  when: manual
+  allow_failure: true
+  variables:
+
+    ENV:          pre-prod                             
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Hotfix preprod smoke — manual, RM on hotfix MR pipeline only ──────────────
+# Triggered on MR from hotfix/* → main (before merge)
+# Allows smoke test on preprod before hotfix merges to main
+deploy-hotfix-preprod-smoke:
+  extends: .trigger_cd
+  when: manual
+  allow_failure: true
+  variables:
+    # ENV:          pre-prod-dc  ## changing pre-prod-dc to pre-prod
+    ENV: pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DC — manual, Bank team only (Protected Environment enforces gate) ─────
+deploy-prod-dc:
+  extends: .trigger_cd
+  when: manual
+  allow_failure: true
+  variables:
+    ENV:          prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
+deploy-prod-dr:
+  extends: .trigger_cd
+  when: manual
+  allow_failure: true
+  variables:
+    ENV:          prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+	
+	
+------------------------- tag.yml ------------------------
+
+# ci/release/tag.yml  |  Stage: release
+# Creates git tags on post-merge pipelines ONLY — never on MR pipelines.
+# Prod tag → auto on merge to main (marks deployment approval — already CAB approved).
+#
+# CHANGES for Approach-1 / new branch strategy / bare tags:
+#   * Prod tag is now BARE (X.Y.Z), NOT v-prefixed — matches semver.yml's tag
+#     lookup + idempotency guard and the branch-name regex (no 'v' allowed).
+#   * create-rc-tag is DISABLED: the new release branch names carry no version,
+#     and Approach-1 versioning drops RC tags entirely (release push = <branch>-<sha>).
+#     Kept below (commented) for reference only.
+
+.git_tag_base:
+  stage: release
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - common_runner
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+    - git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
+    - git fetch --tags
+
+# ── RC tag — DISABLED (RC versioning dropped under Approach-1) ─────────────────
+# Old logic parsed the branch name for a version; new release names
+# (release/minor-DM…-EPAY-…) carry none, so this is intentionally removed.
+# create-rc-tag:
+#   extends: .git_tag_base
+#   script:
+#     - |
+#       RELEASE_VERSION=$(echo "$CI_COMMIT_BRANCH" | sed 's|release/||')
+#       RC_COUNT=$(git tag -l "${RELEASE_VERSION}-rc.*" | wc -l)
+#       NEW_RC=$((RC_COUNT + 1))
+#       RC_TAG="${RELEASE_VERSION}-rc.${NEW_RC}"
+#       git tag -a "$RC_TAG" -m "RC ${NEW_RC} — auto on merge to $CI_COMMIT_BRANCH"
+#       git push origin "$RC_TAG"
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/ && $CI_PIPELINE_SOURCE == "push"'
+#       when: on_success
+#     - when: never
+
+# ── Prod tag — auto on merge to main (BARE tag, no v-prefix) ──────────────────
+create-prod-tag:
+  extends: .git_tag_base
+  resource_group: prod-tag-lock      # serialise concurrent main pipelines
+  interruptible: false               # never cancel a tag push mid-flight
+  allow_failure: false               # deploy stage must not unlock without the tag
+  script:
+    - |
+      set -eo pipefail
+      # VERSION is the bare semver computed by ci/version/semver.yml (e.g. 1.2.0)
+      if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+        echo "VERSION '$VERSION' is not a clean X.Y.Z — nothing to tag. Skipping."
+        exit 0
+      fi
+      PROD_TAG="${VERSION}"
+      echo "Creating production tag: $PROD_TAG"
+      if git rev-parse "$PROD_TAG" >/dev/null 2>&1; then
+        EXISTING_SHA=$(git rev-parse "${PROD_TAG}^{commit}")
+        if [ "$EXISTING_SHA" = "$CI_COMMIT_SHA" ]; then
+          echo "Tag $PROD_TAG already on this commit — idempotent skip."
+          exit 0
+        fi
+        echo "❌ ERROR: $PROD_TAG exists on a DIFFERENT commit ($EXISTING_SHA)." >&2
+        echo "   Parallel release raced us. Re-run the FULL pipeline to recompute." >&2
+        exit 1
+      fi
+      git tag -a "$PROD_TAG" -m "Production ${VERSION} — merged to main [$(date -u '+%Y-%m-%d %H:%M UTC')] | pipeline ${CI_PIPELINE_ID}"
+      git push origin "$PROD_TAG"
+      echo "✅ Production tag created: $PROD_TAG"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: on_success
+    - when: never
+	
+	
+	
+--------------------------------------------------- java.yml ----------
+
+# templates/ci/backend/java.yml
+# CI orchestrator for Java/Gradle MICROSERVICE repos (produce container image → OCP)
+# For library/utility repos (produce JARs → JFrog), use java.library.yml
+#
+# App repo .gitlab-ci.yml:
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: txn
+#     CHART_NAME:   transactionservice
+
+default:
+  tags:
+    - common_runner
+
+include:
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  - local: 'ci/test/java.unit.yml'
+  - local: ci/common/workflow.yml
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/iac/iac.scan.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  # - local: 'ci/image/image.scan.xray.yml'
+  # - local: 'ci/image/image.scan.rhacs.yml'
+  # - local: 'ci/image/image.sign.yml'
+  # - local: 'ci/image/image.sbom.attest.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
+
+stages:
+  - version       # version generation
+  - build         # gradle compile
+  - test          # unit + integration
+  - sast          # gitlab sast + fortify
+  - security      # sca + secrets + iac + license + sbom
+  - image-build   # podman build (local only — no push)
+  # - image-scan    # trivy + xray + rhacs (gate before sign)
+  # - image-attest  # cosign sign + sbom attestation
+  - image-push    # push to JFrog (only after scan + sign)
+  - release       # rc-tag (release/*) or prod-tag (main) — auto on merge
+  - deploy        # trigger buttons → deployment repo CD pipeline
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+  #BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907"
+  #BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728"
+  BASE_IMAGE_DEV_ENV:      "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728"
+  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+
+# Branch + MR filter — applied to all jobs via extends
+.rules:
+  rules:
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            (
+              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/
+              ||
+              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/
+            )'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
+    
+
+# ── Stage: version ─────────────────────────────────────────────────────────────
+# Defined in ci/version/semver.yml — no override needed, runs on all pipelines
+
+# ── Stage: build ───────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ────────────────────────────────────────────────────────────────
+test:
+  extends: [.test, .rules]
+
+# ── Stage: sast ────────────────────────────────────────────────────────────────
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# # ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# # GitLab template jobs — override stage and apply rules
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# kics-iac-sast:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# # ── Stage: image-build ─────────────────────────────────────────────────────────
+image:build:
+  extends: [.image_build, .rules]
+
+# # ── Stage: image-scan ──────────────────────────────────────────────────────────
+# Trivy (GitLab template job) — override stage and rules
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# image:scan:rhacs:
+#   extends: [.image_scan_rhacs, .rules]
+
+# # ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# image:sbom:attest:
+#   extends: [.sbom_attest, .rules]
+
+# # ── Stage: image-push ──────────────────────────────────────────────────────────
+# image:push:
+#   extends: [.image_push, .rules]
+
+  
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-rc-tag: auto on release/* post-merge  (defined in ci/release/tag.yml)
+# create-prod-tag: auto on main merge          (defined in ci/release/tag.yml)
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs defined in ci/deploy/deploy.jobs.yml
+# deploy-dev: auto | deploy-sit/uat/int/perf/preprod: manual (RM)
+# deploy-prod-dc/dr: manual — Bank Only
