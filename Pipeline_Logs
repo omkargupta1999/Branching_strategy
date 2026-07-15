@@ -797,12 +797,11 @@ sast:fortify:
 #     - when: never
 
 # ── Stage: image-build ────────────────────────────────────────────────────────
-# NOT gated by plain .rules: build/test/sast run on feature-target MRs, but an
-# image must never be built for one (snapshot rows feature->feature and
-# bugfix->feature stop at sast). The first rule below excludes any MR whose
-# TARGET is a feature branch; the rest mirrors .rules.
-# Keep this exclusion aligned with ci/image/image.push.yml, which blocks the
-# same shape at the push step.
+# NOT gated by plain .rules: build/test/sast run on feature branches, but an
+# image must never be built for one. Snapshot rows feature->feature and
+# bugfix->feature stop at sast in BOTH columns (MR raised AND post-merge), so
+# both the MR-target and the branch-push paths exclude feature/*.
+# Keep this exclusion aligned with ci/image/image.push.yml.
 image:build:
   extends: .image_build
   rules:
@@ -810,12 +809,15 @@ image:build:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/'
       when: never
+    # Post-merge / direct push onto a feature branch — no image is built
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^feature(\/.*)*$/'
+      when: never
     # MR into a long-lived / release target
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|sit-integration|release)(\/.*)*$/'
       when: on_success
-    # Branch pushes
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix|feature)(\/.*)*$/'
+    # Branch pushes (feature/* already excluded above)
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix)(\/.*)*$/'
       when: on_success
     - when: never
 
