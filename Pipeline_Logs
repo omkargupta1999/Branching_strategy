@@ -797,9 +797,27 @@ sast:fortify:
 #     - when: never
 
 # ── Stage: image-build ────────────────────────────────────────────────────────
-# This override replaces the rules defined on image:build inside image.build.yml.
+# NOT gated by plain .rules: build/test/sast run on feature-target MRs, but an
+# image must never be built for one (snapshot rows feature->feature and
+# bugfix->feature stop at sast). The first rule below excludes any MR whose
+# TARGET is a feature branch; the rest mirrors .rules.
+# Keep this exclusion aligned with ci/image/image.push.yml, which blocks the
+# same shape at the push step.
 image:build:
-  extends: [.image_build, .rules]
+  extends: .image_build
+  rules:
+    # Any MR targeting a feature branch — no image is built
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/'
+      when: never
+    # MR into a long-lived / release target
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|sit-integration|release)(\/.*)*$/'
+      when: on_success
+    # Branch pushes
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix|feature)(\/.*)*$/'
+      when: on_success
+    - when: never
 
 # # ── Stage: image-scan ──────────────────────────────────────────────────────────
 # Trivy (GitLab template job) — override stage and rules
