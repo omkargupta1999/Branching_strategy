@@ -9,7 +9,12 @@ And here we have mentioned both source and target branch from where we are mergi
 
 So according to that snapshot we have to enable all that stages which is mentined in that images snapshot and according to that you will share the complete 
 yamls files with all the description and updated yml accordingly.
- 
+
+
+And we are going to following the same regex for branch creation and commmit message regex ... just for reference purpose i have given...feature, release and hotfix..
+
+Updated Regex For Branch Creation		^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$					
+Commit message		                    ^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .{10,100} EPAY-[0-9]+$				
 
 
 ------------------------------------------------------semver.yml --------------
