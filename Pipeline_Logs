@@ -1,6 +1,53 @@
-All 45 assertions pass — the regex is correct and stable as-is. This is the same regex we finalized earlier in this conversation, and it still holds against every valid form and every rejection case, including the traps (Feature capital-F, minority-style false matches aren't possible here since major/minor are fixed keywords, old DM-before-type order, missing/lowercase EPAY, malformed demand IDs).
+Let me re-verify this exact regex against a comprehensive set of cases before handing you test examples — no assumptions.All 45 assertions pass — the regex is correct and stable as-is. This is the same regex we finalized earlier in this conversation, and it still holds against every valid form and every rejection case, including the traps (`Feature` capital-F, `minority`-style false matches aren't possible here since major/minor are fixed keywords, old DM-before-type order, missing/lowercase EPAY, malformed demand IDs).
+
 The regex:
+```
 ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+```
+
 Here are branch name examples for your test suite, organized by expected outcome.
-Branches that should be ACCEPTED
-TypeExamplemainmaindevelopdevelopsit-integrationsit-integrationrelease (minor)release/minor-DM2026068056-EPAY-bpcl-offline-refundrelease (major)release/major-DM2026070021-EPAY-wallet-revamprelease (mixed case + underscore)release/minor-DM123-EPAY-Mixed_Case-Descfeaturefeature/EPAY-1234-payment-servicefeature (underscore)feature/EPAY-1234-Payment_Service_V2bugfixbugfix/EPAY-4567-null-pointerbugfix (underscore)bugfix/EPAY-4567-null_pointer_fixhotfixhotfix/EPAY-6789-null-pointer-fixhotfix (mixed case)hotfix/EPAY-6789-NullPointer_Fix
+
+## Branches that should be ACCEPTED
+
+| Type | Example |
+|---|---|
+| main | `main` |
+| develop | `develop` |
+| sit-integration | `sit-integration` |
+| release (minor) | `release/minor-DM2026068056-EPAY-bpcl-offline-refund` |
+| release (major) | `release/major-DM2026070021-EPAY-wallet-revamp` |
+| release (mixed case + underscore) | `release/minor-DM123-EPAY-Mixed_Case-Desc` |
+| feature | `feature/EPAY-1234-payment-service` |
+| feature (underscore) | `feature/EPAY-1234-Payment_Service_V2` |
+| bugfix | `bugfix/EPAY-4567-null-pointer` |
+| bugfix (underscore) | `bugfix/EPAY-4567-null_pointer_fix` |
+| hotfix | `hotfix/EPAY-6789-null-pointer-fix` |
+| hotfix (mixed case) | `hotfix/EPAY-6789-NullPointer_Fix` |
+
+## Branches that should be REJECTED (with the reason, for your test assertions)
+
+| Example | Why it must fail |
+|---|---|
+| `Main` | wrong case |
+| `sit_integration` | underscore instead of hyphen |
+| `sit-integration-x` | extra suffix — must be exact |
+| `release/DM2026068056-minor-EPAY-x` | old order — DM before major/minor |
+| `release/patch-DM123-EPAY-x` | `patch` isn't a valid release type here |
+| `release/minor-dm123-EPAY-x` | lowercase `dm` |
+| `release/Minor-DM123-EPAY-x` | capital `Minor` |
+| `release/minor-2026-EPAY-x` | missing literal `DM` prefix |
+| `release/minor-DM123-x` | missing `EPAY-` |
+| `release/minor-DM123-EPAY-` | empty description |
+| `release/major-DM123-EPAY-desc/extra` | extra path segment |
+| `release/0.0.0` | legacy format, no longer valid |
+| `feature/1234-payment` | missing `EPAY-` |
+| `feature/epay-1234-x` | lowercase `epay` |
+| `feature/EPAY-abc-x` | non-digit ticket ID |
+| `feature/EPAY-1234-bad space` | space not allowed |
+| `Feature/EPAY-1234-x` | capital `F` — this is the exact case that caused your `image:build` bug earlier |
+| `hotfix/4.5.1` | old versioned hotfix format, no longer valid |
+| `bugfix/epay-4567-x` | lowercase `epay` |
+
+That `Feature/...` capital-F case is worth calling out specifically in your test suite — it's the one that slipped past and caused real pipeline behavior differences a few messages ago, so it's a good regression case to keep permanently.
+
+The regex itself needs no changes. Want me to also finish moving the `image:build` feature-exclusion rules into `image.build.yml` (the refactor you asked for right before this), since that's still pending?
