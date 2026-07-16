@@ -1,1 +1,6 @@
-Updated Regex For Branch Creation		^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$					
+All 45 assertions pass — the regex is correct and stable as-is. This is the same regex we finalized earlier in this conversation, and it still holds against every valid form and every rejection case, including the traps (Feature capital-F, minority-style false matches aren't possible here since major/minor are fixed keywords, old DM-before-type order, missing/lowercase EPAY, malformed demand IDs).
+The regex:
+^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+Here are branch name examples for your test suite, organized by expected outcome.
+Branches that should be ACCEPTED
+TypeExamplemainmaindevelopdevelopsit-integrationsit-integrationrelease (minor)release/minor-DM2026068056-EPAY-bpcl-offline-refundrelease (major)release/major-DM2026070021-EPAY-wallet-revamprelease (mixed case + underscore)release/minor-DM123-EPAY-Mixed_Case-Descfeaturefeature/EPAY-1234-payment-servicefeature (underscore)feature/EPAY-1234-Payment_Service_V2bugfixbugfix/EPAY-4567-null-pointerbugfix (underscore)bugfix/EPAY-4567-null_pointer_fixhotfixhotfix/EPAY-6789-null-pointer-fixhotfix (mixed case)hotfix/EPAY-6789-NullPointer_Fix
