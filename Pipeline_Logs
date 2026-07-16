@@ -2,34 +2,75 @@
 """
 =============================================================================
  Script      : apply_repo_governance.py
- Purpose     : Apply Protected Branch Rules (Step 3) and MR Approval Rules
-               (Step 4) + 'Pipelines must succeed' to a SINGLE GitLab repo,
-               for the SBIePay ePay Platform (ITEPAYPG-SBIePay2).
+ Purpose     : Apply the standard SBIePay repo governance baseline to GitLab
+               application repositories (ITEPAYPG-SBIePay2).
 
-               Run this on ONE repo to test, then reuse for the rest.
+ WHAT IT DOES (each step is an independent, commentable section):
+   Step 1  Group Invites        - share repo with the LDAP groups at set roles
+   Step 2  Push Rules           - branch-name + commit-message regex
+   Step 3  Protected Branches   - main / develop / release/* ; push = No one
+   Step 4  MR Approval Rules    - one rule per approver group, per branch
+   Step 5  Pipelines Must Pass  - only_allow_merge_if_pipeline_succeeds = true
+   Step 6  Merge Method         - "Merge commit" only  (no FF / no semi-linear)
+   Step 7  Squash Option        - "Do not allow"
+   Step 8  Default Branch       - set to 'main'
 
- SCOPE       : Every WRITE call targets /projects/<resolved-id>/... ONLY.
-               Group lookups are READ-ONLY (GET) to resolve GitLab group
-               NAMES -> numeric IDs. No group/subgroup endpoint is ever
-               written to, so nothing leaks to the other repos.
+   Steps 5-8 are each in their OWN function and their OWN call line in
+   run_one(). To DISABLE any of them, comment out its single call line in
+   run_one() (they are clearly marked). Nothing else needs to change.
 
- Dependencies: NONE — Python standard library only (no pip required)
-               Works on Python 3.6+ / RHEL air-gapped environment.
+ SCOPE / SAFETY:
+   - Every WRITE call targets /projects/<resolved-id>/... ONLY.
+   - Group lookups are READ-ONLY (GET) to resolve group IDs.
+   - No group/subgroup object is ever modified. Listing a subgroup's projects
+     (--subgroup) is a READ-ONLY GET; the writes still go per-project.
+   - Idempotent: every step checks current state first and skips if already
+     correct, so re-running is safe and makes no redundant changes.
 
- Modes       :
-   (default)  Apply changes, then auto-verify.
-   --dry-run  Print every write that WOULD happen. No changes.
-   --verify   Read current state only. No changes.
+ Dependencies: NONE - Python standard library only (no pip required).
+               Python 3.6+ / RHEL air-gapped compatible.
 
- Output      :
-   Console   — Live log printed to terminal
-   governance_<repo>_<timestamp>.txt — Full run log
+ TARGET SELECTION (choose exactly one):
+   --project <id-or-path>   ONE repo.        e.g. --project 2823
+                                             e.g. --project group/sub/repo
+   --subgroup <id-or-path>  ALL repos under a subgroup, including nested
+                            sub-subgroups.   e.g. --subgroup itepaypg-sbiepay2/application/backend
+   --batch <file>           Repos listed in a text file, one ID/path per line
+                            ('#' comments and blank lines ignored).
+   (none)                   Falls back to TARGET_PROJECT in CONFIG below.
 
- Usage       :
-   1. Set TOKEN, GITLAB_URL, TARGET_PROJECT below (or pass --project).
-   2. python3 apply_repo_governance.py
-      python3 apply_repo_governance.py --dry-run
-      python3 apply_repo_governance.py --verify
+ MODES:
+   (default)   APPLY   - make the changes, then auto-verify.
+   --dry-run           - print every write that WOULD happen. Changes nothing.
+   --verify            - read current state only. Changes nothing.
+
+ MULTI-REPO BEHAVIOUR:
+   --subgroup and --batch run repos in order and STOP on the first error
+   (fail-stop), so a bad config cannot silently propagate. Repos completed
+   before the failure are listed in the summary so you know where to resume.
+
+ OUTPUT:
+   Console                             - live log
+   governance_<repo>_<ts>.txt          - single-repo run log
+   governance_BATCH_<ts>.txt           - consolidated log for --batch/--subgroup
+
+ TYPICAL USAGE:
+   1. Set TOKEN and GITLAB_URL in the CONFIG block below.
+   2. Preview one repo:
+        python3 apply_repo_governance.py --project 2823 --dry-run
+   3. Apply one repo, then check the VERIFY block it prints:
+        python3 apply_repo_governance.py --project 2823
+   4. Preview a whole subgroup:
+        python3 apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend --dry-run
+   5. Apply the subgroup:
+        python3 apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend
+   6. Re-check anytime (read-only):
+        python3 apply_repo_governance.py --project 2823 --verify
+
+ TOKEN REQUIREMENTS:
+   Personal Access Token (NOT a group/project access token) from a user with
+   Maintainer (40) or Owner (50) on the target projects, scope = 'api'.
+   Group access tokens are rejected by the push_rule endpoint (403).
 =============================================================================
 """
 
@@ -46,11 +87,11 @@ from datetime import datetime
 #  CONFIGURATION — Edit only this block
 # =============================================================================
 
-GITLAB_URL     = "https://gitlab.sbi"        # Target GitLab instance
-TOKEN          = "token"     # Maintainer/Owner PAT (glpat-...)
+GITLAB_URL     = "https://gitlab.epay.sbi"   # Target GitLab instance
+TOKEN          = ""                            # Maintainer/Owner PAT (glpat-...)
 
 # Full path of the ONE repo to apply rules to (the test repo first).
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_admin_service"
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/Epay_Admin_Service"
 
 # =============================================================================
 #  SPEC — Do not edit unless the governance master doc changes
@@ -98,23 +139,61 @@ GROUP_INVITES = [
 ]
 
 # Step 2 — Push rules (project-level: POST/PUT /projects/:id/push_rule).
-# branch_name_regex enforces the allowed branch naming scheme; commit_message_regex
-# enforces the format: TICKET|CC|type: subject
+#
+# branch_name_regex — allowed branch names:
+#   main
+#   develop
+#   sit-integration
+#   release/<major|minor>-DM<digits>-EPAY-<desc>   e.g. release/minor-DM2026068056-EPAY-bpcl-refund
+#   feature/EPAY-<digits>-<desc>                   e.g. feature/EPAY-1234-upi-autopay
+#   bugfix/EPAY-<digits>-<desc>                    e.g. bugfix/EPAY-1299-fix-mandate
+#   hotfix/EPAY-<digits>-<desc>                    e.g. hotfix/EPAY-6789-fix
+#   <desc> allows letters, digits, underscore, hyphen (upper or lower case).
+#
+# commit_message_regex — required format:  TICKET|CC|type: subject
 #   TICKET = 3 uppercase letters + '-' + 3 digits   (e.g. EPA-123)
-#   CC     = 2 uppercase letters                      (e.g. IN)
+#   CC     = 2 uppercase letters                    (e.g. IN)
 #   type   = feat|fix|docs|style|refactor|perf|test|chore
-#   then ': ' followed by a non-empty subject
-# The pipes are LITERAL characters in the commit message (escaped \| ).
-# Raw strings so backslashes pass to GitLab verbatim (Re2 syntax server-side).
+#   then ': ' followed by a non-empty subject.
+#   The pipes are LITERAL characters in the message (escaped \| ).
+#   Example: EPA-123|IN|feat: added UPI autopay mandate flow
+#
+# Raw strings so backslashes pass to GitLab verbatim (RE2 syntax server-side).
 PUSH_RULES = {
     "branch_name_regex":
-        r"^(main|develop|release\/[0-9]+\.[0-9]+\.[0-9]+|"
-        r"feature\/EPAY-[0-9]+-[a-z0-9-]+|bugfix\/EPAY-[0-9]+-[a-z0-9-]+|"
-        r"hotfix\/[0-9]+\.[0-9]+\.[0-9]+)$",
+        r"^(main|develop|sit-integration|"
+        r"release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|"
+        r"feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|"
+        r"bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|"
+        r"hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$",
     "commit_message_regex":
         r"^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|"
         r"(feat|fix|docs|style|refactor|perf|test|chore): .+$",
 }
+
+# -----------------------------------------------------------------------------
+# Steps 6-8 — Project settings values.
+# Change a value here to change what the step enforces.
+# To DISABLE a step entirely, comment out its call line in run_one().
+# -----------------------------------------------------------------------------
+
+# Step 6 — Merge method. GitLab accepts exactly these three values:
+#   "merge"        -> "Merge commit"                       <-- what we enforce
+#   "rebase_merge" -> "Merge commit with semi-linear history"
+#   "ff"           -> "Fast-forward merge"
+# "Merge commit" is REQUIRED: our semver/tagging logic parses merge-commit
+# titles on main to resolve the source branch. Changing this breaks it silently.
+MERGE_METHOD = "merge"
+
+# Step 7 — Squash option. GitLab accepts exactly these four values:
+#   "never"        -> "Do not allow"                       <-- what we enforce
+#   "default_off"  -> "Allow, off by default"
+#   "default_on"   -> "Allow, on by default"
+#   "always"       -> "Require"
+SQUASH_OPTION = "never"
+
+# Step 8 — Default branch for every repo.
+DEFAULT_BRANCH = "main"
 
 # Step 3 — Protected branches.  push = No one ; merge = listed groups only.
 PROTECTED_BRANCHES = [
@@ -492,13 +571,88 @@ def apply_approval_rules(pid, groups, dry_run):
 #  STEP 5 — PROJECT SETTING
 # =============================================================================
 
-def apply_project_settings(pid, dry_run):
-    log("\n=== Step 5: Project Settings ===")
-    # §3.12: pipelines must succeed before merge.
+def apply_pipeline_setting(pid, dry_run):
+    """Step 5 — 'Pipelines must succeed before merge'.
+       Idempotent: reads current value, skips if already enabled."""
+    log("\n=== Step 5: Pipelines Must Succeed ===")
+    proj = api_get(f"/projects/{pid}")
+    current = proj.get("only_allow_merge_if_pipeline_succeeds") if proj else None
+    if current is True:
+        log("  already enabled -> skip")
+        return
+    log(f"  current={current} -> setting to True")
     api_put(f"/projects/{pid}",
             data={"only_allow_merge_if_pipeline_succeeds": "true"},
             dry_run=dry_run)
     log("  'Pipelines must succeed before merge' = enabled")
+
+# =============================================================================
+#  STEP 6 — MERGE METHOD  ("Merge commit" only)
+# =============================================================================
+
+def apply_merge_method(pid, dry_run):
+    """Step 6 — force merge_method to MERGE_METHOD ('merge' = Merge commit).
+       Idempotent: reads current value, skips if already correct."""
+    log("\n=== Step 6: Merge Method ===")
+    proj = api_get(f"/projects/{pid}")
+    current = proj.get("merge_method") if proj else None
+    if current == MERGE_METHOD:
+        log(f"  already '{MERGE_METHOD}' (Merge commit) -> skip")
+        return
+    log(f"  current='{current}' -> setting to '{MERGE_METHOD}'")
+    api_put(f"/projects/{pid}",
+            data={"merge_method": MERGE_METHOD},
+            dry_run=dry_run)
+    log(f"  merge_method = '{MERGE_METHOD}' (Merge commit)")
+
+# =============================================================================
+#  STEP 7 — SQUASH OPTION  ("Do not allow")
+# =============================================================================
+
+def apply_squash_option(pid, dry_run):
+    """Step 7 — force squash_option to SQUASH_OPTION ('never' = Do not allow).
+       Idempotent: reads current value, skips if already correct."""
+    log("\n=== Step 7: Squash Option ===")
+    proj = api_get(f"/projects/{pid}")
+    current = proj.get("squash_option") if proj else None
+    if current == SQUASH_OPTION:
+        log(f"  already '{SQUASH_OPTION}' (Do not allow) -> skip")
+        return
+    log(f"  current='{current}' -> setting to '{SQUASH_OPTION}'")
+    api_put(f"/projects/{pid}",
+            data={"squash_option": SQUASH_OPTION},
+            dry_run=dry_run)
+    log(f"  squash_option = '{SQUASH_OPTION}' (Do not allow)")
+
+# =============================================================================
+#  STEP 8 — DEFAULT BRANCH  (main)
+# =============================================================================
+
+def apply_default_branch(pid, dry_run):
+    """Step 8 — set the repo's default branch to DEFAULT_BRANCH ('main').
+       Idempotent: skips if already correct.
+       SAFETY: only sets it if the branch actually EXISTS in the repo, so we
+       never point default_branch at a non-existent ref."""
+    log("\n=== Step 8: Default Branch ===")
+    proj = api_get(f"/projects/{pid}")
+    current = proj.get("default_branch") if proj else None
+    if current == DEFAULT_BRANCH:
+        log(f"  already '{DEFAULT_BRANCH}' -> skip")
+        return
+
+    # Confirm the target branch exists before switching to it.
+    enc = urllib.parse.quote(DEFAULT_BRANCH, safe="")
+    branch = api_get(f"/projects/{pid}/repository/branches/{enc}")
+    if not branch:
+        log(f"  SKIP: branch '{DEFAULT_BRANCH}' does not exist in this repo "
+            f"(current default='{current}'). Create it first, then re-run.")
+        return
+
+    log(f"  current='{current}' -> setting to '{DEFAULT_BRANCH}'")
+    api_put(f"/projects/{pid}",
+            data={"default_branch": DEFAULT_BRANCH},
+            dry_run=dry_run)
+    log(f"  default_branch = '{DEFAULT_BRANCH}'")
 
 # =============================================================================
 #  VERIFY
@@ -537,8 +691,20 @@ def verify(pid, groups):
         branches = [b.get("name") for b in r.get("protected_branches", [])]
         log(f"  {r.get('name')}: required={r.get('approvals_required')} | groups={grp} | branches={branches}")
 
-    proj = api_get(f"/projects/{pid}")
-    log(f"Pipelines must succeed: {proj.get('only_allow_merge_if_pipeline_succeeds')}")
+    log("Project settings:")
+    proj = api_get(f"/projects/{pid}") or {}
+    _mm = proj.get("merge_method")
+    _sq = proj.get("squash_option")
+    _db = proj.get("default_branch")
+    _pp = proj.get("only_allow_merge_if_pipeline_succeeds")
+    log(f"  Pipelines must succeed : {_pp}"
+        f"{'' if _pp is True else '   <-- expected True'}")
+    log(f"  Merge method           : {_mm}"
+        f"{' (Merge commit)' if _mm == 'merge' else f'   <-- expected {MERGE_METHOD}'}")
+    log(f"  Squash option          : {_sq}"
+        f"{' (Do not allow)' if _sq == 'never' else f'   <-- expected {SQUASH_OPTION}'}")
+    log(f"  Default branch         : {_db}"
+        f"{'' if _db == DEFAULT_BRANCH else f'   <-- expected {DEFAULT_BRANCH}'}")
 
     log("Push rules:")
     pr = api_get(f"/projects/{pid}/push_rule")
@@ -575,11 +741,20 @@ def run_one(project, mode_verify, mode_dry_run):
     if mode_verify:
         verify(pid, groups)
     else:
-        apply_group_invites(pid, mode_dry_run)
-        apply_push_rules(pid, mode_dry_run)
-        apply_protected_branches(pid, groups, mode_dry_run)
-        apply_approval_rules(pid, groups, mode_dry_run)
-        apply_project_settings(pid, mode_dry_run)
+        # ------------------------------------------------------------------
+        # STEP CALLS — comment out any line below to DISABLE that step.
+        # Each step is independent and idempotent (skips if already correct).
+        # ------------------------------------------------------------------
+        apply_group_invites(pid, mode_dry_run)             # Step 1: group invites
+        apply_push_rules(pid, mode_dry_run)                # Step 2: push rules
+        apply_protected_branches(pid, groups, mode_dry_run)  # Step 3: protected branches
+        apply_approval_rules(pid, groups, mode_dry_run)    # Step 4: MR approval rules
+        apply_pipeline_setting(pid, mode_dry_run)          # Step 5: pipelines must succeed
+        apply_merge_method(pid, mode_dry_run)              # Step 6: merge method = Merge commit
+        apply_squash_option(pid, mode_dry_run)             # Step 7: squash = Do not allow
+        apply_default_branch(pid, mode_dry_run)            # Step 8: default branch = main
+        # ------------------------------------------------------------------
+
         if not mode_dry_run:
             verify(pid, groups)
 
@@ -604,17 +779,113 @@ def load_batch_file(path):
     return ids
 
 
+def list_subgroup_projects(subgroup):
+    """READ-ONLY: return [(id, path_with_namespace), ...] for every project under
+       a subgroup, including all nested sub-subgroups. Archived repos excluded.
+       Accepts a numeric group ID or a full group path."""
+    ident = str(subgroup).strip()
+    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
+
+    # Confirm the group exists first so we fail with a clear message.
+    grp = api_get(f"/groups/{enc}")
+    if not grp:
+        log(f"\n[ERROR] Subgroup not found: {subgroup}")
+        log("  Pass a numeric group ID or the exact full path, e.g.")
+        log("    --subgroup itepaypg-sbiepay2/application/backend")
+        sys.exit(1)
+
+    projects = api_get_all(f"/groups/{enc}/projects",
+                           params={"include_subgroups": "true",
+                                   "archived": "false"})
+    out = []
+    for p in (projects or []):
+        out.append((p.get("id"), p.get("path_with_namespace")))
+    # Stable, predictable order.
+    out.sort(key=lambda t: (t[1] or ""))
+    return grp.get("full_path", ident), out
+
+
+def run_many(targets, label, mode_verify, mode_dry_run):
+    """Run governance across a list of targets, FAIL-STOP on first error.
+       targets: list of project IDs/paths (strings or ints)."""
+    total = len(targets)
+    done = []
+    print("=" * 65)
+    print(f"  MULTI-REPO MODE — {total} repos — FAIL-STOP on first error")
+    print(f"  Source: {label}")
+    print("=" * 65)
+
+    for idx, project in enumerate(targets, 1):
+        log("")
+        log("#" * 65)
+        log(f"#  {idx}/{total}: {project}")
+        log("#" * 65)
+        # Any API error inside run_one() calls sys.exit(1) -> batch halts here.
+        pid, ppath = run_one(project, mode_verify, mode_dry_run)
+        done.append((pid, ppath))
+
+    log("")
+    log("=" * 65)
+    log(f"  COMPLETE — {len(done)}/{total} repos succeeded")
+    log("=" * 65)
+    for pid, ppath in done:
+        log(f"  OK  {ppath} (id={pid})")
+
+    out_file = f"governance_BATCH_{TIMESTAMP}.txt"
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(_log_lines))
+    print(f"\n  -> {out_file} written (consolidated audit log).")
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Apply governance to one repo, or "
-                                 "many via --batch (fail-stop on first error).")
-    ap.add_argument("--project", default=TARGET_PROJECT,
-                    help="Full project path or numeric ID (single-repo mode)")
-    ap.add_argument("--batch", metavar="FILE",
-                    help="Path to a text file of project IDs/paths, one per line "
-                         "(# comments allowed). Runs each in order; STOPS on first error.")
-    ap.add_argument("--dry-run", action="store_true", help="Show writes; change nothing")
-    ap.add_argument("--verify",  action="store_true", help="Read current state only")
+    ap = argparse.ArgumentParser(
+        description="Apply SBIePay repo governance to one repo (--project), "
+                    "every repo in a subgroup (--subgroup), or a list of repos "
+                    "(--batch). Multi-repo runs are FAIL-STOP on first error.",
+        epilog="Examples:\n"
+               "  %(prog)s --project 2823 --dry-run\n"
+               "  %(prog)s --project itepaypg-sbiepay2/application/backend/epay_admin_service\n"
+               "  %(prog)s --subgroup itepaypg-sbiepay2/application/backend --dry-run\n"
+               "  %(prog)s --batch repos_to_apply.txt\n"
+               "  %(prog)s --project 2823 --verify",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    # Target selection — mutually exclusive so you can't mix modes by accident.
+    tgt = ap.add_mutually_exclusive_group()
+    tgt.add_argument("--project", metavar="ID_OR_PATH",
+                     help="ONE repo: numeric project ID or full path. "
+                          "Defaults to TARGET_PROJECT in CONFIG if no target given.")
+    tgt.add_argument("--subgroup", metavar="ID_OR_PATH",
+                     help="ALL repos under a subgroup (includes nested sub-subgroups, "
+                          "excludes archived). Numeric group ID or full group path.")
+    tgt.add_argument("--batch", metavar="FILE",
+                     help="Text file of project IDs/paths, one per line "
+                          "('#' comments and blank lines ignored).")
+
+    # Mode selection — also mutually exclusive.
+    mode_grp = ap.add_mutually_exclusive_group()
+    mode_grp.add_argument("--dry-run", action="store_true",
+                          help="Show every write that WOULD happen. Changes nothing.")
+    mode_grp.add_argument("--verify", action="store_true",
+                          help="Read current state only. Changes nothing.")
+
     args = ap.parse_args()
+
+    # ---------------- SUBGROUP MODE ----------------
+    if args.subgroup:
+        grp_path, projects = list_subgroup_projects(args.subgroup)
+        if not projects:
+            print(f"[ERROR] No projects found under subgroup: {args.subgroup}")
+            sys.exit(1)
+        print("=" * 65)
+        print(f"  SUBGROUP: {grp_path}")
+        print(f"  Found {len(projects)} repo(s):")
+        for pid, ppath in projects:
+            print(f"    {pid:<8} {ppath}")
+        print("=" * 65)
+        run_many([p[0] for p in projects],
+                 f"subgroup {grp_path}", args.verify, args.dry_run)
+        return
 
     # ---------------- BATCH MODE ----------------
     if args.batch:
@@ -622,88 +893,24 @@ def main():
         if not targets:
             print(f"[ERROR] No project IDs found in {args.batch}")
             sys.exit(1)
-        total = len(targets)
-        done = []   # (project, pid, path) successfully completed
-        print("=" * 65)
-        print(f"  BATCH MODE — {total} repos — FAIL-STOP on first error")
-        print(f"  File: {args.batch}")
-        print("=" * 65)
-        for idx, project in enumerate(targets, 1):
-            log("")
-            log("#" * 65)
-            log(f"#  BATCH {idx}/{total}: {project}")
-            log("#" * 65)
-            # If any step fails, the API helper sys.exit(1)s here -> batch halts.
-            pid, ppath = run_one(project, args.verify, args.dry_run)
-            done.append((project, pid, ppath))
-
-        # Reached here only if ALL succeeded.
-        log("")
-        log("=" * 65)
-        log(f"  BATCH COMPLETE — {len(done)}/{total} repos succeeded")
-        log("=" * 65)
-        for project, pid, ppath in done:
-            log(f"  OK  {ppath} (id={pid})")
-
-        out_file = f"governance_BATCH_{TIMESTAMP}.txt"
-        with open(out_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(_log_lines))
-        print(f"\n  -> {out_file} written (consolidated batch audit log).")
+        run_many(targets, f"file {args.batch}", args.verify, args.dry_run)
         return
 
     # ---------------- SINGLE-REPO MODE ----------------
-    pid, ppath = run_one(args.project, args.verify, args.dry_run)
+    project = args.project or TARGET_PROJECT
+    pid, ppath = run_one(project, args.verify, args.dry_run)
 
     out_file = f"governance_{ppath.split('/')[-1]}_{TIMESTAMP}.txt"
     with open(out_file, "w", encoding="utf-8") as f:
         f.write("\n".join(_log_lines))
     print(f"\n  -> {out_file} written.")
-    mode = "VERIFY" if args.verify else ("DRY-RUN" if args.dry_run else "APPLY")
-    if mode == "APPLY":
-        print("  Changes were limited to the single project above.")
-    else:
+    if args.verify:
         print("  READ-ONLY: no changes made to GitLab.")
+    elif args.dry_run:
+        print("  DRY-RUN: no changes made to GitLab.")
+    else:
+        print("  Changes were limited to the single project above.")
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-===============================================================================
-
-As you are aware we were working on repo governance script ...which i shared above to you for reference once again .......
-
-Here i want you to add some more stages and feature ...like 
-
-1. Script should able to do the change the setting to Merge Method to --- Merge Commits only ...if it is already there than leave it if not then change this setting for particular repo.
-2. "Squash commits when merging"  setting should be always : "Do not allow" if it is already there than leave it if not then change this setting for particular repo.
-3. Please make the deafult branch to main for all the repos ...if it is already there than leave it if not then change this setting for particular repo.
-
-
-All of setting should be different section so we can just comment out that code if not required in anu of above 3 ..
-4. Please update the regex value with below and update one: 
-      ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
-
-
----------------------------
-
-And here should be option to go for all the repos inside a sub-groups and for single repos as well .....there should be flexibilty....
-
-and all the instraction should be very clear in description section .....there should not be any other impact apart from the given task...
-
-Or is there any way to standaried this python script in any way ..........
-
-Before giving the script i want you to please check the script throughly and all the logics are correct or not ....you should check the complete script and verify from all the angles script should run without any error ....there should not be any errro while ruinnig.
-
-
