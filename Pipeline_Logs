@@ -1,1 +1,101 @@
-jobs:governance:apply:script config should be a string or a nested array of strings up to 10 levels deep
+# =============================================================================
+#  Governance - APPLY job  (WRITES TO GITLAB)
+# =============================================================================
+#  Makes the actual changes, then auto-runs verify and prints the result.
+#
+#  Runs when ALL of these are true:
+#    - RUN_GOVERNANCE == "true"        explicit gate
+#    - GOV_MODE       == "apply"       explicit mode
+#    - CI_COMMIT_REF_PROTECTED         protected branch only
+#    - a human clicks the manual play button
+#
+#  Multi-repo runs via subgroup/batch are FAIL-STOP: the job halts on the first
+#  repo that errors, so a bad config cannot propagate across repos. Repos
+#  completed before the failure are listed in the job log and artifact.
+#
+#  The run log is saved as a build artifact for 90 days for the audit trail.
+# =============================================================================
+
+governance:apply:
+  extends: .governance_base
+  script:
+    - 'echo "===== GOVERNANCE APPLY - WRITES ENABLED ====="'
+    - 'echo "Triggered by : $GITLAB_USER_LOGIN"'
+    - 'echo "Pipeline     : $CI_PIPELINE_ID"'
+    - 'echo "Branch       : $CI_COMMIT_REF_NAME"'
+    - 'echo "Protected    : $CI_COMMIT_REF_PROTECTED"'
+    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET"'
+    - 'echo "===== APPLY COMPLETE - review the VERIFY block above ====="'
+  rules:
+    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "apply" && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
+      allow_failure: false
+    - when: never
+  environment:
+    name: governance
+
+
+
+
+
+
+
+--------------------------------------------------_
+
+# =============================================================================
+#  Governance - VERIFY job  (READ-ONLY)
+# =============================================================================
+#  Reads the current state of the target repo(s) and prints a compliance
+#  report. Makes NO changes to GitLab whatsoever.
+#
+#  Runs when: RUN_GOVERNANCE=true AND GOV_MODE=verify
+#  Safe to run on any branch, at any time.
+# =============================================================================
+
+governance:verify:
+  extends: .governance_base
+  script:
+    - 'echo "===== GOVERNANCE VERIFY - read-only ====="'
+    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --verify'
+    - 'echo "===== VERIFY COMPLETE - no changes were made ====="'
+  rules:
+    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "verify"'
+      when: always
+    - when: never
+
+
+
+
+
+
+
+
+
+--------------------------
+
+
+
+# =============================================================================
+#  Governance - DRY-RUN job  (READ-ONLY preview)
+# =============================================================================
+#  Prints every write that WOULD be made, with full payloads, but sends no
+#  write requests to GitLab. Use this before every apply.
+#
+#  Runs when: RUN_GOVERNANCE=true AND GOV_MODE=dryrun
+#  Safe to run on any branch.
+#
+#  NOTE: dry-run cannot exercise the push-rule JSON/form-encoding fallback or
+#  resolve real protected-branch IDs, since they may not exist yet, so
+#  approval-rule payloads show placeholder ids. That is expected.
+# =============================================================================
+
+governance:dryrun:
+  extends: .governance_base
+  script:
+    - 'echo "===== GOVERNANCE DRY-RUN - no changes ====="'
+    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --dry-run'
+    - 'echo "===== DRY-RUN COMPLETE - no changes were made ====="'
+  rules:
+    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "dryrun"'
+      when: always
+    - when: never
