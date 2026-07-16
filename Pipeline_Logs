@@ -1,101 +1,112 @@
-# =============================================================================
-#  Governance - APPLY job  (WRITES TO GITLAB)
-# =============================================================================
-#  Makes the actual changes, then auto-runs verify and prints the result.
-#
-#  Runs when ALL of these are true:
-#    - RUN_GOVERNANCE == "true"        explicit gate
-#    - GOV_MODE       == "apply"       explicit mode
-#    - CI_COMMIT_REF_PROTECTED         protected branch only
-#    - a human clicks the manual play button
-#
-#  Multi-repo runs via subgroup/batch are FAIL-STOP: the job halts on the first
-#  repo that errors, so a bad config cannot propagate across repos. Repos
-#  completed before the failure are listed in the job log and artifact.
-#
-#  The run log is saved as a build artifact for 90 days for the audit trail.
-# =============================================================================
-
-governance:apply:
-  extends: .governance_base
-  script:
-    - 'echo "===== GOVERNANCE APPLY - WRITES ENABLED ====="'
-    - 'echo "Triggered by : $GITLAB_USER_LOGIN"'
-    - 'echo "Pipeline     : $CI_PIPELINE_ID"'
-    - 'echo "Branch       : $CI_COMMIT_REF_NAME"'
-    - 'echo "Protected    : $CI_COMMIT_REF_PROTECTED"'
-    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET"'
-    - 'echo "===== APPLY COMPLETE - review the VERIFY block above ====="'
-  rules:
-    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "apply" && $CI_COMMIT_REF_PROTECTED == "true"'
-      when: manual
-      allow_failure: false
-    - when: never
-  environment:
-    name: governance
-
-
-
-
-
-
-
---------------------------------------------------_
-
-# =============================================================================
-#  Governance - VERIFY job  (READ-ONLY)
-# =============================================================================
-#  Reads the current state of the target repo(s) and prints a compliance
-#  report. Makes NO changes to GitLab whatsoever.
-#
-#  Runs when: RUN_GOVERNANCE=true AND GOV_MODE=verify
-#  Safe to run on any branch, at any time.
-# =============================================================================
-
-governance:verify:
-  extends: .governance_base
-  script:
-    - 'echo "===== GOVERNANCE VERIFY - read-only ====="'
-    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --verify'
-    - 'echo "===== VERIFY COMPLETE - no changes were made ====="'
-  rules:
-    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "verify"'
-      when: always
-    - when: never
-
-
-
-
-
-
-
-
-
---------------------------
-
-
-
-# =============================================================================
-#  Governance - DRY-RUN job  (READ-ONLY preview)
-# =============================================================================
-#  Prints every write that WOULD be made, with full payloads, but sends no
-#  write requests to GitLab. Use this before every apply.
-#
-#  Runs when: RUN_GOVERNANCE=true AND GOV_MODE=dryrun
-#  Safe to run on any branch.
-#
-#  NOTE: dry-run cannot exercise the push-rule JSON/form-encoding fallback or
-#  resolve real protected-branch IDs, since they may not exist yet, so
-#  approval-rule payloads show placeholder ids. That is expected.
-# =============================================================================
-
-governance:dryrun:
-  extends: .governance_base
-  script:
-    - 'echo "===== GOVERNANCE DRY-RUN - no changes ====="'
-    - 'python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --dry-run'
-    - 'echo "===== DRY-RUN COMPLETE - no changes were made ====="'
-  rules:
-    - if: '$RUN_GOVERNANCE == "true" && $GOV_MODE == "dryrun"'
-      when: always
-    - when: never
+2026-07-16T12:27:00.463792Z 00O [0KRunning with gitlab-runner 19.0.2 (02fcb2d7)[0;m
+2026-07-16T12:27:00.463812Z 00O [0K  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5[0;m
+2026-07-16T12:27:00.463867Z 00O [0K[36;1mResolving secrets[0;m[0;m
+2026-07-16T12:27:00.464046Z 00O section_start:1784204820:prepare_executor
+2026-07-16T12:27:00.464048Z 00O+[0K[0K[36;1mPreparing the "docker" executor[0;m[0;m
+2026-07-16T12:27:00.532371Z 00O [0KUsing Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...[0;m
+2026-07-16T12:27:00.532480Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
+2026-07-16T12:27:00.532497Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
+2026-07-16T12:27:00.534614Z 00O [0KUsing locally found image version due to "if-not-present" pull policy[0;m
+2026-07-16T12:27:00.534636Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
+2026-07-16T12:27:01.288298Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
+2026-07-16T12:27:01.288320Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
+2026-07-16T12:27:01.290716Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
+2026-07-16T12:27:01.290738Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0[0;m
+2026-07-16T12:27:01.292834Z 00O [0KUsing locally found image version due to "if-not-present" pull policy[0;m
+2026-07-16T12:27:01.292853Z 00O [0KUsing docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...[0;m
+2026-07-16T12:27:01.292877Z 00O section_end:1784204821:prepare_executor
+2026-07-16T12:27:01.292880Z 00O+[0Ksection_start:1784204821:prepare_script
+2026-07-16T12:27:01.293072Z 00O+[0K[0K[36;1mPreparing environment[0;m[0;m
+2026-07-16T12:27:01.293093Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
+2026-07-16T12:27:01.293104Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
+2026-07-16T12:27:01.294860Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
+2026-07-16T12:27:01.294880Z 00O [0KUsing effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e[0;m
+2026-07-16T12:27:01.957159Z 01O Running on runner-6v7r1sqdv-project-2384-concurrent-0 via PE3DSOPGRUNNERS5...
+2026-07-16T12:27:02.132000Z 00O section_end:1784204822:prepare_script
+2026-07-16T12:27:02.132010Z 00O+[0Ksection_start:1784204822:get_sources
+2026-07-16T12:27:02.133470Z 00O+[0K[0K[36;1mGetting source from Git repository[0;m[0;m
+2026-07-16T12:27:03.041191Z 01O [32;1mGitaly correlation ID: 01KXNE9ZKAKX653YABC1APQEVF[0;m
+2026-07-16T12:27:03.092183Z 01O [32;1mFetching changes with git depth set to 20...[0;m
+2026-07-16T12:27:03.137865Z 01O Reinitialized existing Git repository in /builds/itepaypg-sbiepay2/infra/devops/cicd-templates/.git/
+2026-07-16T12:27:03.156958Z 01O [32;1mCreated fresh repository.[0;m
+2026-07-16T12:27:05.777370Z 01O [32;1mChecking out 624d76a5 as detached HEAD (ref is feature/15072026)...[0;m
+2026-07-16T12:27:06.103489Z 01O 
+2026-07-16T12:27:06.103498Z 01O [32;1mSkipping Git submodules setup[0;m
+2026-07-16T12:27:06.244223Z 00O section_end:1784204826:get_sources
+2026-07-16T12:27:06.244231Z 00O+[0Ksection_start:1784204826:step_script
+2026-07-16T12:27:06.246866Z 00O+[0K[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
+2026-07-16T12:27:06.246894Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0[0;m
+2026-07-16T12:27:06.249155Z 00O [0KUsing docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...[0;m
+2026-07-16T12:27:07.111222Z 01O [32;1m$ # ---- Guard: the gate variable must be explicitly true ---- # collapsed multi-line command[0;m
+2026-07-16T12:27:07.111232Z 01O Target : --project 2840
+2026-07-16T12:27:07.111233Z 01O URL    : [MASKED]
+2026-07-16T12:27:07.130765Z 01O Python 3.9.25
+2026-07-16T12:27:07.131043Z 01O [32;1m$ echo "===== GOVERNANCE VERIFY - read-only ====="[0;m
+2026-07-16T12:27:07.131047Z 01O ===== GOVERNANCE VERIFY - read-only =====
+2026-07-16T12:27:07.131048Z 01O [32;1m$ python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --verify[0;m
+2026-07-16T12:28:07.266031Z 01O =================================================================
+2026-07-16T12:28:07.266040Z 01O   GitLab Repo Governance
+2026-07-16T12:28:07.266042Z 01O   Target  : [MASKED]
+2026-07-16T12:28:07.266080Z 01O   Project : 2840
+2026-07-16T12:28:07.266081Z 01O   Mode    : VERIFY
+2026-07-16T12:28:07.266081Z 01O   Time    : 2026-07-16 12:27:07
+2026-07-16T12:28:07.266082Z 01O =================================================================
+2026-07-16T12:28:07.266083Z 01O 
+2026-07-16T12:28:07.266083Z 01O Resolved project -> id=2840  path=itepaypg-sbiepay2/application/backend/epay_admin_portal_service
+2026-07-16T12:28:07.266085Z 01O 
+2026-07-16T12:28:07.266085Z 01O Validating GitLab group IDs (read-only)...
+2026-07-16T12:28:07.266086Z 01O   epay-gitlab-bank-app-owner -> 4953
+2026-07-16T12:28:07.266087Z 01O   epay-gitlab-bank-app-maintainer -> 4954
+2026-07-16T12:28:07.266087Z 01O   epay-gitlab-vendor-app-maintainer -> 4955
+2026-07-16T12:28:07.266088Z 01O   epay-gitlab-vendor-app-lead -> 4956
+2026-07-16T12:28:07.266089Z 01O   epay-gitlab-vendor-pm -> 4962
+2026-07-16T12:28:07.266089Z 01O   epay-gitlab-vendor-release-manager -> 4950
+2026-07-16T12:28:07.266090Z 01O 
+2026-07-16T12:28:07.266090Z 01O === VERIFY (read-only) ===
+2026-07-16T12:28:07.266091Z 01O Shared groups (project members):
+2026-07-16T12:28:07.266091Z 01O   epay-gitlab-bank-app-owner: access level 50
+2026-07-16T12:28:07.266092Z 01O   epay-gitlab-bank-app-maintainer: access level 40
+2026-07-16T12:28:07.266093Z 01O   epay-gitlab-vendor-app-maintainer: access level 40
+2026-07-16T12:28:07.266093Z 01O   epay-gitlab-vendor-release-manager: access level 30
+2026-07-16T12:28:07.266094Z 01O   epay-gitlab-vendor-app-lead: access level 30
+2026-07-16T12:28:07.266095Z 01O   epay-gitlab-vendor-app-developer: access level 30
+2026-07-16T12:28:07.266095Z 01O   epay-gitlab-vendor-pm: access level 20
+2026-07-16T12:28:07.266096Z 01O Protected branches:
+2026-07-16T12:28:07.266097Z 01O   main: push=No one | merge groups=['epay-gitlab-bank-app-maintainer', 'epay-gitlab-bank-app-owner', 'epay-gitlab-vendor-app-maintainer']
+2026-07-16T12:28:07.266098Z 01O   develop: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
+2026-07-16T12:28:07.266099Z 01O   release/*: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
+2026-07-16T12:28:07.266100Z 01O Approval rules:
+2026-07-16T12:28:07.266101Z 01O   Lead Approval: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['develop']
+2026-07-16T12:28:07.266102Z 01O   Release Gate - Lead: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['sit-integration']
+2026-07-16T12:28:07.266103Z 01O   Release Gate - Architect: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['sit-integration']
+2026-07-16T12:28:07.266104Z 01O   Vendor Architect Sign-off: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['main']
+2026-07-16T12:28:07.266104Z 01O   Vendor PM Approval (CAB gate): required=1 | groups=['epay-gitlab-vendor-pm'] | branches=['main']
+2026-07-16T12:28:07.266105Z 01O   Bank Maintainer Approval: required=1 | groups=['epay-gitlab-bank-app-maintainer'] | branches=['main']
+2026-07-16T12:28:07.266106Z 01O   Bank PM Final Gate: required=1 | groups=['epay-gitlab-bank-app-owner'] | branches=['main']
+2026-07-16T12:28:07.266107Z 01O   Release Manager Approval: required=1 | groups=['epay-gitlab-vendor-release-manager'] | branches=['sit-integration']
+2026-07-16T12:28:07.266108Z 01O Project settings:
+2026-07-16T12:28:07.266109Z 01O   Pipelines must succeed : True
+2026-07-16T12:28:07.266109Z 01O   Merge method           : merge (Merge commit)
+2026-07-16T12:28:07.266110Z 01O   Squash option          : never (Do not allow)
+2026-07-16T12:28:07.266111Z 01O   Default branch         : main
+2026-07-16T12:28:07.266111Z 01O Push rules:
+2026-07-16T12:28:07.266112Z 01O   branch_name_regex   : ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+2026-07-16T12:28:07.266138Z 01O   commit_message_regex: ^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$
+2026-07-16T12:28:07.266140Z 01O 
+2026-07-16T12:28:07.266140Z 01O Done. Scope was project id=2840 only.
+2026-07-16T12:28:07.266141Z 01O 
+2026-07-16T12:28:07.266141Z 01O   -> governance_epay_admin_portal_service_20260716_122707.txt written.
+2026-07-16T12:28:07.266142Z 01O   READ-ONLY: no changes made to GitLab.
+2026-07-16T12:28:07.276294Z 01O [32;1m$ echo "===== VERIFY COMPLETE - no changes were made ====="[0;m
+2026-07-16T12:28:07.276302Z 01O ===== VERIFY COMPLETE - no changes were made =====
+2026-07-16T12:28:07.435097Z 00O section_end:1784204887:step_script
+2026-07-16T12:28:07.435108Z 00O+[0Ksection_start:1784204887:upload_artifacts_on_success
+2026-07-16T12:28:07.436655Z 00O+[0K[0K[36;1mUploading artifacts for successful job[0;m[0;m
+2026-07-16T12:28:08.278332Z 01O [32;1mUploading artifacts...[0;m
+2026-07-16T12:28:08.348717Z 01E governance_*.txt: found 1 matching artifact files and directories[0;m 
+2026-07-16T12:28:10.178288Z 01E Uploading artifacts as "archive" to coordinator... 201 Created[0;m  correlation_id[0;m=01KXNEC2QWZCC2JWC28535FXHT id[0;m=1255122 status[0;m=201 token[0;m=eyJraWQiO
+2026-07-16T12:28:10.328446Z 00O section_end:1784204890:upload_artifacts_on_success
+2026-07-16T12:28:10.328456Z 00O+[0Ksection_start:1784204890:cleanup_file_variables
+2026-07-16T12:28:10.328669Z 00O+[0K[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
+2026-07-16T12:28:11.216984Z 00O section_end:1784204891:cleanup_file_variables
+2026-07-16T12:28:11.216993Z 00O+[0K
