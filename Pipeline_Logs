@@ -1,562 +1,829 @@
-# SBIePay Repo Governance
-
-Applies the standard governance baseline to GitLab application repositories —
-from a pipeline or from a laptop.
-
-Platform: GitLab Ultimate 18.1.6-EE (`gitlab.sbi`), air-gapped
-Scope: application repos under `itepaypg-sbiepay2/application/`
-
----
-
-## Table of contents
-
-1. [What it does](#1-what-it-does)
-2. [File layout](#2-file-layout)
-3. [One-time setup](#3-one-time-setup)
-4. [Running the pipeline](#4-running-the-pipeline)
-5. [Running locally](#5-running-locally)
-6. [Reading the output](#6-reading-the-output)
-7. [The governance spec](#7-the-governance-spec)
-8. [Safety model](#8-safety-model)
-9. [Troubleshooting](#9-troubleshooting)
-10. [Known behaviours](#10-known-behaviours)
-11. [Changing the spec](#11-changing-the-spec)
-
----
-
-## 1. What it does
-
-Eight independent, idempotent steps per repo:
-
-| Step | What it enforces |
-|------|------------------|
-| 1 | **Group invites** — share the repo with the 7 LDAP groups at their spec roles |
-| 2 | **Push rules** — branch-name regex + commit-message regex |
-| 3 | **Protected branches** — `main`, `develop`, `sit-integration`, `release/*`; push = No one |
-| 4 | **MR approval rules** — 11 rules, one approver group each |
-| 5 | **Pipelines must succeed** before merge |
-| 6 | **Merge method** = "Merge commit" |
-| 7 | **Squash option** = "Do not allow" |
-| 8 | **Default branch** = `main` |
-
-Every step reads current state first and **skips if already correct**, so
-re-running is safe and produces no redundant writes.
-
----
-
-## 2. File layout
-
-```
-cicd-templates/
-├── .gitlab-ci.yml                       # stages + 2 includes. Nothing else.
-├── templates/
-│   ├── selfvalidate/
-│   │   └── selfvalidate.main.yml        # existing lint/validate jobs
-│   └── governance/
-│       ├── governance.main.yml          # variables + shared base + includes
-│       ├── governance.verify.yml        # verify job  (read-only)
-│       ├── governance.dryrun.yml        # dry-run job (read-only preview)
-│       ├── governance.apply.yml         # apply job   (writes; manual+protected)
-│       └── README.md                    # this file
-└── scripts/governance/
-    └── apply_repo_governance.py         # the script (stdlib only)
-```
-
-The two pipelines are fully independent:
-
-| Trigger | selfvalidate jobs | governance jobs |
-|---|---|---|
-| Normal commit / push | run | **hidden** |
-| Run pipeline + `RUN_GOVERNANCE=true` | run | run (per `GOV_MODE`) |
-
-Governance is invisible on normal commits — every governance job defaults to
-`when: never` unless `RUN_GOVERNANCE == "true"`.
-
-Only `.gitlab-ci.yml` declares `stages:`. The includes must never declare it,
-or they will clobber each other.
-
----
-
-## 3. One-time setup
-
-### 3.1 Commit the files
-
-Commit everything above into
-`itepaypg-sbiepay2/infra/devops/cicd-templates`, keeping the paths exactly as
-shown. `GOV_SCRIPT` in `governance.main.yml` points at
-`scripts/governance/apply_repo_governance.py`.
-
-### 3.2 Add CI/CD variables
-
-`cicd-templates` → **Settings → CI/CD → Variables**:
-
-| Variable | Value | Flags |
-|---|---|---|
-| `GOVERNANCE_TOKEN` | `glpat-...` | **Masked**, **Protected** |
-| `GOVERNANCE_GITLAB_URL` | `https://gitlab.sbi` | Protected |
-
-> ### Token requirement — read this
->
-> Must be a **PERSONAL access token** (Avatar → Edit profile → Access Tokens),
-> scope `api`, from a user with **Maintainer (40) or Owner (50)** on the target
-> repos.
->
-> **Group and project access tokens do NOT work.** They authenticate fine and
-> pass Steps 1/3/4, then fail Step 2 with `403 Forbidden` on the `/push_rule`
-> endpoint. This was confirmed during testing — a token showing
-> `"username": "group_2783_bot_...", "bot": true` is a group token and will
-> fail.
->
-> Verify which kind you have:
-> ```bash
-> curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/user
-> ```
-> `"bot": false` and a real username = personal token = correct.
->
-> Set a calendar reminder for the token's expiry.
-
-If `GOVERNANCE_TOKEN` is **Protected**, it is only exposed on protected
-branches. Run governance pipelines from `main` (or another protected branch),
-or the job fails with `GOVERNANCE_TOKEN CI variable is not set`.
-
-### 3.3 Verify the runner and image
-
-`.governance_base` in `governance.main.yml` uses:
-
-```yaml
-image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-tags:
-  - common_runner
-```
-
-This matches the existing selfvalidate jobs. The image must contain `python3`
-(3.6+). The `before_script` prints `python3 --version` so a missing interpreter
-fails loudly on line one rather than mid-run.
-
----
-
-## 4. Running the pipeline
-
-**Build → Pipelines → Run pipeline**, then add variables.
-
-### 4.1 The four variables
-
-| Variable | Default | Values | Required? |
-|---|---|---|---|
-| `RUN_GOVERNANCE` | `false` | `true` | **Always** — nothing runs without it |
-| `GOV_MODE` | `verify` | `verify` \| `dryrun` \| `apply` | Only for dryrun/apply |
-| `GOV_TARGET_TYPE` | `project` | `project` \| `subgroup` \| `batch` | Only for subgroup/batch |
-| `GOV_TARGET` | *(empty)* | id or path | **Always** — no default by design |
-
-`GOV_TARGET` is intentionally mandatory. A default target would let someone
-trigger an apply against a hardcoded repo without consciously choosing it. The
-pipeline variables are the audit record of what was touched.
-
-### 4.2 Single repo
-
-| Goal | Variables |
-|---|---|
-| **Verify** | `RUN_GOVERNANCE=true`<br>`GOV_TARGET=2840` |
-| **Dry-run** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=dryrun`<br>`GOV_TARGET=2840` |
-| **Apply** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=apply`<br>`GOV_TARGET=2840` |
-
-`GOV_TARGET` accepts a numeric project ID (`2840`) or a full path
-(`itepaypg-sbiepay2/application/backend/epay_admin_portal_service`).
-**Prefer the ID** — paths are case-sensitive and differ between instances.
-
-`GOV_TARGET_TYPE` is not needed; `project` is the default.
-
-### 4.3 Whole subgroup (multiple repos)
-
-| Goal | Variables |
-|---|---|
-| **Verify** | `RUN_GOVERNANCE=true`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
-| **Dry-run** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=dryrun`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
-| **Apply** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=apply`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
-
-Subgroup mode:
-- includes **nested sub-subgroups** automatically
-- **excludes archived** repos
-- **lists every repo it found before processing** — read this list; it is your
-  last chance to spot a repo you did not intend to touch
-- is **FAIL-STOP** — halts on the first repo that errors; the summary shows
-  which repos completed so you know where to resume
-
-A numeric group ID also works (e.g. `2793` for Backend).
-
-### 4.4 Batch (list from a file)
-
-Commit a file of project IDs, one per line (`#` comments and blank lines
-ignored; inline `# path` comments are stripped):
-
-```
-# Backend
-2840    # epay_admin_portal_service
-2600    # epay_admin_service
-```
-
-| Variable | Value |
-|---|---|
-| `RUN_GOVERNANCE` | `true` |
-| `GOV_MODE` | `apply` |
-| `GOV_TARGET_TYPE` | `batch` |
-| `GOV_TARGET` | `repos_to_apply.txt` |
-
-### 4.5 The apply job is different
-
-- Only appears when `$CI_COMMIT_REF_PROTECTED == "true"` — i.e. a protected branch
-- Requires a **manual play click**; it never starts on its own
-- From an unprotected branch the job is **not offered at all**
-
-### 4.6 Recommended sequence
-
-```
-1. GOV_MODE=verify   ->  what is the current state?
-2. GOV_MODE=dryrun   ->  what would change?
-3. GOV_MODE=apply    ->  make it so (click play)
-4. GOV_MODE=verify   ->  confirm
-```
-
----
-
-## 5. Running locally
-
-The same script runs on a workstation. Config is read from environment
-variables first, falling back to literals in the CONFIG block.
-
-```bat
-REM Windows
-set GOVERNANCE_GITLAB_URL=https://gitlab.sbi
-set GOVERNANCE_TOKEN=glpat-xxxxxxxx
-
-python311\python.exe apply_repo_governance.py --project 2840 --verify
-python311\python.exe apply_repo_governance.py --project 2840 --dry-run
-python311\python.exe apply_repo_governance.py --project 2840
-python311\python.exe apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend --dry-run
-python311\python.exe apply_repo_governance.py --batch repos_to_apply.txt
-```
-
-| Flag | Effect |
-|---|---|
-| `--verify` | read current state only |
-| `--dry-run` | print every write that would happen |
-| *(no flag)* | **apply**, then auto-verify |
-
-Alternatively edit `GITLAB_URL` / `TOKEN` / `TARGET_PROJECT` in the CONFIG
-block. **Always confirm the banner reads `Target : https://gitlab.sbi`** —
-pointing at the old instance is the most common cause of an unexplained 401,
-because tokens are instance-specific.
-
-Each run writes `governance_<repo>_<timestamp>.txt`; multi-repo runs write
-`governance_BATCH_<timestamp>.txt`.
-
----
-
-## 6. Reading the output
-
-The `=== VERIFY (read-only) ===` block is the go/no-go. A compliant repo shows:
-
-```
-Shared groups (project members):
-  epay-gitlab-bank-app-owner: access level 50
-  epay-gitlab-bank-app-maintainer: access level 40
-  epay-gitlab-vendor-app-maintainer: access level 40
-  epay-gitlab-vendor-release-manager: access level 30
-  epay-gitlab-vendor-app-lead: access level 30
-  epay-gitlab-vendor-app-developer: access level 30
-  epay-gitlab-vendor-pm: access level 20
-Protected branches:
-  main: push=No one | merge groups=[...]
-  develop: push=No one | merge groups=[...]
-  sit-integration: push=No one | merge groups=[...]
-  release/*: push=No one | merge groups=[...]
-Approval rules:
-  ... 11 rules ...
-Project settings:
-  Pipelines must succeed : True
-  Merge method           : merge (Merge commit)
-  Squash option          : never (Do not allow)
-  Default branch         : main
-Push rules:
-  branch_name_regex   : ^(main|develop|sit-integration|...
-  commit_message_regex: ^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|...
-```
-
-Red flags:
-
-| Output | Meaning |
-|---|---|
-| `<-- expected ...` | that setting did not take |
-| `MISSING: <branch>` | branch not protected (usually it does not exist) |
-| `MISSING: no push rules set` | Step 2 failed |
-| `[WARN] push rules did NOT persist` | both JSON and form-encoded writes failed |
-| `push=[{...access_level: 40...}]` | push is NOT "No one" |
-| `SKIP '<rule>' (target branch not protected)` | approval rule skipped |
-
-The run log is a **build artifact, 90-day retention** — your audit trail.
-
-Sweep a batch afterwards:
-```bat
-findstr /C:"MISSING" /C:"WARN" /C:"expected" governance_BATCH_*.txt
-```
-Zero hits = all repos compliant.
-
----
-
-## 7. The governance spec
-
-### 7.1 LDAP groups
-
-| Group | ID | Project role |
-|---|---|---|
-| `epay-gitlab-bank-app-owner` | 4953 | Owner (50) |
-| `epay-gitlab-bank-app-maintainer` | 4954 | Maintainer (40) |
-| `epay-gitlab-vendor-app-maintainer` | 4955 | Maintainer (40) |
-| `epay-gitlab-vendor-release-manager` | 4950 | Developer (30) |
-| `epay-gitlab-vendor-app-lead` | 4956 | Developer (30) |
-| `epay-gitlab-vendor-app-developer` | 4957 | Developer (30) |
-| `epay-gitlab-vendor-pm` | 4962 | Reporter (20) |
-
-Groups live under `itepaypg-sbiepay2/ldap-membership/`. IDs are **hardcoded**
-because `GET /groups?search=` did not match reliably on this instance. On a new
-instance, re-run `find_ldap_groups.py` and update `GROUP_IDS` + `GROUP_INVITES`.
-
-**Step 1 must run before Step 3.** GitLab rejects a protected-branch merge
-group that is not already a project member:
-`422 Merge access levels group does not have access to the project`.
-
-### 7.2 Protected branches — push = No one on all
-
-| Branch | Allowed to merge |
-|---|---|
-| `main` | bank-app-maintainer, bank-app-owner, vendor-app-maintainer |
-| `develop` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
-| `sit-integration` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
-| `release/*` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
-
-`feature/*`, `bugfix/*`, `hotfix/*` are intentionally **unprotected** —
-developers push freely; governance is enforced at the target branch via
-approval rules.
-
-### 7.3 Approval rules (11)
-
-| Target | Rule | Group |
-|---|---|---|
-| `develop` | Lead Approval | vendor-app-lead |
-| `release/*` | Release Gate - Lead | vendor-app-lead |
-| `release/*` | Release Manager Approval | vendor-release-manager |
-| `release/*` | Release Gate - Architect | vendor-app-maintainer |
-| `sit-integration` | Release Gate - Lead (SIT) | vendor-app-lead |
-| `sit-integration` | Release Manager Approval (SIT) | vendor-release-manager |
-| `sit-integration` | Release Gate - Architect (SIT) | vendor-app-maintainer |
-| `main` | Vendor Architect Sign-off | vendor-app-maintainer |
-| `main` | Vendor PM Approval (CAB gate) | vendor-pm |
-| `main` | Bank Maintainer Approval | bank-app-maintainer |
-| `main` | Bank PM Final Gate | bank-app-owner |
-
-All require 1 approval. Rules are separate — no combined counts.
-
-**Rules fire on the TARGET branch, not the source.** So `bugfix/* -> develop`
-is covered by *Lead Approval*, and `hotfix/* -> main` by the four `main` rules.
-No bugfix- or hotfix-specific rules are needed, and adding them would
-double-gate the same MRs.
-
-Rule names must be **unique per project** — hence the `(SIT)` suffixes.
-
-### 7.4 Push rules
-
-**Branch names:**
-```
-^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
-```
-
-| Valid | Invalid |
-|---|---|
-| `main` | `feature/login` (no EPAY id) |
-| `develop` | `release/1.5.0` (semver no longer allowed) |
-| `sit-integration` | `hotfix/1.5.1` (semver no longer allowed) |
-| `release/minor-DM2026068056-EPAY-bpcl-refund` | `release/patch-DM123-EPAY-x` (only major/minor) |
-| `feature/EPAY-1234-upi-autopay` | `sit_integration` (underscore) |
-| `bugfix/EPAY-1299-fix-mandate` | |
-| `hotfix/EPAY-6789-fix` | |
-
-**Commit messages:** `TICKET|CC|type: subject`
-```
-^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$
-```
-- `TICKET` = exactly 3 uppercase letters + `-` + exactly 3 digits
-- `CC` = exactly 2 uppercase letters
-- pipes are **literal characters** in the message
-
-| Valid | Invalid |
-|---|---|
-| `EPA-123\|IN\|feat: added payment validation` | `EPAY-1299\|IN\|fix: ...` (4+4) |
-| `ABC-456\|UK\|fix: corrected refund rounding` | `EPA-123\|IN\|feat:no space` |
-| `XYZ-001\|DC\|chore: bump image version` | `EPA-123 IN feat: ...` (no pipes) |
-| | `feat: old format EPAY-123` |
-
-GitLab evaluates these with **RE2** server-side. RE2 has no lookahead,
-lookbehind, or backreferences — these patterns use none.
-
-### 7.5 Project settings
-
-| Setting | Value | API field |
-|---|---|---|
-| Pipelines must succeed | `true` | `only_allow_merge_if_pipeline_succeeds` |
-| Merge method | Merge commit | `merge_method: "merge"` |
-| Squash | Do not allow | `squash_option: "never"` |
-| Default branch | `main` | `default_branch` |
-
-> **Merge method is load-bearing.** The semver/tagging logic parses merge-commit
-> titles on `main` to resolve the source branch. Changing away from
-> "Merge commit" breaks it **silently**.
-
----
-
-## 8. Safety model
-
-| Control | Effect |
-|---|---|
-| `RUN_GOVERNANCE != "true"` | no governance job is created at all |
-| `GOV_MODE=verify` / `dryrun` | read-only; cannot change anything |
-| `GOV_MODE=apply` | requires protected branch **and** manual click |
-| apply from unprotected branch | job never offered (`when: never`) |
-| `GOV_TARGET` empty | `before_script` guard aborts |
-| `GOVERNANCE_TOKEN` empty | `before_script` guard aborts |
-| every write | targets `/projects/<id>/...` only — never a group endpoint |
-| every step | idempotent — reads state, skips if correct |
-| multi-repo | **fail-stop** on first error |
-| group ID validation | aborts before any write if a group is unreachable |
-| Step 8 | only sets default branch if that branch **exists** |
-| run log | 90-day artifact for audit |
-
-Subgroup mode's only write path is per-project. Listing a subgroup's projects
-is a read-only `GET`.
-
----
-
-## 9. Troubleshooting
-
-| Symptom | Cause | Fix |
-|---|---|---|
-| `401 Unauthorized` | Wrong instance, or expired/invalid token | Check the banner says `gitlab.sbi`, not `gitlab.epay.sbi`. Tokens are instance-specific. |
-| `403 Forbidden` on Step 2 only | Group/project access token | Use a **personal** access token |
-| `403 Forbidden` everywhere | Token lacks Maintainer/Owner | Check role on the project |
-| `GOVERNANCE_TOKEN is not set` | Protected variable + unprotected branch | Run from `main`, or untick Protected |
-| `GOV_TARGET is empty` | Variable not provided | Always set `GOV_TARGET` |
-| `Project not found` | Wrong path / case / instance | Use the numeric ID |
-| `Subgroup not found` | Wrong group path | Use the numeric group ID |
-| Job stuck pending | Runner tag mismatch | Check `.governance_base.tags` |
-| `python3: command not found` | Image lacks python3 | Use an image that has it |
-| No governance job appears | `RUN_GOVERNANCE` not exactly `true` | Check spelling/case |
-| `script config should be a string...` | Unquoted `(` `)` in a script line | Quote every script line |
-| `stage does not exist` | An include declared `stages:` | Only `.gitlab-ci.yml` may |
-| `422 Merge access levels group does not have access` | Step 1 skipped | Group must be a member before Step 3 |
-| `allowed_to_merge is invalid` | Form-encoded nested array | Script sends JSON — already handled |
-| `404` on push rules | Plural `push_rules` endpoint | Endpoint is singular `push_rule` — already handled |
-
-### Useful diagnostics
-
-```bash
-# What kind of token is this? ("bot": true = group token = will fail Step 2)
-curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/user
-
-# Can it read push rules on this project? (200 = yes)
-curl -k -i --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/projects/2840/push_rule
-
-# What access levels exist on the project?
-curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/projects/2840/members/all
-```
-
----
-
-## 10. Known behaviours
-
-**Repos missing a branch.** `MISSING: develop` (or `sit-integration`) means the
-branch does not exist. The protection is skipped and its approval rules are
-skipped with `SKIP '<rule>' (target branch not protected)`. This is a **soft
-skip, not a failure** — the batch does **not** stop. Create the branch and
-re-run that repo. Always grep the artifact for `MISSING` after a batch.
-
-**Step 3 deletes and recreates.** GitLab's API cannot cleanly patch the allowed
-lists, so each protected branch is deleted then recreated. Two consequences:
-- a brief window where the branch is unprotected mid-run
-- protected-branch IDs churn, so approval rules are re-pointed each run
-
-**Step 3 removes per-user push exceptions.** Individual user grants on protected
-branches (leftovers from the old-instance export/import) are wiped. This is
-intended — the spec says push = No one — but a developer who could push
-yesterday will be blocked today.
-
-**Step 8 has a safety guard.** It only switches the default branch to `main` if
-`main` exists, so it never points at a non-existent ref. Repos still on
-`master` skip until `main` is created.
-
-**Dry-run limitations.** Dry-run shows placeholder `<pb-id:main>` for
-approval-rule branch IDs because protected branches may not exist yet, and it
-cannot exercise the push-rule encoding fallback. Both are expected.
-
-**Push rules need form-encoding.** Unlike `protected_branches` (which needs
-JSON), `/push_rule` takes flat fields and this instance rejects JSON. The script
-tries JSON, reads back to confirm, and **automatically retries form-encoded**.
-The log line `[info] JSON write did not persist; retrying form-encoded` is the
-fallback working correctly, not an error. Success is only reported after a
-read-back confirms it.
-
-**The script is the source of truth.** Step 4 deletes any approval rule whose
-name is not in the spec (GitLab's built-in `any_approver` rule is left alone).
-Any UI change contradicting the spec is reverted on the next apply. Change the
-script, not the UI.
-
-**Deviations from Master Architecture v13.0.** Recorded deliberately:
-- `remove_source_branch_after_merge` (§3.10) — **not** enforced, by request
-- Branch regex — `release/`/`hotfix/` now use `DM`/`EPAY` naming, not semver (§3.6)
-- Commit regex — now `TICKET|CC|type: subject`, not `<type>(<scope>): <subject> EPAY-<id>` (§3.6)
-- `sit-integration` — a protected branch, not in v13.0
-
-**Not covered by this script** (belongs elsewhere):
-- Hotfix JIRA-ID in MR description (§4.5) — needs a CI check; no native GitLab setting
-- Back-merge (§3.8), branch-age limits (§3.2), tag creation (§3.9), release archival (§3.10) — pipeline logic
-- CODEOWNERS (§4.8) — Config repos only; N/A for application repos
-- DevOps repos Flow 7 (§4.7) — different groups, needs its own variant
-
----
-
-## 11. Changing the spec
-
-All spec lives in the CONFIG/SPEC block at the top of
-`apply_repo_governance.py`.
-
-| To change | Edit |
-|---|---|
-| Group IDs or roles | `GROUP_IDS`, `GROUP_INVITES` |
-| Branch/commit regex | `PUSH_RULES` |
-| Protected branches or merge groups | `PROTECTED_BRANCHES` |
-| Approval rules | `APPROVAL_RULES` |
-| Merge method / squash / default branch | `MERGE_METHOD`, `SQUASH_OPTION`, `DEFAULT_BRANCH` |
-
-**To disable a step**, comment out its single call line in `run_one()`:
-
-```python
-apply_group_invites(pid, mode_dry_run)             # Step 1
-apply_push_rules(pid, mode_dry_run)                # Step 2
-apply_protected_branches(pid, groups, mode_dry_run)  # Step 3
-apply_approval_rules(pid, groups, mode_dry_run)    # Step 4
-apply_pipeline_setting(pid, mode_dry_run)          # Step 5
-apply_merge_method(pid, mode_dry_run)              # Step 6
-apply_squash_option(pid, mode_dry_run)             # Step 7
-apply_default_branch(pid, mode_dry_run)            # Step 8
-```
-
-### Rules when editing
-
-1. Any group in `PROTECTED_BRANCHES.merge_groups` must be in `GROUP_INVITES`
-2. Any group in `APPROVAL_RULES` must be in `GROUP_IDS`
-3. Every `APPROVAL_RULES.branch` should be in `PROTECTED_BRANCHES`, or its rule
-   is skipped
-4. Approval rule names must be **unique**
-5. `epay-gitlab-vendor-release-manager` must be in **both** `GROUP_IDS` and
-   `GROUP_INVITES` — a recurring bug
-
-After editing, always: `--verify` → `--dry-run` → apply on **one** repo before
-any subgroup run.
+deploy.drill.yml ----------------
+
+
+# templates/cd/deploy.drill.yml
+# DC/DR Drill orchestrator — switchover and switchback
+#
+# Included by deployment repo .gitlab-ci.yml when DRILL_TIER variable is set.
+# Owns all stages, variables, and includes. Deployment repo defines nothing.
+#
+# ── How to trigger ────────────────────────────────────────────────────────────
+# GitLab → deployment repo → CI/CD → Pipelines → Run pipeline
+#   Branch:   main
+#   Variable: DRILL_TIER = prod | preprod | nonprod
+#
+# ── Stages ────────────────────────────────────────────────────────────────────
+# Stage order matches operational drill sequence:
+#   Step 1: Maintenance_Page          — enable maintenance before scaling
+#   Step 2: DC_Application_Services   — scale DC (down for switchover, up for switchback)
+#   Step 3: DR_Application_Services   — scale DR (up for switchover, down for switchback)
+#   Step 4: MirrorMaker2              — toggle Kafka replication direction
+#
+# DC and DR are separate stages so operator confirms DC is done before touching DR.
+#
+# ── Tier → environments ───────────────────────────────────────────────────────
+#   DRILL_TIER=prod:
+#     Maintenance_Page:        prod-dc + prod-dr
+#     DC_Application_Services: prod-dc
+#     DR_Application_Services: prod-dr
+#     MirrorMaker2:            prod-dc + prod-dr
+#
+#   DRILL_TIER=preprod:
+#     Maintenance_Page:        pre-prod-dc + pre-prod
+#     DC_Application_Services: pre-prod-dc
+#     DR_Application_Services: pre-prod
+#     MirrorMaker2:            pre-prod-dc + pre-prod
+#
+#   DRILL_TIER=nonprod:
+#     DC_Application_Services: dev (scale test only — no maintenance, no MM2)
+#
+# ── Audit trail ───────────────────────────────────────────────────────────────
+#   GitLab pipeline: who triggered, when, DRILL_TIER value
+#   Git commits: drill(prod-dc): replicas=0 autoscaling=false [ci skip]
+
+stages:
+  - Maintenance_Page
+  - DC_Application_Services
+  - DR_Application_Services
+  - MirrorMaker2
+
+variables:
+  GIT_STRATEGY:        none
+  DEPLOYMENT_BRANCH:   "main"
+  DEPLOYMENT_REPO_URL: "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
+  MAINTENANCE_CHART:   "epay_maintenance_fe"
+
+  # All application service charts — updated during scale operations
+  ALL_CHARTS: >-
+    epay_admin_service,epay_key_managment,epay_merchant_fe,epay_merchant_service,epay_merchant_simulator,epay_notification_service,epay_operations_service,epay_order_hash,epay_payment_service,epay_refund_service,epay_reports_service,epay_transaction_fe,epay_transaction_service,java-utility-api-simulator
+
+include:
+  - local: 'ops/drill/drill.maintenance.yml'
+  - local: 'ops/drill/drill.scale.yml'
+  - local: 'ops/drill/drill.mirrormaker2.yml'
+
+
+
+-----------------------------------------
+
+
+# deployment-repo/.gitlab-ci.yml
+# =============================================================================
+# Minimal include router — all logic inside each template.
+# Discriminated by DEPLOY_TYPE variable (or DRILL_TIER for drills).
+#
+# ── Use Case 1: App service deployment ────────────────────────────────────────
+#   Trigger: App CI pipeline → deploy.jobs.yml → pipeline trigger
+#   Variable: DEPLOY_TYPE=app   (set inside trigger.cd.yml)
+#   Template: templates/cd/deploy.single.yml
+#   Flow:     values:update → validate → helm:deploy → verify → notify
+#
+# ── Use Case 2: Config-only deployment ────────────────────────────────────────
+#   Trigger: Config repo CI → config.deploy.yml → pipeline trigger
+#   Variable: DEPLOY_TYPE=config   (set inside config.deploy.yml)
+#   Template: templates/cd/deploy.config.yml
+#   Flow:     config:compute → config:apply → [restart:rollout MANUAL] → verify:health
+#   Repos:    Epay_Backend_Config / Epay_Frontend_Config
+#   Note:     SAME pipeline trigger mechanism as Use Case 1 (source=pipeline)
+#             Discriminated by DEPLOY_TYPE value — NOT by pipeline source
+#
+# ── Use Case 3: DC/DR Drill ───────────────────────────────────────────────────
+#   Trigger: Manual — GitLab UI → Run pipeline → set DRILL_TIER variable
+#   Variable: DRILL_TIER=prod|preprod|nonprod
+#   Template: templates/cd/deploy.drill.yml
+#   Flow:     Drill-specific failover and verification stages
+#
+# ── Discriminator logic ───────────────────────────────────────────────────────
+#   Use Case 1 vs Use Case 2: Both triggered by pipeline (CI_PIPELINE_SOURCE=pipeline)
+#   Distinguished by DEPLOY_TYPE:
+#     DEPLOY_TYPE=app    → deploy.single.yml   (set by app CI trigger.cd.yml)
+#     DEPLOY_TYPE=config → deploy.config.yml   (set by config CI config.deploy.yml)
+#   Use Case 3: DRILL_TIER != "" → deploy.drill.yml
+#               (manually set in Run Pipeline dialog — never set by CI triggers)
+# =============================================================================
+
+include:
+  # ── Use Case 1: App service deployment ──────────────────────────────────────
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/cd/deploy.single.yml'
+    rules:
+      - if: '$CI_PIPELINE_SOURCE == "pipeline" && $DEPLOY_TYPE == "app"'
+
+  # ── Use Case 2: Config-only deployment ──────────────────────────────────────
+  # Triggered by Epay_Backend_Config or Epay_Frontend_Config CI pipeline
+  # DEPLOY_TYPE=config set by templates/ci/config/config.deploy.yml trigger jobs
+  # - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+  #   ref: main
+  #   file: 'templates/cd/deploy.config.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_SOURCE == "pipeline" && $DEPLOY_TYPE == "config"'
+
+  # ── Use Case 3: DC/DR Drill ─────────────────────────────────────────────────
+  # Triggered manually: GitLab UI → Run pipeline → DRILL_TIER=prod|preprod|nonprod
+  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator from Use Cases 1 & 2
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/cd/deploy.drill.yml'
+    rules:
+      - if: '$DRILL_TIER != ""'
+
+
+------------------------------------------------------------------------- # ops/drill/drill.maintenance.yml ----------
+# ops/drill/drill.maintenance.yml
+# Maintenance page ON/OFF — GitOps approach
+# Clones deployment repo → updates epay_maintenance_fe/values.yaml → git push → ArgoCD syncs
+#
+# Called by: templates/cd/deploy.drill.yml
+# Trigger:   DRILL_TIER variable set at pipeline run time
+#
+# What it changes:
+#   replicaCount:       1 (ON) or 0 (OFF)
+#   maintenance.enabled: true (ON) or false (OFF)
+#
+# ENV_LIST drives which environments are updated:
+#   prod:    prod-dc prod-dr
+#   preprod: pre-prod-dc pre-prod
+#   nonprod: dev (no maintenance page in nonprod — jobs skipped)
+
+
+
+
+
+
+.drill_git_setup:
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  tags:
+    - common_runner
+  variables:
+    DEPLOYMENT_BRANCH: "main"
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global user.name "ci"
+    - git config --global user.email "ci.cedge@sbi.co.in"
+
+# ── Shared script — reused by all maintenance jobs via YAML anchor ──────────
+# KEY CHANGE: git push is now INSIDE the for-loop, immediately after each
+# per-environment commit.  This ensures:
+#   • Each push contains exactly ONE environment's changed file.
+#   • The deployment repo pipeline fires once per push → once per environment.
+#   • A rebase-retry loop guards against concurrent push conflicts.
+.maintenance_script: &maintenance_script
+  - |
+    set -eo pipefail
+
+    git clone "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    for TARGET_ENV in $ENV_LIST; do
+      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+      echo "──────────────────────────────────────────"
+      echo "Processing environment : $TARGET_ENV"
+      echo "Target file            : $FILE"
+
+      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
+
+      # ── Patch replicaCount ──────────────────────────────────────────────
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+
+      # ── Patch maintenance.enabled ───────────────────────────────────────
+      sed -i -E \
+        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+        "$FILE"
+
+      # ── Commit (only this environment's file) ───────────────────────────
+      git add "$FILE"
+      if git diff --cached --quiet; then
+        echo "No changes detected for ${TARGET_ENV} — skipping commit & push"
+        continue
+      fi
+
+      git commit \
+        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT}"
+
+      # ── Push immediately — one push per env = one pipeline trigger ───────
+      # Retry with rebase to handle concurrent pushes from other jobs.
+      PUSHED=false
+      for i in 1 2 3; do
+        if git push origin "$DEPLOYMENT_BRANCH"; then
+          PUSHED=true
+          break
+        fi
+        echo "Push attempt $i/3 failed — pulling with rebase and retrying…"
+        git pull --rebase origin "$DEPLOYMENT_BRANCH"
+        sleep 3
+      done
+
+      if [ "$PUSHED" = "false" ]; then
+        echo "ERROR: All push attempts failed for ${TARGET_ENV}"
+        exit 1
+      fi
+
+      echo "✅ Push successful — deployment pipeline triggered for: ${TARGET_ENV}"
+    done
+
+    echo "══════════════════════════════════════════"
+    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to all envs: $ENV_LIST"
+
+# .drill_git_setup:
+#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+#   tags:
+#     - common_runner
+#   variables:
+#     DEPLOYMENT_BRANCH: "main"
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - git config --global user.name "ci"
+#     - git config --global user.email "ci.cedge@sbi.co.in"
+#     #- git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.sbi/epay/devops/deployment.git"
+#     #- git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
+
+# # ── Shared script — reused by all maintenance jobs via YAML anchor ────────────
+# .maintenance_script: &maintenance_script
+#   - |
+#     set -eo pipefail
+
+#     git clone "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git" deployment
+#     cd deployment
+#     #git checkout "$DEPLOYMENT_BRANCH"
+#     git checkout "$DEPLOYMENT_BRANCH"
+
+#     for TARGET_ENV in $ENV_LIST; do
+#       FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
+#       echo "Processing: $FILE"
+#       [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
+
+#       sed -i -E \
+#         "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
+#         "$FILE"
+#       sed -i -E \
+#         "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
+#          s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
+#         "$FILE"
+
+#       git add "$FILE"
+#       git commit \
+#         -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} " \
+#         || echo "No changes for ${TARGET_ENV}"
+#     done
+
+#     for i in 1 2 3; do
+#       git push origin "$DEPLOYMENT_BRANCH" && break
+#       echo "Push failed — retrying ($i/3)"
+#       sleep 2
+#       git pull --rebase origin "$DEPLOYMENT_BRANCH"
+#     done
+#     echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
+
+# ── Prod ──────────────────────────────────────────────────────────────────────
+Maintenance_ON:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "prod-dc prod-dr"
+    REPLICA_COUNT:       "1"
+    MAINTENANCE_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *maintenance_script
+
+Maintenance_OFF:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "prod-dc prod-dr"
+    REPLICA_COUNT:       "0"
+    MAINTENANCE_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *maintenance_script
+
+# ── Preprod ───────────────────────────────────────────────────────────────────
+PreProd_Maintenance_ON:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "pre-prod-dc pre-prod"
+    REPLICA_COUNT:       "1"
+    MAINTENANCE_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *maintenance_script
+
+PreProd_Maintenance_OFF:
+  extends: .drill_git_setup
+  stage: Maintenance_Page
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    ENV_LIST:            "pre-prod-dc pre-prod"
+    REPLICA_COUNT:       "0"
+    MAINTENANCE_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *maintenance_script
+
+# Nonprod: no maintenance page — stage intentionally empty for nonprod tier
+
+
+================================================  # ops/drill/drill.mirrormaker2.yml ============
+
+# ops/drill/drill.mirrormaker2.yml
+# Kafka MirrorMaker2 toggle — GitOps approach
+# Clones deployment repo → updates epay_common/values.yaml → git push → ArgoCD syncs
+#
+# Called by: templates/cd/deploy.drill.yml
+# Trigger:   DRILL_TIER variable set at pipeline run time
+#
+# mirrorMaker2.enabled=true:  replication ACTIVE (source → destination)
+# mirrorMaker2.enabled=false: replication STOPPED
+#
+# Nonprod: no MirrorMaker2 — jobs not shown for nonprod tier
+
+# ── Shared script — awk for precise mirrorMaker2 block update ─────────────────
+.mirrormaker2_script: &mirrormaker2_script
+  - |
+    set -eo pipefail
+
+    git clone "$DEPLOYMENT_REPO_URL" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
+    echo "Processing: $VALUES_FILE"
+    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
+
+    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
+    awk -v val="$MIRRORMAKER2_ENABLED" '
+      BEGIN { in_mm2=0 }
+      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
+      in_mm2 && /^[[:space:]]*enabled:/ {
+        match($0, /^([[:space:]]*)/, arr)
+        print arr[1] "enabled: " val
+        next
+      }
+      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
+      { print }
+    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
+    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
+
+    if git diff --quiet "$VALUES_FILE"; then
+      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
+      exit 0
+    fi
+
+    git add "$VALUES_FILE"
+    git commit \
+      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED}"
+
+    for i in 1 2 3; do
+      git push origin "$DEPLOYMENT_BRANCH" && break
+      echo "Push failed — retrying ($i/3)"
+      sleep 2
+      git pull --rebase origin "$DEPLOYMENT_BRANCH"
+    done
+    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
+
+# ── Prod DC ───────────────────────────────────────────────────────────────────
+Prod_DC_MirrorMaker2_Down:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "prod-dc"
+    MIRRORMAKER2_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *mirrormaker2_script
+
+Prod_DC_MirrorMaker2_Up:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "prod-dc"
+    MIRRORMAKER2_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *mirrormaker2_script
+
+# ── Prod DR ───────────────────────────────────────────────────────────────────
+Prod_DR_MirrorMaker2_Down:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "prod-dr"
+    MIRRORMAKER2_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *mirrormaker2_script
+
+Prod_DR_MirrorMaker2_Up:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "prod-dr"
+    MIRRORMAKER2_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *mirrormaker2_script
+
+# ── Preprod DC ────────────────────────────────────────────────────────────────
+PreProd_DC_MirrorMaker2_Down:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "pre-prod-dc"
+    MIRRORMAKER2_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *mirrormaker2_script
+
+PreProd_DC_MirrorMaker2_Up:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "pre-prod-dc"
+    MIRRORMAKER2_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *mirrormaker2_script
+
+# ── Preprod DR ────────────────────────────────────────────────────────────────
+PreProd_DR_MirrorMaker2_Down:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "pre-prod"
+    MIRRORMAKER2_ENABLED: "false"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *mirrormaker2_script
+
+PreProd_DR_MirrorMaker2_Up:
+  extends: .drill_git_setup
+  stage: MirrorMaker2
+  when: manual
+  variables:
+    GIT_STRATEGY:       none
+    TARGET_ENV:         "pre-prod"
+    MIRRORMAKER2_ENABLED: "true"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *mirrormaker2_script
+
+# Nonprod: no MirrorMaker2 — stage intentionally empty for nonprod tier
+
+
+=================================================================  # ops/drill/drill.scale.yml 
+
+
+# ops/drill/drill.scale.yml
+# Scale ALL application services DOWN or UP — GitOps + Live Cluster
+#
+# Called by: templates/cd/deploy.drill.yml
+# Trigger:   DRILL_TIER variable set at pipeline run time
+#
+# Flow per job:
+#   STEP 1 — GitOps: clone repo → patch values.yaml → git push → ArgoCD syncs
+#   STEP 2 — Live:   oc login to cluster → oc scale deployments directly
+#
+# NS_MAP is declared ONCE per tier in .prod_ns_map / .preprod_ns_map
+# and inherited by all jobs via extends: — no duplication across jobs.
+#
+# Nonprod is handled in a separate file — no nonprod config here.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NAMESPACE MAP DEFINITIONS — declared once, inherited via extends:
+# ─────────────────────────────────────────────────────────────────────────────
+
+.prod_ns_map:
+  variables:
+    NS_MAP: |
+      declare -A NS_DEPLOYMENTS
+      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
+      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
+      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
+      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
+
+.preprod_ns_map:
+  variables:
+    NS_MAP: |
+      declare -A NS_DEPLOYMENTS
+      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
+      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
+      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
+      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
+
+
+.preprod_dc_ns_map:
+  variables:
+    NS_MAP: |
+      declare -A NS_DEPLOYMENTS
+      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
+      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
+      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulaterfe javasimulator-javautilityapisimulator orderhash"
+      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
+      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
+# ─────────────────────────────────────────────────────────────────────────────
+# SHARED SCRIPT — GitOps push → live oc scale (single anchor for all jobs)
+# ─────────────────────────────────────────────────────────────────────────────
+
+.scale_with_live_cluster_script: &scale_with_live_cluster_script
+  - |
+    set -eo pipefail
+
+    # ── STEP 1: GitOps push ──────────────────────────────────────────────────
+    echo "==================================================================================="
+    echo " STEP 1: GITOPS PUSH"
+    echo " ENV: ${TARGET_ENV}"
+    echo "==================================================================================="
+
+    git clone "${DEPLOYMENT_REPO_URL}" deployment
+    cd deployment
+    git checkout "$DEPLOYMENT_BRANCH"
+
+    IFS=',' read -ra SERVICES <<< "$CHARTS"
+    CHANGED=false
+
+    for SERVICE in "${SERVICES[@]}"; do
+      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
+      echo "Processing: $FILE"
+      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
+
+      sed -i -E \
+        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
+        "$FILE"
+      sed -i -E \
+        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
+         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
+        "$FILE"
+
+      if ! git diff --quiet "$FILE"; then
+        git add "$FILE"
+        CHANGED=true
+      fi
+    done
+
+    if [ "$CHANGED" = true ]; then
+      git commit \
+        -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
+
+      for i in 1 2 3; do
+        git push origin "$DEPLOYMENT_BRANCH" && break
+        echo "Push failed — retrying ($i/3)"
+        sleep 2
+        git pull --rebase origin "$DEPLOYMENT_BRANCH"
+      done
+      echo "✅ GitOps push done: ${TARGET_ENV} replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
+    else
+      echo "No GitOps changes — already at target state, proceeding to live scale"
+    fi
+
+    # ── STEP 2: Scale live cluster ───────────────────────────────────────────
+    echo "==================================================================================="
+    echo "          STEP 2: SCALE LIVE CLUSTER"
+    echo "          CLUSTER: ${OC_API_URL}"
+    echo "          ENV:     ${TARGET_ENV}"
+    echo "==================================================================================="
+
+    oc login "${OC_API_URL}" \
+      --token="${OC_TOKEN}" \
+      --insecure-skip-tls-verify
+
+    eval "$NS_MAP"
+
+    for namespace in "${!NS_DEPLOYMENTS[@]}"; do
+      for deploy in ${NS_DEPLOYMENTS[$namespace]}; do
+        echo "Scaling ${deploy} in ${namespace} to ${REPLICA_COUNT}"
+        oc scale deployment/${deploy} -n "${namespace}" --replicas=${REPLICA_COUNT}
+      done
+    done
+
+    echo "==================================================================================="
+    echo "          SCALE OPERATION COMPLETED"
+    echo "          ENV: ${TARGET_ENV} → replicas=${REPLICA_COUNT}"
+    echo "==================================================================================="
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROD
+# ─────────────────────────────────────────────────────────────────────────────
+
+Prod_DC_Scale_All_Down:
+  extends:
+    - .drill_git_setup
+    - .prod_ns_map
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "prod-dc"
+    REPLICA_COUNT:       "0"
+    AUTOSCALING_ENABLED: "false"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dc.prod.epay.sbi:6443"    # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PROD_DC"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *scale_with_live_cluster_script
+
+Prod_DC_Scale_All_Up:
+  extends:
+    - .drill_git_setup
+    - .prod_ns_map
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "prod-dc"
+    REPLICA_COUNT:       "1"
+    AUTOSCALING_ENABLED: "true"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dc.prod.epay.sbi:6443"    # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PROD_DC"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *scale_with_live_cluster_script
+
+Prod_DR_Scale_All_Down:
+  extends:
+    - .drill_git_setup
+    - .prod_ns_map
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "prod-dr"
+    REPLICA_COUNT:       "0"
+    AUTOSCALING_ENABLED: "false"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dr.prod.epay.sbi:6443"
+    OC_TOKEN:            "$OCP_TOKEN_PROD_DR"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *scale_with_live_cluster_script
+
+Prod_DR_Scale_All_Up:
+  extends:
+    - .drill_git_setup
+    - .prod_ns_map
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "prod-dr"
+    REPLICA_COUNT:       "1"
+    AUTOSCALING_ENABLED: "true"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dr.prod.epay.sbi:6443"
+    OC_TOKEN:            "$OCP_TOKEN_PROD_DR"
+  rules:
+    - if: '$DRILL_TIER == "prod"'
+  script: *scale_with_live_cluster_script
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PREPROD
+# ─────────────────────────────────────────────────────────────────────────────
+
+PreProd_DC_Scale_All_Down:
+  extends:
+    - .drill_git_setup
+    - .preprod_dc_ns_map
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "pre-prod-dc"
+    REPLICA_COUNT:       "0"
+    AUTOSCALING_ENABLED: "false"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dcpreprod.epay.sbi:6443" # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DC"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *scale_with_live_cluster_script
+
+PreProd_DC_Scale_All_Up:
+  extends:
+    - .drill_git_setup
+    - .preprod_dc_ns_map
+  stage: DC_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "pre-prod-dc"
+    REPLICA_COUNT:       "1"
+    AUTOSCALING_ENABLED: "true"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.dcpreprod.epay.sbi:6443" # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DC"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *scale_with_live_cluster_script
+
+PreProd_DR_Scale_All_Down:
+  extends:
+    - .drill_git_setup
+    - .preprod_ns_map
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "pre-prod"
+    REPLICA_COUNT:       "0"
+    AUTOSCALING_ENABLED: "false"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.preprod.epay.sbi:6443" # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DR"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *scale_with_live_cluster_script
+
+PreProd_DR_Scale_All_Up:
+  extends:
+    - .drill_git_setup
+    - .preprod_ns_map
+  stage: DR_Application_Services
+  when: manual
+  variables:
+    GIT_STRATEGY:        none
+    TARGET_ENV:          "pre-prod"
+    REPLICA_COUNT:       "1"
+    AUTOSCALING_ENABLED: "true"
+    CHARTS:              "$ALL_CHARTS"
+    OC_API_URL:          "https://api.preprod.epay.sbi:6443" # ← confirm URL
+    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DR"
+  rules:
+    - if: '$DRILL_TIER == "preprod"'
+  script: *scale_with_live_cluster_script
+  
+=====================================  .gitlab-ci.yml =======================
+This is deployment repo root .gitlab-ci.yml and we used to trigger or call the drill pipeline from here only ..by going to build>pipeline>New pipeline and then provide
+
+drill_tier variable like prod or preprod accordingly we use to get all the stages to click the buttons and perfomed and run the all the stages accordingly.
+
+
+and above all the yamls is belongs from cicd-templates repos ...we have included all that yaml here in deployment repo.
+
+include:
+  # ── Use Case 1: App service deployment ──────────────────────────────────────
+  # Default path — active whenever DRILL_TIER is NOT set.
+  # Stages defined inside this template: publish · validate · deploy
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/cd/deploy.single.yml'
+    rules:
+      - if: '$DRILL_TIER == null || $DRILL_TIER == ""'
+
+  # ── Use Case 2: DC/DR Drill ─────────────────────────────────────────────────
+  # Active ONLY when operator sets DRILL_TIER in "Run pipeline" dialog.
+  # Stages defined inside this template: Maintenance_Page · DC_Application_Services
+  #                                       DR_Application_Services · MirrorMaker2
+  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator.
+  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+    ref: main
+    file: 'templates/cd/deploy.drill.yml'
+    rules:
+      - if: '$DRILL_TIER != null && $DRILL_TIER != ""'
+
+
+========================================================================== 
+
+
+
+
+
+
