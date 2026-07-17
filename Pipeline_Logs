@@ -1,112 +1,562 @@
-2026-07-16T12:27:00.463792Z 00O [0KRunning with gitlab-runner 19.0.2 (02fcb2d7)[0;m
-2026-07-16T12:27:00.463812Z 00O [0K  on dc_runner_79 6v7R1SqDv, system ID: s_37748334dac5[0;m
-2026-07-16T12:27:00.463867Z 00O [0K[36;1mResolving secrets[0;m[0;m
-2026-07-16T12:27:00.464046Z 00O section_start:1784204820:prepare_executor
-2026-07-16T12:27:00.464048Z 00O+[0K[0K[36;1mPreparing the "docker" executor[0;m[0;m
-2026-07-16T12:27:00.532371Z 00O [0KUsing Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...[0;m
-2026-07-16T12:27:00.532480Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
-2026-07-16T12:27:00.532497Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
-2026-07-16T12:27:00.534614Z 00O [0KUsing locally found image version due to "if-not-present" pull policy[0;m
-2026-07-16T12:27:00.534636Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
-2026-07-16T12:27:01.288298Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
-2026-07-16T12:27:01.288320Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
-2026-07-16T12:27:01.290716Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
-2026-07-16T12:27:01.290738Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0[0;m
-2026-07-16T12:27:01.292834Z 00O [0KUsing locally found image version due to "if-not-present" pull policy[0;m
-2026-07-16T12:27:01.292853Z 00O [0KUsing docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...[0;m
-2026-07-16T12:27:01.292877Z 00O section_end:1784204821:prepare_executor
-2026-07-16T12:27:01.292880Z 00O+[0Ksection_start:1784204821:prepare_script
-2026-07-16T12:27:01.293072Z 00O+[0K[0K[36;1mPreparing environment[0;m[0;m
-2026-07-16T12:27:01.293093Z 00O [0KUsing helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )[0;m
-2026-07-16T12:27:01.293104Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2[0;m
-2026-07-16T12:27:01.294860Z 00O [0KUsing docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...[0;m
-2026-07-16T12:27:01.294880Z 00O [0KUsing effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e[0;m
-2026-07-16T12:27:01.957159Z 01O Running on runner-6v7r1sqdv-project-2384-concurrent-0 via PE3DSOPGRUNNERS5...
-2026-07-16T12:27:02.132000Z 00O section_end:1784204822:prepare_script
-2026-07-16T12:27:02.132010Z 00O+[0Ksection_start:1784204822:get_sources
-2026-07-16T12:27:02.133470Z 00O+[0K[0K[36;1mGetting source from Git repository[0;m[0;m
-2026-07-16T12:27:03.041191Z 01O [32;1mGitaly correlation ID: 01KXNE9ZKAKX653YABC1APQEVF[0;m
-2026-07-16T12:27:03.092183Z 01O [32;1mFetching changes with git depth set to 20...[0;m
-2026-07-16T12:27:03.137865Z 01O Reinitialized existing Git repository in /builds/itepaypg-sbiepay2/infra/devops/cicd-templates/.git/
-2026-07-16T12:27:03.156958Z 01O [32;1mCreated fresh repository.[0;m
-2026-07-16T12:27:05.777370Z 01O [32;1mChecking out 624d76a5 as detached HEAD (ref is feature/15072026)...[0;m
-2026-07-16T12:27:06.103489Z 01O 
-2026-07-16T12:27:06.103498Z 01O [32;1mSkipping Git submodules setup[0;m
-2026-07-16T12:27:06.244223Z 00O section_end:1784204826:get_sources
-2026-07-16T12:27:06.244231Z 00O+[0Ksection_start:1784204826:step_script
-2026-07-16T12:27:06.246866Z 00O+[0K[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
-2026-07-16T12:27:06.246894Z 00O [0KUsing effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0[0;m
-2026-07-16T12:27:06.249155Z 00O [0KUsing docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...[0;m
-2026-07-16T12:27:07.111222Z 01O [32;1m$ # ---- Guard: the gate variable must be explicitly true ---- # collapsed multi-line command[0;m
-2026-07-16T12:27:07.111232Z 01O Target : --project 2840
-2026-07-16T12:27:07.111233Z 01O URL    : [MASKED]
-2026-07-16T12:27:07.130765Z 01O Python 3.9.25
-2026-07-16T12:27:07.131043Z 01O [32;1m$ echo "===== GOVERNANCE VERIFY - read-only ====="[0;m
-2026-07-16T12:27:07.131047Z 01O ===== GOVERNANCE VERIFY - read-only =====
-2026-07-16T12:27:07.131048Z 01O [32;1m$ python3 "$GOV_SCRIPT" $GOV_FLAG "$GOV_TARGET" --verify[0;m
-2026-07-16T12:28:07.266031Z 01O =================================================================
-2026-07-16T12:28:07.266040Z 01O   GitLab Repo Governance
-2026-07-16T12:28:07.266042Z 01O   Target  : [MASKED]
-2026-07-16T12:28:07.266080Z 01O   Project : 2840
-2026-07-16T12:28:07.266081Z 01O   Mode    : VERIFY
-2026-07-16T12:28:07.266081Z 01O   Time    : 2026-07-16 12:27:07
-2026-07-16T12:28:07.266082Z 01O =================================================================
-2026-07-16T12:28:07.266083Z 01O 
-2026-07-16T12:28:07.266083Z 01O Resolved project -> id=2840  path=itepaypg-sbiepay2/application/backend/epay_admin_portal_service
-2026-07-16T12:28:07.266085Z 01O 
-2026-07-16T12:28:07.266085Z 01O Validating GitLab group IDs (read-only)...
-2026-07-16T12:28:07.266086Z 01O   epay-gitlab-bank-app-owner -> 4953
-2026-07-16T12:28:07.266087Z 01O   epay-gitlab-bank-app-maintainer -> 4954
-2026-07-16T12:28:07.266087Z 01O   epay-gitlab-vendor-app-maintainer -> 4955
-2026-07-16T12:28:07.266088Z 01O   epay-gitlab-vendor-app-lead -> 4956
-2026-07-16T12:28:07.266089Z 01O   epay-gitlab-vendor-pm -> 4962
-2026-07-16T12:28:07.266089Z 01O   epay-gitlab-vendor-release-manager -> 4950
-2026-07-16T12:28:07.266090Z 01O 
-2026-07-16T12:28:07.266090Z 01O === VERIFY (read-only) ===
-2026-07-16T12:28:07.266091Z 01O Shared groups (project members):
-2026-07-16T12:28:07.266091Z 01O   epay-gitlab-bank-app-owner: access level 50
-2026-07-16T12:28:07.266092Z 01O   epay-gitlab-bank-app-maintainer: access level 40
-2026-07-16T12:28:07.266093Z 01O   epay-gitlab-vendor-app-maintainer: access level 40
-2026-07-16T12:28:07.266093Z 01O   epay-gitlab-vendor-release-manager: access level 30
-2026-07-16T12:28:07.266094Z 01O   epay-gitlab-vendor-app-lead: access level 30
-2026-07-16T12:28:07.266095Z 01O   epay-gitlab-vendor-app-developer: access level 30
-2026-07-16T12:28:07.266095Z 01O   epay-gitlab-vendor-pm: access level 20
-2026-07-16T12:28:07.266096Z 01O Protected branches:
-2026-07-16T12:28:07.266097Z 01O   main: push=No one | merge groups=['epay-gitlab-bank-app-maintainer', 'epay-gitlab-bank-app-owner', 'epay-gitlab-vendor-app-maintainer']
-2026-07-16T12:28:07.266098Z 01O   develop: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
-2026-07-16T12:28:07.266099Z 01O   release/*: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
-2026-07-16T12:28:07.266100Z 01O Approval rules:
-2026-07-16T12:28:07.266101Z 01O   Lead Approval: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['develop']
-2026-07-16T12:28:07.266102Z 01O   Release Gate - Lead: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['sit-integration']
-2026-07-16T12:28:07.266103Z 01O   Release Gate - Architect: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['sit-integration']
-2026-07-16T12:28:07.266104Z 01O   Vendor Architect Sign-off: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['main']
-2026-07-16T12:28:07.266104Z 01O   Vendor PM Approval (CAB gate): required=1 | groups=['epay-gitlab-vendor-pm'] | branches=['main']
-2026-07-16T12:28:07.266105Z 01O   Bank Maintainer Approval: required=1 | groups=['epay-gitlab-bank-app-maintainer'] | branches=['main']
-2026-07-16T12:28:07.266106Z 01O   Bank PM Final Gate: required=1 | groups=['epay-gitlab-bank-app-owner'] | branches=['main']
-2026-07-16T12:28:07.266107Z 01O   Release Manager Approval: required=1 | groups=['epay-gitlab-vendor-release-manager'] | branches=['sit-integration']
-2026-07-16T12:28:07.266108Z 01O Project settings:
-2026-07-16T12:28:07.266109Z 01O   Pipelines must succeed : True
-2026-07-16T12:28:07.266109Z 01O   Merge method           : merge (Merge commit)
-2026-07-16T12:28:07.266110Z 01O   Squash option          : never (Do not allow)
-2026-07-16T12:28:07.266111Z 01O   Default branch         : main
-2026-07-16T12:28:07.266111Z 01O Push rules:
-2026-07-16T12:28:07.266112Z 01O   branch_name_regex   : ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
-2026-07-16T12:28:07.266138Z 01O   commit_message_regex: ^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$
-2026-07-16T12:28:07.266140Z 01O 
-2026-07-16T12:28:07.266140Z 01O Done. Scope was project id=2840 only.
-2026-07-16T12:28:07.266141Z 01O 
-2026-07-16T12:28:07.266141Z 01O   -> governance_epay_admin_portal_service_20260716_122707.txt written.
-2026-07-16T12:28:07.266142Z 01O   READ-ONLY: no changes made to GitLab.
-2026-07-16T12:28:07.276294Z 01O [32;1m$ echo "===== VERIFY COMPLETE - no changes were made ====="[0;m
-2026-07-16T12:28:07.276302Z 01O ===== VERIFY COMPLETE - no changes were made =====
-2026-07-16T12:28:07.435097Z 00O section_end:1784204887:step_script
-2026-07-16T12:28:07.435108Z 00O+[0Ksection_start:1784204887:upload_artifacts_on_success
-2026-07-16T12:28:07.436655Z 00O+[0K[0K[36;1mUploading artifacts for successful job[0;m[0;m
-2026-07-16T12:28:08.278332Z 01O [32;1mUploading artifacts...[0;m
-2026-07-16T12:28:08.348717Z 01E governance_*.txt: found 1 matching artifact files and directories[0;m 
-2026-07-16T12:28:10.178288Z 01E Uploading artifacts as "archive" to coordinator... 201 Created[0;m  correlation_id[0;m=01KXNEC2QWZCC2JWC28535FXHT id[0;m=1255122 status[0;m=201 token[0;m=eyJraWQiO
-2026-07-16T12:28:10.328446Z 00O section_end:1784204890:upload_artifacts_on_success
-2026-07-16T12:28:10.328456Z 00O+[0Ksection_start:1784204890:cleanup_file_variables
-2026-07-16T12:28:10.328669Z 00O+[0K[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
-2026-07-16T12:28:11.216984Z 00O section_end:1784204891:cleanup_file_variables
-2026-07-16T12:28:11.216993Z 00O+[0K
+# SBIePay Repo Governance
+
+Applies the standard governance baseline to GitLab application repositories —
+from a pipeline or from a laptop.
+
+Platform: GitLab Ultimate 18.1.6-EE (`gitlab.sbi`), air-gapped
+Scope: application repos under `itepaypg-sbiepay2/application/`
+
+---
+
+## Table of contents
+
+1. [What it does](#1-what-it-does)
+2. [File layout](#2-file-layout)
+3. [One-time setup](#3-one-time-setup)
+4. [Running the pipeline](#4-running-the-pipeline)
+5. [Running locally](#5-running-locally)
+6. [Reading the output](#6-reading-the-output)
+7. [The governance spec](#7-the-governance-spec)
+8. [Safety model](#8-safety-model)
+9. [Troubleshooting](#9-troubleshooting)
+10. [Known behaviours](#10-known-behaviours)
+11. [Changing the spec](#11-changing-the-spec)
+
+---
+
+## 1. What it does
+
+Eight independent, idempotent steps per repo:
+
+| Step | What it enforces |
+|------|------------------|
+| 1 | **Group invites** — share the repo with the 7 LDAP groups at their spec roles |
+| 2 | **Push rules** — branch-name regex + commit-message regex |
+| 3 | **Protected branches** — `main`, `develop`, `sit-integration`, `release/*`; push = No one |
+| 4 | **MR approval rules** — 11 rules, one approver group each |
+| 5 | **Pipelines must succeed** before merge |
+| 6 | **Merge method** = "Merge commit" |
+| 7 | **Squash option** = "Do not allow" |
+| 8 | **Default branch** = `main` |
+
+Every step reads current state first and **skips if already correct**, so
+re-running is safe and produces no redundant writes.
+
+---
+
+## 2. File layout
+
+```
+cicd-templates/
+├── .gitlab-ci.yml                       # stages + 2 includes. Nothing else.
+├── templates/
+│   ├── selfvalidate/
+│   │   └── selfvalidate.main.yml        # existing lint/validate jobs
+│   └── governance/
+│       ├── governance.main.yml          # variables + shared base + includes
+│       ├── governance.verify.yml        # verify job  (read-only)
+│       ├── governance.dryrun.yml        # dry-run job (read-only preview)
+│       ├── governance.apply.yml         # apply job   (writes; manual+protected)
+│       └── README.md                    # this file
+└── scripts/governance/
+    └── apply_repo_governance.py         # the script (stdlib only)
+```
+
+The two pipelines are fully independent:
+
+| Trigger | selfvalidate jobs | governance jobs |
+|---|---|---|
+| Normal commit / push | run | **hidden** |
+| Run pipeline + `RUN_GOVERNANCE=true` | run | run (per `GOV_MODE`) |
+
+Governance is invisible on normal commits — every governance job defaults to
+`when: never` unless `RUN_GOVERNANCE == "true"`.
+
+Only `.gitlab-ci.yml` declares `stages:`. The includes must never declare it,
+or they will clobber each other.
+
+---
+
+## 3. One-time setup
+
+### 3.1 Commit the files
+
+Commit everything above into
+`itepaypg-sbiepay2/infra/devops/cicd-templates`, keeping the paths exactly as
+shown. `GOV_SCRIPT` in `governance.main.yml` points at
+`scripts/governance/apply_repo_governance.py`.
+
+### 3.2 Add CI/CD variables
+
+`cicd-templates` → **Settings → CI/CD → Variables**:
+
+| Variable | Value | Flags |
+|---|---|---|
+| `GOVERNANCE_TOKEN` | `glpat-...` | **Masked**, **Protected** |
+| `GOVERNANCE_GITLAB_URL` | `https://gitlab.sbi` | Protected |
+
+> ### Token requirement — read this
+>
+> Must be a **PERSONAL access token** (Avatar → Edit profile → Access Tokens),
+> scope `api`, from a user with **Maintainer (40) or Owner (50)** on the target
+> repos.
+>
+> **Group and project access tokens do NOT work.** They authenticate fine and
+> pass Steps 1/3/4, then fail Step 2 with `403 Forbidden` on the `/push_rule`
+> endpoint. This was confirmed during testing — a token showing
+> `"username": "group_2783_bot_...", "bot": true` is a group token and will
+> fail.
+>
+> Verify which kind you have:
+> ```bash
+> curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/user
+> ```
+> `"bot": false` and a real username = personal token = correct.
+>
+> Set a calendar reminder for the token's expiry.
+
+If `GOVERNANCE_TOKEN` is **Protected**, it is only exposed on protected
+branches. Run governance pipelines from `main` (or another protected branch),
+or the job fails with `GOVERNANCE_TOKEN CI variable is not set`.
+
+### 3.3 Verify the runner and image
+
+`.governance_base` in `governance.main.yml` uses:
+
+```yaml
+image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+tags:
+  - common_runner
+```
+
+This matches the existing selfvalidate jobs. The image must contain `python3`
+(3.6+). The `before_script` prints `python3 --version` so a missing interpreter
+fails loudly on line one rather than mid-run.
+
+---
+
+## 4. Running the pipeline
+
+**Build → Pipelines → Run pipeline**, then add variables.
+
+### 4.1 The four variables
+
+| Variable | Default | Values | Required? |
+|---|---|---|---|
+| `RUN_GOVERNANCE` | `false` | `true` | **Always** — nothing runs without it |
+| `GOV_MODE` | `verify` | `verify` \| `dryrun` \| `apply` | Only for dryrun/apply |
+| `GOV_TARGET_TYPE` | `project` | `project` \| `subgroup` \| `batch` | Only for subgroup/batch |
+| `GOV_TARGET` | *(empty)* | id or path | **Always** — no default by design |
+
+`GOV_TARGET` is intentionally mandatory. A default target would let someone
+trigger an apply against a hardcoded repo without consciously choosing it. The
+pipeline variables are the audit record of what was touched.
+
+### 4.2 Single repo
+
+| Goal | Variables |
+|---|---|
+| **Verify** | `RUN_GOVERNANCE=true`<br>`GOV_TARGET=2840` |
+| **Dry-run** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=dryrun`<br>`GOV_TARGET=2840` |
+| **Apply** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=apply`<br>`GOV_TARGET=2840` |
+
+`GOV_TARGET` accepts a numeric project ID (`2840`) or a full path
+(`itepaypg-sbiepay2/application/backend/epay_admin_portal_service`).
+**Prefer the ID** — paths are case-sensitive and differ between instances.
+
+`GOV_TARGET_TYPE` is not needed; `project` is the default.
+
+### 4.3 Whole subgroup (multiple repos)
+
+| Goal | Variables |
+|---|---|
+| **Verify** | `RUN_GOVERNANCE=true`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
+| **Dry-run** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=dryrun`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
+| **Apply** | `RUN_GOVERNANCE=true`<br>`GOV_MODE=apply`<br>`GOV_TARGET_TYPE=subgroup`<br>`GOV_TARGET=itepaypg-sbiepay2/application/backend` |
+
+Subgroup mode:
+- includes **nested sub-subgroups** automatically
+- **excludes archived** repos
+- **lists every repo it found before processing** — read this list; it is your
+  last chance to spot a repo you did not intend to touch
+- is **FAIL-STOP** — halts on the first repo that errors; the summary shows
+  which repos completed so you know where to resume
+
+A numeric group ID also works (e.g. `2793` for Backend).
+
+### 4.4 Batch (list from a file)
+
+Commit a file of project IDs, one per line (`#` comments and blank lines
+ignored; inline `# path` comments are stripped):
+
+```
+# Backend
+2840    # epay_admin_portal_service
+2600    # epay_admin_service
+```
+
+| Variable | Value |
+|---|---|
+| `RUN_GOVERNANCE` | `true` |
+| `GOV_MODE` | `apply` |
+| `GOV_TARGET_TYPE` | `batch` |
+| `GOV_TARGET` | `repos_to_apply.txt` |
+
+### 4.5 The apply job is different
+
+- Only appears when `$CI_COMMIT_REF_PROTECTED == "true"` — i.e. a protected branch
+- Requires a **manual play click**; it never starts on its own
+- From an unprotected branch the job is **not offered at all**
+
+### 4.6 Recommended sequence
+
+```
+1. GOV_MODE=verify   ->  what is the current state?
+2. GOV_MODE=dryrun   ->  what would change?
+3. GOV_MODE=apply    ->  make it so (click play)
+4. GOV_MODE=verify   ->  confirm
+```
+
+---
+
+## 5. Running locally
+
+The same script runs on a workstation. Config is read from environment
+variables first, falling back to literals in the CONFIG block.
+
+```bat
+REM Windows
+set GOVERNANCE_GITLAB_URL=https://gitlab.sbi
+set GOVERNANCE_TOKEN=glpat-xxxxxxxx
+
+python311\python.exe apply_repo_governance.py --project 2840 --verify
+python311\python.exe apply_repo_governance.py --project 2840 --dry-run
+python311\python.exe apply_repo_governance.py --project 2840
+python311\python.exe apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend --dry-run
+python311\python.exe apply_repo_governance.py --batch repos_to_apply.txt
+```
+
+| Flag | Effect |
+|---|---|
+| `--verify` | read current state only |
+| `--dry-run` | print every write that would happen |
+| *(no flag)* | **apply**, then auto-verify |
+
+Alternatively edit `GITLAB_URL` / `TOKEN` / `TARGET_PROJECT` in the CONFIG
+block. **Always confirm the banner reads `Target : https://gitlab.sbi`** —
+pointing at the old instance is the most common cause of an unexplained 401,
+because tokens are instance-specific.
+
+Each run writes `governance_<repo>_<timestamp>.txt`; multi-repo runs write
+`governance_BATCH_<timestamp>.txt`.
+
+---
+
+## 6. Reading the output
+
+The `=== VERIFY (read-only) ===` block is the go/no-go. A compliant repo shows:
+
+```
+Shared groups (project members):
+  epay-gitlab-bank-app-owner: access level 50
+  epay-gitlab-bank-app-maintainer: access level 40
+  epay-gitlab-vendor-app-maintainer: access level 40
+  epay-gitlab-vendor-release-manager: access level 30
+  epay-gitlab-vendor-app-lead: access level 30
+  epay-gitlab-vendor-app-developer: access level 30
+  epay-gitlab-vendor-pm: access level 20
+Protected branches:
+  main: push=No one | merge groups=[...]
+  develop: push=No one | merge groups=[...]
+  sit-integration: push=No one | merge groups=[...]
+  release/*: push=No one | merge groups=[...]
+Approval rules:
+  ... 11 rules ...
+Project settings:
+  Pipelines must succeed : True
+  Merge method           : merge (Merge commit)
+  Squash option          : never (Do not allow)
+  Default branch         : main
+Push rules:
+  branch_name_regex   : ^(main|develop|sit-integration|...
+  commit_message_regex: ^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|...
+```
+
+Red flags:
+
+| Output | Meaning |
+|---|---|
+| `<-- expected ...` | that setting did not take |
+| `MISSING: <branch>` | branch not protected (usually it does not exist) |
+| `MISSING: no push rules set` | Step 2 failed |
+| `[WARN] push rules did NOT persist` | both JSON and form-encoded writes failed |
+| `push=[{...access_level: 40...}]` | push is NOT "No one" |
+| `SKIP '<rule>' (target branch not protected)` | approval rule skipped |
+
+The run log is a **build artifact, 90-day retention** — your audit trail.
+
+Sweep a batch afterwards:
+```bat
+findstr /C:"MISSING" /C:"WARN" /C:"expected" governance_BATCH_*.txt
+```
+Zero hits = all repos compliant.
+
+---
+
+## 7. The governance spec
+
+### 7.1 LDAP groups
+
+| Group | ID | Project role |
+|---|---|---|
+| `epay-gitlab-bank-app-owner` | 4953 | Owner (50) |
+| `epay-gitlab-bank-app-maintainer` | 4954 | Maintainer (40) |
+| `epay-gitlab-vendor-app-maintainer` | 4955 | Maintainer (40) |
+| `epay-gitlab-vendor-release-manager` | 4950 | Developer (30) |
+| `epay-gitlab-vendor-app-lead` | 4956 | Developer (30) |
+| `epay-gitlab-vendor-app-developer` | 4957 | Developer (30) |
+| `epay-gitlab-vendor-pm` | 4962 | Reporter (20) |
+
+Groups live under `itepaypg-sbiepay2/ldap-membership/`. IDs are **hardcoded**
+because `GET /groups?search=` did not match reliably on this instance. On a new
+instance, re-run `find_ldap_groups.py` and update `GROUP_IDS` + `GROUP_INVITES`.
+
+**Step 1 must run before Step 3.** GitLab rejects a protected-branch merge
+group that is not already a project member:
+`422 Merge access levels group does not have access to the project`.
+
+### 7.2 Protected branches — push = No one on all
+
+| Branch | Allowed to merge |
+|---|---|
+| `main` | bank-app-maintainer, bank-app-owner, vendor-app-maintainer |
+| `develop` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
+| `sit-integration` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
+| `release/*` | vendor-app-lead, vendor-app-maintainer, vendor-release-manager |
+
+`feature/*`, `bugfix/*`, `hotfix/*` are intentionally **unprotected** —
+developers push freely; governance is enforced at the target branch via
+approval rules.
+
+### 7.3 Approval rules (11)
+
+| Target | Rule | Group |
+|---|---|---|
+| `develop` | Lead Approval | vendor-app-lead |
+| `release/*` | Release Gate - Lead | vendor-app-lead |
+| `release/*` | Release Manager Approval | vendor-release-manager |
+| `release/*` | Release Gate - Architect | vendor-app-maintainer |
+| `sit-integration` | Release Gate - Lead (SIT) | vendor-app-lead |
+| `sit-integration` | Release Manager Approval (SIT) | vendor-release-manager |
+| `sit-integration` | Release Gate - Architect (SIT) | vendor-app-maintainer |
+| `main` | Vendor Architect Sign-off | vendor-app-maintainer |
+| `main` | Vendor PM Approval (CAB gate) | vendor-pm |
+| `main` | Bank Maintainer Approval | bank-app-maintainer |
+| `main` | Bank PM Final Gate | bank-app-owner |
+
+All require 1 approval. Rules are separate — no combined counts.
+
+**Rules fire on the TARGET branch, not the source.** So `bugfix/* -> develop`
+is covered by *Lead Approval*, and `hotfix/* -> main` by the four `main` rules.
+No bugfix- or hotfix-specific rules are needed, and adding them would
+double-gate the same MRs.
+
+Rule names must be **unique per project** — hence the `(SIT)` suffixes.
+
+### 7.4 Push rules
+
+**Branch names:**
+```
+^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+```
+
+| Valid | Invalid |
+|---|---|
+| `main` | `feature/login` (no EPAY id) |
+| `develop` | `release/1.5.0` (semver no longer allowed) |
+| `sit-integration` | `hotfix/1.5.1` (semver no longer allowed) |
+| `release/minor-DM2026068056-EPAY-bpcl-refund` | `release/patch-DM123-EPAY-x` (only major/minor) |
+| `feature/EPAY-1234-upi-autopay` | `sit_integration` (underscore) |
+| `bugfix/EPAY-1299-fix-mandate` | |
+| `hotfix/EPAY-6789-fix` | |
+
+**Commit messages:** `TICKET|CC|type: subject`
+```
+^[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+$
+```
+- `TICKET` = exactly 3 uppercase letters + `-` + exactly 3 digits
+- `CC` = exactly 2 uppercase letters
+- pipes are **literal characters** in the message
+
+| Valid | Invalid |
+|---|---|
+| `EPA-123\|IN\|feat: added payment validation` | `EPAY-1299\|IN\|fix: ...` (4+4) |
+| `ABC-456\|UK\|fix: corrected refund rounding` | `EPA-123\|IN\|feat:no space` |
+| `XYZ-001\|DC\|chore: bump image version` | `EPA-123 IN feat: ...` (no pipes) |
+| | `feat: old format EPAY-123` |
+
+GitLab evaluates these with **RE2** server-side. RE2 has no lookahead,
+lookbehind, or backreferences — these patterns use none.
+
+### 7.5 Project settings
+
+| Setting | Value | API field |
+|---|---|---|
+| Pipelines must succeed | `true` | `only_allow_merge_if_pipeline_succeeds` |
+| Merge method | Merge commit | `merge_method: "merge"` |
+| Squash | Do not allow | `squash_option: "never"` |
+| Default branch | `main` | `default_branch` |
+
+> **Merge method is load-bearing.** The semver/tagging logic parses merge-commit
+> titles on `main` to resolve the source branch. Changing away from
+> "Merge commit" breaks it **silently**.
+
+---
+
+## 8. Safety model
+
+| Control | Effect |
+|---|---|
+| `RUN_GOVERNANCE != "true"` | no governance job is created at all |
+| `GOV_MODE=verify` / `dryrun` | read-only; cannot change anything |
+| `GOV_MODE=apply` | requires protected branch **and** manual click |
+| apply from unprotected branch | job never offered (`when: never`) |
+| `GOV_TARGET` empty | `before_script` guard aborts |
+| `GOVERNANCE_TOKEN` empty | `before_script` guard aborts |
+| every write | targets `/projects/<id>/...` only — never a group endpoint |
+| every step | idempotent — reads state, skips if correct |
+| multi-repo | **fail-stop** on first error |
+| group ID validation | aborts before any write if a group is unreachable |
+| Step 8 | only sets default branch if that branch **exists** |
+| run log | 90-day artifact for audit |
+
+Subgroup mode's only write path is per-project. Listing a subgroup's projects
+is a read-only `GET`.
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `401 Unauthorized` | Wrong instance, or expired/invalid token | Check the banner says `gitlab.sbi`, not `gitlab.epay.sbi`. Tokens are instance-specific. |
+| `403 Forbidden` on Step 2 only | Group/project access token | Use a **personal** access token |
+| `403 Forbidden` everywhere | Token lacks Maintainer/Owner | Check role on the project |
+| `GOVERNANCE_TOKEN is not set` | Protected variable + unprotected branch | Run from `main`, or untick Protected |
+| `GOV_TARGET is empty` | Variable not provided | Always set `GOV_TARGET` |
+| `Project not found` | Wrong path / case / instance | Use the numeric ID |
+| `Subgroup not found` | Wrong group path | Use the numeric group ID |
+| Job stuck pending | Runner tag mismatch | Check `.governance_base.tags` |
+| `python3: command not found` | Image lacks python3 | Use an image that has it |
+| No governance job appears | `RUN_GOVERNANCE` not exactly `true` | Check spelling/case |
+| `script config should be a string...` | Unquoted `(` `)` in a script line | Quote every script line |
+| `stage does not exist` | An include declared `stages:` | Only `.gitlab-ci.yml` may |
+| `422 Merge access levels group does not have access` | Step 1 skipped | Group must be a member before Step 3 |
+| `allowed_to_merge is invalid` | Form-encoded nested array | Script sends JSON — already handled |
+| `404` on push rules | Plural `push_rules` endpoint | Endpoint is singular `push_rule` — already handled |
+
+### Useful diagnostics
+
+```bash
+# What kind of token is this? ("bot": true = group token = will fail Step 2)
+curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/user
+
+# Can it read push rules on this project? (200 = yes)
+curl -k -i --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/projects/2840/push_rule
+
+# What access levels exist on the project?
+curl -k --header "PRIVATE-TOKEN: <token>" https://gitlab.sbi/api/v4/projects/2840/members/all
+```
+
+---
+
+## 10. Known behaviours
+
+**Repos missing a branch.** `MISSING: develop` (or `sit-integration`) means the
+branch does not exist. The protection is skipped and its approval rules are
+skipped with `SKIP '<rule>' (target branch not protected)`. This is a **soft
+skip, not a failure** — the batch does **not** stop. Create the branch and
+re-run that repo. Always grep the artifact for `MISSING` after a batch.
+
+**Step 3 deletes and recreates.** GitLab's API cannot cleanly patch the allowed
+lists, so each protected branch is deleted then recreated. Two consequences:
+- a brief window where the branch is unprotected mid-run
+- protected-branch IDs churn, so approval rules are re-pointed each run
+
+**Step 3 removes per-user push exceptions.** Individual user grants on protected
+branches (leftovers from the old-instance export/import) are wiped. This is
+intended — the spec says push = No one — but a developer who could push
+yesterday will be blocked today.
+
+**Step 8 has a safety guard.** It only switches the default branch to `main` if
+`main` exists, so it never points at a non-existent ref. Repos still on
+`master` skip until `main` is created.
+
+**Dry-run limitations.** Dry-run shows placeholder `<pb-id:main>` for
+approval-rule branch IDs because protected branches may not exist yet, and it
+cannot exercise the push-rule encoding fallback. Both are expected.
+
+**Push rules need form-encoding.** Unlike `protected_branches` (which needs
+JSON), `/push_rule` takes flat fields and this instance rejects JSON. The script
+tries JSON, reads back to confirm, and **automatically retries form-encoded**.
+The log line `[info] JSON write did not persist; retrying form-encoded` is the
+fallback working correctly, not an error. Success is only reported after a
+read-back confirms it.
+
+**The script is the source of truth.** Step 4 deletes any approval rule whose
+name is not in the spec (GitLab's built-in `any_approver` rule is left alone).
+Any UI change contradicting the spec is reverted on the next apply. Change the
+script, not the UI.
+
+**Deviations from Master Architecture v13.0.** Recorded deliberately:
+- `remove_source_branch_after_merge` (§3.10) — **not** enforced, by request
+- Branch regex — `release/`/`hotfix/` now use `DM`/`EPAY` naming, not semver (§3.6)
+- Commit regex — now `TICKET|CC|type: subject`, not `<type>(<scope>): <subject> EPAY-<id>` (§3.6)
+- `sit-integration` — a protected branch, not in v13.0
+
+**Not covered by this script** (belongs elsewhere):
+- Hotfix JIRA-ID in MR description (§4.5) — needs a CI check; no native GitLab setting
+- Back-merge (§3.8), branch-age limits (§3.2), tag creation (§3.9), release archival (§3.10) — pipeline logic
+- CODEOWNERS (§4.8) — Config repos only; N/A for application repos
+- DevOps repos Flow 7 (§4.7) — different groups, needs its own variant
+
+---
+
+## 11. Changing the spec
+
+All spec lives in the CONFIG/SPEC block at the top of
+`apply_repo_governance.py`.
+
+| To change | Edit |
+|---|---|
+| Group IDs or roles | `GROUP_IDS`, `GROUP_INVITES` |
+| Branch/commit regex | `PUSH_RULES` |
+| Protected branches or merge groups | `PROTECTED_BRANCHES` |
+| Approval rules | `APPROVAL_RULES` |
+| Merge method / squash / default branch | `MERGE_METHOD`, `SQUASH_OPTION`, `DEFAULT_BRANCH` |
+
+**To disable a step**, comment out its single call line in `run_one()`:
+
+```python
+apply_group_invites(pid, mode_dry_run)             # Step 1
+apply_push_rules(pid, mode_dry_run)                # Step 2
+apply_protected_branches(pid, groups, mode_dry_run)  # Step 3
+apply_approval_rules(pid, groups, mode_dry_run)    # Step 4
+apply_pipeline_setting(pid, mode_dry_run)          # Step 5
+apply_merge_method(pid, mode_dry_run)              # Step 6
+apply_squash_option(pid, mode_dry_run)             # Step 7
+apply_default_branch(pid, mode_dry_run)            # Step 8
+```
+
+### Rules when editing
+
+1. Any group in `PROTECTED_BRANCHES.merge_groups` must be in `GROUP_INVITES`
+2. Any group in `APPROVAL_RULES` must be in `GROUP_IDS`
+3. Every `APPROVAL_RULES.branch` should be in `PROTECTED_BRANCHES`, or its rule
+   is skipped
+4. Approval rule names must be **unique**
+5. `epay-gitlab-vendor-release-manager` must be in **both** `GROUP_IDS` and
+   `GROUP_INVITES` — a recurring bug
+
+After editing, always: `--verify` → `--dry-run` → apply on **one** repo before
+any subgroup run.
