@@ -1,829 +1,96 @@
-deploy.drill.yml ----------------
-
-
-# templates/cd/deploy.drill.yml
-# DC/DR Drill orchestrator — switchover and switchback
-#
-# Included by deployment repo .gitlab-ci.yml when DRILL_TIER variable is set.
-# Owns all stages, variables, and includes. Deployment repo defines nothing.
-#
-# ── How to trigger ────────────────────────────────────────────────────────────
-# GitLab → deployment repo → CI/CD → Pipelines → Run pipeline
-#   Branch:   main
-#   Variable: DRILL_TIER = prod | preprod | nonprod
-#
-# ── Stages ────────────────────────────────────────────────────────────────────
-# Stage order matches operational drill sequence:
-#   Step 1: Maintenance_Page          — enable maintenance before scaling
-#   Step 2: DC_Application_Services   — scale DC (down for switchover, up for switchback)
-#   Step 3: DR_Application_Services   — scale DR (up for switchover, down for switchback)
-#   Step 4: MirrorMaker2              — toggle Kafka replication direction
-#
-# DC and DR are separate stages so operator confirms DC is done before touching DR.
-#
-# ── Tier → environments ───────────────────────────────────────────────────────
-#   DRILL_TIER=prod:
-#     Maintenance_Page:        prod-dc + prod-dr
-#     DC_Application_Services: prod-dc
-#     DR_Application_Services: prod-dr
-#     MirrorMaker2:            prod-dc + prod-dr
-#
-#   DRILL_TIER=preprod:
-#     Maintenance_Page:        pre-prod-dc + pre-prod
-#     DC_Application_Services: pre-prod-dc
-#     DR_Application_Services: pre-prod
-#     MirrorMaker2:            pre-prod-dc + pre-prod
-#
-#   DRILL_TIER=nonprod:
-#     DC_Application_Services: dev (scale test only — no maintenance, no MM2)
-#
-# ── Audit trail ───────────────────────────────────────────────────────────────
-#   GitLab pipeline: who triggered, when, DRILL_TIER value
-#   Git commits: drill(prod-dc): replicas=0 autoscaling=false [ci skip]
-
-stages:
-  - Maintenance_Page
-  - DC_Application_Services
-  - DR_Application_Services
-  - MirrorMaker2
-
-variables:
-  GIT_STRATEGY:        none
-  DEPLOYMENT_BRANCH:   "main"
-  DEPLOYMENT_REPO_URL: "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
-  MAINTENANCE_CHART:   "epay_maintenance_fe"
-
-  # All application service charts — updated during scale operations
-  ALL_CHARTS: >-
-    epay_admin_service,epay_key_managment,epay_merchant_fe,epay_merchant_service,epay_merchant_simulator,epay_notification_service,epay_operations_service,epay_order_hash,epay_payment_service,epay_refund_service,epay_reports_service,epay_transaction_fe,epay_transaction_service,java-utility-api-simulator
-
-include:
-  - local: 'ops/drill/drill.maintenance.yml'
-  - local: 'ops/drill/drill.scale.yml'
-  - local: 'ops/drill/drill.mirrormaker2.yml'
-
-
-
------------------------------------------
-
-
-# deployment-repo/.gitlab-ci.yml
-# =============================================================================
-# Minimal include router — all logic inside each template.
-# Discriminated by DEPLOY_TYPE variable (or DRILL_TIER for drills).
-#
-# ── Use Case 1: App service deployment ────────────────────────────────────────
-#   Trigger: App CI pipeline → deploy.jobs.yml → pipeline trigger
-#   Variable: DEPLOY_TYPE=app   (set inside trigger.cd.yml)
-#   Template: templates/cd/deploy.single.yml
-#   Flow:     values:update → validate → helm:deploy → verify → notify
-#
-# ── Use Case 2: Config-only deployment ────────────────────────────────────────
-#   Trigger: Config repo CI → config.deploy.yml → pipeline trigger
-#   Variable: DEPLOY_TYPE=config   (set inside config.deploy.yml)
-#   Template: templates/cd/deploy.config.yml
-#   Flow:     config:compute → config:apply → [restart:rollout MANUAL] → verify:health
-#   Repos:    Epay_Backend_Config / Epay_Frontend_Config
-#   Note:     SAME pipeline trigger mechanism as Use Case 1 (source=pipeline)
-#             Discriminated by DEPLOY_TYPE value — NOT by pipeline source
-#
-# ── Use Case 3: DC/DR Drill ───────────────────────────────────────────────────
-#   Trigger: Manual — GitLab UI → Run pipeline → set DRILL_TIER variable
-#   Variable: DRILL_TIER=prod|preprod|nonprod
-#   Template: templates/cd/deploy.drill.yml
-#   Flow:     Drill-specific failover and verification stages
-#
-# ── Discriminator logic ───────────────────────────────────────────────────────
-#   Use Case 1 vs Use Case 2: Both triggered by pipeline (CI_PIPELINE_SOURCE=pipeline)
-#   Distinguished by DEPLOY_TYPE:
-#     DEPLOY_TYPE=app    → deploy.single.yml   (set by app CI trigger.cd.yml)
-#     DEPLOY_TYPE=config → deploy.config.yml   (set by config CI config.deploy.yml)
-#   Use Case 3: DRILL_TIER != "" → deploy.drill.yml
-#               (manually set in Run Pipeline dialog — never set by CI triggers)
-# =============================================================================
-
-include:
-  # ── Use Case 1: App service deployment ──────────────────────────────────────
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/cd/deploy.single.yml'
-    rules:
-      - if: '$CI_PIPELINE_SOURCE == "pipeline" && $DEPLOY_TYPE == "app"'
-
-  # ── Use Case 2: Config-only deployment ──────────────────────────────────────
-  # Triggered by Epay_Backend_Config or Epay_Frontend_Config CI pipeline
-  # DEPLOY_TYPE=config set by templates/ci/config/config.deploy.yml trigger jobs
-  # - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-  #   ref: main
-  #   file: 'templates/cd/deploy.config.yml'
-  #   rules:
-  #     - if: '$CI_PIPELINE_SOURCE == "pipeline" && $DEPLOY_TYPE == "config"'
-
-  # ── Use Case 3: DC/DR Drill ─────────────────────────────────────────────────
-  # Triggered manually: GitLab UI → Run pipeline → DRILL_TIER=prod|preprod|nonprod
-  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator from Use Cases 1 & 2
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/cd/deploy.drill.yml'
-    rules:
-      - if: '$DRILL_TIER != ""'
-
-
-------------------------------------------------------------------------- # ops/drill/drill.maintenance.yml ----------
-# ops/drill/drill.maintenance.yml
-# Maintenance page ON/OFF — GitOps approach
-# Clones deployment repo → updates epay_maintenance_fe/values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# What it changes:
-#   replicaCount:       1 (ON) or 0 (OFF)
-#   maintenance.enabled: true (ON) or false (OFF)
-#
-# ENV_LIST drives which environments are updated:
-#   prod:    prod-dc prod-dr
-#   preprod: pre-prod-dc pre-prod
-#   nonprod: dev (no maintenance page in nonprod — jobs skipped)
-
-
-
-
-
-
-.drill_git_setup:
-  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-  tags:
-    - common_runner
-  variables:
-    DEPLOYMENT_BRANCH: "main"
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global user.name "ci"
-    - git config --global user.email "ci.cedge@sbi.co.in"
-
-# ── Shared script — reused by all maintenance jobs via YAML anchor ──────────
-# KEY CHANGE: git push is now INSIDE the for-loop, immediately after each
-# per-environment commit.  This ensures:
-#   • Each push contains exactly ONE environment's changed file.
-#   • The deployment repo pipeline fires once per push → once per environment.
-#   • A rebase-retry loop guards against concurrent push conflicts.
-.maintenance_script: &maintenance_script
-  - |
-    set -eo pipefail
-
-    git clone "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
-
-    for TARGET_ENV in $ENV_LIST; do
-      FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
-      echo "──────────────────────────────────────────"
-      echo "Processing environment : $TARGET_ENV"
-      echo "Target file            : $FILE"
-
-      [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
-
-      # ── Patch replicaCount ──────────────────────────────────────────────
-      sed -i -E \
-        "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
-        "$FILE"
-
-      # ── Patch maintenance.enabled ───────────────────────────────────────
-      sed -i -E \
-        "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
-         s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
-        "$FILE"
-
-      # ── Commit (only this environment's file) ───────────────────────────
-      git add "$FILE"
-      if git diff --cached --quiet; then
-        echo "No changes detected for ${TARGET_ENV} — skipping commit & push"
-        continue
-      fi
-
-      git commit \
-        -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT}"
-
-      # ── Push immediately — one push per env = one pipeline trigger ───────
-      # Retry with rebase to handle concurrent pushes from other jobs.
-      PUSHED=false
-      for i in 1 2 3; do
-        if git push origin "$DEPLOYMENT_BRANCH"; then
-          PUSHED=true
-          break
-        fi
-        echo "Push attempt $i/3 failed — pulling with rebase and retrying…"
-        git pull --rebase origin "$DEPLOYMENT_BRANCH"
-        sleep 3
-      done
-
-      if [ "$PUSHED" = "false" ]; then
-        echo "ERROR: All push attempts failed for ${TARGET_ENV}"
-        exit 1
-      fi
-
-      echo "✅ Push successful — deployment pipeline triggered for: ${TARGET_ENV}"
-    done
-
-    echo "══════════════════════════════════════════"
-    echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to all envs: $ENV_LIST"
-
-# .drill_git_setup:
-#   image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-#   tags:
-#     - common_runner
-#   variables:
-#     DEPLOYMENT_BRANCH: "main"
-#   before_script:
-#     - git config --global http.sslVerify false
-#     - git config --global user.name "ci"
-#     - git config --global user.email "ci.cedge@sbi.co.in"
-#     #- git remote set-url origin "https://oauth2:${GIT_PAT}@gitlab.sbi/epay/devops/deployment.git"
-#     #- git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git"
-
-# # ── Shared script — reused by all maintenance jobs via YAML anchor ────────────
-# .maintenance_script: &maintenance_script
-#   - |
-#     set -eo pipefail
-
-#     git clone "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git" deployment
-#     cd deployment
-#     #git checkout "$DEPLOYMENT_BRANCH"
-#     git checkout "$DEPLOYMENT_BRANCH"
-
-#     for TARGET_ENV in $ENV_LIST; do
-#       FILE="${TARGET_ENV}/charts/${MAINTENANCE_CHART}/values.yaml"
-#       echo "Processing: $FILE"
-#       [ -f "$FILE" ] || { echo "ERROR: $FILE not found"; exit 1; }
-
-#       sed -i -E \
-#         "s/^([[:space:]]*)replicaCount:.*/\1replicaCount: ${REPLICA_COUNT}/" \
-#         "$FILE"
-#       sed -i -E \
-#         "/^[[:space:]]*maintenance:/,/^[^[:space:]]/ \
-#          s/^([[:space:]]*)enabled:.*/\1enabled: ${MAINTENANCE_ENABLED}/" \
-#         "$FILE"
-
-#       git add "$FILE"
-#       git commit \
-#         -m "drill(${TARGET_ENV}): maintenance=${MAINTENANCE_ENABLED} replicas=${REPLICA_COUNT} " \
-#         || echo "No changes for ${TARGET_ENV}"
-#     done
-
-#     for i in 1 2 3; do
-#       git push origin "$DEPLOYMENT_BRANCH" && break
-#       echo "Push failed — retrying ($i/3)"
-#       sleep 2
-#       git pull --rebase origin "$DEPLOYMENT_BRANCH"
-#     done
-#     echo "✅ Maintenance ${MAINTENANCE_ENABLED} applied to: $ENV_LIST"
-
-# ── Prod ──────────────────────────────────────────────────────────────────────
-Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "prod-dc prod-dr"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *maintenance_script
-
-# ── Preprod ───────────────────────────────────────────────────────────────────
-PreProd_Maintenance_ON:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "1"
-    MAINTENANCE_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-PreProd_Maintenance_OFF:
-  extends: .drill_git_setup
-  stage: Maintenance_Page
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    ENV_LIST:            "pre-prod-dc pre-prod"
-    REPLICA_COUNT:       "0"
-    MAINTENANCE_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *maintenance_script
-
-# Nonprod: no maintenance page — stage intentionally empty for nonprod tier
-
-
-================================================  # ops/drill/drill.mirrormaker2.yml ============
-
-# ops/drill/drill.mirrormaker2.yml
-# Kafka MirrorMaker2 toggle — GitOps approach
-# Clones deployment repo → updates epay_common/values.yaml → git push → ArgoCD syncs
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# mirrorMaker2.enabled=true:  replication ACTIVE (source → destination)
-# mirrorMaker2.enabled=false: replication STOPPED
-#
-# Nonprod: no MirrorMaker2 — jobs not shown for nonprod tier
-
-# ── Shared script — awk for precise mirrorMaker2 block update ─────────────────
-.mirrormaker2_script: &mirrormaker2_script
-  - |
-    set -eo pipefail
-
-    git clone "$DEPLOYMENT_REPO_URL" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
-
-    VALUES_FILE="${TARGET_ENV}/charts/epay_common/values.yaml"
-    echo "Processing: $VALUES_FILE"
-    [ -f "$VALUES_FILE" ] || { echo "ERROR: $VALUES_FILE not found"; exit 1; }
-
-    # awk: updates ONLY mirrorMaker2.enabled — does not touch other enabled fields
-    awk -v val="$MIRRORMAKER2_ENABLED" '
-      BEGIN { in_mm2=0 }
-      /^[[:space:]]*mirrorMaker2:[[:space:]]*$/ { in_mm2=1; print; next }
-      in_mm2 && /^[[:space:]]*enabled:/ {
-        match($0, /^([[:space:]]*)/, arr)
-        print arr[1] "enabled: " val
-        next
-      }
-      in_mm2 && /^[[:space:]]*[a-zA-Z0-9_-]+:/ { in_mm2=0 }
-      { print }
-    ' "$VALUES_FILE" > "${VALUES_FILE}.tmp"
-    mv "${VALUES_FILE}.tmp" "$VALUES_FILE"
-
-    if git diff --quiet "$VALUES_FILE"; then
-      echo "No change — mirrorMaker2.enabled already ${MIRRORMAKER2_ENABLED}"
-      exit 0
-    fi
-
-    git add "$VALUES_FILE"
-    git commit \
-      -m "drill(${TARGET_ENV}): mirrorMaker2.enabled=${MIRRORMAKER2_ENABLED}"
-
-    for i in 1 2 3; do
-      git push origin "$DEPLOYMENT_BRANCH" && break
-      echo "Push failed — retrying ($i/3)"
-      sleep 2
-      git pull --rebase origin "$DEPLOYMENT_BRANCH"
-    done
-    echo "✅ MirrorMaker2 ${MIRRORMAKER2_ENABLED} for ${TARGET_ENV}"
-
-# ── Prod DC ───────────────────────────────────────────────────────────────────
-Prod_DC_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dc"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-Prod_DC_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dc"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-# ── Prod DR ───────────────────────────────────────────────────────────────────
-Prod_DR_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dr"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-Prod_DR_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "prod-dr"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *mirrormaker2_script
-
-# ── Preprod DC ────────────────────────────────────────────────────────────────
-PreProd_DC_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod-dc"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-PreProd_DC_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod-dc"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-# ── Preprod DR ────────────────────────────────────────────────────────────────
-PreProd_DR_MirrorMaker2_Down:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod"
-    MIRRORMAKER2_ENABLED: "false"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-PreProd_DR_MirrorMaker2_Up:
-  extends: .drill_git_setup
-  stage: MirrorMaker2
-  when: manual
-  variables:
-    GIT_STRATEGY:       none
-    TARGET_ENV:         "pre-prod"
-    MIRRORMAKER2_ENABLED: "true"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *mirrormaker2_script
-
-# Nonprod: no MirrorMaker2 — stage intentionally empty for nonprod tier
-
-
-=================================================================  # ops/drill/drill.scale.yml 
-
-
-# ops/drill/drill.scale.yml
-# Scale ALL application services DOWN or UP — GitOps + Live Cluster
-#
-# Called by: templates/cd/deploy.drill.yml
-# Trigger:   DRILL_TIER variable set at pipeline run time
-#
-# Flow per job:
-#   STEP 1 — GitOps: clone repo → patch values.yaml → git push → ArgoCD syncs
-#   STEP 2 — Live:   oc login to cluster → oc scale deployments directly
-#
-# NS_MAP is declared ONCE per tier in .prod_ns_map / .preprod_ns_map
-# and inherited by all jobs via extends: — no duplication across jobs.
-#
-# Nonprod is handled in a separate file — no nonprod config here.
-
-# ─────────────────────────────────────────────────────────────────────────────
-# NAMESPACE MAP DEFINITIONS — declared once, inherited via extends:
-# ─────────────────────────────────────────────────────────────────────────────
-
-.prod_ns_map:
-  variables:
-    NS_MAP: |
-      declare -A NS_DEPLOYMENTS
-      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
-      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
-      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
-      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
-
-.preprod_ns_map:
-  variables:
-    NS_MAP: |
-      declare -A NS_DEPLOYMENTS
-      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
-      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulator javasimulator-javautilityapisimulator orderhash"
-      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
-      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
-
-
-.preprod_dc_ns_map:
-  variables:
-    NS_MAP: |
-      declare -A NS_DEPLOYMENTS
-      NS_DEPLOYMENTS["${TARGET_ENV}-admin"]="admin-adminservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-frontend"]="merchantfe-merchant-frontend transactionfe-transaction-frontend"
-      NS_DEPLOYMENTS["${TARGET_ENV}-kms"]="kms-kmsservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-rns"]="ops-operationsservice refund-refundservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-merchant"]="merchant-merchantservice report-reportservice"
-      NS_DEPLOYMENTS["${TARGET_ENV}-simulators"]="demo-merchantsimulaterfe javasimulator-javautilityapisimulator orderhash"
-      NS_DEPLOYMENTS["${TARGET_ENV}-transaction"]="payment-paymentservice txn-transactionservice"
-      # NS_DEPLOYMENTS["${TARGET_ENV}-notification"]="notify-notificationservice"
-# ─────────────────────────────────────────────────────────────────────────────
-# SHARED SCRIPT — GitOps push → live oc scale (single anchor for all jobs)
-# ─────────────────────────────────────────────────────────────────────────────
-
-.scale_with_live_cluster_script: &scale_with_live_cluster_script
-  - |
-    set -eo pipefail
-
-    # ── STEP 1: GitOps push ──────────────────────────────────────────────────
-    echo "==================================================================================="
-    echo " STEP 1: GITOPS PUSH"
-    echo " ENV: ${TARGET_ENV}"
-    echo "==================================================================================="
-
-    git clone "${DEPLOYMENT_REPO_URL}" deployment
-    cd deployment
-    git checkout "$DEPLOYMENT_BRANCH"
-
-    IFS=',' read -ra SERVICES <<< "$CHARTS"
-    CHANGED=false
-
-    for SERVICE in "${SERVICES[@]}"; do
-      FILE="${TARGET_ENV}/charts/${SERVICE}/values.yaml"
-      echo "Processing: $FILE"
-      [ -f "$FILE" ] || { echo "WARNING: $FILE not found — skipping"; continue; }
-
-      sed -i -E \
-        "s/^([[:space:]]*)replicaCount:[[:space:]]*[0-9]+/\1replicaCount: ${REPLICA_COUNT}/" \
-        "$FILE"
-      sed -i -E \
-        "/^[[:space:]]*autoscaling:/,/^[^[:space:]]/ \
-         s/^([[:space:]]*)enabled:[[:space:]]*(true|false)/\1enabled: ${AUTOSCALING_ENABLED}/" \
-        "$FILE"
-
-      if ! git diff --quiet "$FILE"; then
-        git add "$FILE"
-        CHANGED=true
-      fi
-    done
-
-    if [ "$CHANGED" = true ]; then
-      git commit \
-        -m "drill(${TARGET_ENV}): replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED} [ci skip]"
-
-      for i in 1 2 3; do
-        git push origin "$DEPLOYMENT_BRANCH" && break
-        echo "Push failed — retrying ($i/3)"
-        sleep 2
-        git pull --rebase origin "$DEPLOYMENT_BRANCH"
-      done
-      echo "✅ GitOps push done: ${TARGET_ENV} replicas=${REPLICA_COUNT} autoscaling=${AUTOSCALING_ENABLED}"
-    else
-      echo "No GitOps changes — already at target state, proceeding to live scale"
-    fi
-
-    # ── STEP 2: Scale live cluster ───────────────────────────────────────────
-    echo "==================================================================================="
-    echo "          STEP 2: SCALE LIVE CLUSTER"
-    echo "          CLUSTER: ${OC_API_URL}"
-    echo "          ENV:     ${TARGET_ENV}"
-    echo "==================================================================================="
-
-    oc login "${OC_API_URL}" \
-      --token="${OC_TOKEN}" \
-      --insecure-skip-tls-verify
-
-    eval "$NS_MAP"
-
-    for namespace in "${!NS_DEPLOYMENTS[@]}"; do
-      for deploy in ${NS_DEPLOYMENTS[$namespace]}; do
-        echo "Scaling ${deploy} in ${namespace} to ${REPLICA_COUNT}"
-        oc scale deployment/${deploy} -n "${namespace}" --replicas=${REPLICA_COUNT}
-      done
-    done
-
-    echo "==================================================================================="
-    echo "          SCALE OPERATION COMPLETED"
-    echo "          ENV: ${TARGET_ENV} → replicas=${REPLICA_COUNT}"
-    echo "==================================================================================="
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PROD
-# ─────────────────────────────────────────────────────────────────────────────
-
-Prod_DC_Scale_All_Down:
-  extends:
-    - .drill_git_setup
-    - .prod_ns_map
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dc"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dc.prod.epay.sbi:6443"    # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PROD_DC"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_with_live_cluster_script
-
-Prod_DC_Scale_All_Up:
-  extends:
-    - .drill_git_setup
-    - .prod_ns_map
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dc"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dc.prod.epay.sbi:6443"    # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PROD_DC"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_with_live_cluster_script
-
-Prod_DR_Scale_All_Down:
-  extends:
-    - .drill_git_setup
-    - .prod_ns_map
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dr"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dr.prod.epay.sbi:6443"
-    OC_TOKEN:            "$OCP_TOKEN_PROD_DR"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_with_live_cluster_script
-
-Prod_DR_Scale_All_Up:
-  extends:
-    - .drill_git_setup
-    - .prod_ns_map
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "prod-dr"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dr.prod.epay.sbi:6443"
-    OC_TOKEN:            "$OCP_TOKEN_PROD_DR"
-  rules:
-    - if: '$DRILL_TIER == "prod"'
-  script: *scale_with_live_cluster_script
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PREPROD
-# ─────────────────────────────────────────────────────────────────────────────
-
-PreProd_DC_Scale_All_Down:
-  extends:
-    - .drill_git_setup
-    - .preprod_dc_ns_map
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod-dc"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dcpreprod.epay.sbi:6443" # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DC"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_with_live_cluster_script
-
-PreProd_DC_Scale_All_Up:
-  extends:
-    - .drill_git_setup
-    - .preprod_dc_ns_map
-  stage: DC_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod-dc"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.dcpreprod.epay.sbi:6443" # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DC"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_with_live_cluster_script
-
-PreProd_DR_Scale_All_Down:
-  extends:
-    - .drill_git_setup
-    - .preprod_ns_map
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod"
-    REPLICA_COUNT:       "0"
-    AUTOSCALING_ENABLED: "false"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.preprod.epay.sbi:6443" # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DR"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_with_live_cluster_script
-
-PreProd_DR_Scale_All_Up:
-  extends:
-    - .drill_git_setup
-    - .preprod_ns_map
-  stage: DR_Application_Services
-  when: manual
-  variables:
-    GIT_STRATEGY:        none
-    TARGET_ENV:          "pre-prod"
-    REPLICA_COUNT:       "1"
-    AUTOSCALING_ENABLED: "true"
-    CHARTS:              "$ALL_CHARTS"
-    OC_API_URL:          "https://api.preprod.epay.sbi:6443" # ← confirm URL
-    OC_TOKEN:            "$OCP_TOKEN_PREPROD_DR"
-  rules:
-    - if: '$DRILL_TIER == "preprod"'
-  script: *scale_with_live_cluster_script
-  
-=====================================  .gitlab-ci.yml =======================
-This is deployment repo root .gitlab-ci.yml and we used to trigger or call the drill pipeline from here only ..by going to build>pipeline>New pipeline and then provide
-
-drill_tier variable like prod or preprod accordingly we use to get all the stages to click the buttons and perfomed and run the all the stages accordingly.
-
-
-and above all the yamls is belongs from cicd-templates repos ...we have included all that yaml here in deployment repo.
-
-include:
-  # ── Use Case 1: App service deployment ──────────────────────────────────────
-  # Default path — active whenever DRILL_TIER is NOT set.
-  # Stages defined inside this template: publish · validate · deploy
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/cd/deploy.single.yml'
-    rules:
-      - if: '$DRILL_TIER == null || $DRILL_TIER == ""'
-
-  # ── Use Case 2: DC/DR Drill ─────────────────────────────────────────────────
-  # Active ONLY when operator sets DRILL_TIER in "Run pipeline" dialog.
-  # Stages defined inside this template: Maintenance_Page · DC_Application_Services
-  #                                       DR_Application_Services · MirrorMaker2
-  # DRILL_TIER is NEVER set by any CI trigger — safe discriminator.
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/cd/deploy.drill.yml'
-    rules:
-      - if: '$DRILL_TIER != null && $DRILL_TIER != ""'
-
-
-========================================================================== 
-
-
-
-
-
-
+11.1 Per-Event Image Tag Scheme/version
+Every branch push builds an image tagged with the short SHA; the version job assigns SemVer only at merge to main.
+
+
+Event
+Branch
+Image tag
+Merge request event
+any source → any target
+mr-<src-branch>-<tgt-branch>-<MR-ID>-<short-sha>
+push
+feature/*
+<branch-name>-<short-sha>
+push
+bugfix/*
+<branch-name>-<short-sha>
+push
+hotfix/*
+<branch-name>-<short-sha>
+push
+release/* 
+<branch-name>-<short-sha>
+push
+develop
+dev-<short-sha>
+push
+sit-integration
+sit-<short-sha>
+MR merge
+main ← release/*
+automated SemVer (e.g. 1.1.0, 1.2.0, 2.0.0)
+MR merge
+main ← hotfix/*
+automated SemVer (e.g. 1.1.1, 1.2.1)
+unknown
+any
+unknown-<short-sha>
+Short SHA is the build identity. Same SHA = same code. This is what makes build-vs-retag deterministic (§11.2).
+11.2 Build vs Retag — The Deterministic Rule
+Build is triggered by a code change (new commit / new SHA). Retag is triggered by promotion (same SHA moving forward, or main merge stamping SemVer). Never docker build at promotion or at main merge.
+
+
+Moment
+Code changed?
+Action
+Push to feature/*, bugfix/*, develop, sit-integration
+Yes
+Build → SHA-tagged image
+Release/demand branch created + approved features merged
+Yes
+Build → the release candidate image
+Each bugfix merged to the release branch (during cert)
+Yes (new SHA)
+Build → new candidate image
+Promote release image SIT → UAT → PreProd
+No
+Deploy the same image (config differs by env, image unchanged)
+release/* → main merge
+No
+Retag the tested release image → SemVer
+hotfix/* → main merge
+No
+Retag the sanity-tested hotfix image → SemVer
+
+11.3 Which Image to Retag at Main Merge — HEAD^2
+When release/* → main (or hotfix/* → main) merges, the pipeline running on main is a push/merge pipeline, so CI_MERGE_REQUEST_SOURCE_BRANCH_SHA is empty (it exists only in MR pipelines). The durable way to identify the tested image is the second parent of the merge commit:
+# Runs on the main push/merge pipeline after release/* or hotfix/* merged.
+# Requires MERGE-COMMIT method (--no-ff): main's new commit has two parents.
+#   HEAD    = merge commit on main
+#   HEAD^1  = previous main tip
+#   HEAD^2  = source branch tip  ← the tested release/hotfix image
+
+SRC_SHA=$(git rev-parse --short HEAD^2)
+Why HEAD^2 and not git rev-parse origin/release/...: if the release branch is auto-deleted on merge, origin/release/... no longer exists when the main pipeline runs. HEAD^2 reads the merge commit itself, which permanently records the source tip — it works whether or not the branch was deleted.
+11.4 Mandatory Merge Method
+release/* → main and hotfix/* → main MUST use merge-commit method (--no-ff). Fast-forward and squash produce a single-parent commit with no HEAD^2, breaking the retag lookup. Configure in GitLab: Settings → Merge requests → Merge method → Merge commit. This also gives cleaner audit history (the merge commit explicitly links main to the exact tested tip).
+11.5 Retag Job — With Anti-Rebuild Guard
+# ── Main-merge retag job (release/* → main) ──────────────────────────────
+SRC_SHA=$(git rev-parse --short HEAD^2)                    # tested release tip
+SRC_BRANCH=<release-branch-name>                           # from merge metadata
+SRC_IMAGE="artifactory.jfrog.sbi/itepaypg-sbiepay2-docker-local/app/backend/${SERVICE}:${SRC_BRANCH}-${SRC_SHA}"
+
+# GUARD: the tested image MUST already exist. If not, do NOT build — fail loudly.
+if ! jfrog rt search "${SRC_IMAGE#*/}" | grep -q .; then
+  echo "ERROR: tested image ${SRC_IMAGE} not found. Retag must not rebuild. Aborting."
+  exit 1
+fi
+
+# Compute SemVer (type from branch name, highest prod tag, race-safe retry) — see §10
+NEW_SEMVER=$(compute_semver)          # e.g. 1.3.0
+
+# Retag the SAME digest — no rebuild
+docker pull  "$SRC_IMAGE"
+docker tag   "$SRC_IMAGE"  "...:${NEW_SEMVER}"
+docker push  "...:${NEW_SEMVER}"
+The guard enforces "retag only, never build at main merge." If the tested image is missing, the job fails rather than silently rebuilding (which would break "tested = deployed").
