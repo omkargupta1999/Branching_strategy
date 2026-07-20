@@ -1,77 +1,124 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
-Running on runner-zfogph9mk-project-2838-concurrent-0 via PE3DSOPGrunners3...
-Getting source from Git repository
-00:08
-Gitaly correlation ID: 01KXZ7Z865K4FXKC4M3XSSTN3T
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out 6dda8c2c as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:31
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ set -eo pipefail # collapsed multi-line command
-Service=epay_common | ENV=dev | VERSION=
-$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
-RELEASE_NAME=epay-common
-SERVICE_NAME=epay_common
-ENV=dev
-WARNING: Using insecure TLS client config. Setting this option is not supported!
-Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
-You have access to 192 projects, the list has been suppressed. You can list all projects with 'oc projects'
-Using project "default".
-Welcome! See 'oc help' to get started.
-Synced dev/charts/epay_common/values.yaml to origin/main
-ℹ️  No top-level tag: key in values.yaml for epay_common — skipping tag check (common/shared chart)
-Error: UPGRADE FAILED: failed to create resource: Kiali.kiali.io "kiali" is invalid: spec.external_services.tracing.query_timeout: Invalid value: "string": spec.external_services.tracing.query_timeout in body must be of type integer: "string"
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+Good — clean run. Here's a full post-deployment verification sweep. Set your context once, then work down.
 
+```bash
+NS=dev-epay-common        # adjust if your workloads land in a different namespace
+REL=epay-common
+ISTIO_NS=dev-istio-system
+```
 
+## 1. Helm release health — confirm the upgrade is recorded as deployed
 
+```bash
+helm status $REL -n $NS
+helm history $REL -n $NS | tail -5
+```
+Look for `STATUS: deployed` on the latest revision. The revision number should have incremented from the last run.
 
+## 2. Everything the release rendered — is any object unhealthy?
 
+```bash
+# All resources this release owns, across the namespace
+oc get all -n $NS
 
+# Anything not Running / not Ready anywhere in the namespace
+oc get pods -n $NS -o wide | grep -Ev '([0-9]+)/\1 .*Running|Completed' || echo "all pods healthy"
+```
 
+## 3. Pods — restarts, crashloops, pending
 
+```bash
+oc get pods -n $NS --sort-by=.status.startTime
 
+# Flag any with restarts or bad phase
+oc get pods -n $NS -o json | jq -r '
+  .items[] | select(
+    (.status.containerStatuses // [] | map(.restartCount) | add // 0) > 0
+    or (.status.phase != "Running" and .status.phase != "Succeeded")
+  ) | "\(.metadata.name)  phase=\(.status.phase)  restarts=\([.status.containerStatuses[]?.restartCount] | add)"'
+```
+Empty output = nothing restarting or stuck.
 
+## 4. Recent events — the fastest way to spot silent failures
 
-Getting above error now ............Here i have done the patching ..please verify
+```bash
+oc get events -n $NS --sort-by=.lastTimestamp | tail -30 | grep -Ei 'warn|error|fail|back-off|unhealthy' || echo "no warning events"
+```
 
+## 5. The Kiali CR that was failing — confirm it reconciled cleanly
 
+Since epay_common installs cluster tooling, verify Kiali specifically (that was your last blocker):
 
-[root@bastion ~]# oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
->   meta.helm.sh/release-name=epay-common \
->   meta.helm.sh/release-namespace=dev-epay-common --overwrite
-clusterrolebinding.rbac.authorization.k8s.io/dev-kiali-cluster-monitoring-view annotated
-[root@bastion ~]# oc label clusterrolebinding dev-kiali-cluster-monitoring-view \
->   app.kubernetes.io/managed-by=Helm --overwrite
-clusterrolebinding.rbac.authorization.k8s.io/dev-kiali-cluster-monitoring-view labeled
-[root@bastion ~]# oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
->   -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" | release="}{.metadata.annotations.meta\.helm\.sh/release-name}{" | ns="}{.metadata.annotations.meta\.helm\.sh/release-namespace}{"\n"}'
-managed-by=Helm | release=epay-common | ns=dev-epay-common
+```bash
+# CR accepted and status
+oc get kiali -A
+oc get kiali kiali -n $ISTIO_NS -o jsonpath='{.status.conditions}{"\n"}' 2>/dev/null \
+  || oc get kiali -n $ISTIO_NS -o wide
+
+# query_timeout landed as integer 30 (the field that was rejected)
+oc get kiali kiali -n $ISTIO_NS -o jsonpath='{.spec.external_services.tracing.query_timeout}{"\n"}'
+# expect: 30
+
+# Kiali pod up
+oc get pods -n $ISTIO_NS -l app=kiali -o wide
+```
+
+## 6. The CRB you adopted — confirm Helm still owns it
+
+```bash
+oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
+  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}'
+# expect: managed-by=Helm release=epay-common
+```
+
+## 7. Confirm your changes actually reflected (not a no-op deploy)
+
+This is the "did my edit take effect" check. Compare what Helm has stored against the live cluster:
+
+```bash
+# What Helm believes it deployed (the rendered manifests for this revision)
+helm get manifest $REL -n $NS | grep -A2 query_timeout
+
+# The values Helm actually used
+helm get values $REL -n $NS | grep -i query_timeout
+```
+Both should show `30`, proving your values fix is what's live — not a cached older revision.
+
+## 8. Other cluster tooling epay_common installs — Tempo, monitoring, network policies
+
+Your chart deploys more than Kiali. Sweep the pieces:
+
+```bash
+# Tempo / OpenTelemetry / monitoring objects the chart created
+oc get tempo,tempostack -A 2>/dev/null
+oc get servicemonitor,prometheusrule -n $NS 2>/dev/null
+oc get networkpolicy -n $NS
+oc get secret -n $NS | grep -Ei 'tempo|kiali|eiscert' 
+
+# The sibling cluster-scoped bindings — confirm none are orphaned/erroring
+for crb in dev-kiali-dev-istio-system-oauth dev-kiali; do
+  oc get clusterrolebinding "$crb" \
+    -o jsonpath="$crb managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{\"\n\"}" 2>/dev/null \
+    || echo "$crb absent"
+done
+```
+
+## 9. One-shot rollup
+
+If you want a single pass/fail glance:
+
+```bash
+echo "== Helm ==";        helm status $REL -n $NS | grep -E 'STATUS|REVISION'
+echo "== Bad pods ==";    oc get pods -n $NS --no-headers | grep -Ev '([0-9]+)/\1 .*Running|Completed' || echo "  none"
+echo "== Warn events =="; oc get events -n $NS --field-selector type=Warning --sort-by=.lastTimestamp | tail -5 || echo "  none"
+echo "== Kiali ==";       oc get kiali kiali -n $ISTIO_NS -o jsonpath='  timeout={.spec.external_services.tracing.query_timeout}{"\n"}'
+```
+
+## Interpreting results
+
+Green = `STATUS: deployed`, no pods outside `Running/Completed`, no Warning events, Kiali CR shows `query_timeout: 30` and its pod is up, and the CRB still reads `managed-by=Helm`.
+
+If something's off, the two most likely spots given this chart:
+- A pod stuck `ContainerCreating` → usually a secret/configmap mount (you've hit the `/certs` shadowing issue before — check `oc describe pod <name> -n $NS` events).
+- Kiali pod `CrashLoopBackOff` despite CR accepted → check `oc logs -n $ISTIO_NS -l app=kiali`, often the empty `url:`/`provider:` tracing fields if the CRD coerced them oddly.
+
+Run the section 9 rollup first — paste anything that doesn't come back clean and I'll help you drill in.
