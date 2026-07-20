@@ -1,117 +1,49 @@
-[osuser@bastion ~]$ oc get pods -n $NS -o json | jq -r '
->   .items[] | select(
->     (.status.containerStatuses // [] | map(.restartCount) | add // 0) > 0
->     or (.status.phase != "Running" and .status.phase != "Succeeded")
->   ) | "\(.metadata.name)  phase=\(.status.phase)  restarts=\([.status.containerStatuses[]?.restartCount] | add)"'^C
-[osuser@bastion ~]$ oc get ns | grep -i dev
-dev-admin                                          Active   466d
-dev-bridge                                         Active   34d
-dev-cache                                          Active   630d
-dev-cdc                                            Active   470d
-dev-cdc-redhat                                     Active   465d
-dev-communication                                  Active   265d
-dev-epay-admin-service                             Active   77d
-dev-epay-common                                    Active   250d
-dev-epaybridge                                     Active   121d
-dev-frontend                                       Active   466d
-dev-gemfire                                        Active   250d
-dev-integration                                    Active   247d
-dev-istio-system                                   Active   600d
-dev-kafka                                          Active   630d
-dev-kms                                            Active   466d
-dev-merchant                                       Active   466d
-dev-merchant-simulator                             Active   77d
-dev-notification                                   Active   466d
-dev-offline-jobs                                   Active   461d
-dev-rns                                            Active   425d
-dev-sbiepay                                        Active   680d
-dev-secrets                                        Active   352d
-dev-simulators                                     Active   466d
-dev-spark                                          Active   364d
-dev-spark-operator                                 Active   361d
-dev-transaction                                    Active   466d
-devops-admin                                       Active   403d
-[osuser@bastion ~]$ oc get pods -n dev-epay-common -o json | jq -r '
->   .items[] | select(
->     (.status.containerStatuses // [] | map(.restartCount) | add // 0) > 0
->     or (.status.phase != "Running" and .status.phase != "Succeeded")
->   ) | "\(.metadata.name)  phase=\(.status.phase)  restarts=\([.status.containerStatuses[]?.restartCount] | add)"'
-grafana-647846d5f4-l4q62  phase=Pending  restarts=null
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get events -n dev-epay-common  --sort-by=.lastTimestamp | tail -30 | grep -Ei 'warn|error|fail|back-off|unhealthy' || echo "no warning events"
-8m42s       Warning   FailedScheduling     pod/grafana-647846d5f4-l4q62                 0/18 nodes are available: persistentvolumeclaim "grafana-storage-pvc" not found. preemption: 0/18 nodes are available: 18 Preemption is not helpful for scheduling.
-3m39s       Warning   FailedScheduling     pod/grafana-647846d5f4-l4q62                 0/18 nodes are available: persistentvolumeclaim "grafana-storage-pvc" not found. preemption: 0/18 nodes are available: 18 Preemption is not helpful for scheduling.
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/backup-pvc             storageclass.storage.k8s.io "trident-csi-retain" not found
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/environment-logs-pvc   storageclass.storage.k8s.io "trident-csi-retain" not found
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/grafana-pvc            storageclass.storage.k8s.io "trident-csi-retain" not found
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/kafka-pvc              storageclass.storage.k8s.io "trident-csi-retain" not found
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/prometheus-pvc         storageclass.storage.k8s.io "trident-csi-retain" not found
-2m37s       Warning   ProvisioningFailed   persistentvolumeclaim/tempo-pvc              storageclass.storage.k8s.io "trident-csi-retain" not found
-2m12s       Warning   FailedGetScale       horizontalpodautoscaler/kiali                deployments/scale.apps "kiali" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali -A
-NAMESPACE         NAME               AGE
-dev-epay-common   kiali              4m47s
-kiali             kiali-monitoring   97d
-[osuser@bastion ~]$ oc get kiali kiali -n $ISTIO_NS -o jsonpath='{.status.conditions}{"\n"}' 2>/dev/null \
->   || oc get kiali -n dev-istio-system -o wide
-No resources found in dev-istio-system namespace.
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali -A
-NAMESPACE         NAME               AGE
-dev-epay-common   kiali              5m18s
-kiali             kiali-monitoring   97d
-[osuser@bastion ~]$ oc get kiali kiali -n $ISTIO_NS -o jsonpath='{.status.conditions}{"\n"}' 2>/dev/null \
->   || oc get kiali -n $ISTIO_NS -o wide^C
-[osuser@bastion ~]$ oc get kiali kiali -n dev-istio-system -o jsonpath='{.status.conditions}{"\n"}' 2>/dev/null \
->   || oc get kiali -n dev-istio-system -o wide
-No resources found in dev-istio-system namespace.
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali kiali -n istio-system -o jsonpath='{.status.conditions}{"\n"}' 2>/dev/null   || oc get kiali -n istio-system -o wide
-No resources found in istio-system namespace.
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali kiali -n $ISTIO_NS -o jsonpath='{.spec.external_services.tracing.query_timeout}{"\n"}'
-Error from server (NotFound): namespaces "-o" not found
-Error from server (NotFound): namespaces "-o" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali kiali -n dev-istio-system -o jsonpath='{.spec.external_services.tracing.query_timeout}{"\n"}'
-Error from server (NotFound): kialis.kiali.io "kiali" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get kiali kiali -n istio-system -o jsonpath='{.spec.external_services.tracing.query_timeout}{"\n"}'
-Error from server (NotFound): kialis.kiali.io "kiali" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
->   -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}'
-managed-by=Helm release=epay-common
-[osuser@bastion ~]$ # expect: managed-by=Helm release=epay-common
-[osuser@bastion ~]$
-[osuser@bastion ~]$ helm get manifest epay-common -n dev-epay-common | grep -A2 query_timeout
-WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/osuser/.kube/config
-      query_timeout: 30
-      url:
-      use_grpc: false
-[osuser@bastion ~]$
-[osuser@bastion ~]$
-[osuser@bastion ~]$ echo "== Helm ==";        helm status epay-common -n dev-epay-common | grep -E 'STATUS|REVISION'
-== Helm ==
-WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/osuser/.kube/config
-STATUS: deployed
-REVISION: 79
-[osuser@bastion ~]$ echo "== Bad pods ==";    oc get pods -n dev-epay-common --no-headers | grep -Ev '([0-9]+)/\1 .*Running|Completed' || echo "  none"
-== Bad pods ==
-grafana-647846d5f4-l4q62   0/1   Pending   0     12m
-[osuser@bastion ~]$ echo "== Warn events =="; oc get events -n dev-epay-common --field-selector type=Warning --sort-by=.lastTimestamp | tail -5 || echo "  none"
-== Warn events ==
-96s         Warning   ProvisioningFailed   persistentvolumeclaim/environment-logs-pvc   storageclass.storage.k8s.io "trident-csi-retain" not found
-96s         Warning   ProvisioningFailed   persistentvolumeclaim/grafana-pvc            storageclass.storage.k8s.io "trident-csi-retain" not found
-96s         Warning   ProvisioningFailed   persistentvolumeclaim/kafka-pvc              storageclass.storage.k8s.io "trident-csi-retain" not found
-96s         Warning   ProvisioningFailed   persistentvolumeclaim/prometheus-pvc         storageclass.storage.k8s.io "trident-csi-retain" not found
-96s         Warning   ProvisioningFailed   persistentvolumeclaim/tempo-pvc              storageclass.storage.k8s.io "trident-csi-retain" not found
-[osuser@bastion ~]$ echo "== Kiali ==";       oc get kiali kiali -n $ISTIO_NS -o jsonpath='  timeout={.spec.external_services.tracing.query_timeout}{"\n"}'
-== Kiali ==
-Error from server (NotFound): namespaces "-o" not found
-Error from server (NotFound): namespaces "-o" not found
-[osuser@bastion ~]$
-[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get kafkanodepool controller -n dev-kafka -o yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+    meta.helm.sh/release-name: epay-common
+    meta.helm.sh/release-namespace: dev-epay-common
+  creationTimestamp: "2025-11-11T09:58:35Z"
+  generation: 2
+  labels:
+    app.kubernetes.io/component: kafka-controller
+    app.kubernetes.io/instance: epay-common
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: controller
+    environment: dev
+    strimzi.io/cluster: dev-kafka-cluster
+  name: controller
+  namespace: dev-kafka
+  resourceVersion: "496872266"
+  uid: 0d449a5b-2388-4876-9352-4097f18b6ad2
+spec:
+  replicas: 3
+  roles:
+  - controller
+  storage:
+    type: jbod
+    volumes:
+    - deleteClaim: false
+      id: 0
+      kraftMetadata: shared
+      size: 100Gi
+      type: persistent-claim
+  template:
+    kafkaContainer: {}
+    pod:
+      terminationGracePeriodSeconds: 120
+status:
+  clusterId: 3aEx1xmUSTWs8xSplBnYtA
+  conditions: []
+  labelSelector: strimzi.io/cluster=dev-kafka-cluster,strimzi.io/name=dev-kafka-cluster-kafka,strimzi.io/kind=Kafka,strimzi.io/pool-name=controller
+  nodeIds:
+  - 3
+  - 4
+  - 5
+  observedGeneration: 2
+  replicas: 3
+  roles:
+  - controller
