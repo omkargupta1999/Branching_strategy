@@ -1,130 +1,99 @@
-Good approach — inspect fully before deleting. Here's the complete pre-deletion investigation, split into what to pull from the cluster, what your chart will render, and how to compare them.
-
-## Step 1 — Capture the live ClusterRoleBinding from the cluster
-
-Dump the full object and a clean copy (stripped of runtime noise) for comparison:
-
-```bash
-# Full live object, as-is
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml > /tmp/crb-live-full.yaml
-
-# Clean copy (drop server-managed fields) for a fair diff against chart output
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml \
-  | grep -vE '^\s*(uid|resourceVersion|creationTimestamp|generation|managedFields:|time:|manager:|operation:|apiVersion: .*/v1$)' \
-  > /tmp/crb-live-raw.yaml
-
-cat /tmp/crb-live-full.yaml
-```
-
-The three fields that matter most for the comparison — who it binds, to what role, and who owns it:
-
-```bash
-echo "== roleRef (the ClusterRole it grants) =="
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.roleRef.kind}/{.roleRef.name}{"\n"}'
-
-echo "== subjects (who receives the permission) =="
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{range .subjects[*]}{.kind}{" "}{.namespace}{"/"}{.name}{"\n"}{end}'
-
-echo "== ownership metadata (is anything managing it?) =="
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
-  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{"\n"}release={.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}ownerRefs={.metadata.ownerReferences}{"\n"}'
-```
-
-## Step 2 — Render what your Helm chart *would* create
-
-Render just this one template so you compare the same object:
-
-```bash
-cd /tmp/dep/deployment-main/dev/charts/epay_common
-
-helm template epay-common . \
-  --namespace dev-epay-common \
-  --show-only templates/kiali/kiali-clusterrolebinding.yaml \
-  > /tmp/crb-chart.yaml
-
-cat /tmp/crb-chart.yaml
-```
-
-If your CI passes an env values file, add `-f <that file>` so the render matches production reality. If `helm template` isn't in the runner, substitute `helm secrets template` or whatever your pipeline uses — the point is to render with the *same* values the deploy job uses.
-
-## Step 3 — Compare live vs chart, field by field
-
-```bash
-echo "===== roleRef ====="
-diff <(grep -A3 '^roleRef:' /tmp/crb-live-raw.yaml) \
-     <(grep -A3 '^roleRef:' /tmp/crb-chart.yaml)
-
-echo "===== subjects ====="
-diff <(sed -n '/^subjects:/,/^roleRef:/p' /tmp/crb-live-raw.yaml) \
-     <(sed -n '/^subjects:/,/^roleRef:/p' /tmp/crb-chart.yaml)
-
-echo "===== full side-by-side ====="
-diff -y --suppress-common-lines /tmp/crb-live-raw.yaml /tmp/crb-chart.yaml
-```
-
-**What you're looking for.** The only *acceptable* differences are the ownership metadata (labels/annotations Helm will add). If `roleRef.name`, the subject `ServiceAccount` name, or its `namespace` differ between live and chart, **do not delete yet** — the chart would recreate a binding with different semantics, and deletion followed by a mismatched recreate could leave Kiali without the monitoring-view permission it currently has.
-
-Note from the chart I already reviewed: the `monitoring` CRB template renders **no** `labels`/`annotations` blocks (unlike the viewer/oauth siblings), so a chart-created copy will still lack the Helm ownership metadata unless you harden the template first (Step 6). That's worth fixing in the same change.
-
-## Step 4 — Understand the blast radius before deleting
-
-`cluster-monitoring-view` is the OpenShift built-in ClusterRole that grants read access to the cluster monitoring stack (Prometheus/Thanos). This binding is what lets Kiali pull metrics to draw its service-mesh graphs and health.
-
-Check what actually depends on it:
-
-```bash
-# Which ServiceAccount holds this grant, and does Kiali reference it?
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.subjects}' ; echo
-
-# Is the ServiceAccount real and in use by the Kiali pod?
-oc get sa dev-kiali-service-account -n dev-istio-system 2>/dev/null || echo "SA not in that ns — check subjects output above"
-oc get pods -n dev-istio-system -l app.kubernetes.io/name=kiali -o name
-
-# Is a Kiali OPERATOR managing this? (decisive — see below)
-oc get kiali -A 2>/dev/null
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.metadata.ownerReferences}' ; echo
-```
-
-**Impact of deleting it:**
-
-During the window between `oc delete` and the Helm recreate, the Kiali ServiceAccount loses cluster-monitoring-view. In practice Kiali's **metrics/graph panels stop returning data** and may log authz errors; the Kiali pod itself keeps running (this is RBAC, not the deployment). Once Helm recreates the binding, access is restored — RBAC changes take effect near-immediately, no pod restart needed. So the impact is a brief loss of Kiali monitoring visibility, **not** an outage of any payment service. Nothing in the transaction path depends on this binding.
-
-**The one thing that changes the plan:** if `oc get kiali -A` returns a CR **and** the `ownerReferences` on the CRB point to it, then the **Kiali operator owns this object**. In that case:
-- The operator will likely **recreate it unlabeled** the moment you delete it, immediately reintroducing the same Helm conflict — deletion won't fix anything.
-- You'd have two controllers fighting for one cluster-scoped resource.
-
-If that's the case, don't sync it into Helm at all — instead remove the CRB from the chart and let the operator own it, or scope the operator so Helm can own it. Decide on a single owner.
-
-## Step 5 — Safe deletion + sync sequence (operator is *not* the owner)
-
-Only if Step 4 confirms no operator ownership and Step 3 shows semantics match:
-
-```bash
-# Backup already saved at /tmp/crb-live-full.yaml — keep it
-# Delete the orphan
-oc delete clusterrolebinding dev-kiali-cluster-monitoring-view
-
-# Re-run the deploy pipeline job — Helm recreates it, now release-owned
-# Verify adoption:
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
-  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}'
-```
-
-If you'd rather avoid even the brief permission gap, use the **adopt-in-place** method from before (`oc annotate` + `oc label`) instead of delete — same end state, zero gap. Deletion is only necessary if you specifically want a from-scratch recreate.
-
-## Step 6 — Harden the template so this never recurs
-
-Add ownership-friendly metadata to `templates/kiali/kiali-clusterrolebinding.yaml` so future fresh clusters get labelled bindings and adoption is always clean:
-
-```yaml
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml > /tmp/crb-live-full.yaml
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml \
+>   | grep -vE '^\s*(uid|resourceVersion|creationTimestamp|generation|managedFields:|time:|manager:|operation:|apiVersion: .*/v1$)' \
+>   > /tmp/crb-live-raw.yaml
+[osuser@bastion ~]$
+[osuser@bastion ~]$ cat /tmp/crb-live-full.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
-  name: {{ .Values.monitoring.kiali.rbac.clusterRoleBindings.monitoring.name }}
-  labels:
-    {{- toYaml .Values.monitoring.kiali.rbac.labels | nindent 4 }}
   annotations:
-    {{- toYaml .Values.monitoring.kiali.rbac.annotations | nindent 4 }}
-```
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"rbac.authorization.k8s.io/v1","kind":"ClusterRoleBinding","metadata":{"annotations":{},"name":"dev-kiali-cluster-monitoring-view"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"ClusterRole","name":"cluster-monitoring-view"},"subjects":[{"kind":"ServiceAccount","name":"dev-kiali-service-account","namespace":"dev-istio-system"}]}
+  creationTimestamp: "2026-04-10T09:34:49Z"
+  name: dev-kiali-cluster-monitoring-view
+  resourceVersion: "696111986"
+  uid: 7e592ba7-a9ee-449e-bc38-66e3575f4c3a
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+- kind: ServiceAccount
+  name: dev-kiali-service-account
+  namespace: dev-istio-system
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ echo "== roleRef (the ClusterRole it grants) =="
+== roleRef (the ClusterRole it grants) ==
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.roleRef.kind}/{.roleRef.name}{"\n"}'
+ClusterRole/cluster-monitoring-view
+[osuser@bastion ~]$ echo "== subjects (who receives the permission) =="
+== subjects (who receives the permission) ==
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{range .subjects[*]}{.kind}{" "}{.namespace}{"/"}{.name}{"\n"}{end}'
+ServiceAccount dev-istio-system/dev-kiali-service-account
+[osuser@bastion ~]$
+[osuser@bastion ~]$ echo "== ownership metadata (is anything managing it?) =="
+== ownership metadata (is anything managing it?) ==
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
+>   -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{"\n"}release={.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}ownerRefs={.metadata.ownerReferences}{"\n"}'
+managed-by=
+release=
+ownerRefs=
+[osuser@bastion ~]$ echo "===== roleRef ====="
+===== roleRef =====
+[osuser@bastion ~]$ diff <(grep -A3 '^roleRef:' /tmp/crb-live-raw.yaml) \
+>      <(grep -A3 '^roleRef:' /tmp/crb-chart.yaml)^C
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ # Which ServiceAccount holds this grant, and does Kiali reference it?
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.subjects}' ; echo
+[{"kind":"ServiceAccount","name":"dev-kiali-service-account","namespace":"dev-istio-system"}]
+[osuser@bastion ~]$ oc get sa dev-kiali-service-account -n dev-istio-system 2>/dev/null || echo "SA not in that ns — check subjects output above"
+SA not in that ns — check subjects output above
+[osuser@bastion ~]$ oc get pods -n dev-istio-system -l app.kubernetes.io/name=kiali -o name
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ # Is a Kiali OPERATOR managing this? (decisive — see below)
+[osuser@bastion ~]$ oc get kiali -A 2>/dev/null
+NAMESPACE   NAME               AGE
+kiali       kiali-monitoring   97d
+[osuser@bastion ~]$ oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.metadata.ownerReferences}' ; echo
 
-This mirrors what the `viewer` and `oauth` templates already do, so the three bindings stay consistent.
-
-Run Steps 1–4 first and paste the diff and the `oc get kiali -A` / `ownerReferences` output back here — that determines whether you go the delete route or must hand ownership to the operator.
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ cat /tmp/crb-live-full.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"rbac.authorization.k8s.io/v1","kind":"ClusterRoleBinding","metadata":{"annotations":{},"name":"dev-kiali-cluster-monitoring-view"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"ClusterRole","name":"cluster-monitoring-view"},"subjects":[{"kind":"ServiceAccount","name":"dev-kiali-service-account","namespace":"dev-istio-system"}]}
+  creationTimestamp: "2026-04-10T09:34:49Z"
+  name: dev-kiali-cluster-monitoring-view
+  resourceVersion: "696111986"
+  uid: 7e592ba7-a9ee-449e-bc38-66e3575f4c3a
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+- kind: ServiceAccount
+  name: dev-kiali-service-account
+  namespace: dev-istio-system
+[osuser@bastion ~]$ cat /tmp/crb-live-raw.yaml
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"rbac.authorization.k8s.io/v1","kind":"ClusterRoleBinding","metadata":{"annotations":{},"name":"dev-kiali-cluster-monitoring-view"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"ClusterRole","name":"cluster-monitoring-view"},"subjects":[{"kind":"ServiceAccount","name":"dev-kiali-service-account","namespace":"dev-istio-system"}]}
+  name: dev-kiali-cluster-monitoring-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+- kind: ServiceAccount
+  name: dev-kiali-service-account
+  namespace: dev-istio-system
