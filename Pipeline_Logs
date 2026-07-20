@@ -1,179 +1,109 @@
-[osuser@bastion ~]$ # 1. Does the operator's CR request cluster-wide access (=> it will manage a monitoring-view CRB)?
-[osuser@bastion ~]$ oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.cluster_wide_access}{"\n"}'
+This output settles it. Let me walk through what it tells us.
 
-[osuser@bastion ~]$ oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.accessible_namespaces}{"\n"}'
+## What the output confirms
 
-[osuser@bastion ~]$ oc get clusterrolebinding -o json \
->   | jq -r '.items[] | select(.roleRef.name=="cluster-monitoring-view") | .metadata.name + "  ownerRefs=" + ((.metadata.ownerReferences // []) | tostring)'
-cluster-monitoring-view  ownerRefs=[]
-cluster-monitoring-view-0  ownerRefs=[]
-cluster-monitoring-view-1  ownerRefs=[]
-cluster-monitoring-view-2  ownerRefs=[]
-dev-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-dev-kafka-dev-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-dev-kiali-cluster-monitoring-view  ownerRefs=[]
-grafana-cluster-monitoring-binding  ownerRefs=[]
-int-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-int-kafka-int-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-kiali-monitoring-rbac  ownerRefs=[]
-kiali-monitoring-rbac-1  ownerRefs=[]
-prometheus-adapter-view  ownerRefs=[]
-sit-kafka-sit-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-tempo-operator-manager-rolebinding-cluster-monitoring-view  ownerRefs=[]
-thanos-ruler-monitoring  ownerRefs=[]
-uat-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-uat-kafka-uat-console-console-monitoring-clusterrolebinding  ownerRefs=[]
-uat-kiali-cluster-monitoring-view  ownerRefs=[]
+**1. The Kiali CR does *not* manage this binding.** Both `cluster_wide_access` and `accessible_namespaces` came back **empty** — the operator's CR has neither field set, so the `kiali-monitoring` operator is not reconciling a `cluster-monitoring-view` binding by that name. The bindings the operator *does* own are the separate `kiali-monitoring-rbac` / `kiali-monitoring-rbac-1` entries (that's the operator's own namespace-scoped RBAC), **not** `dev-kiali-cluster-monitoring-view`.
 
+**2. Every binding has `ownerRefs=[]`.** Nothing in the cluster has an `ownerReference` to `dev-kiali-cluster-monitoring-view`. Combined with the `last-applied-configuration` annotation you saw earlier, this proves it was created by a **manual `oc apply`** during bootstrap — it is a genuine orphan, not operator-reconciled.
 
+**3. It won't be recreated on delete.** Since no operator and no ownerRef points at it, deleting it will not trigger any controller to bring it back. The only thing that will recreate it is your Helm pipeline — which is exactly what you want.
 
+**Verdict: yes, you can safely delete (or patch) `dev-kiali-cluster-monitoring-view` and let Helm own it.** The operator will not fight you.
 
+## Which to choose — patch vs delete
 
+Both reach the identical end state. My recommendation, in your PCI-DSS environment, is **patch (adopt-in-place)** — it never removes a live RBAC grant, so there's zero permission gap and nothing for a SOC/audit to flag as a dropped-then-recreated cluster binding.
 
-
-
-
-
-
-
-
-Let me render the chart's version and compare it precisely against your live object before giving a verdict.Now I can render the exact chart output and compare.Helm can't install here (network-restricted), but the template is simple enough to render deterministically from the values I read. The `monitoring` CRB template body is:
-
-```yaml
-metadata:
-  name: {{ .Values.monitoring.kiali.rbac.clusterRoleBindings.monitoring.name }}
-subjects:
-  - kind: ServiceAccount
-    name: {{ .Values.monitoring.kiali.serviceAccount.name }}
-    namespace: {{ .Values.monitoring.kiali.serviceAccount.namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ .Values.monitoring.kiali.rbac.clusterRoleBindings.monitoring.roleName }}
-```
-
-Substituting the values gives the definitive comparison:
-
-## Live vs Chart — field comparison
-
-| Field | Live on cluster | Chart renders | Match |
-|---|---|---|---|
-| `metadata.name` | `dev-kiali-cluster-monitoring-view` | `dev-kiali-cluster-monitoring-view` | ✅ |
-| `roleRef.kind/name` | `ClusterRole/cluster-monitoring-view` | `ClusterRole/cluster-monitoring-view` | ✅ |
-| `subjects[0].kind` | `ServiceAccount` | `ServiceAccount` | ✅ |
-| `subjects[0].name` | `dev-kiali-service-account` | `dev-kiali-service-account` | ✅ |
-| `subjects[0].namespace` | `dev-istio-system` | `dev-istio-system` | ✅ |
-| `metadata.labels` | *(none)* | *(none — this template renders no labels)* | ✅ |
-| `meta.helm.sh/*` ownership | *(none)* | added by Helm at apply | ➕ Helm adds |
-
-**The grant is semantically identical.** Deleting and recreating via Helm produces a functionally identical binding — same ServiceAccount, same ClusterRole, same namespace. The only net change is that Helm gains ownership metadata. So on semantics, **yes, it's safe to sync into Helm.**
-
-## But — one blocker you must resolve first
-
-Your own output shows the deciding fact:
-
-```
-oc get kiali -A →  kiali/kiali-monitoring   (97d)
-```
-
-There **is** a Kiali operator running, and it's been managing this environment for 97 days. Now look at what your chart's values put on the *other* two bindings (viewer/oauth):
-
-```yaml
-annotations:
-  operator-sdk/primary-resource: dev-istio-system/dev-kiali
-  operator-sdk/primary-resource-type: Kiali.kiali.io
-```
-
-Those annotations are **the operator's own ownership markers**. Whoever wrote this chart copied the operator-generated RBAC objects into Helm templates verbatim. This is the real root cause of your recurring conflict: **two controllers (the Kiali operator and Helm) both believe they own these cluster-scoped bindings.**
-
-The current live `dev-kiali-cluster-monitoring-view` has:
-- `kubectl.kubernetes.io/last-applied-configuration` → it was created by a raw `oc apply`/`kubectl apply`, **not** by the operator (no `ownerReferences`, no operator-sdk annotations on the live object).
-
-So the live one is an orphan from a manual bootstrap. But the operator (`kiali-monitoring` CR) may *also* try to reconcile a monitoring-view binding depending on its config. You need to confirm the operator isn't going to recreate/fight it. Run these two before deleting:
-
-```bash
-# 1. Does the operator's CR request cluster-wide access (=> it will manage a monitoring-view CRB)?
-oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.cluster_wide_access}{"\n"}'
-oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.accessible_namespaces}{"\n"}'
-
-# 2. Does the operator already own any monitoring-view-style CRB under a different name?
-oc get clusterrolebinding -o json \
-  | jq -r '.items[] | select(.roleRef.name=="cluster-monitoring-view") | .metadata.name + "  ownerRefs=" + ((.metadata.ownerReferences // []) | tostring)'
-```
-
-Interpretation:
-- If `cluster_wide_access: true` on the CR **and** the operator manages its own monitoring binding under a different name — then the live `dev-kiali-cluster-monitoring-view` is a redundant manual leftover, and it's clean to delete + let Helm own it.
-- If the operator expects *this exact name*, deleting it will cause the operator to recreate it (unlabeled) within seconds, and your Helm conflict returns immediately. In that case, don't put it in Helm — remove the CRB from the chart and let the operator own it.
-
-Note your chart's `values.yaml` has `kiali.deployment.cluster_wide_access: true`, which strongly suggests the operator does manage cluster-wide RBAC. That's the pattern that makes me want you to confirm #1/#2 before deleting.
-
-## Recommended path (assuming #1/#2 confirm the live CRB is a manual orphan, not operator-reconciled)
-
-Since semantics match, prefer **adopt-in-place** over delete — it eliminates even the brief RBAC gap and achieves the identical end state (Helm ownership):
-
+**Patch (recommended):**
 ```bash
 oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
   meta.helm.sh/release-name=epay-common \
   meta.helm.sh/release-namespace=dev-epay-common --overwrite
+
 oc label clusterrolebinding dev-kiali-cluster-monitoring-view \
   app.kubernetes.io/managed-by=Helm --overwrite
+
+# verify the stamp took
+oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
+  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" | release="}{.metadata.annotations.meta\.helm\.sh/release-name}{" | ns="}{.metadata.annotations.meta\.helm\.sh/release-namespace}{"\n"}'
 ```
+Expected: `managed-by=Helm | release=epay-common | ns=dev-epay-common`
 
-Then run the deploy pipeline. Helm adopts it, upgrade proceeds. If you specifically want the delete-and-recreate route instead, it's also fine given the semantics match — sequence below.
+Then run the deploy pipeline. Helm sees a resource it already owns, upgrade proceeds, no conflict.
 
-## Delete-and-recreate sequence (if you prefer a clean recreate)
+**Delete (only if you specifically want a clean recreate):**
+```bash
+oc delete clusterrolebinding dev-kiali-cluster-monitoring-view
+oc get clusterrolebinding dev-kiali-cluster-monitoring-view -w   # confirm it stays absent ~15s, Ctrl-C
+# run pipeline, then verify ownership as above
+```
+Brief impact: Kiali's monitoring/graph panels lose Prometheus data for the seconds between delete and pipeline recreate. No payment service affected.
+
+## One important thing before you run the pipeline
+
+Your grep earlier showed the error stops at the **first** conflicting object, but this same orphan-adoption problem almost certainly affects the sibling bindings too. The chart renders three Kiali CRBs plus two Tempo CRBs, all cluster-scoped. Check them **now** so the pipeline doesn't just fail again on the next one:
 
 ```bash
-# backup already exists: /tmp/crb-live-full.yaml  ✅
-oc delete clusterrolebinding dev-kiali-cluster-monitoring-view
-# immediately watch it does NOT get recreated by the operator before your pipeline runs:
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -w   # Ctrl-C after ~15s if absent
-# run the deploy job, then verify Helm ownership:
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
-  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}'
+for crb in dev-kiali-cluster-monitoring-view dev-kiali-dev-istio-system-oauth dev-kiali; do
+  echo "== $crb =="
+  oc get clusterrolebinding "$crb" \
+    -o jsonpath='exists=yes managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}' 2>/dev/null \
+    || echo "absent (Helm will create fresh — no conflict)"
+done
+# Tempo cluster-scoped bindings from the same chart:
+oc get clusterrolebinding | grep -Ei 'tempo' 
 ```
 
-**Impact during the gap:** Kiali's ServiceAccount loses `cluster-monitoring-view` for the seconds between delete and recreate. Effect is limited to Kiali's metrics/graph panels temporarily returning no Prometheus data. The Kiali pod keeps running; no payment/transaction service is affected — this binding is purely mesh-observability. RBAC restores instantly on recreate, no restart needed.
+For any that come back **existing but without `managed-by=Helm`**, apply the same patch (adjust `meta.helm.sh/release-namespace` if that object's release namespace differs). Any that come back **absent** are fine — Helm creates them cleanly.
+
+Also note `uat-kiali-cluster-monitoring-view` in your list — when you replicate this to UAT you'll hit the identical issue there, so plan the same patch for that release.
+
+## Fix the chart so this never recurs
+
+Two changes to make in the repo so fresh clusters and future upgrades stay clean:
+
+The `monitoring` CRB template (`templates/kiali/kiali-clusterrolebinding.yaml`) renders no labels/annotations, unlike its viewer/oauth siblings. Align it:
+```yaml
+metadata:
+  name: {{ .Values.monitoring.kiali.rbac.clusterRoleBindings.monitoring.name }}
+  labels:
+    {{- toYaml .Values.monitoring.kiali.rbac.labels | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.monitoring.kiali.rbac.annotations | nindent 4 }}
+```
+Caveat: those values include `operator-sdk/primary-resource` annotations copied from the operator. They're cosmetic here (the operator doesn't own this object, per your output), but if you'd rather not imply operator ownership on a Helm-managed object, drop those two annotation lines from the `rbac.annotations` block for this binding.
 
 ## Rollback plan
 
-You already captured the full object, so rollback is a one-liner. Keep `/tmp/crb-live-full.yaml`; also stage a clean re-appliable copy:
-
+Your full backup is already at `/tmp/crb-live-full.yaml`. Stage a clean re-appliable copy first:
 ```bash
-# Clean apply-ready backup (strip server fields), do this NOW before any change
 oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml \
   | grep -vE '^\s*(uid|resourceVersion|creationTimestamp|generation):' \
   > /tmp/crb-rollback.yaml
 ```
 
-Rollback scenarios:
+- **If you patched and want to revert to the orphan state:**
+  ```bash
+  oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
+    meta.helm.sh/release-name- meta.helm.sh/release-namespace-
+  oc label clusterrolebinding dev-kiali-cluster-monitoring-view app.kubernetes.io/managed-by-
+  ```
+- **If you deleted and need it back immediately:**
+  ```bash
+  oc apply -f /tmp/crb-rollback.yaml
+  ```
+- **If the Helm upgrade partially applied then failed:**
+  ```bash
+  helm history epay-common -n dev-epay-common
+  helm rollback epay-common <LAST_GOOD_REVISION> -n dev-epay-common
+  ```
 
-1. **Pipeline fails / Kiali panels lose data after the change** — recreate the exact original binding:
-   ```bash
-   oc apply -f /tmp/crb-rollback.yaml
-   oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o jsonpath='{.roleRef.name}{"\n"}'
-   ```
-
-2. **If you used adopt-in-place and want to undo the ownership stamp** (revert to orphan state):
-   ```bash
-   oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
-     meta.helm.sh/release-name- meta.helm.sh/release-namespace-
-   oc label clusterrolebinding dev-kiali-cluster-monitoring-view \
-     app.kubernetes.io/managed-by-
-   ```
-
-3. **Full Helm release rollback** (if the upgrade partially applied then failed):
-   ```bash
-   helm history epay-common -n dev-epay-common
-   helm rollback epay-common <LAST_GOOD_REVISION> -n dev-epay-common
-   ```
-
-Verification after any rollback — confirm Kiali can read monitoring again:
+Post-rollback sanity check that Kiali can still read monitoring:
 ```bash
-oc auth can-i get pods --as=system:serviceaccount:dev-istio-system:dev-kiali-service-account -n openshift-monitoring
+oc auth can-i get pods \
+  --as=system:serviceaccount:dev-istio-system:dev-kiali-service-account \
+  -n openshift-monitoring
 # expect: yes
 ```
 
-## Bottom line
-
-Semantically the live binding and the chart binding are identical, so syncing into Helm is safe **provided** the two operator checks (`cluster_wide_access` and whether the operator reconciles this exact CRB name) confirm the operator won't immediately recreate it. Run those two `oc get kiali ...` commands and paste the output — that's the last thing standing between you and a clean, permanent fix. Given the operator has been live 97 days and your values carry `operator-sdk/primary-resource` annotations, I'd want that confirmation before you delete anything.
+Bottom line: the operator is not in play, the binding is a manual orphan, semantics match the chart exactly — **patch it** (cleanest), sweep the sibling CRBs for the same condition, then run the pipeline. Harden the template so UAT and prod replication don't repeat this.
