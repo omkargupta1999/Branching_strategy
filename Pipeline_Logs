@@ -1,109 +1,77 @@
-This output settles it. Let me walk through what it tells us.
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_54 zFOGPH9mk, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
+Running on runner-zfogph9mk-project-2838-concurrent-0 via PE3DSOPGrunners3...
+Getting source from Git repository
+00:08
+Gitaly correlation ID: 01KXZ7Z865K4FXKC4M3XSSTN3T
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out 6dda8c2c as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:31
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_common | ENV=dev | VERSION=
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=epay-common
+SERVICE_NAME=epay_common
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 192 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_common/values.yaml to origin/main
+ℹ️  No top-level tag: key in values.yaml for epay_common — skipping tag check (common/shared chart)
+Error: UPGRADE FAILED: failed to create resource: Kiali.kiali.io "kiali" is invalid: spec.external_services.tracing.query_timeout: Invalid value: "string": spec.external_services.tracing.query_timeout in body must be of type integer: "string"
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
 
-## What the output confirms
 
-**1. The Kiali CR does *not* manage this binding.** Both `cluster_wide_access` and `accessible_namespaces` came back **empty** — the operator's CR has neither field set, so the `kiali-monitoring` operator is not reconciling a `cluster-monitoring-view` binding by that name. The bindings the operator *does* own are the separate `kiali-monitoring-rbac` / `kiali-monitoring-rbac-1` entries (that's the operator's own namespace-scoped RBAC), **not** `dev-kiali-cluster-monitoring-view`.
 
-**2. Every binding has `ownerRefs=[]`.** Nothing in the cluster has an `ownerReference` to `dev-kiali-cluster-monitoring-view`. Combined with the `last-applied-configuration` annotation you saw earlier, this proves it was created by a **manual `oc apply`** during bootstrap — it is a genuine orphan, not operator-reconciled.
 
-**3. It won't be recreated on delete.** Since no operator and no ownerRef points at it, deleting it will not trigger any controller to bring it back. The only thing that will recreate it is your Helm pipeline — which is exactly what you want.
 
-**Verdict: yes, you can safely delete (or patch) `dev-kiali-cluster-monitoring-view` and let Helm own it.** The operator will not fight you.
 
-## Which to choose — patch vs delete
 
-Both reach the identical end state. My recommendation, in your PCI-DSS environment, is **patch (adopt-in-place)** — it never removes a live RBAC grant, so there's zero permission gap and nothing for a SOC/audit to flag as a dropped-then-recreated cluster binding.
 
-**Patch (recommended):**
-```bash
-oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
-  meta.helm.sh/release-name=epay-common \
-  meta.helm.sh/release-namespace=dev-epay-common --overwrite
 
-oc label clusterrolebinding dev-kiali-cluster-monitoring-view \
-  app.kubernetes.io/managed-by=Helm --overwrite
 
-# verify the stamp took
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
-  -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" | release="}{.metadata.annotations.meta\.helm\.sh/release-name}{" | ns="}{.metadata.annotations.meta\.helm\.sh/release-namespace}{"\n"}'
-```
-Expected: `managed-by=Helm | release=epay-common | ns=dev-epay-common`
 
-Then run the deploy pipeline. Helm sees a resource it already owns, upgrade proceeds, no conflict.
+Getting above error now ............Here i have done the patching ..please verify
 
-**Delete (only if you specifically want a clean recreate):**
-```bash
-oc delete clusterrolebinding dev-kiali-cluster-monitoring-view
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -w   # confirm it stays absent ~15s, Ctrl-C
-# run pipeline, then verify ownership as above
-```
-Brief impact: Kiali's monitoring/graph panels lose Prometheus data for the seconds between delete and pipeline recreate. No payment service affected.
 
-## One important thing before you run the pipeline
 
-Your grep earlier showed the error stops at the **first** conflicting object, but this same orphan-adoption problem almost certainly affects the sibling bindings too. The chart renders three Kiali CRBs plus two Tempo CRBs, all cluster-scoped. Check them **now** so the pipeline doesn't just fail again on the next one:
-
-```bash
-for crb in dev-kiali-cluster-monitoring-view dev-kiali-dev-istio-system-oauth dev-kiali; do
-  echo "== $crb =="
-  oc get clusterrolebinding "$crb" \
-    -o jsonpath='exists=yes managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" release="}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}' 2>/dev/null \
-    || echo "absent (Helm will create fresh — no conflict)"
-done
-# Tempo cluster-scoped bindings from the same chart:
-oc get clusterrolebinding | grep -Ei 'tempo' 
-```
-
-For any that come back **existing but without `managed-by=Helm`**, apply the same patch (adjust `meta.helm.sh/release-namespace` if that object's release namespace differs). Any that come back **absent** are fine — Helm creates them cleanly.
-
-Also note `uat-kiali-cluster-monitoring-view` in your list — when you replicate this to UAT you'll hit the identical issue there, so plan the same patch for that release.
-
-## Fix the chart so this never recurs
-
-Two changes to make in the repo so fresh clusters and future upgrades stay clean:
-
-The `monitoring` CRB template (`templates/kiali/kiali-clusterrolebinding.yaml`) renders no labels/annotations, unlike its viewer/oauth siblings. Align it:
-```yaml
-metadata:
-  name: {{ .Values.monitoring.kiali.rbac.clusterRoleBindings.monitoring.name }}
-  labels:
-    {{- toYaml .Values.monitoring.kiali.rbac.labels | nindent 4 }}
-  annotations:
-    {{- toYaml .Values.monitoring.kiali.rbac.annotations | nindent 4 }}
-```
-Caveat: those values include `operator-sdk/primary-resource` annotations copied from the operator. They're cosmetic here (the operator doesn't own this object, per your output), but if you'd rather not imply operator ownership on a Helm-managed object, drop those two annotation lines from the `rbac.annotations` block for this binding.
-
-## Rollback plan
-
-Your full backup is already at `/tmp/crb-live-full.yaml`. Stage a clean re-appliable copy first:
-```bash
-oc get clusterrolebinding dev-kiali-cluster-monitoring-view -o yaml \
-  | grep -vE '^\s*(uid|resourceVersion|creationTimestamp|generation):' \
-  > /tmp/crb-rollback.yaml
-```
-
-- **If you patched and want to revert to the orphan state:**
-  ```bash
-  oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
-    meta.helm.sh/release-name- meta.helm.sh/release-namespace-
-  oc label clusterrolebinding dev-kiali-cluster-monitoring-view app.kubernetes.io/managed-by-
-  ```
-- **If you deleted and need it back immediately:**
-  ```bash
-  oc apply -f /tmp/crb-rollback.yaml
-  ```
-- **If the Helm upgrade partially applied then failed:**
-  ```bash
-  helm history epay-common -n dev-epay-common
-  helm rollback epay-common <LAST_GOOD_REVISION> -n dev-epay-common
-  ```
-
-Post-rollback sanity check that Kiali can still read monitoring:
-```bash
-oc auth can-i get pods \
-  --as=system:serviceaccount:dev-istio-system:dev-kiali-service-account \
-  -n openshift-monitoring
-# expect: yes
-```
-
-Bottom line: the operator is not in play, the binding is a manual orphan, semantics match the chart exactly — **patch it** (cleanest), sweep the sibling CRBs for the same condition, then run the pipeline. Harden the template so UAT and prod replication don't repeat this.
+[root@bastion ~]# oc annotate clusterrolebinding dev-kiali-cluster-monitoring-view \
+>   meta.helm.sh/release-name=epay-common \
+>   meta.helm.sh/release-namespace=dev-epay-common --overwrite
+clusterrolebinding.rbac.authorization.k8s.io/dev-kiali-cluster-monitoring-view annotated
+[root@bastion ~]# oc label clusterrolebinding dev-kiali-cluster-monitoring-view \
+>   app.kubernetes.io/managed-by=Helm --overwrite
+clusterrolebinding.rbac.authorization.k8s.io/dev-kiali-cluster-monitoring-view labeled
+[root@bastion ~]# oc get clusterrolebinding dev-kiali-cluster-monitoring-view \
+>   -o jsonpath='managed-by={.metadata.labels.app\.kubernetes\.io/managed-by}{" | release="}{.metadata.annotations.meta\.helm\.sh/release-name}{" | ns="}{.metadata.annotations.meta\.helm\.sh/release-namespace}{"\n"}'
+managed-by=Helm | release=epay-common | ns=dev-epay-common
