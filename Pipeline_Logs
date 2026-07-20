@@ -1,70 +1,94 @@
-.fortify_scan:
-  image: artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
-  stage: fortify_scan
-  tags:
-    - common_runner
-  before_script:
-    - |
-      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
-        -keystore /home/default/custom-truststore.jks -storepass changeit -noprompt
-      export MAVEN_OPTS="${MAVEN_OPTS} \
-        -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
-        -Djavax.net.ssl.trustStorePassword=changeit"
+# ci/image/image.build.yml  |  Stage: image-build
+# Podman build — LOCAL ONLY. No push to registry until scan + sign pass.
+# Image pushed in image.push.yml after image-scan and image-attest stages complete.
+
+include:
+  - local: ci/image/image.podman.setup.yml
+
+.image_build:
+  extends: .setup_jfrog_podman
+  stage: image-build
+  allow_failure: false
   script:
-    - sourceanalyzer -clean -b $CI_PROJECT_PATH_SLUG
-    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG
-        mvn $MAVEN_CLI_OPTS clean compile -U -DskipTests=true
-        -Dfortify.sca.exclude=target
-    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG -scan -Xmx${FORTIFY_MEM} -f ${CI_PROJECT_PATH_SLUG}.fpr
-    - BIRTReportGenerator -template "Developer Workbook"
-        -source ${CI_PROJECT_PATH_SLUG}.fpr
-        -format pdf -output ${CI_PROJECT_PATH_SLUG}_report.pdf
-    - FPRUtility -information -search
-        -query "[fortify priority order]:critical OR [fortify priority order]:high"
-        -project ${CI_PROJECT_PATH_SLUG}.fpr > sca_gate.txt
-    - ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
     - |
-      if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
-        echo -e "\e[31m=========================================\e[0m"
-        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
-        echo -e "\e[31mHigh/Critical Vulnerabilities: $ISSUES\e[0m"
-        echo -e "\e[31m=========================================\e[0m"
-        exit 1
+      echo "VERSION=$VERSION"
+
+      # CHANGE: support both backend + frontend
+      if [ -d "build/libs" ]; then
+        echo "Backend build detected"
+        ls -l build/libs
+      elif [ -d "dist" ]; then
+        echo "Frontend build detected"
+        ls -l dist
+      elif [ -f "app.py" ]; then
+        echo "Python app detected"
+        ls -l app.py
+      elif [ -d "vendor" ]; then
+        echo "PHP build detected"
+        echo "Vendor packages: $(ls vendor | wc -l)"
       else
-        echo -e "\e[32m=========================================\e[0m"
-        echo -e "\e[32m QUALITY GATE PASSED\e[0m"
-        echo -e "\e[32mHigh/Critical Vulnerabilities: 0\e[0m"
-        echo -e "\e[32m=========================================\e[0m"
+        echo "No build output found"
+        exit 1
       fi
+
+      TAG="$VERSION"
+      echo "Generated Tag.. ${TAG}"
+      COMPUTED_IMAGE_TAG="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TAG"
+      echo "Image: $COMPUTED_IMAGE_TAG"
+      echo "TAG=${TAG}" >> image.env
+      echo "VERSION=$VERSION" >> image.env
+      echo "COMPUTED_IMAGE_TAG=$COMPUTED_IMAGE_TAG" >> image.env
+      echo "IMAGE_NAME=$IMAGE_NAME" >> image.env
+      echo "BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV" >> image.env
+
+      podman build \
+        -t "$COMPUTED_IMAGE_TAG" \
+        -f Dockerfile \
+        --build-arg ENV=$ENV \
+        --build-arg VERSION=$TAG \
+        --build-arg BASE_IMAGE_DEV_ENV=$BASE_IMAGE_DEV_ENV \
+        --tls-verify=false
+      TAR_NAME="$CI_PROJECT_NAME.tar"
+      podman save -o "${TAR_NAME}" "${COMPUTED_IMAGE_TAG}"
+      echo "Image built and saved to $TAR_NAME"
+      echo "TAR_NAME=$TAR_NAME" >> image.env
+    # - echo "IMAGE_FULL=$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION" >> image.env
+    # - echo " Build complete — NOT pushed yet. Awaiting scan + sign."
   artifacts:
     paths:
-      - ${CI_PROJECT_PATH_SLUG}_report.pdf
-      - ${CI_PROJECT_PATH_SLUG}_report.xml
-      - ${CI_PROJECT_PATH_SLUG}.fpr
+      - "*.tar"
+    reports:
+      dotenv: image.env
     expire_in: 1 day
-    when: always
-  allow_failure: true
 
-.fortifytoGitlab:
-    stage: fortify_scan
-    tags:
-      - common_runner
-    needs:
-      - fortify_scan  
-
-    before_script:
-      - git config --global http.sslVerify false
-    image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
-    script:
-      - echo ${CLONE_TOKEN}
-      - git clone https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
-      - ls -ltrh
-      - python3 utility/script/fortify_to_gitlab.py ${CI_PROJECT_PATH_SLUG}.fpr
-    artifacts:
-      reports:
-        sast: gl-sast-report.json
-      paths:
-        - gl-sast-report.json
-        - ${CI_PROJECT_PATH_SLUG}.fpr
-
- 
+image:build:
+  extends: .image_build
+  # ## Added below rule so that image build stage should stop on direct push to feature and bugfix
+  rules:
+    # Any MR targeting a feature branch — no image is built
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/'
+      when: never
+    # Skip building an image for direct pushes to feature and bugfix branches
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(feature|bugfix|hotfix)(\/.*)*$/'
+      when: never
+    # EXCEPTION FIRST: hotfix/* → main MR still builds (needs the pre-prod smoke
+    # image before merge). This rule is placed BEFORE the release/main block so
+    # hotfix matches here and never reaches the block below.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" &&
+            $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\/.*$/'
+      when: on_success
+    # MR into release/* or main → run ONLY up to sast; the candidate/prod image
+    # is built on the POST-MERGE push, not on the MR. (hotfix already allowed above)
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|release)(\/.*)*$/'
+      when: never
+    # MR into develop / sit-integration
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(develop|sit-integration)$/'
+      when: on_success
+    # Branch pushes (feature/* already excluded above)
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix)(\/.*)*$/'
+      when: on_success
+    - when: never
