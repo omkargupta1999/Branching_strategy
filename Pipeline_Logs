@@ -1,3 +1,42 @@
+[osuser@bastion ~]$ # 1. Does the operator's CR request cluster-wide access (=> it will manage a monitoring-view CRB)?
+[osuser@bastion ~]$ oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.cluster_wide_access}{"\n"}'
+
+[osuser@bastion ~]$ oc get kiali kiali-monitoring -n kiali -o jsonpath='{.spec.deployment.accessible_namespaces}{"\n"}'
+
+[osuser@bastion ~]$ oc get clusterrolebinding -o json \
+>   | jq -r '.items[] | select(.roleRef.name=="cluster-monitoring-view") | .metadata.name + "  ownerRefs=" + ((.metadata.ownerReferences // []) | tostring)'
+cluster-monitoring-view  ownerRefs=[]
+cluster-monitoring-view-0  ownerRefs=[]
+cluster-monitoring-view-1  ownerRefs=[]
+cluster-monitoring-view-2  ownerRefs=[]
+dev-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+dev-kafka-dev-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+dev-kiali-cluster-monitoring-view  ownerRefs=[]
+grafana-cluster-monitoring-binding  ownerRefs=[]
+int-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+int-kafka-int-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+kiali-monitoring-rbac  ownerRefs=[]
+kiali-monitoring-rbac-1  ownerRefs=[]
+prometheus-adapter-view  ownerRefs=[]
+sit-kafka-sit-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+tempo-operator-manager-rolebinding-cluster-monitoring-view  ownerRefs=[]
+thanos-ruler-monitoring  ownerRefs=[]
+uat-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+uat-kafka-uat-console-console-monitoring-clusterrolebinding  ownerRefs=[]
+uat-kiali-cluster-monitoring-view  ownerRefs=[]
+
+
+
+
+
+
+
+
+
+
+
+
+
 Let me render the chart's version and compare it precisely against your live object before giving a verdict.Now I can render the exact chart output and compare.Helm can't install here (network-restricted), but the template is simple enough to render deterministically from the values I read. The `monitoring` CRB template body is:
 
 ```yaml
