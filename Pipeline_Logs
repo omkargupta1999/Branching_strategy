@@ -92,3 +92,92 @@ image:build:
     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix)(\/.*)*$/'
       when: on_success
     - when: never
+
+
+
+
+
+
+
+
+
+
+
+
+==============================================================================
+
+
+
+
+
+
+
+
+
+# ci/image/image.push.yml  |  Stage: image-push
+# ──────────────────────────────────────────────────────────────────────────────
+# Pushes the image built in image-build to JFrog Artifactory.
+#
+# This job carries its OWN rules — it is deliberately NOT gated by java.yml's
+# shared .rules filter (that override stays commented out in the orchestrator).
+# Reason: image-push is narrower than build/test/sast. Work targeting a feature
+# branch is never published to the registry.
+#
+# ── Where image-push runs ─────────────────────────────────────────────────────
+#   MR  → develop | sit-integration | release/* | main   : runs
+#   MR  → feature/*                                      : NEVER (any source)
+#   push  develop | sit-integration | release/* | main   : runs
+#   push  feature/* | bugfix/* | hotfix/*                : NEVER
+# ──────────────────────────────────────────────────────────────────────────────
+
+include:
+  - local: ci/image/image.podman.setup.yml
+
+.image_push:
+  stage: image-push
+  extends: .setup_jfrog_podman
+  allow_failure: false
+  script:
+    - |
+      IMAGE_REF="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$VERSION"
+      echo "Loading TAR..."
+      podman load -i "$TAR_NAME"
+      echo "Pushing: $IMAGE_REF"
+      podman push "$IMAGE_REF" --tls-verify=false
+      echo "PUSHED_IMAGE=$IMAGE_REF" >> push.env
+      echo "✅ Pushed: $IMAGE_REF"
+  artifacts:
+    reports:
+      dotenv: push.env
+    expire_in: 1 week
+  # needs:
+  #   - job: image:sign
+  #     artifacts: false
+
+image:push:
+  extends: .image_push
+  rules:
+    # Any MR targeting a feature branch — never publish (covers feature->feature
+    # and bugfix->feature; both are 'version, build, test, sast' only).
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature\/.*$/'
+      when: never
+    # EXCEPTION FIRST: hotfix/* → main MR still publishes (pre-prod smoke image).
+    # Placed BEFORE the release/main block so hotfix matches here and skips it.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" &&
+            $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\/.*$/'
+      when: on_success
+    # MR into release/* or main → no image published on the MR; built + pushed on
+    # the POST-MERGE push instead. (hotfix already allowed above)
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|release)(\/.*)*$/'
+      when: never
+    # Direct pushes to short-lived branches — never publish
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^bugfix\/.*$/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^hotfix\/.*$/'
+      when: never
+    - when: on_success
