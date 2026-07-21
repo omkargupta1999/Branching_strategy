@@ -1,59 +1,77 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
-Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:12
-Gitaly correlation ID: 01KY28GQBEWTPSA51M4F4BDJ77
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out e6de1de2 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:10
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ set -eo pipefail # collapsed multi-line command
-Service=epay_reports_service | ENV=dev | VERSION=mr-feature-epay-415-handle-multi-account-js-develop-724-b58e223d
-$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
-RELEASE_NAME=report
-SERVICE_NAME=epay_reports_service
-ENV=dev
-WARNING: Using insecure TLS client config. Setting this option is not supported!
-Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
-You have access to 192 projects, the list has been suppressed. You can list all projects with 'oc projects'
-Using project "default".
-Welcome! See 'oc help' to get started.
-Synced dev/charts/epay_reports_service/values.yaml to origin/main
-Deploying with image tag from values.yaml: mr-feature-epay-415-handle-multi-account-js-develop-724-b58e223d
-Error: UPGRADE FAILED: cannot patch "report-pvc" with kind PersistentVolumeClaim: PersistentVolumeClaim "report-pvc" is invalid: spec: Forbidden: spec is immutable after creation except resources.requests and volumeAttributesClassName for bound claims
-  core.PersistentVolumeClaimSpec{
-- 	AccessModes: []core.PersistentVolumeAccessMode{"ReadWriteMany"},
-+ 	AccessModes: []core.PersistentVolumeAccessMode{"ReadWriteOnce"},
-  	Selector:    nil,
-  	Resources:   {Requests: {s"storage": {i: {...}, s: "10Gi", Format: "BinarySI"}}},
-  	... // 6 identical fields
-  }
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+Different service (`epay_reports_service`), different failure — but a clear one.
+
+## Root cause
+
+You changed the PVC's access mode in the chart, and **PVC specs are immutable after creation**. The diff in the error says it exactly:
+
+```
+- AccessModes: ["ReadWriteMany"]    ← what's live on the cluster now
++ AccessModes: ["ReadWriteOnce"]    ← what your chart now wants
+```
+
+The live `report-pvc` was created as `ReadWriteMany`. Your updated `values.yaml`/template now renders `ReadWriteOnce`. Kubernetes forbids patching any PVC field except `resources.requests` (grow) and `volumeAttributesClassName` on a bound claim — so Helm's attempt to change `accessModes` is rejected, and the upgrade fails.
+
+Let me confirm what the chart is currently set to, so you fix the right side:The chart hardcodes `ReadWriteOnce`, but the live PVC is `ReadWriteMany`. First confirm the live state and — importantly — figure out **which mode is actually correct** for this service before you change anything.
+
+```bash
+oc get pvc report-pvc -n <report-namespace> -o jsonpath='{.spec.accessModes}{" phase="}{.status.phase}{"\n"}'
+# (namespace is wherever RELEASE_NAME=report deploys — likely dev-transaction or a dev-report ns)
+
+# Does more than one pod mount it? That decides RWO vs RWX:
+oc get pods -n <report-namespace> -o json \
+  | jq -r '.items[] | select([.spec.volumes[]?.persistentVolumeClaim.claimName] | index("report-pvc")) | .metadata.name'
+```
+
+Which mode you want dictates the fix:
+
+- **If the report service runs >1 replica** (multiple pods writing the same report volume) → it genuinely needs **ReadWriteMany**. The chart is wrong; the live PVC is right. → **Fix A** (change the chart back to RWX).
+- **If it's a single replica** → RWO is fine and arguably better, but you still can't patch the existing PVC. → **Fix B** (recreate the PVC).
+
+## Fix A — Chart should be RWX (most likely, given it was created RWX)
+
+Edit `dev/charts/epay_reports_service/templates/pvc.yaml` line 7:
+
+```yaml
+  accessModes:
+    - ReadWriteMany
+```
+
+This makes the chart match the live PVC, so Helm's next patch is a no-op on that field and the upgrade proceeds. **No data loss, no PVC recreation** — the cleanest path. Given the PVC was originally created RWX (likely deliberately, because reports often need shared read/write across replicas), this is probably the right answer and someone introduced the RWO by mistake.
+
+Also fix the CRLF line endings while you're in there — this file has `^M` (Windows) endings, which can cause subtle YAML/templating issues:
+```bash
+sed -i 's/\r$//' dev/charts/epay_reports_service/templates/pvc.yaml
+```
+
+## Fix B — You truly want RWO (only if single-replica and you intend the change)
+
+The PVC can't be patched, so it must be recreated. This **deletes the volume** — back up first if the report data matters.
+
+```bash
+NS=<report-namespace>
+# 1. Back up any data on the volume (mount via a temp pod or copy out) if needed
+# 2. Scale down whatever mounts it
+oc scale deploy report -n $NS --replicas=0
+# 3. Delete the PVC (and its PV if reclaimPolicy=Retain, clean up the released PV after)
+oc delete pvc report-pvc -n $NS
+# 4. Re-run the pipeline — Helm recreates report-pvc as ReadWriteOnce, scales back up
+```
+
+Caveat: if the underlying storage class doesn't support RWX at all, that's a separate reason the RWO change may have been attempted — but the immutability error is the blocker regardless, and Fix A sidesteps it entirely.
+
+## Recommendation
+
+Go with **Fix A** unless you have a specific reason to move this volume to RWO. It's zero-risk, no data loss, and matches the volume's original provisioning. Confirm replica count with the `oc get pods` check above — if you see more than one report pod, RWX is definitely required and Fix A is mandatory.
+
+## After the fix
+
+```bash
+# chart now matches live — verify
+grep -A1 accessModes dev/charts/epay_reports_service/templates/pvc.yaml   # expect ReadWriteMany (Fix A)
+
+# re-run pipeline, then:
+oc get pvc report-pvc -n <report-namespace>          # Bound, correct mode
+helm status report -n <report-namespace> | grep STATUS   # deployed
+```
+
+One thing worth doing across the board: this is the third chart-vs-cluster drift you've hit in a row (CRB ownership, storage class, now PVC access mode). When you get a moment, a `helm diff upgrade` (if the helm-diff plugin is available in your CI image) run as a **dry-run gate** before the real deploy would catch all three classes of problem before they fail a live pipeline. Worth adding to the deploy template given the ~55-repo scale.
