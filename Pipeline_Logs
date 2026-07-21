@@ -1,77 +1,126 @@
-Different service (`epay_reports_service`), different failure — but a clear one.
+# ci/image/image.retag.yml  |  Stage: image-push
+# Retag within JFrog Artifactory — no rebuild
+# Used for:
+#   develop merge commit → rc.N tag (dev-SHA → release_version-rc.N)
+#   release/* → main    → prod tag (rc.N → release_version)
+#   hotfix/* → main     → hotfix tag (mr-IID-SHA → hotfix_version)
 
-## Root cause
+.image_retag:
+  stage: image-push
+  #image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  image: artifactory.jfrog.sbi:443/ubi9/podman:9.8-1780607863
+  tags:
+    - common_runner
+  before_script:
+    - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+    - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+    - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  script:
+    - |
+      # SOURCE_TAG and TARGET_TAG must be set by the calling job
+      if [ -z "$SOURCE_TAG" ] || [ -z "$TARGET_TAG" ]; then
+        echo "ERROR: SOURCE_TAG and TARGET_TAG required"
+        exit 1
+      fi
+      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$SOURCE_TAG"
+      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TARGET_TAG"
+      echo "Retagging: $SOURCE → $TARGET"
+      podman pull "$SOURCE" --tls-verify=false
+      podman tag  "$SOURCE" "$TARGET"
+      podman push "$TARGET" --tls-verify=false
+      echo "✅ Retagged: $TARGET"
 
-You changed the PVC's access mode in the chart, and **PVC specs are immutable after creation**. The diff in the error says it exactly:
+# NOTE: the reusable retag logic lives in the hidden .image_retag template above.
+# There is intentionally NO concrete "image:retag" job — a bare job with no rules
+# runs on every pipeline (that is why it was appearing on release/* branches).
+# The only concrete retag job is image:retag-prod below, gated to main push only.
 
-```
-- AccessModes: ["ReadWriteMany"]    ← what's live on the cluster now
-+ AccessModes: ["ReadWriteOnce"]    ← what your chart now wants
-```
+# ── Main-merge retag → prod semver (§11.5, HEAD^2, anti-rebuild guard) ─────────
+# Runs on the main push/merge pipeline after release/* or hotfix/* is merged.
+# Recovers the tested image (built on the release/hotfix branch, tag
+# <clean-branch>-<short-sha>), retags it to the prod semver, pushes. NO rebuild.
+#
+# LOAD-BEARING: requires MERGE-COMMIT method (--no-ff) on main — HEAD^2 is the
+# source branch tip. Squash/rebase produce a single-parent commit → no HEAD^2 →
+# this job fails (same requirement as semver's title parsing).
+image:retag-prod:
+  extends: .image_retag
+  stage: image-retag
+  needs:
+    - job: version
+      artifacts: true            # VERSION (prod semver) from version.env
+  script:
+    - |
+      set -eo pipefail
 
-The live `report-pvc` was created as `ReadWriteMany`. Your updated `values.yaml`/template now renders `ReadWriteOnce`. Kubernetes forbids patching any PVC field except `resources.requests` (grow) and `volumeAttributesClassName` on a bound claim — so Helm's attempt to change `accessModes` is rejected, and the upgrade fails.
+      # VERSION must be a clean prod semver (main path only)
+      if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+        echo "ERROR: VERSION '$VERSION' is not clean semver — retag runs on main only." >&2
+        exit 1
+      fi
 
-Let me confirm what the chart is currently set to, so you fix the right side:The chart hardcodes `ReadWriteOnce`, but the live PVC is `ReadWriteMany`. First confirm the live state and — importantly — figure out **which mode is actually correct** for this service before you change anything.
+      # clean_branch() — MUST stay byte-identical to ci/version/semver.yml
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
 
-```bash
-oc get pvc report-pvc -n <report-namespace> -o jsonpath='{.spec.accessModes}{" phase="}{.status.phase}{"\n"}'
-# (namespace is wherever RELEASE_NAME=report deploys — likely dev-transaction or a dev-report ns)
+      # SRC_BRANCH ← merge commit title (Merge branch 'release/…' into 'main')
+      SRC_BRANCH=$(echo "$CI_COMMIT_TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
+      if [ -z "$SRC_BRANCH" ]; then
+        echo "ERROR: cannot read source branch from merge title: $CI_COMMIT_TITLE" >&2
+        echo "  Needs a real merge commit (no squash/rebase on main)."             >&2
+        exit 1
+      fi
+      case "$SRC_BRANCH" in
+        release/*|hotfix/*) : ;;
+        *) echo "ERROR: source '$SRC_BRANCH' is not release/* or hotfix/* — nothing approved to retag." >&2; exit 1 ;;
+      esac
 
-# Does more than one pod mount it? That decides RWO vs RWX:
-oc get pods -n <report-namespace> -o json \
-  | jq -r '.items[] | select([.spec.volumes[]?.persistentVolumeClaim.claimName] | index("report-pvc")) | .metadata.name'
-```
+      # SRC_SHA ← 2nd parent of the merge commit = tested release/hotfix tip (§11.3)
+      SRC_SHA=$(git rev-parse --short=8 HEAD^2 2>/dev/null || true)
+      if [ -z "$SRC_SHA" ]; then
+        echo "ERROR: no HEAD^2 — not a merge commit. Merge method must be 'Merge commit' (--no-ff)." >&2
+        exit 1
+      fi
 
-Which mode you want dictates the fix:
+      # Reconstruct the tested image tag = <clean-branch>-<short-sha>
+      APPROVED_TAG="$(clean_branch "$SRC_BRANCH")-${SRC_SHA}"
+      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${APPROVED_TAG}"
+      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${VERSION}"
 
-- **If the report service runs >1 replica** (multiple pods writing the same report volume) → it genuinely needs **ReadWriteMany**. The chart is wrong; the live PVC is right. → **Fix A** (change the chart back to RWX).
-- **If it's a single replica** → RWO is fine and arguably better, but you still can't patch the existing PVC. → **Fix B** (recreate the PVC).
+      echo "Source branch : $SRC_BRANCH"
+      echo "Tested tip SHA: $SRC_SHA"
+      echo "Tested image  : $SOURCE"
+      echo "Prod semver   : $VERSION"
+      echo "Target image  : $TARGET"
 
-## Fix A — Chart should be RWX (most likely, given it was created RWX)
+      # ── ANTI-REBUILD GUARD (§11.5): tested image MUST already exist ──────────
+      if ! podman pull "$SOURCE" --tls-verify=false; then
+        echo "ERROR: tested image $SOURCE not found. Retag must not rebuild. Aborting." >&2
+        echo "  The release/hotfix pipeline did not leave this tag, or it expired."      >&2
+        echo "  DO NOT rebuild. Re-run the release/hotfix pipeline to republish, then"   >&2
+        echo "  re-run this main pipeline."                                              >&2
+        exit 1
+      fi
 
-Edit `dev/charts/epay_reports_service/templates/pvc.yaml` line 7:
+      # Retag the SAME digest — no rebuild
+      podman tag  "$SOURCE" "$TARGET"
+      podman push "$TARGET" --tls-verify=false
 
-```yaml
-  accessModes:
-    - ReadWriteMany
-```
-
-This makes the chart match the live PVC, so Helm's next patch is a no-op on that field and the upgrade proceeds. **No data loss, no PVC recreation** — the cleanest path. Given the PVC was originally created RWX (likely deliberately, because reports often need shared read/write across replicas), this is probably the right answer and someone introduced the RWO by mistake.
-
-Also fix the CRLF line endings while you're in there — this file has `^M` (Windows) endings, which can cause subtle YAML/templating issues:
-```bash
-sed -i 's/\r$//' dev/charts/epay_reports_service/templates/pvc.yaml
-```
-
-## Fix B — You truly want RWO (only if single-replica and you intend the change)
-
-The PVC can't be patched, so it must be recreated. This **deletes the volume** — back up first if the report data matters.
-
-```bash
-NS=<report-namespace>
-# 1. Back up any data on the volume (mount via a temp pod or copy out) if needed
-# 2. Scale down whatever mounts it
-oc scale deploy report -n $NS --replicas=0
-# 3. Delete the PVC (and its PV if reclaimPolicy=Retain, clean up the released PV after)
-oc delete pvc report-pvc -n $NS
-# 4. Re-run the pipeline — Helm recreates report-pvc as ReadWriteOnce, scales back up
-```
-
-Caveat: if the underlying storage class doesn't support RWX at all, that's a separate reason the RWO change may have been attempted — but the immutability error is the blocker regardless, and Fix A sidesteps it entirely.
-
-## Recommendation
-
-Go with **Fix A** unless you have a specific reason to move this volume to RWO. It's zero-risk, no data loss, and matches the volume's original provisioning. Confirm replica count with the `oc get pods` check above — if you see more than one report pod, RWX is definitely required and Fix A is mandatory.
-
-## After the fix
-
-```bash
-# chart now matches live — verify
-grep -A1 accessModes dev/charts/epay_reports_service/templates/pvc.yaml   # expect ReadWriteMany (Fix A)
-
-# re-run pipeline, then:
-oc get pvc report-pvc -n <report-namespace>          # Bound, correct mode
-helm status report -n <report-namespace> | grep STATUS   # deployed
-```
-
-One thing worth doing across the board: this is the third chart-vs-cluster drift you've hit in a row (CRB ownership, storage class, now PVC access mode). When you get a moment, a `helm diff upgrade` (if the helm-diff plugin is available in your CI image) run as a **dry-run gate** before the real deploy would catch all three classes of problem before they fail a live pipeline. Worth adding to the deploy template given the ~55-repo scale.
+      echo "PROD_IMAGE=$TARGET"       >> retag.env
+      echo "APPROVED_SOURCE=$SOURCE"  >> retag.env
+      echo "TESTED_TIP_SHA=$SRC_SHA"  >> retag.env
+      echo "✅ Retagged tested image → prod: $TARGET"
+  artifacts:
+    reports:
+      dotenv: retag.env
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
