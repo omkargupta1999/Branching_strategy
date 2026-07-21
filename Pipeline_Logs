@@ -1,136 +1,59 @@
-# ci/image/image.retag.yml  |  Stage: image-push
-# Retag within JFrog Artifactory — no rebuild
-# Used for:
-#   develop merge commit → rc.N tag (dev-SHA → release_version-rc.N)
-#   release/* → main    → prod tag (rc.N → release_version)
-#   hotfix/* → main     → hotfix tag (mr-IID-SHA → hotfix_version)
-
-.image_retag:
-  stage: image-push
-  #image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  image: artifactory.jfrog.sbi:443/ubi9/podman:9.8-1780607863
-  tags:
-    - common_runner
-  before_script:
-    - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-    - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-    - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-  script:
-    - |
-      # SOURCE_TAG and TARGET_TAG must be set by the calling job
-      if [ -z "$SOURCE_TAG" ] || [ -z "$TARGET_TAG" ]; then
-        echo "ERROR: SOURCE_TAG and TARGET_TAG required"
-        exit 1
-      fi
-      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$SOURCE_TAG"
-      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TARGET_TAG"
-      echo "Retagging: $SOURCE → $TARGET"
-      podman pull "$SOURCE" --tls-verify=false
-      podman tag  "$SOURCE" "$TARGET"
-      podman push "$TARGET" --tls-verify=false
-      echo "✅ Retagged: $TARGET"
-
-image:retag:
-  extends: .image_retag
-===========================================
-
-
-
-
-
-11.1 Per-Event Image Tag Scheme/version
-Every branch push builds an image tagged with the short SHA; the version job assigns SemVer only at merge to main.
-
-
-Event
-Branch
-Image tag
-Merge request event
-any source → any target
-mr-<src-branch>-<tgt-branch>-<MR-ID>-<short-sha>
-push
-feature/*
-<branch-name>-<short-sha>
-push
-bugfix/*
-<branch-name>-<short-sha>
-push
-hotfix/*
-<branch-name>-<short-sha>
-push
-release/* 
-<branch-name>-<short-sha>
-push
-develop
-dev-<short-sha>
-push
-sit-integration
-sit-<short-sha>
-MR merge
-main ← release/*
-automated SemVer (e.g. 1.1.0, 1.2.0, 2.0.0)
-MR merge
-main ← hotfix/*
-automated SemVer (e.g. 1.1.1, 1.2.1)
-unknown
-any
-unknown-<short-sha>
-Short SHA is the build identity. Same SHA = same code. This is what makes build-vs-retag deterministic (§11.2).
-11.2 Build vs Retag — The Deterministic Rule
-Build is triggered by a code change (new commit / new SHA). Retag is triggered by promotion (same SHA moving forward, or main merge stamping SemVer). Never docker build at promotion or at main merge.
-
-
-Moment
-Code changed?
-Action
-Push to feature/*, bugfix/*, develop, sit-integration
-Yes
-Build → SHA-tagged image
-Release/demand branch created + approved features merged
-Yes
-Build → the release candidate image
-Each bugfix merged to the release branch (during cert)
-Yes (new SHA)
-Build → new candidate image
-Promote release image SIT → UAT → PreProd
-No
-Deploy the same image (config differs by env, image unchanged)
-release/* → main merge
-No
-Retag the tested release image → SemVer
-hotfix/* → main merge
-No
-Retag the sanity-tested hotfix image → SemVer
-
-11.3 Which Image to Retag at Main Merge — HEAD^2
-When release/* → main (or hotfix/* → main) merges, the pipeline running on main is a push/merge pipeline, so CI_MERGE_REQUEST_SOURCE_BRANCH_SHA is empty (it exists only in MR pipelines). The durable way to identify the tested image is the second parent of the merge commit:
-# Runs on the main push/merge pipeline after release/* or hotfix/* merged.
-# Requires MERGE-COMMIT method (--no-ff): main's new commit has two parents.
-#   HEAD    = merge commit on main
-#   HEAD^1  = previous main tip
-#   HEAD^2  = source branch tip  ← the tested release/hotfix image
-
-SRC_SHA=$(git rev-parse --short HEAD^2)
-Why HEAD^2 and not git rev-parse origin/release/...: if the release branch is auto-deleted on merge, origin/release/... no longer exists when the main pipeline runs. HEAD^2 reads the merge commit itself, which permanently records the source tip — it works whether or not the branch was deleted.
-11.4 Mandatory Merge Method
-release/* → main and hotfix/* → main MUST use merge-commit method (--no-ff). Fast-forward and squash produce a single-parent commit with no HEAD^2, breaking the retag lookup. Configure in GitLab: Settings → Merge requests → Merge method → Merge commit. This also gives cleaner audit history (the merge commit explicitly links main to the exact tested tip).
-11.5 Retag Job — With Anti-Rebuild Guard
-# ── Main-merge retag job (release/* → main) ──────────────────────────────
-SRC_SHA=$(git rev-parse --short HEAD^2)                    # tested release tip
-SRC_BRANCH=<release-branch-name>                           # from merge metadata
-SRC_IMAGE="artifactory.jfrog.sbi/itepaypg-sbiepay2-docker-local/app/backend/${SERVICE}:${SRC_BRANCH}-${SRC_SHA}"
-
-# GUARD: the tested image MUST already exist. If not, do NOT build — fail loudly.
-if ! jfrog rt search "${SRC_IMAGE#*/}" | grep -q .; then
-  echo "ERROR: tested image ${SRC_IMAGE} not found. Retag must not rebuild. Aborting."
-  exit 1
-fi
-
-# Compute SemVer (type from branch name, highest prod tag, race-safe retry) — see §10
-NEW_SEMVER=$(compute_semver)          # e.g. 1.3.0
-
-# Retag the SAME digest — no rebuild
-docker pull  "$SRC_IMAGE"
-docker tag   "$SRC_IMAGE"  "...:${NEW_SEMVER}"
-docker push  "...:${NEW_SEMVER}"
-The guard enforces "retag only, never build at main merge." If the tested image is missing, the job fails rather than silently rebuilding (which would break "tested = deployed").
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:12
+Gitaly correlation ID: 01KY28GQBEWTPSA51M4F4BDJ77
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out e6de1de2 as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:10
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_reports_service | ENV=dev | VERSION=mr-feature-epay-415-handle-multi-account-js-develop-724-b58e223d
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=report
+SERVICE_NAME=epay_reports_service
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 192 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_reports_service/values.yaml to origin/main
+Deploying with image tag from values.yaml: mr-feature-epay-415-handle-multi-account-js-develop-724-b58e223d
+Error: UPGRADE FAILED: cannot patch "report-pvc" with kind PersistentVolumeClaim: PersistentVolumeClaim "report-pvc" is invalid: spec: Forbidden: spec is immutable after creation except resources.requests and volumeAttributesClassName for bound claims
+  core.PersistentVolumeClaimSpec{
+- 	AccessModes: []core.PersistentVolumeAccessMode{"ReadWriteMany"},
++ 	AccessModes: []core.PersistentVolumeAccessMode{"ReadWriteOnce"},
+  	Selector:    nil,
+  	Resources:   {Requests: {s"storage": {i: {...}, s: "10Gi", Format: "BinarySI"}}},
+  	... // 6 identical fields
+  }
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
