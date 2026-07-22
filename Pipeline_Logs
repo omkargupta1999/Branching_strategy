@@ -7,8 +7,12 @@
 
 .image_retag:
   stage: image-push
-  #image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  image: artifactory.jfrog.sbi:443/ubi9/podman:9.8-1780607863
+  # MUST be an image that has BOTH podman AND git.
+  # image:retag-prod reads HEAD^2 from the merge commit, so git is mandatory.
+  # The bare ubi9/podman image has no git binary: every git call returns empty,
+  # which previously surfaced as "no HEAD^2 / Parents of HEAD: unknown" and was
+  # misdiagnosed as a squash merge. This is the same image the other CI jobs use.
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
   tags:
     - common_runner
   before_script:
@@ -88,10 +92,24 @@ image:retag-prod:
       esac
 
       # SRC_SHA ← 2nd parent of the merge commit = tested release/hotfix tip (§11.3)
+      # Verify git is actually present FIRST. If the job image has no git binary,
+      # every git call returns empty and looks identical to "not a merge commit".
+      if ! command -v git >/dev/null 2>&1; then
+        echo "ERROR: 'git' is not installed in this job image." >&2
+        echo "   image:retag-prod must read HEAD^2 from the merge commit, so git" >&2
+        echo "   is mandatory. Use an image that has BOTH podman and git." >&2
+        exit 1
+      fi
+      if [ ! -d .git ]; then
+        echo "ERROR: no .git directory — repository was not checked out." >&2
+        echo "   Ensure GIT_STRATEGY is 'clone' or 'fetch' (not 'none') for this job." >&2
+        exit 1
+      fi
+
       SRC_SHA=$(git rev-parse --short=8 HEAD^2 2>/dev/null || true)
       if [ -z "$SRC_SHA" ]; then
-        # Two DIFFERENT causes produce an empty HEAD^2 — report both, because a
-        # shallow clone fails identically to a genuine non-merge commit.
+        # git IS present and the repo IS checked out, so an empty HEAD^2 now
+        # genuinely means either a shallow clone or a single-parent commit.
         if [ -f .git/shallow ]; then
           echo "ERROR: HEAD^2 could not be resolved — this clone is SHALLOW." >&2
           echo "   The commit may well be a proper merge commit; git simply does not" >&2
@@ -103,7 +121,8 @@ image:retag-prod:
           echo "   FIX: Settings -> Merge requests -> Merge method -> 'Merge commit'," >&2
           echo "        and disable squash. Re-raise the MR and merge again." >&2
         fi
-        echo "   Parents of HEAD: $(git log -1 --format='%P' 2>/dev/null || echo unknown)" >&2
+        echo "   HEAD           : $(git rev-parse HEAD 2>&1)" >&2
+        echo "   Parents of HEAD: $(git log -1 --format='%P' 2>&1)" >&2
         exit 1
       fi
 
