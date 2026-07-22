@@ -1,195 +1,69 @@
-# ci/image/image.retag.yml  |  Stage: image-retag (main only)
-# ──────────────────────────────────────────────────────────────────────────────
-# GOAL: the image deployed to PRODUCTION must be the EXACT SAME image (same
-# digest, same bytes) that was built on the release/* branch and approved by the
-# bank after SIT / UAT / PreProd testing. Production must NEVER rebuild from
-# source — a rebuild can produce different bytes than what was approved.
-#
-# On a release/* -> main (or hotfix/* -> main) merge, this job:
-#   1. reads the source branch name from the merge commit title
-#   2. reads the source branch tip SHA from the merge commit's 2nd parent (HEAD^2)
-#   3. reconstructs the approved image tag  = <clean-branch>-<short-sha>
-#   4. pulls that approved image from JFrog  (FAILS HARD if missing — never builds)
-#   5. re-tags it with the production semver computed by ci/version/semver.yml
-#   6. pushes the new tag — same digest, new name
-#
-# LOAD-BEARING: requires MERGE-COMMIT method (--no-ff) on main. HEAD^2 is the
-# source branch tip; squash/fast-forward produce a single-parent commit with no
-# HEAD^2 and this job fails (same requirement as semver's merge-title parsing).
-# ──────────────────────────────────────────────────────────────────────────────
-
-.image_retag:
-  stage: image-push
-  # MUST have BOTH podman AND git. This job reads git history (HEAD^2).
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  #image: artifactory.jfrog.sbi:443/ubi9/podman:9.8-1780607863
-  tags:
-    - common_runner
-  before_script:
-    - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-    - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-    - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-  script:
-    - |
-      # SOURCE_TAG and TARGET_TAG must be set by the calling job
-      if [ -z "$SOURCE_TAG" ] || [ -z "$TARGET_TAG" ]; then
-        echo "ERROR: SOURCE_TAG and TARGET_TAG required"
-        exit 1
-      fi
-      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$SOURCE_TAG"
-      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TARGET_TAG"
-      echo "Retagging: $SOURCE -> $TARGET"
-      podman pull "$SOURCE" --tls-verify=false
-      podman tag  "$SOURCE" "$TARGET"
-      podman push "$TARGET" --tls-verify=false
-      echo "Retagged: $TARGET"
-
-# NOTE: the reusable retag logic lives in the hidden .image_retag template above.
-# There is intentionally NO concrete "image:retag" job — a bare job with no rules
-# runs on every pipeline (that is why it once appeared on release/* branches).
-# The only concrete retag job is image:retag-prod below, gated to main push only.
-
-# ── Main-merge retag -> prod semver (HEAD^2, anti-rebuild guard) ───────────────
-image:retag-prod:
-  extends: .image_retag
-  stage: image-retag
-  variables:
-    # Full clone. HEAD^2 cannot be resolved from a shallow clone.
-    GIT_DEPTH: "0"
-    # Explicit: this job REQUIRES a working tree. Job-level `variables:` can
-    # shadow the global block, so GIT_STRATEGY is restated here deliberately.
-    GIT_STRATEGY: clone
-  needs:
-    - job: version
-      artifacts: true            # VERSION (prod semver) from version.env
-  script:
-    - |
-      set -eo pipefail
-
-      # ══════════════════════════════════════════════════════════════════════
-      # TEMPORARY DIAGNOSTIC BLOCK
-      # Remove once the root cause of "Parents of HEAD: unknown" is confirmed.
-      # Every line answers a specific hypothesis; nothing here changes behaviour.
-      # ══════════════════════════════════════════════════════════════════════
-      echo "=================== RETAG DIAGNOSTICS ==================="
-      echo "PWD                : $(pwd)"
-      echo "CI_PROJECT_DIR     : ${CI_PROJECT_DIR:-<unset>}"
-      echo "git binary         : $(command -v git || echo 'NOT FOUND')"
-      echo "git version        : $(git --version 2>&1)"
-      echo "ls -a (cwd)        : $(ls -a 2>&1 | tr '\n' ' ')"
-      echo ".git in cwd        : $([ -d .git ] && echo YES || echo NO)"
-      echo ".git in PROJECT_DIR: $([ -d "${CI_PROJECT_DIR}/.git" ] && echo YES || echo NO)"
-      echo "shallow marker     : $([ -f "${CI_PROJECT_DIR}/.git/shallow" ] && echo YES || echo NO)"
-      echo "git -C status      : $(git -C "${CI_PROJECT_DIR}" status --short 2>&1 | head -3)"
-      echo "git -C rev-parse   : $(git -C "${CI_PROJECT_DIR}" rev-parse HEAD 2>&1)"
-      echo "git -C log %H %P   : $(git -C "${CI_PROJECT_DIR}" log -1 --format='%H %P' 2>&1)"
-      echo "CI_COMMIT_SHA      : ${CI_COMMIT_SHA:-<unset>}"
-      echo "CI_COMMIT_TITLE    : ${CI_COMMIT_TITLE:-<unset>}"
-      echo "CI_COMMIT_BRANCH   : ${CI_COMMIT_BRANCH:-<unset>}"
-      echo "VERSION (dotenv)   : ${VERSION:-<unset>}"
-      echo "IMAGE_NAME         : ${IMAGE_NAME:-<unset>}"
-      echo "========================================================="
-
-      # ── HARDENING: run every git command against the project dir explicitly.
-      # If the job's working directory is not the repo, plain `git` returns empty
-      # and the failure is indistinguishable from "not a merge commit".
-      GIT="git -C ${CI_PROJECT_DIR}"
-
-      # Fail fast and clearly if the environment is not usable at all.
-      if ! command -v git >/dev/null 2>&1; then
-        echo "ERROR: 'git' is not installed in this job image." >&2
-        echo "  This job must read HEAD^2, so the image needs BOTH podman and git." >&2
-        exit 1
-      fi
-      if [ ! -d "${CI_PROJECT_DIR}/.git" ]; then
-        echo "ERROR: no .git in ${CI_PROJECT_DIR} — repository was not checked out." >&2
-        echo "  Ensure GIT_STRATEGY is 'clone' (not 'none') for this job." >&2
-        exit 1
-      fi
-
-      # VERSION must be a clean prod semver (main path only)
-      if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-        echo "ERROR: VERSION '$VERSION' is not clean semver — retag runs on main only." >&2
-        exit 1
-      fi
-
-      # clean_branch() — MUST stay byte-identical to ci/version/semver.yml
-      clean_branch() {
-        echo "$1"                        \
-          | sed 's/[^a-zA-Z0-9._-]/-/g' \
-          | tr '[:upper:]' '[:lower:]'   \
-          | sed 's/--*/-/g'              \
-          | sed 's/^-//; s/-$//'         \
-          | cut -c1-40
-      }
-
-      # SRC_BRANCH <- merge commit title ("Merge branch 'release/…' into 'main'")
-      # Prefer the live git subject over CI_COMMIT_TITLE: CI_COMMIT_TITLE can be
-      # truncated or unset in some contexts, while the commit object never is.
-      GIT_SUBJECT=$($GIT log -1 --format='%s' 2>/dev/null || true)
-      TITLE="${GIT_SUBJECT:-$CI_COMMIT_TITLE}"
-      echo "Merge title used   : $TITLE"
-
-      SRC_BRANCH=$(echo "$TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
-      if [ -z "$SRC_BRANCH" ]; then
-        echo "ERROR: cannot read source branch from merge title: $TITLE" >&2
-        echo "  Needs a real merge commit (no squash/rebase on main)."   >&2
-        echo "  git subject     : $GIT_SUBJECT"                          >&2
-        echo "  CI_COMMIT_TITLE : $CI_COMMIT_TITLE"                      >&2
-        exit 1
-      fi
-      case "$SRC_BRANCH" in
-        release/*|hotfix/*) : ;;
-        *) echo "ERROR: source '$SRC_BRANCH' is not release/* or hotfix/* — nothing approved to retag." >&2; exit 1 ;;
-      esac
-
-      # SRC_SHA <- 2nd parent of the merge commit = tested release/hotfix tip
-      SRC_SHA=$($GIT rev-parse --short=8 "HEAD^2" 2>/dev/null || true)
-      if [ -z "$SRC_SHA" ]; then
-        echo "ERROR: HEAD^2 could not be resolved." >&2
-        echo "  HEAD            : $($GIT rev-parse HEAD 2>&1)"                >&2
-        echo "  Parents of HEAD : $($GIT log -1 --format='%P' 2>&1)"          >&2
-        echo "  Shallow clone   : $([ -f "${CI_PROJECT_DIR}/.git/shallow" ] && echo YES || echo NO)" >&2
-        echo "  If parents show TWO SHAs, git works and HEAD^2 syntax failed." >&2
-        echo "  If parents show ONE SHA, the merge was squash/fast-forward:"   >&2
-        echo "    Settings -> Merge requests -> Merge method -> 'Merge commit'" >&2
-        echo "  If parents are EMPTY, git cannot read the repo (see diagnostics above)." >&2
-        exit 1
-      fi
-
-      # Reconstruct the approved image tag = <clean-branch>-<short-sha>
-      APPROVED_TAG="$(clean_branch "$SRC_BRANCH")-${SRC_SHA}"
-      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${APPROVED_TAG}"
-      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${VERSION}"
-
-      echo "Source branch : $SRC_BRANCH"
-      echo "Tested tip SHA: $SRC_SHA"
-      echo "Tested image  : $SOURCE"
-      echo "Prod semver   : $VERSION"
-      echo "Target image  : $TARGET"
-
-      # ── ANTI-REBUILD GUARD: the approved image MUST already exist ────────────
-      if ! podman pull "$SOURCE" --tls-verify=false; then
-        echo "ERROR: tested image $SOURCE not found. Retag must not rebuild. Aborting." >&2
-        echo "  The release/hotfix pipeline did not leave this tag, or it expired."      >&2
-        echo "  DO NOT rebuild. Re-run the release/hotfix pipeline to republish, then"   >&2
-        echo "  re-run this main pipeline."                                              >&2
-        exit 1
-      fi
-
-      # Retag the SAME digest — no rebuild
-      podman tag  "$SOURCE" "$TARGET"
-      podman push "$TARGET" --tls-verify=false
-
-      echo "PROD_IMAGE=$TARGET"       >> retag.env
-      echo "APPROVED_SOURCE=$SOURCE"  >> retag.env
-      echo "TESTED_TIP_SHA=$SRC_SHA"  >> retag.env
-      echo "Retagged tested image -> prod: $TARGET"
-  artifacts:
-    reports:
-      dotenv: retag.env
-    expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      when: on_success
-    - when: never
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
+Running on runner-wz1c0kgrx-project-2840-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:04
+Gitaly correlation ID: 01KY4E0CKJGCXXT1XNP3Y5GKWZ
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out 7930bbbd as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:05
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+time="2026-07-22T08:10:28Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
+Login Succeeded!
+$ set -eo pipefail # collapsed multi-line command
+=================== RETAG DIAGNOSTICS ===================
+PWD                : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
+CI_PROJECT_DIR     : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
+git binary         : NOT FOUND
+git version        : /usr/bin/bash: line 250: git: command not found
+ls -a (cwd)        : . .. .git .gitignore .gitlab-ci.yml Dockerfile README.md build.gradle gradle gradle.properties libs settings.gradle src 
+.git in cwd        : YES
+.git in PROJECT_DIR: YES
+shallow marker     : NO
+git -C status      : /usr/bin/bash: line 255: git: command not found
+git -C rev-parse   : /usr/bin/bash: line 256: git: command not found
+git -C log %H %P   : /usr/bin/bash: line 257: git: command not found
+CI_COMMIT_SHA      : 7930bbbd9ff4f83cdb57a80bbb0e9bb95510bb39
+CI_COMMIT_TITLE    : Merge branch 'release/minor-DM2026025445-EPAY-consent-management-changes' into 'main'
+CI_COMMIT_BRANCH   : main
+VERSION (dotenv)   : 2.1.0
+IMAGE_NAME         : itepaypg-sbiepay2-docker-local/app/backend/epay_admin_portal_service
+=========================================================
+ERROR: 'git' is not installed in this job image.
+  This job must read HEAD^2, so the image needs BOTH podman and git.
+Uploading artifacts for failed job
+00:00
+Uploading artifacts...
+WARNING: retag.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
