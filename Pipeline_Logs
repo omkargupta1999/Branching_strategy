@@ -3,7 +3,7 @@ Running with gitlab-runner 19.0.2 (02fcb2d7)
 Resolving secrets
 Preparing the "docker" executor
 00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
 Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
 Using locally found image version due to "if-not-present" pull policy
@@ -11,9 +11,9 @@ Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
 Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
 Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
 Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
 Preparing environment
 00:00
 Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
@@ -23,42 +23,20 @@ Using effective pull policy of [if-not-present] for container sha256:367b3351065
 Running on runner-wz1c0kgrx-project-2840-concurrent-0 via PE3DSOPGrunners4...
 Getting source from Git repository
 00:04
-Gitaly correlation ID: 01KY4E0CKJGCXXT1XNP3Y5GKWZ
+Gitaly correlation ID: 01KY4E7H8XR1GC0MSC3VW7WSRW
 Fetching changes...
 Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
 Created fresh repository.
-Checking out 7930bbbd as detached HEAD (ref is main)...
+Checking out a5d5c0c7 as detached HEAD (ref is main)...
 Skipping Git submodules setup
 Executing "step_script" stage of the job script
-00:05
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+00:01
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
 $ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
 $ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
 $ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-07-22T08:10:28Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ set -eo pipefail # collapsed multi-line command
-=================== RETAG DIAGNOSTICS ===================
-PWD                : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
-CI_PROJECT_DIR     : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service
-git binary         : NOT FOUND
-git version        : /usr/bin/bash: line 250: git: command not found
-ls -a (cwd)        : . .. .git .gitignore .gitlab-ci.yml Dockerfile README.md build.gradle gradle gradle.properties libs settings.gradle src 
-.git in cwd        : YES
-.git in PROJECT_DIR: YES
-shallow marker     : NO
-git -C status      : /usr/bin/bash: line 255: git: command not found
-git -C rev-parse   : /usr/bin/bash: line 256: git: command not found
-git -C log %H %P   : /usr/bin/bash: line 257: git: command not found
-CI_COMMIT_SHA      : 7930bbbd9ff4f83cdb57a80bbb0e9bb95510bb39
-CI_COMMIT_TITLE    : Merge branch 'release/minor-DM2026025445-EPAY-consent-management-changes' into 'main'
-CI_COMMIT_BRANCH   : main
-VERSION (dotenv)   : 2.1.0
-IMAGE_NAME         : itepaypg-sbiepay2-docker-local/app/backend/epay_admin_portal_service
-=========================================================
-ERROR: 'git' is not installed in this job image.
-  This job must read HEAD^2, so the image needs BOTH podman and git.
+/usr/bin/bash: line 237: podman: command not found
 Uploading artifacts for failed job
 00:00
 Uploading artifacts...
@@ -66,4 +44,4 @@ WARNING: retag.env: no matching files. Ensure that the artifact path is relative
 ERROR: No files to upload                          
 Cleaning up project directory and file based variables
 00:01
-ERROR: Job failed: exit code 1
+ERROR: Job failed: exit code 127
