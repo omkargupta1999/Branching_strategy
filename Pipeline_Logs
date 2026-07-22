@@ -1,47 +1,404 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
-Running on runner-wz1c0kgrx-project-2840-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:04
-Gitaly correlation ID: 01KY4E7H8XR1GC0MSC3VW7WSRW
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
-Created fresh repository.
-Checking out a5d5c0c7 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:01
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-/usr/bin/bash: line 237: podman: command not found
-Uploading artifacts for failed job
-00:00
-Uploading artifacts...
-WARNING: retag.env: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
-ERROR: No files to upload                          
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 127
+# ci/image/image.retag.yml  |  Stage: image-retag (main only)
+# ──────────────────────────────────────────────────────────────────────────────
+# GOAL: production runs the EXACT image (same digest, same bytes) that the bank
+# approved after SIT / UAT / PreProd testing. Production NEVER rebuilds from
+# source — a rebuild could produce different bytes than what was approved.
+#
+# On a release/* → main (or hotfix/* → main) merge this job:
+#   1. takes the source branch name + tested tip SHA from the version job
+#   2. reconstructs the approved image tag  = <clean-branch>-<short-sha>
+#   3. pulls that approved image from JFrog  (FAILS HARD if missing — no rebuild)
+#   4. re-tags it with the production semver
+#   5. pushes — same digest, new tag
+#
+# ── WHY THIS JOB USES NO GIT ──────────────────────────────────────────────────
+# The podman image used here (podman-jf:9.7) does NOT contain a git binary —
+# verified in a live pipeline run ("git: command not found"). Earlier versions of
+# this job called `git rev-parse HEAD^2`, which silently returned empty and was
+# misreported as "not a merge commit".
+#
+# Instead, ci/version/semver.yml — which runs in rhelgit-oc-helm:1.0 and DOES
+# have git — computes the merge commit's 2nd parent and exports it as
+# MERGE_PARENT_SHA via the version.env dotenv artifact. This job simply reads it.
+#
+# Required dotenv inputs from the `version` job:
+#   VERSION               prod semver, e.g. 2.1.0
+#   VERSION_SOURCE_BRANCH source branch, e.g. release/minor-DM…-EPAY-…
+#   MERGE_PARENT_SHA      tested release/hotfix branch tip, 8-char short SHA
+#
+# LOAD-BEARING: requires MERGE-COMMIT method (--no-ff) on main. semver.yml fails
+# the pipeline if the merge commit has no 2nd parent, so this job never runs on a
+# squashed or fast-forwarded merge.
+# ──────────────────────────────────────────────────────────────────────────────
+
+.image_retag:
+  stage: image-push
+  # podman only — this template intentionally requires NO git.
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+    - common_runner
+  before_script:
+    - mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+    - cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+    - podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+  script:
+    - |
+      # SOURCE_TAG and TARGET_TAG must be set by the calling job
+      if [ -z "$SOURCE_TAG" ] || [ -z "$TARGET_TAG" ]; then
+        echo "ERROR: SOURCE_TAG and TARGET_TAG required"
+        exit 1
+      fi
+      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$SOURCE_TAG"
+      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:$TARGET_TAG"
+      echo "Retagging: $SOURCE -> $TARGET"
+      podman pull "$SOURCE" --tls-verify=false
+      podman tag  "$SOURCE" "$TARGET"
+      podman push "$TARGET" --tls-verify=false
+      echo "Retagged: $TARGET"
+
+# NOTE: the reusable retag logic lives in the hidden .image_retag template above.
+# There is intentionally NO concrete "image:retag" job — a bare job with no rules
+# runs on every pipeline (that is why it once appeared on release/* branches).
+# The only concrete retag job is image:retag-prod below, gated to main push only.
+
+# ── Main-merge retag → prod semver (anti-rebuild guard) ────────────────────────
+image:retag-prod:
+  extends: .image_retag
+  stage: image-retag
+  variables:
+    # No git is used, so no working tree is needed. This also makes the job
+    # faster and removes any clone-depth / checkout failure mode entirely.
+    GIT_STRATEGY: none
+  needs:
+    - job: version
+      artifacts: true    # VERSION, VERSION_SOURCE_BRANCH, MERGE_PARENT_SHA
+  script:
+    - |
+      set -eo pipefail
+
+      # ── Inputs (all from the version job's dotenv — no git required) ────────
+      echo "VERSION               : ${VERSION:-<unset>}"
+      echo "VERSION_SOURCE_BRANCH : ${VERSION_SOURCE_BRANCH:-<unset>}"
+      echo "MERGE_PARENT_SHA      : ${MERGE_PARENT_SHA:-<unset>}"
+      echo "IMAGE_NAME            : ${IMAGE_NAME:-<unset>}"
+
+      # VERSION must be a clean prod semver (main path only)
+      if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+        echo "ERROR: VERSION '$VERSION' is not clean semver — retag runs on main only." >&2
+        exit 1
+      fi
+
+      SRC_BRANCH="${VERSION_SOURCE_BRANCH}"
+      SRC_SHA="${MERGE_PARENT_SHA}"
+
+      if [ -z "$SRC_BRANCH" ] || [ -z "$SRC_SHA" ]; then
+        echo "ERROR: missing input from the version job." >&2
+        echo "  VERSION_SOURCE_BRANCH='${SRC_BRANCH}'  MERGE_PARENT_SHA='${SRC_SHA}'" >&2
+        echo "  Both are exported by ci/version/semver.yml on the main merge path." >&2
+        echo "  Check that the 'version' job succeeded and its dotenv was consumed." >&2
+        exit 1
+      fi
+
+      case "$SRC_BRANCH" in
+        release/*|hotfix/*) : ;;
+        *) echo "ERROR: source '$SRC_BRANCH' is not release/* or hotfix/* — nothing approved to retag." >&2; exit 1 ;;
+      esac
+
+      # clean_branch() — MUST stay byte-identical to ci/version/semver.yml
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
+
+      # Reconstruct the approved image tag = <clean-branch>-<short-sha>
+      APPROVED_TAG="$(clean_branch "$SRC_BRANCH")-${SRC_SHA}"
+      SOURCE="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${APPROVED_TAG}"
+      TARGET="$CI_TEMPLATE_REGISTRY_HOST/$IMAGE_NAME:${VERSION}"
+
+      echo "Source branch : $SRC_BRANCH"
+      echo "Tested tip SHA: $SRC_SHA"
+      echo "Tested image  : $SOURCE"
+      echo "Prod semver   : $VERSION"
+      echo "Target image  : $TARGET"
+
+      # ── ANTI-REBUILD GUARD: the approved image MUST already exist ───────────
+      if ! podman pull "$SOURCE" --tls-verify=false; then
+        echo "ERROR: tested image $SOURCE not found. Retag must not rebuild. Aborting." >&2
+        echo "  The release/hotfix pipeline did not leave this tag, or it expired."      >&2
+        echo "  DO NOT rebuild. Re-run the release/hotfix pipeline to republish, then"   >&2
+        echo "  re-run this main pipeline."                                              >&2
+        exit 1
+      fi
+
+      # Retag the SAME digest — no rebuild
+      podman tag  "$SOURCE" "$TARGET"
+      podman push "$TARGET" --tls-verify=false
+
+      echo "PROD_IMAGE=$TARGET"       >> retag.env
+      echo "APPROVED_SOURCE=$SOURCE"  >> retag.env
+      echo "TESTED_TIP_SHA=$SRC_SHA"  >> retag.env
+      echo "Retagged tested image -> prod: $TARGET"
+  artifacts:
+    reports:
+      dotenv: retag.env
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+
+
+
+===========================================
+
+
+# ci/version/semver.yml  |  Stage: version
+# ──────────────────────────────────────────────────────────────────────────────
+# Computes the VERSION string from branch / pipeline context and exports it to
+# version.env. Consumed by ALL downstream jobs via the dotenv artifact.
+# This job ONLY computes the version — git tags are created in ci/release/tag.yml.
+#
+# ── VERSION output per context ────────────────────────────────────────────────
+# Pipeline Source      Branch / Context          VERSION
+# ──────────────────── ───────────────────────── ─────────────────────────────────
+# merge_request_event  <any src> → <any tgt>     mr-<src>-<tgt>-<MR IID>-<short-sha>
+# push                 feature/*                 <branch-name>-<short-sha>
+# push                 bugfix/*                  <branch-name>-<short-sha>
+# push                 hotfix/*                  <branch-name>-<short-sha>
+# push                 release/*                 <branch-name>-<short-sha>
+# push                 develop                   dev-<short-sha>
+# push                 sit-integration           sit-<short-sha>
+# push                 main ← release/major-*     major bump  (last_tag + 1.0.0)
+# push                 main ← release/minor-*     minor bump  (last_tag + 0.1.0)
+# push                 main ← hotfix/*            patch bump  (last_tag + 0.0.1)
+# push                 unrecognised branch       unknown-<short-sha>
+#
+# ── Branch naming contract (enforced by the GitLab Push Rule) ─────────────────
+#   release/(major|minor)-DM<digits>-EPAY-<desc>
+#   feature|bugfix|hotfix/EPAY-<digits>-<desc>
+#   main | develop | sit-integration
+# The bump level is read from the SOURCE BRANCH NAME only — never from the
+# commit message body or the MR title.
+#
+# ── Tag format: BARE semver (1.2.0) — no 'v' prefix ───────────────────────────
+# Three places must agree on this, or retries double-bump:
+#   1. the idempotency guard below   (git tag --points-at HEAD)
+#   2. the LAST_TAG lookup below
+#   3. ci/release/tag.yml            (creates the tag)
+#
+# ── Branch-name cleaning (clean_branch) ───────────────────────────────────────
+#   non [a-zA-Z0-9._-] → '-'   |   lowercase   |   collapse '--' → '-'
+#   trim leading/trailing '-'  |   truncate to 40 chars
+# Keeps every VERSION well inside the 128-char Docker image tag limit.
+#
+# ── main merge: how the source branch is identified ───────────────────────────
+# CI_MERGE_REQUEST_SOURCE_BRANCH_NAME does NOT exist on a post-merge push
+# pipeline. CI_COMMIT_TITLE does — GitLab sets it to the merge commit subject:
+#   "Merge branch 'release/minor-DM…-EPAY-…' into 'main'"
+#   "Merge branch 'hotfix/EPAY-…' into 'main'"
+# The branch name is parsed out of that subject (Gate 1).
+#
+# LOAD-BEARING SETTING: Settings → Merge requests → Merge method = 'Merge commit'
+# (squash and rebase MUST be disabled on protected 'main'). A squash/rebase merge
+# produces no "Merge branch '…'" subject → Gate 3 fails the pipeline by design,
+# rather than silently computing a wrong production version.
+#
+# ── Failure gates on main ─────────────────────────────────────────────────────
+#   Gate 1a  title matched but branch name not extractable  → fail
+#   Gate 1   source branch is not release/major|minor or hotfix → fail
+#   Gate 2   a merge commit, but from a forbidden source branch → fail
+#   Gate 3   not a standard merge commit (squash/rebase used)   → fail
+# ──────────────────────────────────────────────────────────────────────────────
+
+version:
+  stage: version
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+  variables:
+    GIT_DEPTH: "0"            # full clone — required for a complete tag list
+    INITIAL_VERSION: "1.0.0"  # baseline when the repo has no semver tag yet
+  tags:
+    - common_runner
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global --add safe.directory '*'
+  script:
+    - |
+      set -eo pipefail
+      git fetch --tags
+
+      # ── Helper: clean a branch name for use inside a VERSION string ───────
+      clean_branch() {
+        echo "$1"                        \
+          | sed 's/[^a-zA-Z0-9._-]/-/g' \
+          | tr '[:upper:]' '[:lower:]'   \
+          | sed 's/--*/-/g'              \
+          | sed 's/^-//; s/-$//'         \
+          | cut -c1-40
+      }
+
+      # ── MR pipeline — src + tgt embedded for traceability ──────────────────
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        SRC_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+        TGT_CLEAN=$(clean_branch "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        VERSION="mr-${SRC_CLEAN}-${TGT_CLEAN}-${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+
+      # ── feature/*, bugfix/*, hotfix/*, release/* push ──────────────────────
+      # One condition covers all four — identical pattern: <branch>-<sha>
+      elif [[ "$CI_COMMIT_BRANCH" =~ ^(feature|bugfix|hotfix|release)\/ ]]; then
+        BRANCH_CLEAN=$(clean_branch "$CI_COMMIT_BRANCH")
+        VERSION="${BRANCH_CLEAN}-${CI_COMMIT_SHORT_SHA}"
+
+      # ── develop push ───────────────────────────────────────────────────────
+      elif [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        VERSION="dev-${CI_COMMIT_SHORT_SHA}"
+
+      # ── sit-integration push — stable formal SIT surface ───────────────────
+      elif [[ "$CI_COMMIT_BRANCH" == "sit-integration" ]]; then
+        VERSION="sit-${CI_COMMIT_SHORT_SHA}"
+
+      # ── main push — the only path that produces a production semver ────────
+      elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        echo "Merge commit title: $CI_COMMIT_TITLE"
+
+        # ── Idempotency guard ────────────────────────────────────────────────
+        # Pipeline retry after ci/release/tag.yml already tagged this SHA:
+        # reuse that semver — never compute a second bump.
+        # BARE tags only — must match the LAST_TAG lookup and tag.yml.
+        EXISTING_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+        if [[ -n "$EXISTING_TAG" ]]; then
+          VERSION="$EXISTING_TAG"
+          echo "Semver tag ${EXISTING_TAG} already points at HEAD — reusing (pipeline retry)."
+
+        # ── Gate 1: standard merge commit from an ALLOWED source ─────────────
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '(release|hotfix)/"; then
+          SRC_BRANCH=$(echo "$CI_COMMIT_TITLE" | sed -n "s/^Merge branch '\([^']*\)'.*/\1/p")
+
+          # ── Gate 1a: title matched the grep but yielded no branch name ──────
+          # Without this, an empty SRC_BRANCH falls to the case default and
+          # reports a confusing "Unsupported source branch ''".
+          if [[ -z "$SRC_BRANCH" ]]; then
+            echo "   ERROR: Malformed merge commit title — source branch not extractable."
+            echo "   Title was : $CI_COMMIT_TITLE"
+            exit 1
+          fi
+
+          # Bump level comes from the source branch name only
+          case "$SRC_BRANCH" in
+            release/major-*)  BUMP="major" ;;
+            release/minor-*)  BUMP="minor" ;;
+            hotfix/*)         BUMP="patch" ;;
+            *)
+              echo "   ERROR: Unsupported source branch '${SRC_BRANCH}' merged to main."
+              echo "   Only release/major-*, release/minor-* and hotfix/* may merge to main."
+              exit 1
+              ;;
+          esac
+
+          # ── Latest BARE semver tag (no v-prefix) ───────────────────────────
+          LAST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+
+          if [[ -z "$LAST_TAG" ]]; then
+            VERSION="${INITIAL_VERSION}"
+            echo "No prior semver tag found — starting at ${VERSION}"
+          else
+            IFS=. read -r MAJ MIN PAT <<< "$LAST_TAG"
+            case "$BUMP" in
+              major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
+              minor) MIN=$((MIN + 1)); PAT=0 ;;
+              patch) PAT=$((PAT + 1)) ;;
+            esac
+            VERSION="${MAJ}.${MIN}.${PAT}"
+          fi
+          echo "Semver: ${LAST_TAG:-<none>} → ${VERSION}  (${BUMP} bump from ${SRC_BRANCH})"
+          echo "VERSION_BUMP=${BUMP}"                >> version.env
+          echo "VERSION_SOURCE_BRANCH=${SRC_BRANCH}" >> version.env
+
+          # ── Source branch tip SHA, for ci/image/image.retag.yml ──────────────
+          # The retag job runs in a podman image that has NO git binary, so it
+          # cannot read HEAD^2 itself. This job DOES have git, so compute the
+          # merge commit's 2nd parent here and hand it downstream via dotenv.
+          # HEAD^2 = tip of the merged release/hotfix branch = the commit the
+          # bank-approved image was built from.
+          # Computed with `git log --format=%P` rather than `git rev-parse HEAD^2`
+          # to avoid any shell handling of the '^' character.
+          PARENT_SHA=$(git log -1 --format='%P' | awk '{print substr($2,1,8)}')
+          if [[ -z "$PARENT_SHA" ]]; then
+            echo "❌ ERROR: merge commit has no 2nd parent — cannot identify the"
+            echo "   tested release/hotfix image for production retagging."
+            echo "   Parents: $(git log -1 --format='%P')"
+            echo "   Root cause : squash or fast-forward merge was used on main."
+            echo "   Fix        : Settings → Merge requests → Merge method →"
+            echo "                'Merge commit', and disable squash."
+            exit 1
+          fi
+          echo "MERGE_PARENT_SHA=${PARENT_SHA}" >> version.env
+          echo "Merge parent-2 (tested tip): ${PARENT_SHA}"
+
+        # ── Gate 2: a merge commit, but from a FORBIDDEN source branch ───────
+        # e.g. feature/* or develop merged straight to main — a policy breach,
+        # distinct from the squash/rebase case below.
+        elif echo "$CI_COMMIT_TITLE" | grep -qE "^Merge branch '"; then
+          echo "   ERROR: Merge to main from unsupported source branch."
+          echo "   Title was : $CI_COMMIT_TITLE"
+          echo "   Only release/* (minor/major bump) and hotfix/* (patch bump)"
+          echo "   may merge to main."
+          echo ""
+          echo "   Root cause : Protected-branch / MR-approval policy breach."
+          echo "   Fix        : Review MR approval rules and protected branch"
+          echo "                settings for 'main'; revert the offending merge."
+          exit 1
+
+        # ── Gate 3: not a standard merge commit at all ───────────────────────
+        # No "Merge branch '…'" subject → squash or rebase merge was used.
+        else
+          echo "   ERROR: Cannot determine source branch from merge commit title."
+          echo "   Title was  : $CI_COMMIT_TITLE"
+          echo "   Expected   : \"Merge branch 'release/…' into 'main'\""
+          echo "   OR         : \"Merge branch 'hotfix/…' into 'main'\""
+          echo ""
+          echo "   Root cause : Squash or rebase merge was used on Protected branch 'main'."
+          echo "   Fix        : GitLab → Project → Settings → General → Merge requests"
+          echo "                Merge method → select 'Merge commit'"
+          echo "                Re-raise the MR and merge again."
+          exit 1
+        fi
+
+      # ── Unrecognised branch ────────────────────────────────────────────────
+      # Should not occur — the Push Rule blocks non-conforming branch names.
+      # Catches a manual pipeline run on an unexpected branch.
+      else
+        echo "  WARNING: Unrecognised branch '${CI_COMMIT_BRANCH}' — using SHA"
+        VERSION="unknown-${CI_COMMIT_SHORT_SHA}"
+      fi
+
+      # ── Write dotenv ────────────────────────────────────────────────────────
+      # BRANCH_USED: CI_COMMIT_BRANCH is empty on an MR pipeline — use the source.
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "BRANCH_USED=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}" >> version.env
+      else
+        echo "BRANCH_USED=${CI_COMMIT_BRANCH}"                    >> version.env
+      fi
+      echo "VERSION=$VERSION"                           >> version.env
+      echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"   >> version.env
+
+      # ── Summary ─────────────────────────────────────────────────────────────
+      echo "──────────────────────────────────────────────────────"
+      echo "Source  : ${CI_PIPELINE_SOURCE}"
+      if [[ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]]; then
+        echo "MR      : ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} → ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "Branch  : ${CI_COMMIT_BRANCH}"
+      fi
+      echo "VERSION : ${VERSION}"
+      echo "──────────────────────────────────────────────────────"
+
+  artifacts:
+    reports:
+      dotenv: version.env
+    expire_in: 1 day
+  rules:                    # runs on every pipeline type — all branches + MRs
+    - when: on_success
