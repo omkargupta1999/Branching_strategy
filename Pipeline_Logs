@@ -1,76 +1,71 @@
 #!/usr/bin/env python3
 """
 =============================================================================
- Script      : apply_repo_governance.py
- Purpose     : Apply the standard SBIePay repo governance baseline to GitLab
-               application repositories (ITEPAYPG-SBIePay2).
+ Script      : delete_repo_tags.py
+ Purpose     : Delete ALL git tags from GitLab repositories, after exporting
+               a full backup of what is being deleted.
 
- WHAT IT DOES (each step is an independent, commentable section):
-   Step 1  Group Invites        - share repo with the LDAP groups at set roles
-   Step 2  Push Rules           - branch-name + commit-message regex
-   Step 3  Protected Branches   - main / develop / release/* ; push = No one
-   Step 4  MR Approval Rules    - one rule per approver group, per branch
-   Step 5  Pipelines Must Pass  - only_allow_merge_if_pipeline_succeeds = true
-   Step 6  Merge Method         - "Merge commit" only  (no FF / no semi-linear)
-   Step 7  Squash Option        - "Do not allow"
-   Step 8  Default Branch       - set to 'main'
+ *** THIS IS DESTRUCTIVE. READ THIS BLOCK BEFORE RUNNING. ***
 
-   Steps 5-8 are each in their OWN function and their OWN call line in
-   run_one(). To DISABLE any of them, comment out its single call line in
-   run_one() (they are clearly marked). Nothing else needs to change.
+   Deleting a tag removes the only named pointer to the commit it marked.
+   The commits themselves are NOT deleted, but:
+     - release history in git is lost (which commit was v1.5.0?)
+     - hotfix-from-production-tag workflows break
+     - git-tag <-> image-tag mapping is broken for existing JFrog images
+     - protected tags are skipped (GitLab refuses to delete them via API)
 
- SCOPE / SAFETY:
-   - Every WRITE call targets /projects/<resolved-id>/... ONLY.
-   - Group lookups are READ-ONLY (GET) to resolve group IDs.
-   - No group/subgroup object is ever modified. Listing a subgroup's projects
-     (--subgroup) is a READ-ONLY GET; the writes still go per-project.
-   - Idempotent: every step checks current state first and skips if already
-     correct, so re-running is safe and makes no redundant changes.
+   MITIGATION: every run writes a CSV backup FIRST containing tag name,
+   commit SHA, commit date, message and author for every tag it is about to
+   delete. A tag can be recreated from its SHA:
+       POST /projects/:id/repository/tags  {tag_name, ref=<sha>}
+   Keep that CSV. Without it, deletions are not reversible.
+
+ WHAT IT DELETES
+   ALL tags in the target repo(s). No exceptions, no pattern filter.
+   Protected tags cannot be deleted via the API; they are reported as SKIPPED
+   so you can unprotect them manually if you really want them gone.
+
+ SCOPE / SAFETY
+   - Every DELETE targets /projects/<resolved-id>/repository/tags/<tag> only.
+   - Nothing else about the project is touched: no branches, no settings,
+     no members, no rules. Only tags.
+   - Default mode is DRY-RUN. You must pass --apply to actually delete.
+   - Multi-repo runs are FAIL-STOP: halt on the first repo that errors.
 
  Dependencies: NONE - Python standard library only (no pip required).
                Python 3.6+ / RHEL air-gapped compatible.
 
  TARGET SELECTION (choose exactly one):
-   --project <id-or-path>   ONE repo.        e.g. --project 2823
-                                             e.g. --project group/sub/repo
-   --subgroup <id-or-path>  ALL repos under a subgroup, including nested
-                            sub-subgroups.   e.g. --subgroup itepaypg-sbiepay2/application/backend
-   --batch <file>           Repos listed in a text file, one ID/path per line
-                            ('#' comments and blank lines ignored).
-   (none)                   Falls back to TARGET_PROJECT in CONFIG below.
+   --project <id-or-path>   ONE repo.       e.g. --project 2840
+   --subgroup <id-or-path>  ALL repos under a subgroup, incl. nested.
+   --batch <file>           Repos listed in a file, one ID/path per line.
 
  MODES:
-   (default)   APPLY   - make the changes, then auto-verify.
-   --dry-run           - print every write that WOULD happen. Changes nothing.
-   --verify            - read current state only. Changes nothing.
-
- MULTI-REPO BEHAVIOUR:
-   --subgroup and --batch run repos in order and STOP on the first error
-   (fail-stop), so a bad config cannot silently propagate. Repos completed
-   before the failure are listed in the summary so you know where to resume.
+   (default)   DRY-RUN - list every tag that WOULD be deleted. Deletes nothing.
+   --apply     DELETE the tags. Requires --confirm as well.
+   --confirm   Second, explicit acknowledgement. Both flags are required.
+   --backup-only  Export the CSV backup and stop. Deletes nothing.
 
  OUTPUT:
-   Console                             - live log
-   governance_<repo>_<ts>.txt          - single-repo run log
-   governance_BATCH_<ts>.txt           - consolidated log for --batch/--subgroup
+   Console
+   tags_backup_<repo>_<ts>.csv      per-repo backup of every tag found
+   tags_backup_ALL_<ts>.csv         combined backup for multi-repo runs
+   tagdelete_<repo|BATCH>_<ts>.txt  full run log
 
- TYPICAL USAGE:
-   1. Set TOKEN and GITLAB_URL in the CONFIG block below.
-   2. Preview one repo:
-        python3 apply_repo_governance.py --project 2823 --dry-run
-   3. Apply one repo, then check the VERIFY block it prints:
-        python3 apply_repo_governance.py --project 2823
-   4. Preview a whole subgroup:
-        python3 apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend --dry-run
-   5. Apply the subgroup:
-        python3 apply_repo_governance.py --subgroup itepaypg-sbiepay2/application/backend
-   6. Re-check anytime (read-only):
-        python3 apply_repo_governance.py --project 2823 --verify
+ USAGE (same as apply_repo_governance.py):
+   1. Edit the CONFIG block below: set TOKEN, GITLAB_URL, TARGET_PROJECT.
+   2. See what is there (safe, deletes nothing):
+        python delete_repo_tags.py
+        python delete_repo_tags.py --project 2840
+   3. Take the backup only (safe):
+        python delete_repo_tags.py --project 2840 --backup-only
+   4. Actually delete (destructive, BOTH flags required):
+        python delete_repo_tags.py --project 2840 --apply --confirm
+   5. Whole subgroup:
+        python delete_repo_tags.py --subgroup itepaypg-sbiepay2/application/backend
 
- TOKEN REQUIREMENTS:
-   Personal Access Token (NOT a group/project access token) from a user with
-   Maintainer (40) or Owner (50) on the target projects, scope = 'api'.
-   Group access tokens are rejected by the push_rule endpoint (403).
+ TOKEN: Personal Access Token, scope 'api', Maintainer/Owner on the targets.
+        Deleting tags requires Maintainer (40) or above.
 =============================================================================
 """
 
@@ -78,6 +73,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import json
+import csv
 import os
 import ssl
 import sys
@@ -85,204 +81,35 @@ import argparse
 from datetime import datetime
 
 # =============================================================================
-#  CONFIGURATION
+#  CONFIGURATION — Edit only this block
 # =============================================================================
-#  Values are read from environment variables first (so this script runs
-#  unchanged in GitLab CI), falling back to the literals below for local runs.
-#
-#  In CI, set these as masked/protected CI variables:
-#    GOVERNANCE_GITLAB_URL   e.g. https://gitlab.sbi
-#    GOVERNANCE_TOKEN        PAT with 'api' scope, Maintainer/Owner on targets
-#                            NOTE: must have push-rule permission. A group or
-#                            project access token is rejected (403) by the
-#                            /push_rule endpoint - use a personal access token.
-#
-#  For local runs, either export those vars or edit the fallbacks below.
+#  Same pattern as apply_repo_governance.py: paste your values here.
+#  Environment variables (GOVERNANCE_GITLAB_URL / GOVERNANCE_TOKEN) override
+#  these if set, so the same file also works unchanged in CI.
 # =============================================================================
 
-GITLAB_URL     = os.environ.get("GOVERNANCE_GITLAB_URL", "https://gitlab.sbi")
-TOKEN          = os.environ.get("GOVERNANCE_TOKEN", "")
+GITLAB_URL = "https://gitlab.sbi"      # Target GitLab instance
+TOKEN      = ""                        # Maintainer/Owner PAT (glpat-...)
 
-# Fallback target when no --project/--subgroup/--batch is given.
-TARGET_PROJECT = os.environ.get(
-    "GOVERNANCE_TARGET_PROJECT",
-    "itepaypg-sbiepay2/application/backend/epay_admin_service")
+# Fallback target when no --project/--subgroup/--batch is given on the CLI.
+TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_admin_portal_service"
 
-# =============================================================================
-#  SPEC — Do not edit unless the governance master doc changes
-# =============================================================================
-
-# GitLab access-level integers
-NO_ACCESS  = 0    # "No one"
-DEVELOPER  = 30
-MAINTAINER = 40
-
-# GitLab group NAME -> numeric ID map.
-# IDs taken directly from find_ldap_groups.py discovery output. The groups
-# live under itepaypg-sbiepay2/ldap-membership/. Hardcoding the IDs avoids the
-# fragile GET /groups?search= lookup (which did not match reliably on this
-# 18.1.6-EE instance). To onboard a new instance, re-run discovery and update.
-GROUP_IDS = {
-    "epay-gitlab-bank-app-owner":          4953,
-    "epay-gitlab-bank-app-maintainer":     4954,
-    "epay-gitlab-vendor-app-maintainer":   4955,
-    "epay-gitlab-vendor-app-lead":         4956,
-    "epay-gitlab-vendor-pm":               4962,
-    "epay-gitlab-vendor-release-manager":  4950,   # added: used in approval rules
-}
-
-# Step 1 — Group invites (project share). GitLab requires a group to be a
-# MEMBER of the project before it can be used in a protected-branch merge rule
-# (else: 422 "Merge access levels group does not have access to the project").
-# This mirrors the manual process: invite group -> assign role -> then protect.
-# Format: group_id -> access_level. IDs from find_ldap_groups.py discovery.
-OWNER_LVL      = 50
-MAINTAINER_LVL = 40
-DEVELOPER_LVL  = 30
-REPORTER_LVL   = 20
-
-GROUP_INVITES = [
-    {"name": "epay-gitlab-bank-app-owner",         "id": 4953, "access": OWNER_LVL},
-    {"name": "epay-gitlab-bank-app-maintainer",    "id": 4954, "access": MAINTAINER_LVL},
-    {"name": "epay-gitlab-vendor-app-maintainer",  "id": 4955, "access": MAINTAINER_LVL},
-    {"name": "epay-gitlab-vendor-release-manager", "id": 4950, "access": DEVELOPER_LVL},
-    {"name": "epay-gitlab-vendor-app-lead",        "id": 4956, "access": DEVELOPER_LVL},
-    {"name": "epay-gitlab-vendor-app-developer",   "id": 4957, "access": DEVELOPER_LVL},
-    # vendor-pm is used by Step 4 approval rules (not a Step-1 app link); invite
-    # as Reporter (its top-level spec role) so it's a project member too.
-    {"name": "epay-gitlab-vendor-pm",              "id": 4962, "access": REPORTER_LVL},
-]
-
-# Step 2 — Push rules (project-level: POST/PUT /projects/:id/push_rule).
-#
-# branch_name_regex — allowed branch names:
-#   main
-#   develop
-#   sit-integration
-#   release/<major|minor>-DM<digits>-EPAY-<desc>   e.g. release/minor-DM2026068056-EPAY-bpcl-refund
-#   feature/EPAY-<digits>-<desc>                   e.g. feature/EPAY-1234-upi-autopay
-#   bugfix/EPAY-<digits>-<desc>                    e.g. bugfix/EPAY-1299-fix-mandate
-#   hotfix/EPAY-<digits>-<desc>                    e.g. hotfix/EPAY-6789-fix
-#   <desc> allows letters, digits, underscore, hyphen (upper or lower case).
-#
-# commit_message_regex — accepts EITHER:
-#   (a) a GitLab auto-generated merge commit:
-#         "Merge branch ..."  or  "Merge remote-tracking branch ..."
-#       These MUST be allowed: with merge_method = "merge" (Merge commit),
-#       GitLab writes these titles itself. Rejecting them blocks every merge.
-#   (b) a normal commit in the format:  TICKET|CC|type: subject
-#         TICKET = 3 uppercase letters + '-' + 3 digits   (e.g. EPA-123)
-#         CC     = 2 uppercase letters                    (e.g. IN)
-#         type   = feat|fix|docs|style|refactor|perf|test|chore
-#         then ': ' followed by a non-empty subject.
-#       The pipes are LITERAL characters in the message (escaped \| ).
-#       Example: EPA-123|IN|feat: added UPI autopay mandate flow
-#
-# Raw strings so backslashes pass to GitLab verbatim (RE2 syntax server-side).
-PUSH_RULES = {
-    "branch_name_regex":
-        r"^(main|develop|sit-integration|"
-        r"release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|"
-        r"feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|"
-        r"bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|"
-        r"hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$",
-    "commit_message_regex":
-        r"^(Merge branch .*|Merge remote-tracking branch .*|"
-        r"[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|"
-        r"(feat|fix|docs|style|refactor|perf|test|chore): .+)$",
-}
-
-# -----------------------------------------------------------------------------
-# Steps 6-8 — Project settings values.
-# Change a value here to change what the step enforces.
-# To DISABLE a step entirely, comment out its call line in run_one().
-# -----------------------------------------------------------------------------
-
-# Step 6 — Merge method. GitLab accepts exactly these three values:
-#   "merge"        -> "Merge commit"                       <-- what we enforce
-#   "rebase_merge" -> "Merge commit with semi-linear history"
-#   "ff"           -> "Fast-forward merge"
-# "Merge commit" is REQUIRED: our semver/tagging logic parses merge-commit
-# titles on main to resolve the source branch. Changing this breaks it silently.
-MERGE_METHOD = "merge"
-
-# Step 7 — Squash option. GitLab accepts exactly these four values:
-#   "never"        -> "Do not allow"                       <-- what we enforce
-#   "default_off"  -> "Allow, off by default"
-#   "default_on"   -> "Allow, on by default"
-#   "always"       -> "Require"
-SQUASH_OPTION = "never"
-
-# Step 8 — Default branch for every repo.
-DEFAULT_BRANCH = "main"
-
-# Step 5 — "Pipelines must succeed before merge".
-#   False = a green pipeline is NOT required to merge (advisory only).
-#   True  = broken pipelines block the merge button.
-# Set to False by request: pipeline success should be optional at merge time.
-PIPELINE_MUST_SUCCEED = False
-
-# Step 3 — Protected branches.  push = No one ; merge = listed groups only.
-PROTECTED_BRANCHES = [
-    {"name": "main",
-     "merge_groups": ["epay-gitlab-bank-app-maintainer",
-                      "epay-gitlab-bank-app-owner",
-                      "epay-gitlab-vendor-app-maintainer"]},
-    {"name": "develop",
-     "merge_groups": ["epay-gitlab-vendor-app-lead",
-                      "epay-gitlab-vendor-app-maintainer",
-                      "epay-gitlab-vendor-release-manager"]},
-    {"name": "sit-integration",
-     "merge_groups": ["epay-gitlab-vendor-app-lead",
-                      "epay-gitlab-vendor-app-maintainer",
-                      "epay-gitlab-vendor-release-manager"]},
-    {"name": "release/*",
-     "merge_groups": ["epay-gitlab-vendor-app-lead",
-                      "epay-gitlab-vendor-app-maintainer",
-                      "epay-gitlab-vendor-release-manager"]},
-]
-
-# Step 4 — MR approval rules (project-level, Ultimate). One group per rule.
-#   Rule names must be UNIQUE per project, so the sit-integration copies of the
-#   release gates carry a "(SIT)" suffix.
-#
-#   Flow 5 (hotfix/* -> main) reuses the SAME 4 'main' rules (hotfix MRs also
-#   target main), so no separate hotfix rules are needed. Lead absent from
-#   main => "Lead NOT required for hotfix" is satisfied.
-APPROVAL_RULES = [
-    # --- develop ---
-    {"name": "Lead Approval",                    "branch": "develop",         "group": "epay-gitlab-vendor-app-lead",        "required": 1},
-
-    # --- release/* ---
-    {"name": "Release Gate - Lead",              "branch": "release/*",       "group": "epay-gitlab-vendor-app-lead",        "required": 1},
-    {"name": "Release Manager Approval",         "branch": "release/*",       "group": "epay-gitlab-vendor-release-manager", "required": 1},
-    {"name": "Release Gate - Architect",         "branch": "release/*",       "group": "epay-gitlab-vendor-app-maintainer",  "required": 1},
-
-    # --- sit-integration (same gates as release/*) ---
-    {"name": "Release Gate - Lead (SIT)",        "branch": "sit-integration", "group": "epay-gitlab-vendor-app-lead",        "required": 1},
-    {"name": "Release Manager Approval (SIT)",   "branch": "sit-integration", "group": "epay-gitlab-vendor-release-manager", "required": 1},
-    {"name": "Release Gate - Architect (SIT)",   "branch": "sit-integration", "group": "epay-gitlab-vendor-app-maintainer",  "required": 1},
-
-    # --- main (covers release/*->main AND hotfix/*->main) ---
-    {"name": "Vendor Architect Sign-off",        "branch": "main",            "group": "epay-gitlab-vendor-app-maintainer",  "required": 1},
-    {"name": "Vendor PM Approval (CAB gate)",    "branch": "main",            "group": "epay-gitlab-vendor-pm",              "required": 1},
-    {"name": "Bank Maintainer Approval",         "branch": "main",            "group": "epay-gitlab-bank-app-maintainer",    "required": 1},
-    {"name": "Bank PM Final Gate",               "branch": "main",            "group": "epay-gitlab-bank-app-owner",         "required": 1},
-]
+# --- env overrides (leave as-is) ---------------------------------------------
+GITLAB_URL = os.environ.get("GOVERNANCE_GITLAB_URL", GITLAB_URL)
+TOKEN      = os.environ.get("GOVERNANCE_TOKEN", TOKEN)
 
 # =============================================================================
 #  SETUP
 # =============================================================================
 
 if not TOKEN:
-    print("[ERROR] TOKEN is not set. Fill in your Maintainer/Owner PAT.")
+    print("[ERROR] TOKEN is not set. Fill in TOKEN or export GOVERNANCE_TOKEN.")
     sys.exit(1)
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 HEADERS   = {"PRIVATE-TOKEN": TOKEN}
 ssl_ctx   = ssl._create_unverified_context()
 
-# Collected log lines (console + file)
 _log_lines = []
 
 def log(line=""):
@@ -293,30 +120,14 @@ def log(line=""):
 #  API HELPERS
 # =============================================================================
 
-def _request(method, url, data=None, dry_run=False, as_json=False):
-    """One HTTP call. data dict -> form-urlencoded body, OR JSON body when
-       as_json=True (needed for nested arrays like allowed_to_merge that the
-       form-encoded bracket syntax does not reliably express on 18.x).
-       Honours dry_run for writes."""
-    is_write = method in ("POST", "PUT", "DELETE")
-    if is_write and dry_run:
-        log(f"    [dry-run] {method} {url}")
-        if data:
-            log(f"              payload: {json.dumps(data)}")
+def _request(method, url, dry_run=False):
+    """One HTTP call. Honours dry_run for DELETE."""
+    if method == "DELETE" and dry_run:
+        log(f"      [dry-run] DELETE {url}")
         return {"__dry_run__": True}
 
-    body = None
-    req_headers = dict(HEADERS)
-    if data is not None:
-        if as_json:
-            body = json.dumps(data).encode()
-            req_headers["Content-Type"] = "application/json"
-        else:
-            body = urllib.parse.urlencode(data, doseq=True).encode()
-            req_headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-    req = urllib.request.Request(url, data=body, method=method)
-    for k, v in req_headers.items():
+    req = urllib.request.Request(url, method=method)
+    for k, v in HEADERS.items():
         req.add_header(k, v)
     try:
         resp = urllib.request.urlopen(req, context=ssl_ctx)
@@ -325,13 +136,13 @@ def _request(method, url, data=None, dry_run=False, as_json=False):
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")
         if e.code == 401:
-            log("\n[ERROR] 401 Unauthorized — TOKEN invalid or empty.")
+            log("\n[ERROR] 401 Unauthorized - TOKEN invalid or expired.")
             sys.exit(1)
         if e.code == 403:
-            log("\n[ERROR] 403 Forbidden — token lacks scope/role on this project.")
-            sys.exit(1)
+            # Most commonly: the tag is PROTECTED. Report, do not abort.
+            return {"__forbidden__": detail}
         if e.code == 404:
-            return None   # let callers treat 404 as 'not found'
+            return None
         log(f"\n[ERROR] HTTP {e.code} on {method} {url} -> {detail}")
         sys.exit(1)
 
@@ -342,8 +153,9 @@ def api_get(path, params=None):
         url += "?" + urllib.parse.urlencode(params)
     return _request("GET", url)
 
+
 def api_get_all(path, params=None):
-    """Paginated GET — returns the full list across pages."""
+    """Paginated GET - returns the full list across all pages."""
     results, page = [], 1
     base = f"{GITLAB_URL}/api/v4{path}"
     while True:
@@ -372,13 +184,6 @@ def api_get_all(path, params=None):
         page += 1
     return results
 
-def api_post(path, data=None, dry_run=False, as_json=False):
-    return _request("POST", f"{GITLAB_URL}/api/v4{path}", data=data,
-                    dry_run=dry_run, as_json=as_json)
-
-def api_put(path, data=None, dry_run=False, as_json=False):
-    return _request("PUT", f"{GITLAB_URL}/api/v4{path}", data=data,
-                    dry_run=dry_run, as_json=as_json)
 
 def api_delete(path, dry_run=False):
     return _request("DELETE", f"{GITLAB_URL}/api/v4{path}", dry_run=dry_run)
@@ -387,577 +192,274 @@ def api_delete(path, dry_run=False):
 #  RESOLUTION
 # =============================================================================
 
-def resolve_project(full_path):
-    # Accept either a numeric project ID or a full path.
-    ident = str(full_path).strip()
-    if ident.isdigit():
-        enc = ident
-    else:
-        enc = urllib.parse.quote(ident, safe="")
+def resolve_project(target):
+    """Accept a numeric project ID or a full path."""
+    ident = str(target).strip()
+    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
     proj = api_get(f"/projects/{enc}")
     if not proj:
-        log(f"\n[ERROR] Project not found: {full_path}")
-        log("  Tip: pass the numeric project ID instead of the path, e.g.")
-        log("       --project 2754")
-        log("  Or copy the exact 'Full Path' from your repo_list CSV "
-            "(paths are case-sensitive).")
+        log(f"\n[ERROR] Project not found: {target}")
+        log("  Tip: use the numeric project ID; paths are case-sensitive.")
         sys.exit(1)
     return proj["id"], proj["path_with_namespace"]
 
-def resolve_groups(_unused=None):
-    """Validate each hardcoded group ID exists & is visible (READ-ONLY).
-       Returns the same name->id map. Aborts if any ID is unreachable."""
-    resolved, missing = {}, []
-    for name, gid in GROUP_IDS.items():
-        g = api_get(f"/groups/{gid}")
-        if g and g.get("id") == gid:
-            resolved[name] = gid
-        else:
-            missing.append(f"{name} (id={gid})")
-    if missing:
-        log("\n[ERROR] These GitLab groups could not be reached by ID:")
-        for m in missing:
-            log(f"   - {m}")
-        log("Aborting without making any changes. Re-run find_ldap_groups.py "
-            "and update GROUP_IDS if IDs have changed on this instance.")
-        sys.exit(2)
-    return resolved
 
-# =============================================================================
-#  STEP 1 — GROUP INVITES (project share)
-# =============================================================================
-
-def apply_group_invites(pid, dry_run):
-    log("\n=== Step 1: Group Invites (project share) ===")
-    # Existing shared groups on the project, to make this idempotent.
-    proj = api_get(f"/projects/{pid}")
-    shared = {g.get("group_id"): g.get("group_access_level")
-              for g in (proj.get("shared_with_groups", []) if proj else [])}
-
-    for inv in GROUP_INVITES:
-        gid, lvl, name = inv["id"], inv["access"], inv["name"]
-        if shared.get(gid) == lvl:
-            log(f"  '{name}' already shared at level {lvl} -> skip")
-            continue
-        if gid in shared:
-            # Re-share at the correct level: unshare then share.
-            api_delete(f"/projects/{pid}/share/{gid}", dry_run=dry_run)
-        api_post(f"/projects/{pid}/share",
-                 data={"group_id": gid, "group_access": lvl},
-                 dry_run=dry_run, as_json=True)
-        log(f"  shared '{name}' (id={gid}) at access level {lvl}")
-
-# =============================================================================
-#  STEP 2 — PUSH RULES
-# =============================================================================
-
-def apply_push_rules(pid, dry_run):
-    log("\n=== Step 2: Push Rules ===")
-    existing = api_get(f"/projects/{pid}/push_rule")
-    if dry_run:
-        verb = "update" if existing else "create"
-        log(f"    [dry-run] would {verb} push rules")
-        log(f"    branch_name_regex   : {PUSH_RULES['branch_name_regex']}")
-        log(f"    commit_message_regex: {PUSH_RULES['commit_message_regex']}")
-        return
-
-    if existing:
-        resp = api_put(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=True)
-        verb = "updated"
-    else:
-        resp = api_post(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=True)
-        verb = "created"
-
-    # Read back to CONFIRM the write actually persisted (the create endpoint
-    # can return 2xx without persisting on some 18.x configs). Trust the
-    # read-back, not the POST response.
-    after = api_get(f"/projects/{pid}/push_rule")
-    persisted = (after
-                 and after.get("branch_name_regex") == PUSH_RULES["branch_name_regex"]
-                 and after.get("commit_message_regex") == PUSH_RULES["commit_message_regex"])
-
-    # Fallback: push_rules is a flat-field endpoint; some 18.x builds only
-    # accept form-encoded (not JSON) here. If JSON didn't persist, retry as form.
-    if not persisted:
-        log("  [info] JSON write did not persist; retrying form-encoded ...")
-        existing2 = api_get(f"/projects/{pid}/push_rule")
-        if existing2:
-            resp = api_put(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=False)
-            verb = "updated"
-        else:
-            resp = api_post(f"/projects/{pid}/push_rule", data=PUSH_RULES, as_json=False)
-            verb = "created"
-        after = api_get(f"/projects/{pid}/push_rule")
-        persisted = (after
-                     and after.get("branch_name_regex") == PUSH_RULES["branch_name_regex"]
-                     and after.get("commit_message_regex") == PUSH_RULES["commit_message_regex"])
-
-    if persisted:
-        log(f"  {verb} push rules — CONFIRMED on read-back")
-        log(f"    branch_name_regex   : {after.get('branch_name_regex')}")
-        log(f"    commit_message_regex: {after.get('commit_message_regex')}")
-    else:
-        log("  [WARN] push rules did NOT persist as expected.")
-        log(f"    POST/PUT response: {json.dumps(resp) if resp else 'empty'}")
-        log(f"    read-back: {json.dumps(after) if after else 'none'}")
-        log("    -> push rules may require a different endpoint/permission on "
-            "this instance; see notes.")
-
-# =============================================================================
-#  STEP 3 — PROTECTED BRANCHES
-# =============================================================================
-
-def get_protected_branch(pid, name):
-    enc = urllib.parse.quote(name, safe="")
-    return api_get(f"/projects/{pid}/protected_branches/{enc}")
-
-def get_protected_branch_id(pid, name):
-    """Resolve a protected branch's numeric ID reliably, including wildcard
-       names like 'release/*'. The single-name GET endpoint is unreliable for
-       wildcards on 18.1.x, so list all protected branches and match by name."""
-    for pb in (api_get_all(f"/projects/{pid}/protected_branches") or []):
-        if pb.get("name") == name:
-            return pb.get("id")
-    return None
-
-def apply_protected_branches(pid, groups, dry_run):
-    log("\n=== Step 3: Protected Branch Rules ===")
-    for spec in PROTECTED_BRANCHES:
-        name = spec["name"]
-        enc  = urllib.parse.quote(name, safe="")
-        if get_protected_branch_id(pid, name) is not None:
-            log(f"  '{name}' already protected -> deleting to re-apply cleanly")
-            api_delete(f"/projects/{pid}/protected_branches/{enc}", dry_run=dry_run)
-
-        # push_access_level 0 = "No one" (an empty allowed_to_push array is
-        # interpreted by GitLab as the default Maintainers level, NOT nobody,
-        # so we set the level explicitly). allowed_to_merge stays a group array.
-        data = {
-            "name": name,
-            "allow_force_push": False,
-            "push_access_level": NO_ACCESS,   # 0 = No one
-            "allowed_to_merge": [{"group_id": groups[gname]}
-                                 for gname in spec["merge_groups"]],
-        }
-
-        api_post(f"/projects/{pid}/protected_branches", data=data,
-                 dry_run=dry_run, as_json=True)
-        log(f"  protected '{name}' | push: No one | merge: {', '.join(spec['merge_groups'])}")
-
-# =============================================================================
-#  STEP 4 — MR APPROVAL RULES
-# =============================================================================
-
-def apply_approval_rules(pid, groups, dry_run):
-    log("\n=== Step 4: MR Approval Rules ===")
-    # protected-branch name -> id (needed to target a rule at a branch)
-    pb_ids = {}
-    for spec in PROTECTED_BRANCHES:
-        if dry_run:
-            pb_ids[spec["name"]] = f"<pb-id:{spec['name']}>"
-        else:
-            pb_ids[spec["name"]] = get_protected_branch_id(pid, spec["name"])
-
-    existing = {} if dry_run else {
-        r["name"]: r for r in (api_get_all(f"/projects/{pid}/approval_rules") or [])
-    }
-
-    # --- Reconcile: delete any approval rule whose name is NOT in our spec ---
-    # Keeps the repo's final state EXACTLY the 7 spec rules (no orphans from
-    # earlier manual/UI config or prior script versions). GitLab's built-in
-    # 'Any approver' default rule (rule_type 'any_approver') is left untouched.
-    spec_names = {r["name"] for r in APPROVAL_RULES}
-    if dry_run:
-        log("  [reconcile] would delete any existing rule not in spec "
-            "(dry-run cannot list live rules reliably; see real run)")
-    else:
-        for name, r in existing.items():
-            if name in spec_names:
-                continue
-            if r.get("rule_type") == "any_approver":
-                continue  # don't remove GitLab's default fallback rule
-            api_delete(f"/projects/{pid}/approval_rules/{r['id']}", dry_run=dry_run)
-            log(f"  [reconcile] deleted non-spec rule '{name}' (id={r['id']})")
-        # Refresh after deletions so we don't try to PUT a just-deleted rule.
-        existing = {
-            r["name"]: r for r in (api_get_all(f"/projects/{pid}/approval_rules") or [])
-        }
-
-    for rule in APPROVAL_RULES:
-        branch = rule["branch"]
-        pbid   = pb_ids.get(branch)
-        if pbid is None and not dry_run:
-            log(f"  SKIP '{rule['name']}' (target branch '{branch}' not protected)")
-            continue
-
-        data = {
-            "name": rule["name"],
-            "approvals_required": rule["required"],
-            "rule_type": "regular",
-            "group_ids": [groups[rule["group"]]],
-        }
-        if pbid is not None:
-            data["protected_branch_ids"] = [pbid]
-
-        prev = existing.get(rule["name"])
-        if prev:
-            api_put(f"/projects/{pid}/approval_rules/{prev['id']}", data=data,
-                    dry_run=dry_run, as_json=True)
-            verb = "updated"
-        else:
-            api_post(f"/projects/{pid}/approval_rules", data=data,
-                     dry_run=dry_run, as_json=True)
-            verb = "created"
-        log(f"  {verb} '{rule['name']}' -> '{branch}' | group {rule['group']} | required {rule['required']}")
-
-# =============================================================================
-#  STEP 5 — PROJECT SETTING
-# =============================================================================
-
-def apply_pipeline_setting(pid, dry_run):
-    """Step 5 — 'Pipelines must succeed before merge'.
-
-       Enforced value is PIPELINE_MUST_SUCCEED (see CONFIG). Currently FALSE:
-       a green pipeline is NOT required to merge, it is advisory only.
-       Idempotent: reads current value, skips if already correct."""
-    log("\n=== Step 5: Pipelines Must Succeed ===")
-    want = PIPELINE_MUST_SUCCEED
-    proj = api_get(f"/projects/{pid}")
-    current = proj.get("only_allow_merge_if_pipeline_succeeds") if proj else None
-    if current is want:
-        log(f"  already {want} -> skip")
-        return
-    log(f"  current={current} -> setting to {want}")
-    api_put(f"/projects/{pid}",
-            data={"only_allow_merge_if_pipeline_succeeds": "true" if want else "false"},
-            dry_run=dry_run)
-    log(f"  'Pipelines must succeed before merge' = "
-        f"{'enabled' if want else 'DISABLED (optional)'}")
-
-# =============================================================================
-#  STEP 6 — MERGE METHOD  ("Merge commit" only)
-# =============================================================================
-
-def apply_merge_method(pid, dry_run):
-    """Step 6 — force merge_method to MERGE_METHOD ('merge' = Merge commit).
-       Idempotent: reads current value, skips if already correct."""
-    log("\n=== Step 6: Merge Method ===")
-    proj = api_get(f"/projects/{pid}")
-    current = proj.get("merge_method") if proj else None
-    if current == MERGE_METHOD:
-        log(f"  already '{MERGE_METHOD}' (Merge commit) -> skip")
-        return
-    log(f"  current='{current}' -> setting to '{MERGE_METHOD}'")
-    api_put(f"/projects/{pid}",
-            data={"merge_method": MERGE_METHOD},
-            dry_run=dry_run)
-    log(f"  merge_method = '{MERGE_METHOD}' (Merge commit)")
-
-# =============================================================================
-#  STEP 7 — SQUASH OPTION  ("Do not allow")
-# =============================================================================
-
-def apply_squash_option(pid, dry_run):
-    """Step 7 — force squash_option to SQUASH_OPTION ('never' = Do not allow).
-       Idempotent: reads current value, skips if already correct."""
-    log("\n=== Step 7: Squash Option ===")
-    proj = api_get(f"/projects/{pid}")
-    current = proj.get("squash_option") if proj else None
-    if current == SQUASH_OPTION:
-        log(f"  already '{SQUASH_OPTION}' (Do not allow) -> skip")
-        return
-    log(f"  current='{current}' -> setting to '{SQUASH_OPTION}'")
-    api_put(f"/projects/{pid}",
-            data={"squash_option": SQUASH_OPTION},
-            dry_run=dry_run)
-    log(f"  squash_option = '{SQUASH_OPTION}' (Do not allow)")
-
-# =============================================================================
-#  STEP 8 — DEFAULT BRANCH  (main)
-# =============================================================================
-
-def apply_default_branch(pid, dry_run):
-    """Step 8 — set the repo's default branch to DEFAULT_BRANCH ('main').
-       Idempotent: skips if already correct.
-       SAFETY: only sets it if the branch actually EXISTS in the repo, so we
-       never point default_branch at a non-existent ref."""
-    log("\n=== Step 8: Default Branch ===")
-    proj = api_get(f"/projects/{pid}")
-    current = proj.get("default_branch") if proj else None
-    if current == DEFAULT_BRANCH:
-        log(f"  already '{DEFAULT_BRANCH}' -> skip")
-        return
-
-    # Confirm the target branch exists before switching to it.
-    enc = urllib.parse.quote(DEFAULT_BRANCH, safe="")
-    branch = api_get(f"/projects/{pid}/repository/branches/{enc}")
-    if not branch:
-        log(f"  SKIP: branch '{DEFAULT_BRANCH}' does not exist in this repo "
-            f"(current default='{current}'). Create it first, then re-run.")
-        return
-
-    log(f"  current='{current}' -> setting to '{DEFAULT_BRANCH}'")
-    api_put(f"/projects/{pid}",
-            data={"default_branch": DEFAULT_BRANCH},
-            dry_run=dry_run)
-    log(f"  default_branch = '{DEFAULT_BRANCH}'")
-
-# =============================================================================
-#  VERIFY
-# =============================================================================
-
-def verify(pid, groups):
-    log("\n=== VERIFY (read-only) ===")
-    id_to_name = {v: k for k, v in groups.items()}
-    invite_name = {inv["id"]: inv["name"] for inv in GROUP_INVITES}
-
-    log("Shared groups (project members):")
-    proj0 = api_get(f"/projects/{pid}")
-    for g in (proj0.get("shared_with_groups", []) if proj0 else []):
-        gid = g.get("group_id")
-        log(f"  {invite_name.get(gid, g.get('group_name', gid))}: "
-            f"access level {g.get('group_access_level')}")
-
-    log("Protected branches:")
-    pb_by_name = {pb.get("name"): pb
-                  for pb in (api_get_all(f"/projects/{pid}/protected_branches") or [])}
-    for spec in PROTECTED_BRANCHES:
-        pb = pb_by_name.get(spec["name"])
-        if not pb:
-            log(f"  MISSING: {spec['name']}")
-            continue
-        push  = pb.get("push_access_levels", [])
-        merge = pb.get("merge_access_levels", [])
-        push_ok = bool(push) and all(p.get("access_level") == NO_ACCESS for p in push)
-        merge_grp = [id_to_name.get(m.get("group_id"), m.get("group_id"))
-                     for m in merge if m.get("group_id")]
-        log(f"  {spec['name']}: push={'No one' if push_ok else push} | merge groups={merge_grp}")
-
-    log("Approval rules:")
-    for r in (api_get_all(f"/projects/{pid}/approval_rules") or []):
-        grp      = [id_to_name.get(g.get("id"), g.get("name")) for g in r.get("groups", [])]
-        branches = [b.get("name") for b in r.get("protected_branches", [])]
-        log(f"  {r.get('name')}: required={r.get('approvals_required')} | groups={grp} | branches={branches}")
-
-    log("Project settings:")
-    proj = api_get(f"/projects/{pid}") or {}
-    _mm = proj.get("merge_method")
-    _sq = proj.get("squash_option")
-    _db = proj.get("default_branch")
-    _pp = proj.get("only_allow_merge_if_pipeline_succeeds")
-    log(f"  Pipelines must succeed : {_pp}"
-        f"{'' if _pp is PIPELINE_MUST_SUCCEED else f'   <-- expected {PIPELINE_MUST_SUCCEED}'}")
-    log(f"  Merge method           : {_mm}"
-        f"{' (Merge commit)' if _mm == 'merge' else f'   <-- expected {MERGE_METHOD}'}")
-    log(f"  Squash option          : {_sq}"
-        f"{' (Do not allow)' if _sq == 'never' else f'   <-- expected {SQUASH_OPTION}'}")
-    log(f"  Default branch         : {_db}"
-        f"{'' if _db == DEFAULT_BRANCH else f'   <-- expected {DEFAULT_BRANCH}'}")
-
-    log("Push rules:")
-    pr = api_get(f"/projects/{pid}/push_rule")
-    if pr:
-        log(f"  branch_name_regex   : {pr.get('branch_name_regex')}")
-        log(f"  commit_message_regex: {pr.get('commit_message_regex')}")
-    else:
-        log("  MISSING: no push rules set")
-
-# =============================================================================
-#  MAIN
-# =============================================================================
-
-def run_one(project, mode_verify, mode_dry_run):
-    """Apply (or verify/dry-run) governance on ONE project. Returns (pid, ppath).
-       On any API error the underlying calls sys.exit(1) -> fail-stop."""
-    mode = "VERIFY" if mode_verify else ("DRY-RUN" if mode_dry_run else "APPLY")
-    log("=" * 65)
-    log("  GitLab Repo Governance")
-    log(f"  Target  : {GITLAB_URL}")
-    log(f"  Project : {project}")
-    log(f"  Mode    : {mode}")
-    log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    log("=" * 65)
-
-    pid, ppath = resolve_project(project)
-    log(f"\nResolved project -> id={pid}  path={ppath}")
-
-    log("\nValidating GitLab group IDs (read-only)...")
-    groups = resolve_groups()
-    for n, i in groups.items():
-        log(f"  {n} -> {i}")
-
-    if mode_verify:
-        verify(pid, groups)
-    else:
-        # ------------------------------------------------------------------
-        # STEP CALLS — comment out any line below to DISABLE that step.
-        # Each step is independent and idempotent (skips if already correct).
-        # ------------------------------------------------------------------
-        apply_group_invites(pid, mode_dry_run)             # Step 1: group invites
-        apply_push_rules(pid, mode_dry_run)                # Step 2: push rules
-        apply_protected_branches(pid, groups, mode_dry_run)  # Step 3: protected branches
-        apply_approval_rules(pid, groups, mode_dry_run)    # Step 4: MR approval rules
-        apply_pipeline_setting(pid, mode_dry_run)          # Step 5: pipelines must succeed
-        apply_merge_method(pid, mode_dry_run)              # Step 6: merge method = Merge commit
-        apply_squash_option(pid, mode_dry_run)             # Step 7: squash = Do not allow
-        apply_default_branch(pid, mode_dry_run)            # Step 8: default branch = main
-        # ------------------------------------------------------------------
-
-        if not mode_dry_run:
-            verify(pid, groups)
-
-    log(f"\nDone. Scope was project id={pid} only.")
-    return pid, ppath
+def list_subgroup_projects(subgroup):
+    """READ-ONLY: every project under a subgroup, incl. nested sub-subgroups."""
+    ident = str(subgroup).strip()
+    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
+    grp = api_get(f"/groups/{enc}")
+    if not grp:
+        log(f"\n[ERROR] Subgroup not found: {subgroup}")
+        sys.exit(1)
+    projects = api_get_all(f"/groups/{enc}/projects",
+                           params={"include_subgroups": "true",
+                                   "archived": "false"})
+    out = [(p.get("id"), p.get("path_with_namespace")) for p in (projects or [])]
+    out.sort(key=lambda t: (t[1] or ""))
+    return grp.get("full_path", ident), out
 
 
 def load_batch_file(path):
-    """Read project IDs/paths, one per line. Blank lines and #comments ignored."""
+    """Read project IDs/paths, one per line. '#' comments stripped."""
     ids = []
     with open(path, encoding="utf-8") as f:
         for raw in f:
             line = raw.strip()
             if not line or line.startswith("#"):
                 continue
-            # Strip any inline comment so annotated lines like
-            # "2823    # itepaypg-sbiepay2/.../epay_admin_service" work too.
-            # We take the first whitespace- or #-delimited token as the ID/path.
             token = line.split("#", 1)[0].strip().split()[0]
             if token:
                 ids.append(token)
     return ids
 
+# =============================================================================
+#  TAGS
+# =============================================================================
 
-def list_subgroup_projects(subgroup):
-    """READ-ONLY: return [(id, path_with_namespace), ...] for every project under
-       a subgroup, including all nested sub-subgroups. Archived repos excluded.
-       Accepts a numeric group ID or a full group path."""
-    ident = str(subgroup).strip()
-    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
-
-    # Confirm the group exists first so we fail with a clear message.
-    grp = api_get(f"/groups/{enc}")
-    if not grp:
-        log(f"\n[ERROR] Subgroup not found: {subgroup}")
-        log("  Pass a numeric group ID or the exact full path, e.g.")
-        log("    --subgroup itepaypg-sbiepay2/application/backend")
-        sys.exit(1)
-
-    projects = api_get_all(f"/groups/{enc}/projects",
-                           params={"include_subgroups": "true",
-                                   "archived": "false"})
-    out = []
-    for p in (projects or []):
-        out.append((p.get("id"), p.get("path_with_namespace")))
-    # Stable, predictable order.
-    out.sort(key=lambda t: (t[1] or ""))
-    return grp.get("full_path", ident), out
+def get_protected_tag_names(pid):
+    """Names/patterns of protected tags. These cannot be deleted via the API."""
+    pts = api_get_all(f"/projects/{pid}/protected_tags")
+    return {t.get("name") for t in (pts or [])}
 
 
-def run_many(targets, label, mode_verify, mode_dry_run):
-    """Run governance across a list of targets, FAIL-STOP on first error.
-       targets: list of project IDs/paths (strings or ints)."""
-    total = len(targets)
-    done = []
-    print("=" * 65)
-    print(f"  MULTI-REPO MODE — {total} repos — FAIL-STOP on first error")
-    print(f"  Source: {label}")
-    print("=" * 65)
+def list_tags(pid):
+    """Every tag in the project, newest commit first."""
+    return api_get_all(f"/projects/{pid}/repository/tags") or []
 
-    for idx, project in enumerate(targets, 1):
-        log("")
-        log("#" * 65)
-        log(f"#  {idx}/{total}: {project}")
-        log("#" * 65)
-        # Any API error inside run_one() calls sys.exit(1) -> batch halts here.
-        pid, ppath = run_one(project, mode_verify, mode_dry_run)
-        done.append((pid, ppath))
 
-    log("")
-    log("=" * 65)
-    log(f"  COMPLETE — {len(done)}/{total} repos succeeded")
-    log("=" * 65)
-    for pid, ppath in done:
-        log(f"  OK  {ppath} (id={pid})")
+def tag_rows(ppath, tags):
+    """Flatten tags into CSV rows for the backup."""
+    rows = []
+    for t in tags:
+        commit = t.get("commit") or {}
+        rows.append({
+            "repo_path":     ppath,
+            "tag_name":      t.get("name", ""),
+            "commit_sha":    commit.get("id", ""),
+            "short_sha":     commit.get("short_id", ""),
+            "commit_date":   commit.get("committed_date", ""),
+            "commit_title":  (commit.get("title") or "").replace("\n", " "),
+            "commit_author": commit.get("author_name", ""),
+            "tag_message":   (t.get("message") or "").replace("\n", " "),
+            "is_protected":  "",      # filled in by caller
+            "target":        t.get("target", ""),
+        })
+    return rows
 
-    out_file = f"governance_BATCH_{TIMESTAMP}.txt"
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(_log_lines))
-    print(f"\n  -> {out_file} written (consolidated audit log).")
 
+CSV_FIELDS = ["repo_path", "tag_name", "commit_sha", "short_sha", "commit_date",
+              "commit_title", "commit_author", "tag_message", "is_protected",
+              "target"]
+
+
+def write_csv(path, rows):
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+
+
+def process_project(target, do_delete, backup_only):
+    """Back up, then optionally delete, every tag in ONE project.
+       Returns (pid, ppath, rows, deleted, skipped, failed)."""
+    pid, ppath = resolve_project(target)
+    log("=" * 70)
+    log(f"  Project : {ppath}  (id={pid})")
+    log("=" * 70)
+
+    tags = list_tags(pid)
+    if not tags:
+        log("  No tags found. Nothing to do.")
+        return pid, ppath, [], 0, 0, 0
+
+    protected = get_protected_tag_names(pid)
+    rows = tag_rows(ppath, tags)
+    for r in rows:
+        r["is_protected"] = "YES" if r["tag_name"] in protected else "no"
+
+    log(f"  Found {len(tags)} tag(s)"
+        f"{f', {len(protected)} protected pattern(s)' if protected else ''}")
+
+    # ---- BACKUP FIRST, ALWAYS ----
+    safe = ppath.split("/")[-1]
+    csv_path = f"tags_backup_{safe}_{TIMESTAMP}.csv"
+    write_csv(csv_path, rows)
+    log(f"  Backup written -> {csv_path}")
+
+    if backup_only:
+        log("  --backup-only: stopping here. No tags deleted.")
+        return pid, ppath, rows, 0, 0, 0
+
+    deleted = skipped = failed = 0
+    for r in rows:
+        name = r["tag_name"]
+        if r["is_protected"] == "YES":
+            log(f"    SKIP (protected) {name}")
+            skipped += 1
+            continue
+
+        enc = urllib.parse.quote(name, safe="")
+        res = api_delete(f"/projects/{pid}/repository/tags/{enc}",
+                         dry_run=not do_delete)
+        if isinstance(res, dict) and "__forbidden__" in res:
+            log(f"    SKIP (403 - likely protected) {name}")
+            skipped += 1
+        elif do_delete:
+            log(f"    deleted {name}  ({r['short_sha']})")
+            deleted += 1
+        else:
+            log(f"    would delete {name}  ({r['short_sha']}  {r['commit_date'][:10]})")
+
+    return pid, ppath, rows, deleted, skipped, failed
+
+# =============================================================================
+#  MAIN
+# =============================================================================
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Apply SBIePay repo governance to one repo (--project), "
-                    "every repo in a subgroup (--subgroup), or a list of repos "
-                    "(--batch). Multi-repo runs are FAIL-STOP on first error.",
+        description="Delete ALL git tags from GitLab repos, after writing a "
+                    "CSV backup. DRY-RUN by default; --apply --confirm to delete.",
         epilog="Examples:\n"
-               "  %(prog)s --project 2823 --dry-run\n"
-               "  %(prog)s --project itepaypg-sbiepay2/application/backend/epay_admin_service\n"
-               "  %(prog)s --subgroup itepaypg-sbiepay2/application/backend --dry-run\n"
-               "  %(prog)s --batch repos_to_apply.txt\n"
-               "  %(prog)s --project 2823 --verify",
+               "  %(prog)s --project 2840                      (dry-run, safe)\n"
+               "  %(prog)s --project 2840 --backup-only        (CSV only, safe)\n"
+               "  %(prog)s --project 2840 --apply --confirm    (DELETES)\n"
+               "  %(prog)s --subgroup itepaypg-sbiepay2/application/backend\n",
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    # Target selection — mutually exclusive so you can't mix modes by accident.
     tgt = ap.add_mutually_exclusive_group()
-    tgt.add_argument("--project", metavar="ID_OR_PATH",
-                     help="ONE repo: numeric project ID or full path. "
-                          "Defaults to TARGET_PROJECT in CONFIG if no target given.")
+    tgt.add_argument("--project",  metavar="ID_OR_PATH",
+                     help="ONE repo. Defaults to TARGET_PROJECT in CONFIG.")
     tgt.add_argument("--subgroup", metavar="ID_OR_PATH",
-                     help="ALL repos under a subgroup (includes nested sub-subgroups, "
-                          "excludes archived). Numeric group ID or full group path.")
-    tgt.add_argument("--batch", metavar="FILE",
-                     help="Text file of project IDs/paths, one per line "
-                          "('#' comments and blank lines ignored).")
+                     help="ALL repos under a subgroup (incl. nested)")
+    tgt.add_argument("--batch",    metavar="FILE",
+                     help="Text file of project IDs/paths, one per line")
 
-    # Mode selection — also mutually exclusive.
-    mode_grp = ap.add_mutually_exclusive_group()
-    mode_grp.add_argument("--dry-run", action="store_true",
-                          help="Show every write that WOULD happen. Changes nothing.")
-    mode_grp.add_argument("--verify", action="store_true",
-                          help="Read current state only. Changes nothing.")
-
+    ap.add_argument("--apply", action="store_true",
+                    help="Actually delete. Without this, dry-run only.")
+    ap.add_argument("--confirm", action="store_true",
+                    help="Required alongside --apply. Second acknowledgement.")
+    ap.add_argument("--backup-only", action="store_true",
+                    help="Write the CSV backup and stop. Deletes nothing.")
     args = ap.parse_args()
 
-    # ---------------- SUBGROUP MODE ----------------
+    # --- Both flags required to delete anything ---
+    do_delete = args.apply and args.confirm
+    if args.apply and not args.confirm:
+        print("[ERROR] --apply also requires --confirm.")
+        print("        Deleting tags is irreversible without the CSV backup.")
+        sys.exit(1)
+    if args.backup_only:
+        do_delete = False
+
+    mode = ("BACKUP-ONLY" if args.backup_only
+            else "DELETE" if do_delete else "DRY-RUN")
+
+    # --- Build the target list ---
     if args.subgroup:
         grp_path, projects = list_subgroup_projects(args.subgroup)
-        if not projects:
-            print(f"[ERROR] No projects found under subgroup: {args.subgroup}")
-            sys.exit(1)
-        print("=" * 65)
-        print(f"  SUBGROUP: {grp_path}")
-        print(f"  Found {len(projects)} repo(s):")
+        targets = [p[0] for p in projects]
+        label = f"subgroup {grp_path}"
+        print("=" * 70)
+        print(f"  SUBGROUP: {grp_path} - {len(projects)} repo(s)")
         for pid, ppath in projects:
             print(f"    {pid:<8} {ppath}")
-        print("=" * 65)
-        run_many([p[0] for p in projects],
-                 f"subgroup {grp_path}", args.verify, args.dry_run)
-        return
-
-    # ---------------- BATCH MODE ----------------
-    if args.batch:
+        print("=" * 70)
+    elif args.batch:
         targets = load_batch_file(args.batch)
+        label = f"file {args.batch}"
         if not targets:
             print(f"[ERROR] No project IDs found in {args.batch}")
             sys.exit(1)
-        run_many(targets, f"file {args.batch}", args.verify, args.dry_run)
-        return
+    else:
+        project = args.project or TARGET_PROJECT
+        targets = [project]
+        label = f"project {project}"
 
-    # ---------------- SINGLE-REPO MODE ----------------
-    project = args.project or TARGET_PROJECT
-    pid, ppath = run_one(project, args.verify, args.dry_run)
+    log("=" * 70)
+    log("  GitLab Tag Deletion")
+    log(f"  Target  : {label}")
+    log(f"  Repos   : {len(targets)}")
+    log(f"  Mode    : {mode}")
+    log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log("=" * 70)
+    if mode == "DELETE":
+        log("  *** DESTRUCTIVE RUN - tags will be permanently removed ***")
+        log("  *** A CSV backup is written per repo before any delete ***")
+    log("")
 
-    out_file = f"governance_{ppath.split('/')[-1]}_{TIMESTAMP}.txt"
+    all_rows = []
+    summary  = []
+    for idx, t in enumerate(targets, 1):
+        log("")
+        log("#" * 70)
+        log(f"#  {idx}/{len(targets)}: {t}")
+        log("#" * 70)
+        pid, ppath, rows, deleted, skipped, failed = process_project(
+            t, do_delete, args.backup_only)
+        all_rows.extend(rows)
+        summary.append((ppath, pid, len(rows), deleted, skipped))
+
+    # --- Combined backup for multi-repo runs ---
+    if len(targets) > 1 and all_rows:
+        combined = f"tags_backup_ALL_{TIMESTAMP}.csv"
+        write_csv(combined, all_rows)
+        log("")
+        log(f"Combined backup -> {combined}  ({len(all_rows)} tags across "
+            f"{len(targets)} repos)")
+
+    # --- Summary ---
+    log("")
+    log("=" * 70)
+    log("  SUMMARY")
+    log("=" * 70)
+    log(f"  {'repo':<45} {'found':>6} {'deleted':>8} {'skipped':>8}")
+    for ppath, pid, found, deleted, skipped in summary:
+        log(f"  {ppath[:45]:<45} {found:>6} {deleted:>8} {skipped:>8}")
+    tot_f = sum(s[2] for s in summary)
+    tot_d = sum(s[3] for s in summary)
+    tot_s = sum(s[4] for s in summary)
+    log("-" * 70)
+    log(f"  {'TOTAL':<45} {tot_f:>6} {tot_d:>8} {tot_s:>8}")
+    log("")
+    if mode == "DRY-RUN":
+        log("  DRY-RUN: nothing was deleted.")
+        log("  To delete for real, re-run with:  --apply --confirm")
+    elif mode == "BACKUP-ONLY":
+        log("  BACKUP-ONLY: nothing was deleted.")
+    else:
+        log("  Tags deleted. Keep the CSV backup(s) - they are the only way")
+        log("  to recreate these tags (POST repository/tags with ref=<sha>).")
+    if tot_s:
+        log(f"  {tot_s} tag(s) skipped because they are PROTECTED.")
+        log("  Unprotect them in Settings > Repository > Protected tags, then re-run.")
+
+    name = "BATCH" if len(targets) > 1 else str(targets[0]).replace("/", "_")
+    out_file = f"tagdelete_{name}_{TIMESTAMP}.txt"
     with open(out_file, "w", encoding="utf-8") as f:
         f.write("\n".join(_log_lines))
     print(f"\n  -> {out_file} written.")
-    if args.verify:
-        print("  READ-ONLY: no changes made to GitLab.")
-    elif args.dry_run:
-        print("  DRY-RUN: no changes made to GitLab.")
-    else:
-        print("  Changes were limited to the single project above.")
 
 
 if __name__ == "__main__":
