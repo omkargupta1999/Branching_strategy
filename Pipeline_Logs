@@ -1,209 +1,91 @@
-# ci/security/sast/sast.fortify.yml  |  Stage: sast
-# HP Fortify SCA 24.4 — Gradle build-integration (auto-fallback to glob translation)
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 — central DSO image.
-# Provides: sourceanalyzer, BIRTReportGenerator, FPRUtility, JDK 21.
-# Gradle presence NOT guaranteed — script auto-detects and degrades gracefully.
-#
-# ── Translation modes ─────────────────────────────────────────────────────────
-# build-integration : sourceanalyzer wraps `gradle compileJava` — resolves full
-#                     classpath, enables cross-JAR dataflow (SQLi, XSS, deser).
-# glob (fallback)   : parses ./**/*.java directly, no classpath. Matches the
-#                     behaviour of the legacy 23.1 job. Fewer dataflow findings.
-#
-# ── Gradle resolution ─────────────────────────────────────────────────────────
-# Reuses the init-script + truststore pattern from ci/common/base-setup.java.gradle.yml.
-# App repos must NOT declare repositories {} — FAIL_ON_PROJECT_REPOS enforced.
-#
-# ── Gate ──────────────────────────────────────────────────────────────────────
-# FPRUtility queries critical/high. allow_failure:true during rollout — flip to
-# false only after baselining the 23.1 → 24.4 rulepack delta across all repos.
-# ─────────────────────────────────────────────────────────────────────────────
-
-.sast_fortify:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
-  tags:
-    - common_runner
-  allow_failure: true
-
-  variables:
-    FORTIFY_BUILD_ID:  "$CI_PROJECT_PATH_SLUG"
-    FORTIFY_MEM:       "8G"
-    FORTIFY_INCLUDE:   "./**/*.java"
-    FORTIFY_EXCLUDE:   "./src/test/**/*"
-    CACERT_PATH:       "${CI_PROJECT_DIR}/cacerts-custom"
-    JFROG_GRADLE_REPO: "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
-    GRADLE_OPTS:       "-Dorg.gradle.daemon=false"
-    GRADLE_USER_HOME:  "${CI_PROJECT_DIR}/.gradle"
-
-  before_script:
-    # ── Toolchain inventory — logged for triage, never fails the job ──────────
-    - java -version
-    - 'echo "sourceanalyzer: $(command -v sourceanalyzer || echo MISSING)"'
-    - 'echo "FPRUtility:     $(command -v FPRUtility || echo MISSING)"'
-    - 'echo "gradle:         $(command -v gradle || echo MISSING)"'
-
-    # ── Trust JFrog internal CA ──────────────────────────────────────────────
-    # ubi9 images run non-root: $JAVA_HOME/.../cacerts is read-only (444).
-    # Copy to writable workspace, chmod 644, then import — keytool must be able
-    # to write the keystore back or it reports success and then errors out.
-    # Cert variable name differs by project scope; accept either.
-    - |
-      CERT_FILE=""
-      [ -n "$JF_ARTIFACTORY_CERT" ] && [ -f "$JF_ARTIFACTORY_CERT" ] && CERT_FILE="$JF_ARTIFACTORY_CERT"
-      [ -z "$CERT_FILE" ] && [ -n "$ARTIFACTORY_CERT" ] && [ -f "$ARTIFACTORY_CERT" ] && CERT_FILE="$ARTIFACTORY_CERT"
-      if [ -n "$CERT_FILE" ]; then
-        cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
-        chmod 644 "$CACERT_PATH"
-        keytool -importcert -keystore "$CACERT_PATH" -storepass changeit \
-          -alias jfrog-internal -file "$CERT_FILE" -noprompt
-        keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
-        export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -Djavax.net.ssl.trustStore=${CACERT_PATH} -Djavax.net.ssl.trustStorePassword=changeit"
-        echo "Truststore configured: $CACERT_PATH"
-      else
-        echo "WARN: no Artifactory cert variable found — Gradle resolution may fail on TLS"
-      fi
-
-    # ── Gradle init script — mirrors ci/common/base-setup.java.gradle.yml ─────
-    # Written only when Gradle exists. Single source of truth stays in the
-    # common base-setup file; this is a scoped copy for the Fortify image,
-    # which cannot `extends:` that job (different image, no sourceanalyzer).
-    - |
-      if command -v gradle >/dev/null 2>&1; then
-        mkdir -p "${GRADLE_USER_HOME}/init.d"
-        cat > "${GRADLE_USER_HOME}/init.d/epay-artifactory.init.gradle" << 'EOF'
-      settingsEvaluated { settings ->
-          settings.pluginManagement {
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-              }
-          }
-          settings.dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-                  flatDir { dirs "libs" }
-              }
-          }
-      }
-      EOF
-        echo "Gradle init script written to ${GRADLE_USER_HOME}/init.d/"
-      fi
-
-  script:
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-
-    # ── Translate ────────────────────────────────────────────────────────────
-    # Prefer build-integration. Fall back to glob if Gradle is absent or the
-    # build fails — a degraded scan is better than no scan during rollout.
-    - |
-      TRANSLATE_MODE="glob"
-      if command -v gradle >/dev/null 2>&1 && [ -f build.gradle -o -f build.gradle.kts ]; then
-        echo "Attempting build-integration translation via Gradle"
-        if sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
-             gradle --no-daemon clean compileJava -x test; then
-          TRANSLATE_MODE="build-integration"
-        else
-          echo "WARN: Gradle build-integration failed — falling back to glob translation"
-          sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-        fi
-      fi
-      if [ "$TRANSLATE_MODE" = "glob" ]; then
-        echo "Using glob translation (no classpath — dataflow coverage reduced)"
-        sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
-          "$FORTIFY_INCLUDE" -exclude "$FORTIFY_EXCLUDE"
-      fi
-      echo "TRANSLATE_MODE=${TRANSLATE_MODE}" | tee translate.mode
-
-    # ── Scan ─────────────────────────────────────────────────────────────────
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
-
-    # ── Developer report ─────────────────────────────────────────────────────
-    - BIRTReportGenerator -template "Developer Workbook"
-        -source "${CI_PROJECT_PATH_SLUG}.fpr"
-        -format PDF
-        -output "${CI_PROJECT_PATH_SLUG}_report.pdf"
-        -Xmx${FORTIFY_MEM}
-
-    # ── Quality gate — critical/high ──────────────────────────────────────────
-    - |
-      FPRUtility -information -search \
-        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
-        -project "${CI_PROJECT_PATH_SLUG}.fpr" > sca_gate.txt 2>&1 || true
-      cat sca_gate.txt
-      ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
-      case "$ISSUES" in ''|*[!0-9]*) ISSUES=0 ;; esac
-      echo "Translation mode: $(cat translate.mode)"
-      if [ "$ISSUES" -gt 0 ]; then
-        echo -e "\e[31m=========================================\e[0m"
-        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
-        echo -e "\e[31m High/Critical Vulnerabilities: $ISSUES\e[0m"
-        echo -e "\e[31m=========================================\e[0m"
-        exit 1
-      fi
-      echo -e "\e[32m=========================================\e[0m"
-      echo -e "\e[32m QUALITY GATE PASSED\e[0m"
-      echo -e "\e[32m High/Critical Vulnerabilities: 0\e[0m"
-      echo -e "\e[32m=========================================\e[0m"
-
-  artifacts:
-    paths:
-      - "${CI_PROJECT_PATH_SLUG}.fpr"
-      - "${CI_PROJECT_PATH_SLUG}_report.pdf"
-      - sca_gate.txt
-      - translate.mode
-    expire_in: 1 day
-    when: always
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FPR → GitLab Vulnerability Report
-# Converts the FPR to gl-sast-report.json so findings surface in the MR widget
-# and Security Dashboard. Requires CLONE_TOKEN (read_repository on the central
-# utility repo) and network policy allowing runner → gitlab.sbi.
-# ─────────────────────────────────────────────────────────────────────────────
-
-.fortify_to_gitlab:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
-  tags:
-    - common_runner
-  allow_failure: true
-  needs:
-    - job: "sast:fortify"
-      artifacts: true
-  before_script:
-    - git config --global http.sslVerify false
-  script:
-    - test -f "${CI_PROJECT_PATH_SLUG}.fpr" || { echo "No FPR from upstream job — nothing to convert"; exit 0; }
-    - git clone --depth 1 https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
-    - python3 utility/script/fortify_to_gitlab.py "${CI_PROJECT_PATH_SLUG}.fpr"
-    - ls -lh gl-sast-report.json
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-    paths:
-      - gl-sast-report.json
-    expire_in: 1 week
-    when: always
-
-
-sast:fortify:
-  extends: .sast_fortify
-
-sast:fortify:report:
-  extends: .fortify_to_gitlab
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4@sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
+Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:03
+Gitaly correlation ID: 01KY9ZTNM1AZ5VK2ENZD7238R0
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out a20d1e28 as detached HEAD (ref is hotfix/EPAY-123-bpcl-test)...
+Skipping Git submodules setup
+Downloading artifacts
+00:03
+Downloading artifacts for build (1299632)...
+Downloading artifacts from coordinator... ok        correlation_id=01KY9ZTV61GK2QENGBATTY06NP id=1299632 status=200 token=eyJraWQiO
+Downloading artifacts for test (1299633)...
+Downloading artifacts from coordinator... ok        correlation_id=01KY9ZTX0H2N1H0TB2Y2VPAXZB id=1299633 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+01:52
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+Using docker image sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4@sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 ...
+$ java -version
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+java version "21.0.10" 2026-01-20 LTS
+Java(TM) SE Runtime Environment (build 21.0.10+8-LTS-217)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.10+8-LTS-217, mixed mode, sharing)
+$ echo "sourceanalyzer: $(command -v sourceanalyzer || echo MISSING)"
+sourceanalyzer: /opt/Fortify/bin/sourceanalyzer
+$ echo "FPRUtility:     $(command -v FPRUtility || echo MISSING)"
+FPRUtility:     /opt/Fortify/bin/FPRUtility
+$ echo "gradle:         $(command -v gradle || echo MISSING)"
+gradle:         MISSING
+$ CERT_FILE="" # collapsed multi-line command
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Certificate was added to keystore
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+jfrog-internal, Jul 24, 2026, trustedCertEntry, 
+Certificate fingerprint (SHA-256): 95:A7:28:EE:11:00:19:F7:94:F4:B5:F7:98:0A:D5:C6:17:5D:8A:6B:F6:97:46:8E:00:CC:CB:D2:56:35:5E:66
+Truststore configured: /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom
+$ if command -v gradle >/dev/null 2>&1; then # collapsed multi-line command
+$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+$ TRANSLATE_MODE="glob" # collapsed multi-line command
+Using glob translation (no classpath — dataflow coverage reduced)
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+TRANSLATE_MODE=glob
+$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+$ BIRTReportGenerator -template "Developer Workbook" -source "${CI_PROJECT_PATH_SLUG}.fpr" -format PDF -output "${CI_PROJECT_PATH_SLUG}_report.pdf" -Xmx${FORTIFY_MEM}
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+Parameter Xmx8G is not valid and will be ignored
+Report generated successfully.
+$ FPRUtility -information -search \ # collapsed multi-line command
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
+6 issues of 6 matched search query.
+Translation mode: TRANSLATE_MODE=glob
+=========================================
+ QUALITY GATE FAILED
+ High/Critical Vulnerabilities: 6
+=========================================
+Uploading artifacts for failed job
+00:02
+Uploading artifacts...
+itepaypg-sbiepay2-application-backend-epay-admin-portal-service.fpr: found 1 matching artifact files and directories 
+itepaypg-sbiepay2-application-backend-epay-admin-portal-service_report.pdf: found 1 matching artifact files and directories 
+sca_gate.txt: found 1 matching artifact files and directories 
+translate.mode: found 1 matching artifact files and directories 
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=01KY9ZYBMB6ZB05NS5SH3SSH3P id=1299634 status=201 token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
