@@ -272,21 +272,77 @@ CSV_FIELDS = ["repo_path", "tag_name", "commit_sha", "short_sha", "commit_date",
               "commit_title", "commit_author", "tag_message", "is_protected",
               "target"]
 
+# Human-readable CSV headers (the underlying keys stay machine-friendly).
+CSV_HEADERS = {
+    "repo_path":     "Repository",
+    "tag_name":      "Tag Name",
+    "commit_sha":    "Commit SHA (full)",
+    "short_sha":     "Short SHA",
+    "commit_date":   "Commit Date",
+    "commit_title":  "Commit Title",
+    "commit_author": "Author",
+    "tag_message":   "Tag Message",
+    "is_protected":  "Protected",
+    "target":        "Target",
+}
+
 
 def write_csv(path, rows):
+    """Write the backup CSV with readable headers and a Sr. No. column."""
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-        w.writeheader()
-        w.writerows(rows)
+        w = csv.writer(f)
+        w.writerow(["Sr."] + [CSV_HEADERS[k] for k in CSV_FIELDS])
+        for i, r in enumerate(rows, 1):
+            w.writerow([i] + [r.get(k, "") for k in CSV_FIELDS])
+
+
+def render_table(headers, rows, aligns=None, indent="  "):
+    """Return a list of lines forming an aligned ASCII table.
+       headers: list[str]; rows: list[list]; aligns: list of '<' or '>'."""
+    if aligns is None:
+        aligns = ["<"] * len(headers)
+    cols = [[str(h)] + [str(r[i]) for r in rows] for i, h in enumerate(headers)]
+    widths = [max(len(c) for c in col) for col in cols]
+
+    def sep(left, mid, right, fill="-"):
+        return left + mid.join(fill * (w + 2) for w in widths) + right
+
+    def line(cells):
+        out = "|"
+        for c, w, a in zip(cells, widths, aligns):
+            out += " " + format(str(c), f"{a}{w}") + " |"
+        return out
+
+    lines = [indent + sep("+", "+", "+")]
+    lines.append(indent + line(headers))
+    lines.append(indent + sep("+", "+", "+", "="))
+    for r in rows:
+        lines.append(indent + line(r))
+    lines.append(indent + sep("+", "+", "+"))
+    return lines
+
+
+def log_table(headers, rows, aligns=None, indent="  "):
+    """Print + record an aligned table. No-op on empty rows."""
+    if not rows:
+        return
+    for ln in render_table(headers, rows, aligns, indent):
+        log(ln)
+
+
+def trim(s, n):
+    """Truncate to n chars with an ellipsis, for table cells."""
+    s = str(s or "")
+    return s if len(s) <= n else s[:n - 1] + "\u2026"
 
 
 def process_project(target, do_delete, backup_only):
     """Back up, then optionally delete, every tag in ONE project.
        Returns (pid, ppath, rows, deleted, skipped, failed)."""
     pid, ppath = resolve_project(target)
-    log("=" * 70)
+    log("=" * 78)
     log(f"  Project : {ppath}  (id={pid})")
-    log("=" * 70)
+    log("=" * 78)
 
     tags = list_tags(pid)
     if not tags:
@@ -312,10 +368,13 @@ def process_project(target, do_delete, backup_only):
         return pid, ppath, rows, 0, 0, 0
 
     deleted = skipped = failed = 0
+    result_rows = []
     for r in rows:
         name = r["tag_name"]
         if r["is_protected"] == "YES":
-            log(f"    SKIP (protected) {name}")
+            result_rows.append([len(result_rows) + 1, trim(name, 34),
+                                r["short_sha"], r["commit_date"][:10],
+                                "SKIPPED", "protected tag"])
             skipped += 1
             continue
 
@@ -323,13 +382,25 @@ def process_project(target, do_delete, backup_only):
         res = api_delete(f"/projects/{pid}/repository/tags/{enc}",
                          dry_run=not do_delete)
         if isinstance(res, dict) and "__forbidden__" in res:
-            log(f"    SKIP (403 - likely protected) {name}")
+            result_rows.append([len(result_rows) + 1, trim(name, 34),
+                                r["short_sha"], r["commit_date"][:10],
+                                "SKIPPED", "403 - likely protected"])
             skipped += 1
         elif do_delete:
-            log(f"    deleted {name}  ({r['short_sha']})")
+            result_rows.append([len(result_rows) + 1, trim(name, 34),
+                                r["short_sha"], r["commit_date"][:10],
+                                "DELETED", trim(r["commit_title"], 30)])
             deleted += 1
         else:
-            log(f"    would delete {name}  ({r['short_sha']}  {r['commit_date'][:10]})")
+            result_rows.append([len(result_rows) + 1, trim(name, 34),
+                                r["short_sha"], r["commit_date"][:10],
+                                "would delete", trim(r["commit_title"], 30)])
+
+    log("")
+    log_table(["Sr.", "Tag Name", "Short SHA", "Commit Date", "Action", "Note"],
+              result_rows,
+              aligns=[">", "<", "<", "<", "<", "<"], indent="  ")
+    log(f"    Deleted: {deleted}    Skipped: {skipped}    Total: {len(rows)}")
 
     return pid, ppath, rows, deleted, skipped, failed
 
@@ -381,11 +452,15 @@ def main():
         grp_path, projects = list_subgroup_projects(args.subgroup)
         targets = [p[0] for p in projects]
         label = f"subgroup {grp_path}"
-        print("=" * 70)
+        print("=" * 78)
         print(f"  SUBGROUP: {grp_path} - {len(projects)} repo(s)")
-        for pid, ppath in projects:
-            print(f"    {pid:<8} {ppath}")
-        print("=" * 70)
+        print("=" * 78)
+        for ln in render_table(
+                ["Sr.", "ID", "Repository"],
+                [[i, pid, ppath] for i, (pid, ppath) in enumerate(projects, 1)],
+                aligns=[">", ">", "<"], indent="  "):
+            print(ln)
+        print("")
     elif args.batch:
         targets = load_batch_file(args.batch)
         label = f"file {args.batch}"
@@ -397,25 +472,29 @@ def main():
         targets = [project]
         label = f"project {project}"
 
-    log("=" * 70)
-    log("  GitLab Tag Deletion")
-    log(f"  Target  : {label}")
-    log(f"  Repos   : {len(targets)}")
-    log(f"  Mode    : {mode}")
-    log(f"  Time    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    log("=" * 70)
+    log("=" * 78)
+    log("  GITLAB TAG DELETION")
+    log("=" * 78)
+    log_table(["Setting", "Value"],
+              [["Target", label],
+               ["Repos", len(targets)],
+               ["Mode", mode],
+               ["GitLab", GITLAB_URL],
+               ["Time", datetime.now().strftime('%Y-%m-%d %H:%M:%S')]],
+              aligns=["<", "<"], indent="  ")
     if mode == "DELETE":
+        log("")
         log("  *** DESTRUCTIVE RUN - tags will be permanently removed ***")
-        log("  *** A CSV backup is written per repo before any delete ***")
+        log("  *** A CSV backup is written per repo before any delete   ***")
     log("")
 
     all_rows = []
     summary  = []
     for idx, t in enumerate(targets, 1):
         log("")
-        log("#" * 70)
+        log("#" * 78)
         log(f"#  {idx}/{len(targets)}: {t}")
-        log("#" * 70)
+        log("#" * 78)
         pid, ppath, rows, deleted, skipped, failed = process_project(
             t, do_delete, args.backup_only)
         all_rows.extend(rows)
@@ -431,17 +510,21 @@ def main():
 
     # --- Summary ---
     log("")
-    log("=" * 70)
+    log("=" * 78)
     log("  SUMMARY")
-    log("=" * 70)
-    log(f"  {'repo':<45} {'found':>6} {'deleted':>8} {'skipped':>8}")
-    for ppath, pid, found, deleted, skipped in summary:
-        log(f"  {ppath[:45]:<45} {found:>6} {deleted:>8} {skipped:>8}")
+    log("=" * 78)
+    sum_rows = []
+    for i, (ppath, pid, found, deleted, skipped) in enumerate(summary, 1):
+        sum_rows.append([i, pid, trim(ppath, 46), found, deleted, skipped])
+    log_table(["Sr.", "ID", "Repository", "Tags Found", "Deleted", "Skipped"],
+              sum_rows, aligns=[">", ">", "<", ">", ">", ">"], indent="  ")
+
     tot_f = sum(s[2] for s in summary)
     tot_d = sum(s[3] for s in summary)
     tot_s = sum(s[4] for s in summary)
-    log("-" * 70)
-    log(f"  {'TOTAL':<45} {tot_f:>6} {tot_d:>8} {tot_s:>8}")
+    log_table(["Repos", "Tags Found", "Deleted", "Skipped"],
+              [[len(summary), tot_f, tot_d, tot_s]],
+              aligns=[">", ">", ">", ">"], indent="  ")
     log("")
     if mode == "DRY-RUN":
         log("  DRY-RUN: nothing was deleted.")
