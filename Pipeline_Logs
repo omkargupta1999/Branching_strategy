@@ -1,87 +1,10 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
-Running on runner-wz1c0kgrx-project-3104-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:00
-Skipping Git repository setup
-Skipping Git checkout
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:18
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-Using docker image sha256:2053f36c87c21de2a5f8db154a5175249443c97b594785d707ab271bfc662dec for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
-$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
-$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
-time="2026-07-23T12:54:11Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Login Succeeded!
-$ set -eo pipefail # collapsed multi-line command
-VERSION               : 1.0.1
-VERSION_SOURCE_BRANCH : hotfix/EPAY-6789-timeout-fix
-MERGE_PARENT_SHA      : e4905ed8
-MERGE_MR_IID          : 8  (hotfix path only)
-IMAGE_NAME            : itepaypg-sbiepay2-docker-local/app/backend/epay_test_frontend  (source path)
-PROD_IMAGE_NAME       : <unset>  (target path)
-PROD_IMAGE_NAME derived : itepaypg-sbiepay2-docker-local/prod/app/backend/epay_test_frontend
-Path          : hotfix (image from MR pipeline, IID 8)
-Source branch : hotfix/EPAY-6789-timeout-fix
-Tested tip SHA: e4905ed8
-Tested image  : artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_test_frontend:mr-hotfix-epay-6789-timeout-fix-main-8-e4905ed8
-Prod semver   : 1.0.1
-Target image  : artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/prod/app/backend/epay_test_frontend:1.0.1
-time="2026-07-23T12:54:14Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Trying to pull artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_test_frontend:mr-hotfix-epay-6789-timeout-fix-main-8-e4905ed8...
-Getting image source signatures
-Copying blob sha256:0d1614f223c131235773346e681845dabeb309e47f37313ad5d52cb1b62ea2d9
-Copying blob sha256:ed1db5f3349f8c5a50f687c590425ca8fc52f5d3a1c6e58c70662939bf14a571
-Copying blob sha256:d59ceb30aaec8200a0c4574b1847d413bfd95d6a2268e4dada7f7ee3c5d94f55
-Copying blob sha256:57b30b7d2ce3ab080392e1e6bf8dc6c59f21d2e02ff30b38d9c6c82c7e436080
-Copying blob sha256:740d83e4b2e14f00dd02178b30426cf8efd61f9979c3b9134320f3086336f094
-Copying blob sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef
-Copying blob sha256:50d8ff8440448cf8a4f0b2037b578910de38d61fd8d8d9a716753a7e8cf7058f
-Copying blob sha256:167a471145a688f3ff38d06e2f324f616e90043db48a1b2f41a8d4e2d055fd2b
-Copying config sha256:87c5c115afcbb59a29516de5da98a293acf3f77fe780f65e0e17a0d3e8831494
-Writing manifest to image destination
-87c5c115afcbb59a29516de5da98a293acf3f77fe780f65e0e17a0d3e8831494
-time="2026-07-23T12:54:24Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-time="2026-07-23T12:54:24Z" level=warning msg="Using cgroups-v1 which is deprecated in favor of cgroups-v2 with Podman v5 and will be removed in a future version. Set environment variable `PODMAN_IGNORE_CGROUPSV1_WARNING` to hide this warning."
-Getting image source signatures
-Copying blob sha256:40dc7d6cf27ec281411f065eb0801a49a9aa723ee04c90ab4638abcc0f3d9d72
-Copying blob sha256:eaf16e5cd2edda16f711f60b326387c40f0f33db55569aee1d289d6bba71ab71
-Copying blob sha256:55d951e913b4cd8728a3f950ef73f7b6a95137c02ee75599ec4c24ef10882def
-Copying blob sha256:3d46e04040846f010e2f4c84d8bb40d226883442a4993a4e454453a136fbda2d
-Copying blob sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef
-Copying blob sha256:4ede91a79f1cbe507838388fffa15bf882eee731c7ea14be2d7cf941d77c178f
-Copying blob sha256:9801ff13dbae81c03e487bbf7d91a7964b747a8b01233d724c7ea53def66322e
-Copying blob sha256:a67277dc18a4db904c4bf7e51187b3d370d20cf10f0420b95b1a9de723967c1e
-Copying config sha256:87c5c115afcbb59a29516de5da98a293acf3f77fe780f65e0e17a0d3e8831494
-Writing manifest to image destination
-Retagged tested image -> prod: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/prod/app/backend/epay_test_frontend:1.0.1
-Uploading artifacts for successful job
-00:02
-Uploading artifacts...
-retag.env: found 1 matching artifact files and directories 
-Uploading artifacts as "dotenv" to coordinator... 201 Created  correlation_id=01KY7GNBDKM61AMYRNJ7ZKJKE6 id=1293704 status=201 token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-Job succeeded
+
+
+Please update the Commit Branch regex in our python repo: 
+
+^(Merge branch .*|Merge remote-tracking branch .*|[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+)$
+
+and also we have to uncheck the "pipeline must suceed" for all the repo basically we don't want to enable this while merging , it should be optional while merging, 
+
+
+Please update and fix this and share the update yaml file.
