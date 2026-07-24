@@ -1,108 +1,61 @@
-# ci/security/sast/sast.fortify.yml  |  Stage: sast
-
-.sast_fortify:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
-  tags:
-    - common_runner
-  variables:
-    FORTIFY_BUILD_ID: "$CI_PROJECT_PATH_SLUG"
-    FORTIFY_MEM: "8G"
-    CACERT_PATH: "${CI_PROJECT_DIR}/cacerts-custom"
-    JFROG_GRADLE_REPO: "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-    GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
-  allow_failure: true
-  before_script:
-    - java -version
-    - gradle --version
-    - mkdir -p "${GRADLE_USER_HOME}/init.d"
-    - |
-      cat > "${GRADLE_USER_HOME}/init.d/epay-artifactory.init.gradle" << 'EOF'
-      settingsEvaluated { settings ->
-          settings.pluginManagement {
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-              }
-          }
-          settings.dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-                  flatDir { dirs "libs" }
-              }
-          }
-      }
-      EOF
-    - cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
-    - chmod 644 "$CACERT_PATH"
-    - keytool -importcert -keystore "$CACERT_PATH" -storepass changeit
-        -alias jfrog-internal -file "$JF_ARTIFACTORY_CERT" -noprompt
-    - export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=${CACERT_PATH} -Djavax.net.ssl.trustStorePassword=changeit"
-  script:
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM}
-        gradle --no-daemon clean compileJava -x test
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
-    - BIRTReportGenerator -template "Developer Workbook"
-        -source "${CI_PROJECT_PATH_SLUG}.fpr"
-        -format PDF -output "${CI_PROJECT_PATH_SLUG}_report.pdf"
-    - |
-      FPRUtility -information -search \
-        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
-        -project "${CI_PROJECT_PATH_SLUG}.fpr" > sca_gate.txt || true
-      cat sca_gate.txt
-      ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
-      ISSUES=${ISSUES:-0}
-      if [ "$ISSUES" -gt 0 ]; then
-        echo -e "\e[31m QUALITY GATE FAILED — High/Critical: $ISSUES\e[0m"
-        exit 1
-      fi
-      echo -e "\e[32m QUALITY GATE PASSED — High/Critical: 0\e[0m"
-  artifacts:
-    paths:
-      - "${CI_PROJECT_PATH_SLUG}.fpr"
-      - "${CI_PROJECT_PATH_SLUG}_report.pdf"
-      - sca_gate.txt
-    expire_in: 1 day
-    when: always
-
-.fortify_to_gitlab:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
-  tags:
-    - common_runner
-  needs:
-    - job: "sast:fortify"
-      artifacts: true
-  allow_failure: true
-  before_script:
-    - git config --global http.sslVerify false
-  script:
-    - git clone https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
-    - python3 utility/script/fortify_to_gitlab.py "${CI_PROJECT_PATH_SLUG}.fpr"
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-    paths:
-      - gl-sast-report.json
-    expire_in: 1 week
-    when: always
-
-sast:fortify:
-  extends: .sast_fortify
-
-sast:fortify:report:
-  extends: .fortify_to_gitlab
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:1574b62260aa4826558199c20e6801eb1bddd9be7c56e4d068518511e28096fe for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4@sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
+Running on runner-wz1c0kgrx-project-2840-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:06
+Gitaly correlation ID: 01KY9TPMEE6N3VSA7A7Y8CQ4SX
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out ea92c336 as detached HEAD (ref is hotfix/EPAY-123-bpcl-test)...
+Skipping Git submodules setup
+Downloading artifacts
+00:05
+Downloading artifacts for build (1298488)...
+Downloading artifacts from coordinator... ok        correlation_id=01KY9TPX8AM7JC5AWDBAV0R1HH id=1298488 status=200 token=eyJraWQiO
+Downloading artifacts for test (1298489)...
+Downloading artifacts from coordinator... ok        correlation_id=01KY9TQ112ADFNRW3QMX4EVR90 id=1298489 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:09
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+Using docker image sha256:1574b62260aa4826558199c20e6801eb1bddd9be7c56e4d068518511e28096fe for artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 with digest artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4@sha256:d006ce0035e4ac62c880ad2d95a66bac2998e20f32b6c75442709d03b78d3185 ...
+$ if [ -n "$ARTIFACTORY_CERT" ] && [ -f "$ARTIFACTORY_CERT" ]; then # collapsed multi-line command
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Certificate was added to keystore
+$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} mvn $MAVEN_CLI_OPTS clean compile -U -DskipTests=true -Dfortify.sca.exclude=target
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+[ERROR] Error executing Maven.
+[ERROR] The specified user settings file does not exist: /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.m2/settings.xml
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: itepaypg-sbiepay2-application-backend-epay-admin-portal-service.fpr: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
+WARNING: itepaypg-sbiepay2-application-backend-epay-admin-portal-service_report.pdf: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
+WARNING: sca_gate.txt: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
