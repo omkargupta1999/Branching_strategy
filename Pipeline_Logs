@@ -1,549 +1,123 @@
-#!/usr/bin/env python3
-"""
-=============================================================================
- Script      : delete_repo_tags.py
- Purpose     : Delete ALL git tags from GitLab repositories, after exporting
-               a full backup of what is being deleted.
-
- *** THIS IS DESTRUCTIVE. READ THIS BLOCK BEFORE RUNNING. ***
-
-   Deleting a tag removes the only named pointer to the commit it marked.
-   The commits themselves are NOT deleted, but:
-     - release history in git is lost (which commit was v1.5.0?)
-     - hotfix-from-production-tag workflows break
-     - git-tag <-> image-tag mapping is broken for existing JFrog images
-     - protected tags are skipped (GitLab refuses to delete them via API)
-
-   MITIGATION: every run writes a CSV backup FIRST containing tag name,
-   commit SHA, commit date, message and author for every tag it is about to
-   delete. A tag can be recreated from its SHA:
-       POST /projects/:id/repository/tags  {tag_name, ref=<sha>}
-   Keep that CSV. Without it, deletions are not reversible.
-
- WHAT IT DELETES
-   ALL tags in the target repo(s). No exceptions, no pattern filter.
-   Protected tags cannot be deleted via the API; they are reported as SKIPPED
-   so you can unprotect them manually if you really want them gone.
-
- SCOPE / SAFETY
-   - Every DELETE targets /projects/<resolved-id>/repository/tags/<tag> only.
-   - Nothing else about the project is touched: no branches, no settings,
-     no members, no rules. Only tags.
-   - Default mode is DRY-RUN. You must pass --apply to actually delete.
-   - Multi-repo runs are FAIL-STOP: halt on the first repo that errors.
-
- Dependencies: NONE - Python standard library only (no pip required).
-               Python 3.6+ / RHEL air-gapped compatible.
-
- TARGET SELECTION (choose exactly one):
-   --project <id-or-path>   ONE repo.       e.g. --project 2840
-   --subgroup <id-or-path>  ALL repos under a subgroup, incl. nested.
-   --batch <file>           Repos listed in a file, one ID/path per line.
-
- MODES:
-   (default)   DRY-RUN - list every tag that WOULD be deleted. Deletes nothing.
-   --apply     DELETE the tags. Requires --confirm as well.
-   --confirm   Second, explicit acknowledgement. Both flags are required.
-   --backup-only  Export the CSV backup and stop. Deletes nothing.
-
- OUTPUT:
-   Console
-   tags_backup_<repo>_<ts>.csv      per-repo backup of every tag found
-   tags_backup_ALL_<ts>.csv         combined backup for multi-repo runs
-   tagdelete_<repo|BATCH>_<ts>.txt  full run log
-
- USAGE (same as apply_repo_governance.py):
-   1. Edit the CONFIG block below: set TOKEN, GITLAB_URL, TARGET_PROJECT.
-   2. See what is there (safe, deletes nothing):
-        python delete_repo_tags.py
-        python delete_repo_tags.py --project 2840
-   3. Take the backup only (safe):
-        python delete_repo_tags.py --project 2840 --backup-only
-   4. Actually delete (destructive, BOTH flags required):
-        python delete_repo_tags.py --project 2840 --apply --confirm
-   5. Whole subgroup:
-        python delete_repo_tags.py --subgroup itepaypg-sbiepay2/application/backend
-
- TOKEN: Personal Access Token, scope 'api', Maintainer/Owner on the targets.
-        Deleting tags requires Maintainer (40) or above.
-=============================================================================
-"""
-
-import urllib.request
-import urllib.error
-import urllib.parse
-import json
-import csv
-import os
-import ssl
-import sys
-import argparse
-from datetime import datetime
-
-# =============================================================================
-#  CONFIGURATION — Edit only this block
-# =============================================================================
-#  Same pattern as apply_repo_governance.py: paste your values here.
-#  Environment variables (GOVERNANCE_GITLAB_URL / GOVERNANCE_TOKEN) override
-#  these if set, so the same file also works unchanged in CI.
-# =============================================================================
-
-GITLAB_URL = "https://gitlab.sbi"      # Target GitLab instance
-TOKEN      = ""                        # Maintainer/Owner PAT (glpat-...)
-
-# Fallback target when no --project/--subgroup/--batch is given on the CLI.
-TARGET_PROJECT = "itepaypg-sbiepay2/application/backend/epay_admin_portal_service"
-
-# --- env overrides (leave as-is) ---------------------------------------------
-GITLAB_URL = os.environ.get("GOVERNANCE_GITLAB_URL", GITLAB_URL)
-TOKEN      = os.environ.get("GOVERNANCE_TOKEN", TOKEN)
-
-# =============================================================================
-#  SETUP
-# =============================================================================
-
-if not TOKEN:
-    print("[ERROR] TOKEN is not set. Fill in TOKEN or export GOVERNANCE_TOKEN.")
-    sys.exit(1)
-
-TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-HEADERS   = {"PRIVATE-TOKEN": TOKEN}
-ssl_ctx   = ssl._create_unverified_context()
-
-_log_lines = []
-
-def log(line=""):
-    _log_lines.append(line)
-    print(line)
-
-# =============================================================================
-#  API HELPERS
-# =============================================================================
-
-def _request(method, url, dry_run=False):
-    """One HTTP call. Honours dry_run for DELETE."""
-    if method == "DELETE" and dry_run:
-        log(f"      [dry-run] DELETE {url}")
-        return {"__dry_run__": True}
-
-    req = urllib.request.Request(url, method=method)
-    for k, v in HEADERS.items():
-        req.add_header(k, v)
-    try:
-        resp = urllib.request.urlopen(req, context=ssl_ctx)
-        raw = resp.read().decode()
-        return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")
-        if e.code == 401:
-            log("\n[ERROR] 401 Unauthorized - TOKEN invalid or expired.")
-            sys.exit(1)
-        if e.code == 403:
-            # Most commonly: the tag is PROTECTED. Report, do not abort.
-            return {"__forbidden__": detail}
-        if e.code == 404:
-            return None
-        log(f"\n[ERROR] HTTP {e.code} on {method} {url} -> {detail}")
-        sys.exit(1)
-
-
-def api_get(path, params=None):
-    url = f"{GITLAB_URL}/api/v4{path}"
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    return _request("GET", url)
-
-
-def api_get_all(path, params=None):
-    """Paginated GET - returns the full list across all pages."""
-    results, page = [], 1
-    base = f"{GITLAB_URL}/api/v4{path}"
-    while True:
-        q = dict(params or {})
-        q.update({"per_page": 100, "page": page})
-        url = base + "?" + urllib.parse.urlencode(q)
-        req = urllib.request.Request(url)
-        for k, v in HEADERS.items():
-            req.add_header(k, v)
-        try:
-            resp = urllib.request.urlopen(req, context=ssl_ctx)
-            data = json.loads(resp.read())
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
-                log(f"\n[ERROR] HTTP {e.code} fetching {url}")
-                sys.exit(1)
-            break
-        if not data:
-            break
-        results.extend(data)
-        try:
-            if page >= int(resp.headers.get("X-Total-Pages", "1")):
-                break
-        except ValueError:
-            break
-        page += 1
-    return results
-
-
-def api_delete(path, dry_run=False):
-    return _request("DELETE", f"{GITLAB_URL}/api/v4{path}", dry_run=dry_run)
-
-# =============================================================================
-#  RESOLUTION
-# =============================================================================
-
-def resolve_project(target):
-    """Accept a numeric project ID or a full path."""
-    ident = str(target).strip()
-    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
-    proj = api_get(f"/projects/{enc}")
-    if not proj:
-        log(f"\n[ERROR] Project not found: {target}")
-        log("  Tip: use the numeric project ID; paths are case-sensitive.")
-        sys.exit(1)
-    return proj["id"], proj["path_with_namespace"]
-
-
-def list_subgroup_projects(subgroup):
-    """READ-ONLY: every project under a subgroup, incl. nested sub-subgroups."""
-    ident = str(subgroup).strip()
-    enc = ident if ident.isdigit() else urllib.parse.quote(ident, safe="")
-    grp = api_get(f"/groups/{enc}")
-    if not grp:
-        log(f"\n[ERROR] Subgroup not found: {subgroup}")
-        sys.exit(1)
-    projects = api_get_all(f"/groups/{enc}/projects",
-                           params={"include_subgroups": "true",
-                                   "archived": "false"})
-    out = [(p.get("id"), p.get("path_with_namespace")) for p in (projects or [])]
-    out.sort(key=lambda t: (t[1] or ""))
-    return grp.get("full_path", ident), out
-
-
-def load_batch_file(path):
-    """Read project IDs/paths, one per line. '#' comments stripped."""
-    ids = []
-    with open(path, encoding="utf-8") as f:
-        for raw in f:
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            token = line.split("#", 1)[0].strip().split()[0]
-            if token:
-                ids.append(token)
-    return ids
-
-# =============================================================================
-#  TAGS
-# =============================================================================
-
-def get_protected_tag_names(pid):
-    """Names/patterns of protected tags. These cannot be deleted via the API."""
-    pts = api_get_all(f"/projects/{pid}/protected_tags")
-    return {t.get("name") for t in (pts or [])}
-
-
-def list_tags(pid):
-    """Every tag in the project, newest commit first."""
-    return api_get_all(f"/projects/{pid}/repository/tags") or []
-
-
-def tag_rows(ppath, tags):
-    """Flatten tags into CSV rows for the backup."""
-    rows = []
-    for t in tags:
-        commit = t.get("commit") or {}
-        rows.append({
-            "repo_path":     ppath,
-            "tag_name":      t.get("name", ""),
-            "commit_sha":    commit.get("id", ""),
-            "short_sha":     commit.get("short_id", ""),
-            "commit_date":   commit.get("committed_date", ""),
-            "commit_title":  (commit.get("title") or "").replace("\n", " "),
-            "commit_author": commit.get("author_name", ""),
-            "tag_message":   (t.get("message") or "").replace("\n", " "),
-            "is_protected":  "",      # filled in by caller
-            "target":        t.get("target", ""),
-        })
-    return rows
-
-
-CSV_FIELDS = ["repo_path", "tag_name", "commit_sha", "short_sha", "commit_date",
-              "commit_title", "commit_author", "tag_message", "is_protected",
-              "target"]
-
-# Human-readable CSV headers (the underlying keys stay machine-friendly).
-CSV_HEADERS = {
-    "repo_path":     "Repository",
-    "tag_name":      "Tag Name",
-    "commit_sha":    "Commit SHA (full)",
-    "short_sha":     "Short SHA",
-    "commit_date":   "Commit Date",
-    "commit_title":  "Commit Title",
-    "commit_author": "Author",
-    "tag_message":   "Tag Message",
-    "is_protected":  "Protected",
-    "target":        "Target",
-}
-
-
-def write_csv(path, rows):
-    """Write the backup CSV with readable headers and a Sr. No. column."""
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["Sr."] + [CSV_HEADERS[k] for k in CSV_FIELDS])
-        for i, r in enumerate(rows, 1):
-            w.writerow([i] + [r.get(k, "") for k in CSV_FIELDS])
-
-
-def render_table(headers, rows, aligns=None, indent="  "):
-    """Return a list of lines forming an aligned ASCII table.
-       headers: list[str]; rows: list[list]; aligns: list of '<' or '>'."""
-    if aligns is None:
-        aligns = ["<"] * len(headers)
-    cols = [[str(h)] + [str(r[i]) for r in rows] for i, h in enumerate(headers)]
-    widths = [max(len(c) for c in col) for col in cols]
-
-    def sep(left, mid, right, fill="-"):
-        return left + mid.join(fill * (w + 2) for w in widths) + right
-
-    def line(cells):
-        out = "|"
-        for c, w, a in zip(cells, widths, aligns):
-            out += " " + format(str(c), f"{a}{w}") + " |"
-        return out
-
-    lines = [indent + sep("+", "+", "+")]
-    lines.append(indent + line(headers))
-    lines.append(indent + sep("+", "+", "+", "="))
-    for r in rows:
-        lines.append(indent + line(r))
-    lines.append(indent + sep("+", "+", "+"))
-    return lines
-
-
-def log_table(headers, rows, aligns=None, indent="  "):
-    """Print + record an aligned table. No-op on empty rows."""
-    if not rows:
-        return
-    for ln in render_table(headers, rows, aligns, indent):
-        log(ln)
-
-
-def trim(s, n):
-    """Truncate to n chars with an ellipsis, for table cells."""
-    s = str(s or "")
-    return s if len(s) <= n else s[:n - 1] + "\u2026"
-
-
-def process_project(target, do_delete, backup_only):
-    """Back up, then optionally delete, every tag in ONE project.
-       Returns (pid, ppath, rows, deleted, skipped, failed)."""
-    pid, ppath = resolve_project(target)
-    log("=" * 78)
-    log(f"  Project : {ppath}  (id={pid})")
-    log("=" * 78)
-
-    tags = list_tags(pid)
-    if not tags:
-        log("  No tags found. Nothing to do.")
-        return pid, ppath, [], 0, 0, 0
-
-    protected = get_protected_tag_names(pid)
-    rows = tag_rows(ppath, tags)
-    for r in rows:
-        r["is_protected"] = "YES" if r["tag_name"] in protected else "no"
-
-    log(f"  Found {len(tags)} tag(s)"
-        f"{f', {len(protected)} protected pattern(s)' if protected else ''}")
-
-    # ---- BACKUP FIRST, ALWAYS ----
-    safe = ppath.split("/")[-1]
-    csv_path = f"tags_backup_{safe}_{TIMESTAMP}.csv"
-    write_csv(csv_path, rows)
-    log(f"  Backup written -> {csv_path}")
-
-    if backup_only:
-        log("  --backup-only: stopping here. No tags deleted.")
-        return pid, ppath, rows, 0, 0, 0
-
-    deleted = skipped = failed = 0
-    result_rows = []
-    for r in rows:
-        name = r["tag_name"]
-        if r["is_protected"] == "YES":
-            result_rows.append([len(result_rows) + 1, trim(name, 34),
-                                r["short_sha"], r["commit_date"][:10],
-                                "SKIPPED", "protected tag"])
-            skipped += 1
-            continue
-
-        enc = urllib.parse.quote(name, safe="")
-        res = api_delete(f"/projects/{pid}/repository/tags/{enc}",
-                         dry_run=not do_delete)
-        if isinstance(res, dict) and "__forbidden__" in res:
-            result_rows.append([len(result_rows) + 1, trim(name, 34),
-                                r["short_sha"], r["commit_date"][:10],
-                                "SKIPPED", "403 - likely protected"])
-            skipped += 1
-        elif do_delete:
-            result_rows.append([len(result_rows) + 1, trim(name, 34),
-                                r["short_sha"], r["commit_date"][:10],
-                                "DELETED", trim(r["commit_title"], 30)])
-            deleted += 1
-        else:
-            result_rows.append([len(result_rows) + 1, trim(name, 34),
-                                r["short_sha"], r["commit_date"][:10],
-                                "would delete", trim(r["commit_title"], 30)])
-
-    log("")
-    log_table(["Sr.", "Tag Name", "Short SHA", "Commit Date", "Action", "Note"],
-              result_rows,
-              aligns=[">", "<", "<", "<", "<", "<"], indent="  ")
-    log(f"    Deleted: {deleted}    Skipped: {skipped}    Total: {len(rows)}")
-
-    return pid, ppath, rows, deleted, skipped, failed
-
-# =============================================================================
-#  MAIN
-# =============================================================================
-
-def main():
-    ap = argparse.ArgumentParser(
-        description="Delete ALL git tags from GitLab repos, after writing a "
-                    "CSV backup. DRY-RUN by default; --apply --confirm to delete.",
-        epilog="Examples:\n"
-               "  %(prog)s --project 2840                      (dry-run, safe)\n"
-               "  %(prog)s --project 2840 --backup-only        (CSV only, safe)\n"
-               "  %(prog)s --project 2840 --apply --confirm    (DELETES)\n"
-               "  %(prog)s --subgroup itepaypg-sbiepay2/application/backend\n",
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    tgt = ap.add_mutually_exclusive_group()
-    tgt.add_argument("--project",  metavar="ID_OR_PATH",
-                     help="ONE repo. Defaults to TARGET_PROJECT in CONFIG.")
-    tgt.add_argument("--subgroup", metavar="ID_OR_PATH",
-                     help="ALL repos under a subgroup (incl. nested)")
-    tgt.add_argument("--batch",    metavar="FILE",
-                     help="Text file of project IDs/paths, one per line")
-
-    ap.add_argument("--apply", action="store_true",
-                    help="Actually delete. Without this, dry-run only.")
-    ap.add_argument("--confirm", action="store_true",
-                    help="Required alongside --apply. Second acknowledgement.")
-    ap.add_argument("--backup-only", action="store_true",
-                    help="Write the CSV backup and stop. Deletes nothing.")
-    args = ap.parse_args()
-
-    # --- Both flags required to delete anything ---
-    do_delete = args.apply and args.confirm
-    if args.apply and not args.confirm:
-        print("[ERROR] --apply also requires --confirm.")
-        print("        Deleting tags is irreversible without the CSV backup.")
-        sys.exit(1)
-    if args.backup_only:
-        do_delete = False
-
-    mode = ("BACKUP-ONLY" if args.backup_only
-            else "DELETE" if do_delete else "DRY-RUN")
-
-    # --- Build the target list ---
-    if args.subgroup:
-        grp_path, projects = list_subgroup_projects(args.subgroup)
-        targets = [p[0] for p in projects]
-        label = f"subgroup {grp_path}"
-        print("=" * 78)
-        print(f"  SUBGROUP: {grp_path} - {len(projects)} repo(s)")
-        print("=" * 78)
-        for ln in render_table(
-                ["Sr.", "ID", "Repository"],
-                [[i, pid, ppath] for i, (pid, ppath) in enumerate(projects, 1)],
-                aligns=[">", ">", "<"], indent="  "):
-            print(ln)
-        print("")
-    elif args.batch:
-        targets = load_batch_file(args.batch)
-        label = f"file {args.batch}"
-        if not targets:
-            print(f"[ERROR] No project IDs found in {args.batch}")
-            sys.exit(1)
-    else:
-        project = args.project or TARGET_PROJECT
-        targets = [project]
-        label = f"project {project}"
-
-    log("=" * 78)
-    log("  GITLAB TAG DELETION")
-    log("=" * 78)
-    log_table(["Setting", "Value"],
-              [["Target", label],
-               ["Repos", len(targets)],
-               ["Mode", mode],
-               ["GitLab", GITLAB_URL],
-               ["Time", datetime.now().strftime('%Y-%m-%d %H:%M:%S')]],
-              aligns=["<", "<"], indent="  ")
-    if mode == "DELETE":
-        log("")
-        log("  *** DESTRUCTIVE RUN - tags will be permanently removed ***")
-        log("  *** A CSV backup is written per repo before any delete   ***")
-    log("")
-
-    all_rows = []
-    summary  = []
-    for idx, t in enumerate(targets, 1):
-        log("")
-        log("#" * 78)
-        log(f"#  {idx}/{len(targets)}: {t}")
-        log("#" * 78)
-        pid, ppath, rows, deleted, skipped, failed = process_project(
-            t, do_delete, args.backup_only)
-        all_rows.extend(rows)
-        summary.append((ppath, pid, len(rows), deleted, skipped))
-
-    # --- Combined backup for multi-repo runs ---
-    if len(targets) > 1 and all_rows:
-        combined = f"tags_backup_ALL_{TIMESTAMP}.csv"
-        write_csv(combined, all_rows)
-        log("")
-        log(f"Combined backup -> {combined}  ({len(all_rows)} tags across "
-            f"{len(targets)} repos)")
-
-    # --- Summary ---
-    log("")
-    log("=" * 78)
-    log("  SUMMARY")
-    log("=" * 78)
-    sum_rows = []
-    for i, (ppath, pid, found, deleted, skipped) in enumerate(summary, 1):
-        sum_rows.append([i, pid, trim(ppath, 46), found, deleted, skipped])
-    log_table(["Sr.", "ID", "Repository", "Tags Found", "Deleted", "Skipped"],
-              sum_rows, aligns=[">", ">", "<", ">", ">", ">"], indent="  ")
-
-    tot_f = sum(s[2] for s in summary)
-    tot_d = sum(s[3] for s in summary)
-    tot_s = sum(s[4] for s in summary)
-    log_table(["Repos", "Tags Found", "Deleted", "Skipped"],
-              [[len(summary), tot_f, tot_d, tot_s]],
-              aligns=[">", ">", ">", ">"], indent="  ")
-    log("")
-    if mode == "DRY-RUN":
-        log("  DRY-RUN: nothing was deleted.")
-        log("  To delete for real, re-run with:  --apply --confirm")
-    elif mode == "BACKUP-ONLY":
-        log("  BACKUP-ONLY: nothing was deleted.")
-    else:
-        log("  Tags deleted. Keep the CSV backup(s) - they are the only way")
-        log("  to recreate these tags (POST repository/tags with ref=<sha>).")
-    if tot_s:
-        log(f"  {tot_s} tag(s) skipped because they are PROTECTED.")
-        log("  Unprotect them in Settings > Repository > Protected tags, then re-run.")
-
-    name = "BATCH" if len(targets) > 1 else str(targets[0]).replace("/", "_")
-    out_file = f"tagdelete_{name}_{TIMESTAMP}.txt"
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(_log_lines))
-    print(f"\n  -> {out_file} written.")
-
-
-if __name__ == "__main__":
-    main()
+.fortify_scan:
+  image: artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+  stage: fortify_scan
+  tags:
+    - common_runner
+  before_script:
+    - |
+      keytool -import -alias jfrog-artifactory -file "$ARTIFACTORY_CERT" \
+        -keystore /home/default/custom-truststore.jks -storepass changeit -noprompt
+      export MAVEN_OPTS="${MAVEN_OPTS} \
+        -Djavax.net.ssl.trustStore=/home/default/custom-truststore.jks \
+        -Djavax.net.ssl.trustStorePassword=changeit"
+  script:
+    - sourceanalyzer -clean -b $CI_PROJECT_PATH_SLUG
+    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG
+        mvn $MAVEN_CLI_OPTS clean compile -U -DskipTests=true
+        -Dfortify.sca.exclude=target
+    - sourceanalyzer -b $CI_PROJECT_PATH_SLUG -scan -Xmx${FORTIFY_MEM} -f ${CI_PROJECT_PATH_SLUG}.fpr
+    - BIRTReportGenerator -template "Developer Workbook"
+        -source ${CI_PROJECT_PATH_SLUG}.fpr
+        -format pdf -output ${CI_PROJECT_PATH_SLUG}_report.pdf
+    - FPRUtility -information -search
+        -query "[fortify priority order]:critical OR [fortify priority order]:high"
+        -project ${CI_PROJECT_PATH_SLUG}.fpr > sca_gate.txt
+    - ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
+    - |
+      if [ -n "$ISSUES" ] && [ "$ISSUES" -gt 0 ]; then
+        echo -e "\e[31m=========================================\e[0m"
+        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
+        echo -e "\e[31mHigh/Critical Vulnerabilities: $ISSUES\e[0m"
+        echo -e "\e[31m=========================================\e[0m"
+        exit 1
+      else
+        echo -e "\e[32m=========================================\e[0m"
+        echo -e "\e[32m QUALITY GATE PASSED\e[0m"
+        echo -e "\e[32mHigh/Critical Vulnerabilities: 0\e[0m"
+        echo -e "\e[32m=========================================\e[0m"
+      fi
+  artifacts:
+    paths:
+      - ${CI_PROJECT_PATH_SLUG}_report.pdf
+      - ${CI_PROJECT_PATH_SLUG}_report.xml
+      - ${CI_PROJECT_PATH_SLUG}.fpr
+    expire_in: 1 day
+    when: always
+  allow_failure: true
+
+.fortifytoGitlab:
+    stage: fortify_scan
+    tags:
+      - common_runner
+    needs:
+      - fortify_scan  
+
+    before_script:
+      - git config --global http.sslVerify false
+    image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
+    script:
+      - echo ${CLONE_TOKEN}
+      - git clone https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
+      - ls -ltrh
+      - python3 utility/script/fortify_to_gitlab.py ${CI_PROJECT_PATH_SLUG}.fpr
+    artifacts:
+      reports:
+        sast: gl-sast-report.json
+      paths:
+        - gl-sast-report.json
+        - ${CI_PROJECT_PATH_SLUG}.fpr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+================================  Below sast fortify yaml which is currently working in our environment but we have to use and test above configuration and images let me know whats the difference between both how can we run the above yaml in our environment without any issue and
+include fortifytoGitlab as well ....
+
+# ci/security/sast/sast.fortify.yml  |  Stage: sast
+# HP Fortify SCA — allow_failure:true (informational, non-blocking initially)
+
+.sast_fortify:
+  stage: sast
+  tags:
+    - common_runner
+  variables:
+    FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
+    FORTIFY_PROJECT: $CI_PROJECT_NAME
+    SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+    BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+    FORTIFY_PROJECT_DIR: "."
+    EXCLUDE_DIRS: "./src/test/**/*"
+    INCLUDE_DIRS: "./**/*.java"
+    FORTIFY_MEM: "8G"
+  image: $FORTIFY_IMAGE
+  allow_failure: true
+  script:
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS" -verbose
+    - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+    - $BIRTReportGenerator
+        -template "Developer Workbook"
+        -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+        -format PDF
+        -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf"
+        -Xmx${FORTIFY_MEM}
+  artifacts:
+    paths:
+      - "./*.fpr"
+      - "./*.pdf"
+    expire_in: 1 week
+
+sast:fortify:
+  extends: .sast_fortify
