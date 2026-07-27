@@ -1,207 +1,165 @@
-# ci/security/sast/sast.fortify.yml  |  Stage: sast
-# HP Fortify SCA 24.4 — glob translation with Gradle build-integration when available
-#
-# ── Image ─────────────────────────────────────────────────────────────────────
-# dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
-# Confirmed contents: /opt/Fortify/bin/{sourceanalyzer,FPRUtility,BIRTReportGenerator}, JDK 21
-# Confirmed MISSING: gradle  → job runs glob translation (no classpath).
-# Build-integration branch is retained for the future epay-fortify image
-# (docs/docker/custom-ci-images/epay-fortify/) which will bundle Gradle 9.x.
-#
-# ── Gate ──────────────────────────────────────────────────────────────────────
-# FORTIFY_GATE_ENFORCE=false → count is reported, job still succeeds (rollout mode)
-# FORTIFY_GATE_ENFORCE=true  → non-zero critical/high fails the job
-# Flip to "true" per-repo only after baselining. Set as a CI/CD variable to
-# override without editing this template.
-# ─────────────────────────────────────────────────────────────────────────────
-
-.sast_fortify:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
-  tags:
-    - common_runner
-  allow_failure: true
-
-  variables:
-    FORTIFY_BUILD_ID:      "$CI_PROJECT_PATH_SLUG"
-    FORTIFY_MEM:           "8G"
-    FORTIFY_INCLUDE:       "./**/*.java"
-    FORTIFY_EXCLUDE:       "./src/test/**/*"
-    FORTIFY_GATE_ENFORCE:  "false"
-    CACERT_PATH:           "${CI_PROJECT_DIR}/cacerts-custom"
-    JFROG_GRADLE_REPO:     "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
-    GRADLE_OPTS:           "-Dorg.gradle.daemon=false"
-    GRADLE_USER_HOME:      "${CI_PROJECT_DIR}/.gradle"
-
-  before_script:
-    - java -version
-    - 'echo "sourceanalyzer: $(command -v sourceanalyzer || echo MISSING)"'
-    - 'echo "FPRUtility:     $(command -v FPRUtility || echo MISSING)"'
-    - 'echo "gradle:         $(command -v gradle || echo MISSING)"'
-
-    # ── Trust JFrog internal CA ──────────────────────────────────────────────
-    # ubi9 runs non-root: $JAVA_HOME/.../cacerts is 444. Copy to workspace and
-    # chmod 644 — keytool reports success but errors on write-back otherwise.
-    # Cert variable name differs by project scope; accept either.
-    - |
-      CERT_FILE=""
-      [ -n "$JF_ARTIFACTORY_CERT" ] && [ -f "$JF_ARTIFACTORY_CERT" ] && CERT_FILE="$JF_ARTIFACTORY_CERT"
-      [ -z "$CERT_FILE" ] && [ -n "$ARTIFACTORY_CERT" ] && [ -f "$ARTIFACTORY_CERT" ] && CERT_FILE="$ARTIFACTORY_CERT"
-      if [ -n "$CERT_FILE" ]; then
-        cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
-        chmod 644 "$CACERT_PATH"
-        keytool -importcert -keystore "$CACERT_PATH" -storepass changeit \
-          -alias jfrog-internal -file "$CERT_FILE" -noprompt
-        export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -Djavax.net.ssl.trustStore=${CACERT_PATH} -Djavax.net.ssl.trustStorePassword=changeit"
-        echo "Truststore configured: $CACERT_PATH"
-      else
-        echo "WARN: no Artifactory cert variable found — Gradle resolution would fail on TLS"
-      fi
-
-    # ── Gradle init script — only when Gradle exists in the image ────────────
-    # Mirrors ci/common/base-setup.java.gradle.yml. Scoped copy required: that
-    # job cannot be extended here (different image, no sourceanalyzer).
-    - |
-      if command -v gradle >/dev/null 2>&1; then
-        mkdir -p "${GRADLE_USER_HOME}/init.d"
-        cat > "${GRADLE_USER_HOME}/init.d/epay-artifactory.init.gradle" << 'EOF'
-      settingsEvaluated { settings ->
-          settings.pluginManagement {
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-              }
-          }
-          settings.dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  maven {
-                      url System.getenv("JFROG_GRADLE_REPO")
-                      credentials {
-                          username = System.getenv("JF_USER")
-                          password = System.getenv("JF_TOKEN")
-                      }
-                  }
-                  flatDir { dirs "libs" }
-              }
-          }
-      }
-      EOF
-        echo "Gradle init script written to ${GRADLE_USER_HOME}/init.d/"
-      fi
-
-  script:
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-
-    # ── Translate ────────────────────────────────────────────────────────────
-    # Build-integration preferred (resolves classpath → cross-JAR dataflow).
-    # Falls back to glob when Gradle is absent or the build fails.
-    - |
-      TRANSLATE_MODE="glob"
-      if command -v gradle >/dev/null 2>&1 && { [ -f build.gradle ] || [ -f build.gradle.kts ]; }; then
-        echo "Attempting build-integration translation via Gradle"
-        if sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
-             gradle --no-daemon clean compileJava -x test; then
-          TRANSLATE_MODE="build-integration"
-        else
-          echo "WARN: Gradle build-integration failed — falling back to glob translation"
-          sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-        fi
-      fi
-      if [ "$TRANSLATE_MODE" = "glob" ]; then
-        echo "Using glob translation (no classpath — dataflow coverage reduced)"
-        sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
-          "$FORTIFY_INCLUDE" -exclude "$FORTIFY_EXCLUDE"
-      fi
-      echo "$TRANSLATE_MODE" > translate.mode
-      echo "Translation mode: ${TRANSLATE_MODE}"
-
-    # ── Scan ─────────────────────────────────────────────────────────────────
-    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
-
-    # ── Developer report ─────────────────────────────────────────────────────
-    # No -Xmx: BIRTReportGenerator rejects it ("Parameter Xmx8G is not valid").
-    # Heap comes from JAVA_TOOL_OPTIONS if ever needed.
-    - BIRTReportGenerator
-        -template "Developer Workbook"
-        -source "${CI_PROJECT_PATH_SLUG}.fpr"
-        -format PDF
-        -output "${CI_PROJECT_PATH_SLUG}_report.pdf"
-
-    # ── Quality gate — critical/high ──────────────────────────────────────────
-    - |
-      FPRUtility -information -search \
-        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
-        -project "${CI_PROJECT_PATH_SLUG}.fpr" > sca_gate.txt 2>&1 || true
-      cat sca_gate.txt
-      ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
-      case "$ISSUES" in ''|*[!0-9]*) ISSUES=0 ;; esac
-      echo "Translation mode: $(cat translate.mode)"
-      if [ "$ISSUES" -gt 0 ]; then
-        echo -e "\e[31m=========================================\e[0m"
-        echo -e "\e[31m QUALITY GATE: $ISSUES HIGH/CRITICAL FOUND\e[0m"
-        echo -e "\e[31m=========================================\e[0m"
-        if [ "$FORTIFY_GATE_ENFORCE" = "true" ]; then
-          echo -e "\e[31m Gate ENFORCED — failing job\e[0m"
-          exit 1
-        fi
-        echo -e "\e[33m Gate NOT enforced (FORTIFY_GATE_ENFORCE=false) — continuing\e[0m"
-        echo -e "\e[33m Review ${CI_PROJECT_PATH_SLUG}_report.pdf in job artifacts\e[0m"
-      else
-        echo -e "\e[32m=========================================\e[0m"
-        echo -e "\e[32m QUALITY GATE PASSED — High/Critical: 0\e[0m"
-        echo -e "\e[32m=========================================\e[0m"
-      fi
-
-  artifacts:
-    paths:
-      - "${CI_PROJECT_PATH_SLUG}.fpr"
-      - "${CI_PROJECT_PATH_SLUG}_report.pdf"
-      - sca_gate.txt
-      - translate.mode
-    expire_in: 1 day
-    when: always
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FPR → GitLab Vulnerability Report
-# Requires CLONE_TOKEN (read_repository on the central utility repo) and
-# runner → gitlab.sbi network policy.
-# ─────────────────────────────────────────────────────────────────────────────
-
-.fortify_to_gitlab:
-  stage: sast
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
-  tags:
-    - common_runner
-  allow_failure: true
-  needs:
-    - job: "sast:fortify"
-      artifacts: true
-      optional: true
-  before_script:
-    - git config --global http.sslVerify false
-  script:
-    - test -f "${CI_PROJECT_PATH_SLUG}.fpr" || { echo "No FPR from upstream job — nothing to convert"; exit 0; }
-    - git clone --depth 1 https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
-    - python3 utility/script/fortify_to_gitlab.py "${CI_PROJECT_PATH_SLUG}.fpr"
-    - ls -lh gl-sast-report.json
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-    paths:
-      - gl-sast-report.json
-    expire_in: 1 week
-    when: always
-
-
-sast:fortify:
-  extends: .sast_fortify
-
-sast:fortify:report:
-  extends: .fortify_to_gitlab
+#################################################################
+#  5/20: 2819
+#################################################################
+=================================================================
+  GitLab Repo Governance
+  Target  : [MASKED]
+  Project : 2819
+  Mode    : APPLY
+  Time    : 2026-07-27 06:22:19
+=================================================================
+Resolved project -> id=2819  path=itepaypg-sbiepay2/application/backend/epay_communication_service
+Validating GitLab group IDs (read-only)...
+  epay-gitlab-bank-app-owner -> 4953
+  epay-gitlab-bank-app-maintainer -> 4954
+  epay-gitlab-vendor-app-maintainer -> 4955
+  epay-gitlab-vendor-app-lead -> 4956
+  epay-gitlab-vendor-pm -> 4962
+  epay-gitlab-vendor-release-manager -> 4950
+=== Step 1: Group Invites (project share) ===
+  'epay-gitlab-bank-app-owner' already shared at level 50 -> skip
+  'epay-gitlab-bank-app-maintainer' already shared at level 40 -> skip
+  'epay-gitlab-vendor-app-maintainer' already shared at level 40 -> skip
+  'epay-gitlab-vendor-release-manager' already shared at level 30 -> skip
+  'epay-gitlab-vendor-app-lead' already shared at level 30 -> skip
+  'epay-gitlab-vendor-app-developer' already shared at level 30 -> skip
+  'epay-gitlab-vendor-pm' already shared at level 20 -> skip
+=== Step 2: Push Rules ===
+  updated push rules — CONFIRMED on read-back
+    branch_name_regex   : ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+    commit_message_regex: ^(Merge branch .*|Merge remote-tracking branch .*|[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+)$
+=== Step 3: Protected Branch Rules ===
+  'main' already protected -> deleting to re-apply cleanly
+  protected 'main' | push: No one | merge: epay-gitlab-bank-app-maintainer, epay-gitlab-bank-app-owner, epay-gitlab-vendor-app-maintainer
+  'develop' already protected -> deleting to re-apply cleanly
+  protected 'develop' | push: No one | merge: epay-gitlab-vendor-app-lead, epay-gitlab-vendor-app-maintainer, epay-gitlab-vendor-release-manager
+  protected 'sit-integration' | push: No one | merge: epay-gitlab-vendor-app-lead, epay-gitlab-vendor-app-maintainer, epay-gitlab-vendor-release-manager
+  protected 'release/*' | push: No one | merge: epay-gitlab-vendor-app-lead, epay-gitlab-vendor-app-maintainer, epay-gitlab-vendor-release-manager
+=== Step 4: MR Approval Rules ===
+  [reconcile] deleted non-spec rule 'Release Manager Approval Develop' (id=2262)
+  updated 'Lead Approval' -> 'develop' | group epay-gitlab-vendor-app-lead | required 1
+  updated 'Release Gate - Lead' -> 'release/*' | group epay-gitlab-vendor-app-lead | required 1
+  updated 'Release Manager Approval' -> 'release/*' | group epay-gitlab-vendor-release-manager | required 1
+  updated 'Release Gate - Architect' -> 'release/*' | group epay-gitlab-vendor-app-maintainer | required 1
+Traceback (most recent call last):
+  File "/usr/lib64/python3.9/urllib/request.py", line 1346, in do_open
+  created 'Release Gate - Lead (SIT)' -> 'sit-integration' | group epay-gitlab-vendor-app-lead | required 1
+  created 'Release Manager Approval (SIT)' -> 'sit-integration' | group epay-gitlab-vendor-release-manager | required 1
+  created 'Release Gate - Architect (SIT)' -> 'sit-integration' | group epay-gitlab-vendor-app-maintainer | required 1
+  updated 'Vendor Architect Sign-off' -> 'main' | group epay-gitlab-vendor-app-maintainer | required 1
+  updated 'Vendor PM Approval (CAB gate)' -> 'main' | group epay-gitlab-vendor-pm | required 1
+  updated 'Bank Maintainer Approval' -> 'main' | group epay-gitlab-bank-app-maintainer | required 1
+  updated 'Bank PM Final Gate' -> 'main' | group epay-gitlab-bank-app-owner | required 1
+=== Step 5: Pipelines Must Succeed ===
+  already False -> skip
+=== Step 6: Merge Method ===
+  already 'merge' (Merge commit) -> skip
+=== Step 7: Squash Option ===
+  current='default_off' -> setting to 'never'
+  squash_option = 'never' (Do not allow)
+=== Step 8: Default Branch ===
+  already 'main' -> skip
+=== VERIFY (read-only) ===
+Shared groups (project members):
+  epay-gitlab-bank-app-owner: access level 50
+  epay-gitlab-bank-app-maintainer: access level 40
+  epay-gitlab-vendor-app-maintainer: access level 40
+  epay-gitlab-vendor-release-manager: access level 30
+  epay-gitlab-vendor-app-lead: access level 30
+  epay-gitlab-vendor-app-developer: access level 30
+  epay-gitlab-vendor-pm: access level 20
+Protected branches:
+  main: push=No one | merge groups=['epay-gitlab-bank-app-maintainer', 'epay-gitlab-bank-app-owner', 'epay-gitlab-vendor-app-maintainer']
+  develop: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
+  sit-integration: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
+  release/*: push=No one | merge groups=['epay-gitlab-vendor-app-lead', 'epay-gitlab-vendor-app-maintainer', 'epay-gitlab-vendor-release-manager']
+Approval rules:
+  Lead Approval: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['develop']
+  Release Gate - Lead: required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['release/*']
+  Release Gate - Architect: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['release/*']
+  Vendor Architect Sign-off: required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['main']
+  Vendor PM Approval (CAB gate): required=1 | groups=['epay-gitlab-vendor-pm'] | branches=['main']
+  Bank Maintainer Approval: required=1 | groups=['epay-gitlab-bank-app-maintainer'] | branches=['main']
+  Bank PM Final Gate: required=1 | groups=['epay-gitlab-bank-app-owner'] | branches=['main']
+  Release Manager Approval: required=1 | groups=['epay-gitlab-vendor-release-manager'] | branches=['release/*']
+  Release Gate - Lead (SIT): required=1 | groups=['epay-gitlab-vendor-app-lead'] | branches=['sit-integration']
+  Release Manager Approval (SIT): required=1 | groups=['epay-gitlab-vendor-release-manager'] | branches=['sit-integration']
+  Release Gate - Architect (SIT): required=1 | groups=['epay-gitlab-vendor-app-maintainer'] | branches=['sit-integration']
+Project settings:
+  Pipelines must succeed : False
+  Merge method           : merge (Merge commit)
+  Squash option          : never (Do not allow)
+  Default branch         : main
+Push rules:
+  branch_name_regex   : ^(main|develop|sit-integration|release/(major|minor)-DM[0-9]+-EPAY-[a-zA-Z0-9_-]+|feature/EPAY-[0-9]+-[a-zA-Z0-9_-]+|bugfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+|hotfix/EPAY-[0-9]+-[a-zA-Z0-9_-]+)$
+  commit_message_regex: ^(Merge branch .*|Merge remote-tracking branch .*|[A-Z]{3}-[0-9]{3}\|[A-Z]{2}\|(feat|fix|docs|style|refactor|perf|test|chore): .+)$
+Done. Scope was project id=2819 only.
+#################################################################
+#  6/20: 2836
+#################################################################
+=================================================================
+  GitLab Repo Governance
+  Target  : [MASKED]
+  Project : 2836
+  Mode    : APPLY
+  Time    : 2026-07-27 06:22:50
+=================================================================
+Resolved project -> id=2836  path=itepaypg-sbiepay2/application/backend/epay_gateway_offline_process_service
+Validating GitLab group IDs (read-only)...
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/usr/lib64/python3.9/http/client.py", line 1285, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib64/python3.9/http/client.py", line 1331, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib64/python3.9/http/client.py", line 1280, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib64/python3.9/http/client.py", line 1040, in _send_output
+    self.send(msg)
+  File "/usr/lib64/python3.9/http/client.py", line 980, in send
+    self.connect()
+  File "/usr/lib64/python3.9/http/client.py", line 1447, in connect
+    super().connect()
+  File "/usr/lib64/python3.9/http/client.py", line 946, in connect
+    self.sock = self._create_connection(
+  File "/usr/lib64/python3.9/socket.py", line 835, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 964, in <module>
+    main()
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 934, in main
+    run_many([p[0] for p in projects],
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 872, in run_many
+    pid, ppath = run_one(project, mode_verify, mode_dry_run)
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 785, in run_one
+    groups = resolve_groups()
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 412, in resolve_groups
+    g = api_get(f"/groups/{gid}")
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 343, in api_get
+    return _request("GET", url)
+  File "/builds/itepaypg-sbiepay2/infra/devops/cicd-templates/scripts/governance/apply_repo_governance.py", line 322, in _request
+    resp = urllib.request.urlopen(req, context=ssl_ctx)
+  File "/usr/lib64/python3.9/urllib/request.py", line 214, in urlopen
+    return opener.open(url, data, timeout)
+  File "/usr/lib64/python3.9/urllib/request.py", line 517, in open
+    response = self._open(req, data)
+  File "/usr/lib64/python3.9/urllib/request.py", line 534, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "/usr/lib64/python3.9/urllib/request.py", line 494, in _call_chain
+    result = func(*args)
+  File "/usr/lib64/python3.9/urllib/request.py", line 1389, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+  File "/usr/lib64/python3.9/urllib/request.py", line 1349, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno -2] Name or service not known>
+Uploading artifacts for failed job
+00:01
+Uploading artifacts...
+WARNING: governance_*.txt: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/infra/devops/cicd-templates) 
+ERROR: No files to upload                          
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
