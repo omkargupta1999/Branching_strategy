@@ -1,265 +1,182 @@
-# ci/deploy/deploy.jobs.yml
+import os, sys
+
+# Mandatory Yes/No confirmations for UAT EXIT (post-UAT, before preprod).
+MANDATORY_YES_NO_VARS = {
+    "ALL_TEST_CASES_EXECUTED": "All in-scope test cases executed with expected results",
+    "NO_OUTSTANDING_DEFECTS": "No outstanding showstopper/critical/major/minor defects",
+    "BU_SIGNOFF_RECEIVED": "BU sign-offs received where applicable",
+    "DEVIATION_APPROVALS": "Approvals for deviations (out-of-scope / doc change / open defects) in place",
+}
+
+failed = [(var, label) for var, label in MANDATORY_YES_NO_VARS.items()
+          if os.environ.get(var, "No") != "Yes"]
+
+if failed:
+    print("UAT Exit checklist validation FAILED. Not satisfied:")
+    for var, label in failed:
+        value = os.environ.get(var, "<not set>")
+        print(f" - {var}: {label} (current value: '{value}')")
+    sys.exit(1)
+
+print("All mandatory UAT exit checklist items confirmed.")
+
+
+
+
+
+
+
+
+
+
+
+===============================
+
+
+
+# ci/checklist/validate_exit_checklist.yml
 # ──────────────────────────────────────────────────────────────────────────────
-# All deploy trigger jobs — tech-stack agnostic.
-# Included by EVERY CI orchestrator template (java, nodejs, php, dotnet, react,
-# html). Each job extends .trigger_cd (ci/deploy/trigger.cd.yml), which fires a
-# multi-project trigger into the deployment repo and waits for its result.
+# UAT EXIT checklist — manual gate on the RELEASE path.
+# Waits for the UAT deploys; running it (after filling the answers) unlocks
+# deploy-preprod-dc / deploy-preprod-dr.
 #
-# These jobs do NOT deploy anything themselves — they hand ENV + VERSION to the
-# deployment repo's pipeline, which performs the actual Helm rollout.
-#
-# ── Deploy matrix (source → target) ───────────────────────────────────────────
-#   Source            Target                MR pipeline          Post-merge push
-#   ───────────────── ───────────────────── ──────────────────── ────────────────────
-#   feature/*         develop               deploy-dev (manual)  deploy-dev  (AUTO)
-#   feature/*         feature/*             —                    —
-#   bugfix/*          feature/*             —                    —
-#   develop           sit-integration       deploy-sit (manual)  deploy-sit  (AUTO)
-#   feature/*         release/*             deploy-uat (manual)  uat,int,perf,
-#   bugfix/*          release/*             deploy-uat (manual)  pre-prod-dc,
-#                                                                pre-prod-dr (manual)
-#   hotfix/*          main                  pre-prod + pre-prod  prod-dc, prod-dr,
-#                                           -dc smoke (manual)   int (manual)
-#   release/*         main                  prod-dc, prod-dr,    prod-dc, prod-dr,
-#                                           int (manual)         int (manual)
-#
-# AUTO  = when: on_success — deploys with no human click (dev and SIT only).
-# All other environments, including every production target, stay MANUAL.
-#
-# ── Release branch gating ─────────────────────────────────────────────────────
-# Deploy rules match on the PREFIX only:  /^release\//
-# The exact release naming (release/(major|minor)-DM<digits>-EPAY-<desc>) is
-# enforced ONCE, by the GitLab Push Rule branch regex — a malformed release
-# branch cannot be created in the first place. Do NOT duplicate that regex here:
-# it would have to stay in lockstep across every rule + the push rule, and a
-# missed edit silently removes a deploy button (this exact drift caused the old
-# release/0.0.0 incident). Push rule = single source of truth for branch names.
-#
-# ── Environment map (ENV → target) ────────────────────────────────────────────
-#   dev          development
-#   sit          system integration test
-#   uat          user acceptance test
-#   int          integration
-#   perf         performance test
-#   pre-prod-dc  pre-production, DC cluster
-#   pre-prod     pre-production, DR cluster
-#   prod-dc      production, DC cluster       (Bank only)
-#   prod-dr      production, DR cluster       (Bank only)
-#
-# ── Protected branches ────────────────────────────────────────────────────────
-# main and sit-integration are protected — MR only, no direct push. Rules below
-# therefore key on the post-merge push pipeline that a merge produces.
-#
-# ── CHART_NAME ────────────────────────────────────────────────────────────────
-# Defined in each APP REPO's .gitlab-ci.yml, not in the orchestrators:
-#
-#   # epay_transaction_service/.gitlab-ci.yml
-#   include:
-#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-#       ref: main
-#       file: 'templates/ci/backend/java.yml'
-#   variables:
-#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
-#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+# Same mechanism as validate_entry_checklist: manual-job VARIABLES form, plain
+# $VAR (not component ${{ }}), runs the committed check_exit_checklist.py.
+# allow_failure:false makes it a BLOCKING gate before preprod.
 # ──────────────────────────────────────────────────────────────────────────────
-
-# ── DEV ───────────────────────────────────────────────────────────────────────
-# MR feature/* → develop : manual
-# push to develop        : AUTO (on_success)
-deploy-dev:
-  extends: .trigger_cd
-  variables:
-    ENV:          dev
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-    VERSION: "${VERSION}"
-  rules:
-    # MR opened/updated: feature/* → develop
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
-           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ &&
-           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-      when: manual
-    # Post-merge: push to develop → AUTO deploy
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
-      when: on_success
-    - when: never
-
-# ── SIT ───────────────────────────────────────────────────────────────────────
-# MR develop → sit-integration : manual
-# push to sit-integration      : AUTO (on_success)
-# release/* push and MR → release/* : manual (release testing path)
-deploy-sit:
-  extends: .trigger_cd
-  variables:
-    ENV:          sit
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    # MR opened/updated: develop → sit-integration
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
-           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "sit-integration"'
-      when: manual
-      allow_failure: true
-    # Post-merge: push to sit-integration → AUTO deploy
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "sit-integration"'
-      when: on_success
-      allow_failure: true
-    - when: never
-
-# ── UAT — manual, Release Manager ─────────────────────────────────────────────
-# MR (feature/*|bugfix/*) → release/* : manual
-# release/* post-merge push           : manual
-deploy-uat:
-  extends: .trigger_cd
+validate_exit_checklist:
+  stage: UAT-exit-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  tags:
+    - common_runner
+  allow_failure: false
   needs:
-    - job: validate_entry_checklist
-  variables:
-    ENV:          uat
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── INT — manual, Release Manager ─────────────────────────────────────────────
-# release/* post-merge push : manual
-# main post-merge push      : manual  (ships with the prod-dc/prod-dr set)
-deploy-int:
-  extends: .trigger_cd
-  needs:
-    - job: validate_entry_checklist
+    - job: deploy-uat
+      optional: true            # wait for whichever UAT deploys the team ran
+    - job: deploy-int
       optional: true
-  variables:
-    ENV:          int
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
+    - job: deploy-perf
+      optional: true
 
-# ── Performance Testing — manual, Release Manager ─────────────────────────────
-# release/* post-merge push only.
-deploy-perf:
-  extends: .trigger_cd
-  needs:
-    - job: validate_entry_checklist
   variables:
-    ENV:          perf
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: true
-    - when: never
+    ALL_TEST_CASES_EXECUTED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "All in-scope test cases/scenarios executed, each producing the expected result."
+    NO_OUTSTANDING_DEFECTS:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "No outstanding showstopper/critical/major/minor defect requiring fix or retest."
+    BU_SIGNOFF_RECEIVED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "BU sign-offs received where applicable."
+    DEVIATION_APPROVALS:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "Approvals for deviations (out-of-scope / solution-doc change / open defects) are in place."
 
-# ── Preprod DC — manual, Release Manager ──────────────────────────────────────
-# release/* post-merge push only.
-deploy-preprod-dc:
-  extends: .trigger_cd
-  stage: deploy-preprod
-  allow_failure: true
-  needs:
-    - job: validate_exit_checklist
-  variables:
-    ENV:          pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
+  script:
+    - python3 ci/checklist/check_exit_checklist.py
+
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^release\//'
       when: manual
-      allow_failure: true
+      allow_failure: false
     - when: never
 
-# ── Preprod DR — manual, Release Manager ──────────────────────────────────────
-# release/* post-merge push only.
-# ENV is 'pre-prod' — that is the DR cluster's environment name (preprod DC uses
-# 'pre-prod-dc').
-deploy-preprod-dr:
-  extends: .trigger_cd
-  stage: deploy-preprod
-  allow_failure: true
-  needs:
-    - job: validate_exit_checklist
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+========================================
+
+
+# ci/checklist/validate_entry_checklist.yml
+# ──────────────────────────────────────────────────────────────────────────────
+# UAT ENTRY checklist — manual gate on the RELEASE path.
+# Running this (after filling the Yes/No answers) unlocks deploy-uat / int / perf.
+#
+# HOW THE UAT TEAM USES IT:
+#   1. On a release/* pipeline, this job appears in stage UAT-entry-checklist as
+#      a manual job (▶ play button).
+#   2. Clicking ▶ opens a form pre-filled with these variables (all default "No").
+#      The user changes the relevant ones to "Yes" and fills the evidence field,
+#      then confirms to run the job.
+#   3. The job exports them and runs check_entry_checklist.py, which FAILS the
+#      job (exit 1) if any mandatory item is not "Yes" / evidence is blank.
+#   4. allow_failure:false means a failed checklist BLOCKS the UAT deploys.
+#
+# NOTE ON INPUTS: this uses plain `variables:` (read as $VAR), NOT `inputs:` with
+# ${{ }}. The ${{ job.inputs.x }} form is GitLab *component* syntax (spec:inputs),
+# which only resolves when a file is pulled in via `component:` and whose form
+# appears at PIPELINE-CREATION time — not when you click a manual job. The
+# per-job "fill the form then run" experience you want is the manual-job VARIABLES
+# form, which is what this file uses.
+# ──────────────────────────────────────────────────────────────────────────────
+validate_entry_checklist:
+  stage: UAT-entry-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  tags:
+    - common_runner
+  allow_failure: false          # BLOCKING gate — must pass to unlock UAT deploys
+  needs: []                     # starts as soon as the pipeline reaches this stage
+
+  # These become the editable form fields shown when the user clicks ▶.
+  # Defaults are "No" (and blank evidence) so the gate fails unless a human
+  # deliberately sets them. The `description:` shows as help text in the form.
   variables:
-    ENV:          pre-prod
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
+    EPM_DEMAND_PROJECT_ID_MAPPED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "EPM Demand id–Project id is SSOT; each Project id mapped to a unique CI/CD Epic id or child epic id."
+    TEST_SCOPE_FINALIZED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "The Test Scope has been finalized."
+    SIT_COMPLETED_WITH_REPORT:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "SIT successfully completed with a QACoE-format completion report (zero open defects, 100% pass)."
+    SIT_EXECUTION_EVIDENCE_ATTACHED:
+      value: ""
+      description: "Reference/link to SIT execution evidence (must be non-empty)."
+    DEDICATED_TEST_ENV_AVAILABLE:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "A dedicated test environment with the relevant build is available for UAT."
+    BUILD_HASH_SHARED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "Hash of the deployed build has been shared with UAT."
+    FUNCTIONALITY_WALKTHROUGH_DONE:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "AO/Dev team conducted a document-based functionality walkthrough for UAT."
+    TEST_DATA_AVAILABLE:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "Requisite test data has been made available by IT AO / BU."
+    FAR_ACCESS_PROVIDED:
+      value: "No"
+      options: ["Yes", "No"]
+      description: "FAR access to the application from UAT team IPs is provided for all required testing."
+
+  script:
+    - python3 ci/checklist/check_entry_checklist.py
+
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^release\//'
       when: manual
-      allow_failure: true
-    - when: never
-
-# ── Hotfix preprod smoke (DR) — manual, Release Manager ───────────────────────
-# MR hotfix/* → main only. Exists on the MR pipeline BEFORE the merge lands, so a
-# hotfix can be smoke-tested on preprod DR first. Never on a post-merge pipeline.
-deploy-hotfix-preprod-smoke:
-  extends: .trigger_cd
-  allow_failure: true
-  variables:
-    ENV: pre-prod
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Hotfix preprod smoke (DC) — manual, Release Manager ───────────────────────
-# MR hotfix/* → main only. Same gate as the DR smoke job above, targeting the DC
-# preprod cluster.
-deploy-hotfix-preprod-smoke-dc:
-  extends: .trigger_cd
-  allow_failure: true
-  variables:
-    ENV: pre-prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DC — manual, Bank team only ──────────────────────────────────────────
-# MR release/* → main : manual (pre-merge visibility)
-# main post-merge push : manual
-# Access is gated by the user's role on this project — .trigger_cd defines no
-# environment: key, so GitLab cannot use Protected Environments to gate it.
-deploy-prod-dc:
-  extends: .trigger_cd
-  allow_failure: true
-  variables:
-    ENV:          prod-dc
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
-    - when: never
-
-# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
-# MR release/* → main : manual (pre-merge visibility)
-# main post-merge push : manual
-deploy-prod-dr:
-  extends: .trigger_cd
-  allow_failure: true
-  variables:
-    ENV:          prod-dr
-    SERVICE_NAME: "$CI_PROJECT_NAME"
-    CHART_NAME:   "$CHART_NAME"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-      allow_failure: true
+      allow_failure: false
     - when: never
