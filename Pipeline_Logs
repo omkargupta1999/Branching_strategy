@@ -1,170 +1,265 @@
-validate_entry_checklist:
-  stage: UAT-entry-checklist
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
-  allow_failure: false
+# ci/deploy/deploy.jobs.yml
+# ──────────────────────────────────────────────────────────────────────────────
+# All deploy trigger jobs — tech-stack agnostic.
+# Included by EVERY CI orchestrator template (java, nodejs, php, dotnet, react,
+# html). Each job extends .trigger_cd (ci/deploy/trigger.cd.yml), which fires a
+# multi-project trigger into the deployment repo and waits for its result.
+#
+# These jobs do NOT deploy anything themselves — they hand ENV + VERSION to the
+# deployment repo's pipeline, which performs the actual Helm rollout.
+#
+# ── Deploy matrix (source → target) ───────────────────────────────────────────
+#   Source            Target                MR pipeline          Post-merge push
+#   ───────────────── ───────────────────── ──────────────────── ────────────────────
+#   feature/*         develop               deploy-dev (manual)  deploy-dev  (AUTO)
+#   feature/*         feature/*             —                    —
+#   bugfix/*          feature/*             —                    —
+#   develop           sit-integration       deploy-sit (manual)  deploy-sit  (AUTO)
+#   feature/*         release/*             deploy-uat (manual)  uat,int,perf,
+#   bugfix/*          release/*             deploy-uat (manual)  pre-prod-dc,
+#                                                                pre-prod-dr (manual)
+#   hotfix/*          main                  pre-prod + pre-prod  prod-dc, prod-dr,
+#                                           -dc smoke (manual)   int (manual)
+#   release/*         main                  prod-dc, prod-dr,    prod-dc, prod-dr,
+#                                           int (manual)         int (manual)
+#
+# AUTO  = when: on_success — deploys with no human click (dev and SIT only).
+# All other environments, including every production target, stay MANUAL.
+#
+# ── Release branch gating ─────────────────────────────────────────────────────
+# Deploy rules match on the PREFIX only:  /^release\//
+# The exact release naming (release/(major|minor)-DM<digits>-EPAY-<desc>) is
+# enforced ONCE, by the GitLab Push Rule branch regex — a malformed release
+# branch cannot be created in the first place. Do NOT duplicate that regex here:
+# it would have to stay in lockstep across every rule + the push rule, and a
+# missed edit silently removes a deploy button (this exact drift caused the old
+# release/0.0.0 incident). Push rule = single source of truth for branch names.
+#
+# ── Environment map (ENV → target) ────────────────────────────────────────────
+#   dev          development
+#   sit          system integration test
+#   uat          user acceptance test
+#   int          integration
+#   perf         performance test
+#   pre-prod-dc  pre-production, DC cluster
+#   pre-prod     pre-production, DR cluster
+#   prod-dc      production, DC cluster       (Bank only)
+#   prod-dr      production, DR cluster       (Bank only)
+#
+# ── Protected branches ────────────────────────────────────────────────────────
+# main and sit-integration are protected — MR only, no direct push. Rules below
+# therefore key on the post-merge push pipeline that a merge produces.
+#
+# ── CHART_NAME ────────────────────────────────────────────────────────────────
+# Defined in each APP REPO's .gitlab-ci.yml, not in the orchestrators:
+#
+#   # epay_transaction_service/.gitlab-ci.yml
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
+#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+# ──────────────────────────────────────────────────────────────────────────────
 
-  inputs:
-    epm_demand_project_id_mapped: 
-      default: "No"
-      description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
-      options: ["Yes", "No"]
+# ── DEV ───────────────────────────────────────────────────────────────────────
+# MR feature/* → develop : manual
+# push to develop        : AUTO (on_success)
+deploy-dev:
+  extends: .trigger_cd
+  variables:
+    ENV:          dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION: "${VERSION}"
+  rules:
+    # MR opened/updated: feature/* → develop
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ &&
+           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: manual
+    # Post-merge: push to develop → AUTO deploy
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+    - when: never
 
-    test_scope_finalized:
-      default: "No"
-      description: "  The Test Scope should be finalized"
-      options: ["Yes", "No"]
+# ── SIT ───────────────────────────────────────────────────────────────────────
+# MR develop → sit-integration : manual
+# push to sit-integration      : AUTO (on_success)
+# release/* push and MR → release/* : manual (release testing path)
+deploy-sit:
+  extends: .trigger_cd
+  variables:
+    ENV:          sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    # MR opened/updated: develop → sit-integration
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "sit-integration"'
+      when: manual
+      allow_failure: true
+    # Post-merge: push to sit-integration → AUTO deploy
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "sit-integration"'
+      when: on_success
+      allow_failure: true
+    - when: never
 
-    sit_completed_with_report:
-      default: "No"
-      description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
-      options: ["Yes", "No"]
+# ── UAT — manual, Release Manager ─────────────────────────────────────────────
+# MR (feature/*|bugfix/*) → release/* : manual
+# release/* post-merge push           : manual
+deploy-uat:
+  extends: .trigger_cd
+  needs:
+    - job: validate_entry_checklist
+  variables:
+    ENV:          uat
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    sit_execution_evidence_attached:
-      default: ""
-      description: " Execution evidences for successful SIT completion should be attached."
+# ── INT — manual, Release Manager ─────────────────────────────────────────────
+# release/* post-merge push : manual
+# main post-merge push      : manual  (ships with the prod-dc/prod-dr set)
+deploy-int:
+  extends: .trigger_cd
+  needs:
+    - job: validate_entry_checklist
+      optional: true
+  variables:
+    ENV:          int
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    dedicated_test_env_available:
-      default: "No"
-      description: " A dedicated test environment with relevant build should be available for UAT testing"
-      options: ["Yes", "No"]
+# ── Performance Testing — manual, Release Manager ─────────────────────────────
+# release/* post-merge push only.
+deploy-perf:
+  extends: .trigger_cd
+  needs:
+    - job: validate_entry_checklist
+  variables:
+    ENV:          perf
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    build_hash_shared:
-      default: "No"
-      description: " Hash of the build deployed to be shared with UAT"
-      options: ["Yes", "No"]
+# ── Preprod DC — manual, Release Manager ──────────────────────────────────────
+# release/* post-merge push only.
+deploy-preprod-dc:
+  extends: .trigger_cd
+  stage: deploy-preprod
+  allow_failure: true
+  needs:
+    - job: validate_exit_checklist
+  variables:
+    ENV:          pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    functionality_walkthrough_done:
-      default: "No"
-      description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
-      options: ["Yes", "No"]
+# ── Preprod DR — manual, Release Manager ──────────────────────────────────────
+# release/* post-merge push only.
+# ENV is 'pre-prod' — that is the DR cluster's environment name (preprod DC uses
+# 'pre-prod-dc').
+deploy-preprod-dr:
+  extends: .trigger_cd
+  stage: deploy-preprod
+  allow_failure: true
+  needs:
+    - job: validate_exit_checklist
+  variables:
+    ENV:          pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    test_data_available:
-      default: "No"
-      description: "  Requisite test data for testing should be made available by IT AO / BU"
-      options: ["Yes", "No"]
+# ── Hotfix preprod smoke (DR) — manual, Release Manager ───────────────────────
+# MR hotfix/* → main only. Exists on the MR pipeline BEFORE the merge lands, so a
+# hotfix can be smoke-tested on preprod DR first. Never on a post-merge pipeline.
+deploy-hotfix-preprod-smoke:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV: pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-    far_access_provided:
-      default: "No"
-      description: " FAR access to the application under test from UAT team IPs for all types of testing required"
-      options: ["Yes", "No"]
+# ── Hotfix preprod smoke (DC) — manual, Release Manager ───────────────────────
+# MR hotfix/* → main only. Same gate as the DR smoke job above, targeting the DC
+# preprod cluster.
+deploy-hotfix-preprod-smoke-dc:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
 
-  before_script:
-    - git config --global http.sslVerify false
-    - mkdir -p /etc/containers/certs.d/gitlab.sbi
-    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
-    - mkdir -p ~/.gitlab/security/certs
-    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
-    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
-    - update-ca-trust extract
+# ── Prod DC — manual, Bank team only ──────────────────────────────────────────
+# MR release/* → main : manual (pre-merge visibility)
+# main post-merge push : manual
+# Access is gated by the user's role on this project — .trigger_cd defines no
+# environment: key, so GitLab cannot use Protected Environments to gate it.
+deploy-prod-dc:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV:          prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
 
-  when: manual
-  script:
-    - git clone --branch feature_test https://cbs-token:$GITLAB_TOKEN@gitlab.sbi/cb-microservices/cbs_microservices/file-templates.git
-    - ls -la ./file-templates/scripts/
-    - cd file-templates/scripts/
-
-    - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
-    - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
-    - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
-    - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
-    - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
-    - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
-    - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
-    - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
-    - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
-
-    - python3 check_entry_checklist.py
-
-
-
-
-
-
-
-
-
-=============================================
-
-
-validate_exit_checklist:
-  stage: UAT-exit-checklist
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
-  allow_failure: false
-  when: manual
-
-  inputs:
-    all_test_cases_executed: 
-      default: "No"
-      description: " All test cases/scenarios, identified under the scope of testing, have been executed, and each test case produces the expected result"
-      options: ["Yes", "No"]
-    no_outstanding_defects:
-      default: "No"
-      description: " There is no outstanding showstopper, critical, major, or minor defect requiring fixing or retesting"
-      options: ["Yes", "No"]
-    bu_signoff_received:
-      default: "No"
-      description: " Confirmation on test cases/ scenarios advised to Business Units (BUs) for their review and BU sign-offs, wherever applicable, have been received"
-      options: ["Yes", "No"]
-    deviation_approvals:
-      default: "No"
-      description: " Approvals for other deviations like out-of-scope / solution document change / open defects etc. are in place"
-      options: ["Yes", "No"]
-  
-  before_script:
-    - git config --global http.sslVerify false
-    - mkdir -p /etc/containers/certs.d/gitlab.sbi
-    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
-    - mkdir -p ~/.gitlab/security/certs
-    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
-    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt 
-    - update-ca-trust extract
-  
-  script:
-    - git clone --branch feature_test https://cbs-token:$GITLAB_TOKEN@gitlab.sbi/cb-microservices/cbs_microservices/file-templates.git
-    - ls -la ./file-templates/scripts/
-    - cd file-templates/scripts/
-
-    - export ALL_TEST_CASES_EXECUTED="${{ job.inputs.all_test_cases_executed }}"
-    - export NO_OUTSTANDING_DEFECTS="${{ job.inputs.no_outstanding_defects }}"
-    - export BU_SIGNOFF_RECEIVED="${{ job.inputs.bu_signoff_received }}"
-    - export DEVIATION_APPROVALS="${{ job.inputs.deviation_approvals }}" 
-
-    - python3 check_exit_checklist.py  
-
-
-
-
-=================================
-
-
-import os, sys
-
-MANDATORY_YES_NO_VARS = {
-    "EPM_DEMAND_PROJECT_ID_MAPPED": "EPM Demand id-Project id mapped to unique CI/CD Epic id",
-    "TEST_SCOPE_FINALIZED": "Test Scope finalized",
-    "SIT_COMPLETED_WITH_REPORT": "SIT completed with QACoE completion report",
-    "DEDICATED_TEST_ENV_AVAILABLE": "Dedicated test environment available for UAT",
-    "BUILD_HASH_SHARED": "Build hash shared with UAT",
-    "FUNCTIONALITY_WALKTHROUGH_DONE": "Functionality walkthrough conducted for UAT team",
-    "TEST_DATA_AVAILABLE": "Requisite test data made available",
-    "FAR_ACCESS_PROVIDED": "FAR access provided from UAT team IPs",
-}
-
-MANDATORY_ATTACHMENT_VARS = {
-    "SIT_EXECUTION_EVIDENCE_ATTACHED": "SIT execution evidence attachment",
-}
-
-failed = [(var, label) for var, label in MANDATORY_YES_NO_VARS.items()
-          if os.environ.get(var, "No") != "Yes"]
-
-failed += [(var, label) for var, label in MANDATORY_ATTACHMENT_VARS.items()
-           if not os.environ.get(var, "").strip()]
-
-if failed:
-    print("UAT Entry checklist validation FAILED. Not satisfied:")
-    for var, label in failed:
-        value = os.environ.get(var, "<not set>")
-        print(f" - {var}: {label} (current value: '{value}')")
-    sys.exit(1)
-
-print("All mandatory UAT entry checklist items confirmed.")
+# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
+# MR release/* → main : manual (pre-merge visibility)
+# main post-merge push : manual
+deploy-prod-dr:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV:          prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
