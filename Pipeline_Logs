@@ -1,182 +1,254 @@
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:caf49986892a1772f6e55d3e0b30ef6ca93f25efc965550d81e477fcf6421a74 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja@sha256:caf49986892a1772f6e55d3e0b30ef6ca93f25efc965550d81e477fcf6421a74 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
+Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:04
+Gitaly correlation ID: 01KYM5DM3K01W4S0GMFFB496SN
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out 8fa62ebe as detached HEAD (ref is release/minor-DM2026025445-EPAY-consent-management-changes)...
+Skipping Git submodules setup
+Downloading artifacts
+00:08
+Downloading artifacts for build (1311797)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYM5DTBKAA9CJTND173PC0EA id=1311797 status=200 token=eyJraWQiO
+Downloading artifacts for test (1311798)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYM5DW7VWYNGB4WXGFM5YJZE id=1311798 status=200 token=eyJraWQiO
+Downloading artifacts for image:build (1311801)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYM5DWV33057K80X3DR4MAF1 id=1311801 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:04
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+Using docker image sha256:caf49986892a1772f6e55d3e0b30ef6ca93f25efc965550d81e477fcf6421a74 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja@sha256:caf49986892a1772f6e55d3e0b30ef6ca93f25efc965550d81e477fcf6421a74 ...
+$ git config --global http.sslVerify false
+$ mkdir -p /etc/containers/certs.d/gitlab.sbi
+$ cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+$ mkdir -p ~/.gitlab/security/certs
+$ cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+$ cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
+$ update-ca-trust extract
+$ git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+Cloning into 'cicd-templates'...
+$ ls -la ./ci/checklist/
+ls: cannot access './ci/checklist/': No such file or directory
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 2
+
+
+---------------------------------------------------- getting above pipeline error for validate_entry_checklist pipelie ...I am sharing the all four yaml file for you to validate if everything is correct ....and will work properly without any issue.
+and also check there should not be any issue in other stages as well.,
+
+----------------------------------------------------------validate_entry_checklist.yml ------------------------------------------------------------------------------------------------------
+validate_entry_checklist:
+  stage: UAT-entry-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
+
+  inputs:
+    epm_demand_project_id_mapped: 
+      default: "No"
+      description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
+      options: ["Yes", "No"]
+
+    test_scope_finalized:
+      default: "No"
+      description: "  The Test Scope should be finalized"
+      options: ["Yes", "No"]
+
+    sit_completed_with_report:
+      default: "No"
+      description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
+      options: ["Yes", "No"]
+
+    sit_execution_evidence_attached:
+      default: ""
+      description: " Execution evidences for successful SIT completion should be attached."
+
+    dedicated_test_env_available:
+      default: "No"
+      description: " A dedicated test environment with relevant build should be available for UAT testing"
+      options: ["Yes", "No"]
+
+    build_hash_shared:
+      default: "No"
+      description: " Hash of the build deployed to be shared with UAT"
+      options: ["Yes", "No"]
+
+    functionality_walkthrough_done:
+      default: "No"
+      description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
+      options: ["Yes", "No"]
+
+    test_data_available:
+      default: "No"
+      description: "  Requisite test data for testing should be made available by IT AO / BU"
+      options: ["Yes", "No"]
+
+    far_access_provided:
+      default: "No"
+      description: " FAR access to the application under test from UAT team IPs for all types of testing required"
+      options: ["Yes", "No"]
+
+  before_script:
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
+    - update-ca-trust extract
+
+  when: manual
+  script:
+    - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+    - ls -la ./ci/checklist/
+    - cd ci/checklist/
+
+    - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
+    - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
+    - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
+    - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
+    - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
+    - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
+    - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
+    - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
+    - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
+
+    - python3 check_entry_checklist.py
+
+
+
+----------------------------------------------------------validate_exit_checklist.yml ------------------------------------------------------------------------------------------------------
+
+validate_exit_checklist:
+  stage: UAT-exit-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
+  when: manual
+
+  inputs:
+    all_test_cases_executed: 
+      default: "No"
+      description: " All test cases/scenarios, identified under the scope of testing, have been executed, and each test case produces the expected result"
+      options: ["Yes", "No"]
+    no_outstanding_defects:
+      default: "No"
+      description: " There is no outstanding showstopper, critical, major, or minor defect requiring fixing or retesting"
+      options: ["Yes", "No"]
+    bu_signoff_received:
+      default: "No"
+      description: " Confirmation on test cases/ scenarios advised to Business Units (BUs) for their review and BU sign-offs, wherever applicable, have been received"
+      options: ["Yes", "No"]
+    deviation_approvals:
+      default: "No"
+      description: " Approvals for other deviations like out-of-scope / solution document change / open defects etc. are in place"
+      options: ["Yes", "No"]
+  
+  before_script:
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt 
+    - update-ca-trust extract
+  
+  script:
+    - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+    - ls -la ./ci/checklist/
+    - cd ci/checklist/
+
+    - export ALL_TEST_CASES_EXECUTED="${{ job.inputs.all_test_cases_executed }}"
+    - export NO_OUTSTANDING_DEFECTS="${{ job.inputs.no_outstanding_defects }}"
+    - export BU_SIGNOFF_RECEIVED="${{ job.inputs.bu_signoff_received }}"
+    - export DEVIATION_APPROVALS="${{ job.inputs.deviation_approvals }}" 
+
+    - python3 check_exit_checklist.py  
+
+----------------------------------------------------------check_entry_checklist.py ------------------------------------------------------------------------------------------------------
+
 import os, sys
 
-# Mandatory Yes/No confirmations for UAT EXIT (post-UAT, before preprod).
 MANDATORY_YES_NO_VARS = {
-    "ALL_TEST_CASES_EXECUTED": "All in-scope test cases executed with expected results",
-    "NO_OUTSTANDING_DEFECTS": "No outstanding showstopper/critical/major/minor defects",
-    "BU_SIGNOFF_RECEIVED": "BU sign-offs received where applicable",
-    "DEVIATION_APPROVALS": "Approvals for deviations (out-of-scope / doc change / open defects) in place",
+    "EPM_DEMAND_PROJECT_ID_MAPPED": "EPM Demand id-Project id mapped to unique CI/CD Epic id",
+    "TEST_SCOPE_FINALIZED": "Test Scope finalized",
+    "SIT_COMPLETED_WITH_REPORT": "SIT completed with QACoE completion report",
+    "DEDICATED_TEST_ENV_AVAILABLE": "Dedicated test environment available for UAT",
+    "BUILD_HASH_SHARED": "Build hash shared with UAT",
+    "FUNCTIONALITY_WALKTHROUGH_DONE": "Functionality walkthrough conducted for UAT team",
+    "TEST_DATA_AVAILABLE": "Requisite test data made available",
+    "FAR_ACCESS_PROVIDED": "FAR access provided from UAT team IPs",
+}
+
+MANDATORY_ATTACHMENT_VARS = {
+    "SIT_EXECUTION_EVIDENCE_ATTACHED": "SIT execution evidence attachment",
 }
 
 failed = [(var, label) for var, label in MANDATORY_YES_NO_VARS.items()
           if os.environ.get(var, "No") != "Yes"]
 
+failed += [(var, label) for var, label in MANDATORY_ATTACHMENT_VARS.items()
+           if not os.environ.get(var, "").strip()]
+
 if failed:
-    print("UAT Exit checklist validation FAILED. Not satisfied:")
+    print("UAT Entry checklist validation FAILED. Not satisfied:")
     for var, label in failed:
         value = os.environ.get(var, "<not set>")
         print(f" - {var}: {label} (current value: '{value}')")
     sys.exit(1)
 
-print("All mandatory UAT exit checklist items confirmed.")
+print("All mandatory UAT entry checklist items confirmed.")
 
 
 
 
+----------------------------------------------------------check_exit_checklist.py ------------------------------------------------------------------------------------------------------
+
+import os, sys
+
+MANDATORY_VARS = {
+    "ALL_TEST_CASES_EXECUTED": "All test cases/scenarios executed with expected results",
+    "NO_OUTSTANDING_DEFECTS": "No outstanding showstopper/critical/major/minor defects",
+    "BU_SIGNOFF_RECEIVED": "BU review/sign-off received (wherever applicable)",
+    "DEVIATION_APPROVALS": "Approvals for other deviations in place",
+}
+
+failed = [(var, label) for var, label in MANDATORY_VARS.items() if os.environ.get(var, "No") != "Yes"]
+
+if failed:
+    print("UAT Exit checklist validation FAILED. Below checklist point/points is/are not marked as Yes:")
+    for var, label in failed:
+        print(f" - {var}: {label}")
+    sys.exit(1)
+
+print("All mandatory UAT exit checklist items confirmed as Yes.")
 
 
 
+--------------------------------------------------
+
+Please check everything all the yaml and stages if there is anu issue ..............
 
 
-
-
-===============================
-
-
-
-# ci/checklist/validate_exit_checklist.yml
-# ──────────────────────────────────────────────────────────────────────────────
-# UAT EXIT checklist — manual gate on the RELEASE path.
-# Waits for the UAT deploys; running it (after filling the answers) unlocks
-# deploy-preprod-dc / deploy-preprod-dr.
-#
-# Same mechanism as validate_entry_checklist: manual-job VARIABLES form, plain
-# $VAR (not component ${{ }}), runs the committed check_exit_checklist.py.
-# allow_failure:false makes it a BLOCKING gate before preprod.
-# ──────────────────────────────────────────────────────────────────────────────
-validate_exit_checklist:
-  stage: UAT-exit-checklist
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
-  tags:
-    - common_runner
-  allow_failure: false
-  needs:
-    - job: deploy-uat
-      optional: true            # wait for whichever UAT deploys the team ran
-    - job: deploy-int
-      optional: true
-    - job: deploy-perf
-      optional: true
-
-  variables:
-    ALL_TEST_CASES_EXECUTED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "All in-scope test cases/scenarios executed, each producing the expected result."
-    NO_OUTSTANDING_DEFECTS:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "No outstanding showstopper/critical/major/minor defect requiring fix or retest."
-    BU_SIGNOFF_RECEIVED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "BU sign-offs received where applicable."
-    DEVIATION_APPROVALS:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "Approvals for deviations (out-of-scope / solution-doc change / open defects) are in place."
-
-  script:
-    - python3 ci/checklist/check_exit_checklist.py
-
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: false
-    - when: never
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-========================================
-
-
-# ci/checklist/validate_entry_checklist.yml
-# ──────────────────────────────────────────────────────────────────────────────
-# UAT ENTRY checklist — manual gate on the RELEASE path.
-# Running this (after filling the Yes/No answers) unlocks deploy-uat / int / perf.
-#
-# HOW THE UAT TEAM USES IT:
-#   1. On a release/* pipeline, this job appears in stage UAT-entry-checklist as
-#      a manual job (▶ play button).
-#   2. Clicking ▶ opens a form pre-filled with these variables (all default "No").
-#      The user changes the relevant ones to "Yes" and fills the evidence field,
-#      then confirms to run the job.
-#   3. The job exports them and runs check_entry_checklist.py, which FAILS the
-#      job (exit 1) if any mandatory item is not "Yes" / evidence is blank.
-#   4. allow_failure:false means a failed checklist BLOCKS the UAT deploys.
-#
-# NOTE ON INPUTS: this uses plain `variables:` (read as $VAR), NOT `inputs:` with
-# ${{ }}. The ${{ job.inputs.x }} form is GitLab *component* syntax (spec:inputs),
-# which only resolves when a file is pulled in via `component:` and whose form
-# appears at PIPELINE-CREATION time — not when you click a manual job. The
-# per-job "fill the form then run" experience you want is the manual-job VARIABLES
-# form, which is what this file uses.
-# ──────────────────────────────────────────────────────────────────────────────
-validate_entry_checklist:
-  stage: UAT-entry-checklist
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
-  tags:
-    - common_runner
-  allow_failure: false          # BLOCKING gate — must pass to unlock UAT deploys
-  needs: []                     # starts as soon as the pipeline reaches this stage
-
-  # These become the editable form fields shown when the user clicks ▶.
-  # Defaults are "No" (and blank evidence) so the gate fails unless a human
-  # deliberately sets them. The `description:` shows as help text in the form.
-  variables:
-    EPM_DEMAND_PROJECT_ID_MAPPED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "EPM Demand id–Project id is SSOT; each Project id mapped to a unique CI/CD Epic id or child epic id."
-    TEST_SCOPE_FINALIZED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "The Test Scope has been finalized."
-    SIT_COMPLETED_WITH_REPORT:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "SIT successfully completed with a QACoE-format completion report (zero open defects, 100% pass)."
-    SIT_EXECUTION_EVIDENCE_ATTACHED:
-      value: ""
-      description: "Reference/link to SIT execution evidence (must be non-empty)."
-    DEDICATED_TEST_ENV_AVAILABLE:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "A dedicated test environment with the relevant build is available for UAT."
-    BUILD_HASH_SHARED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "Hash of the deployed build has been shared with UAT."
-    FUNCTIONALITY_WALKTHROUGH_DONE:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "AO/Dev team conducted a document-based functionality walkthrough for UAT."
-    TEST_DATA_AVAILABLE:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "Requisite test data has been made available by IT AO / BU."
-    FAR_ACCESS_PROVIDED:
-      value: "No"
-      options: ["Yes", "No"]
-      description: "FAR access to the application from UAT team IPs is provided for all required testing."
-
-  script:
-    - python3 ci/checklist/check_entry_checklist.py
-
-  rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
-      when: manual
-      allow_failure: false
-    - when: never
