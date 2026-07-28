@@ -1,31 +1,170 @@
-include:
-  - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
-    ref: main
-    file: 'templates/ci/backend/java.library.yml'
+validate_entry_checklist:
+  stage: UAT-entry-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
 
-variables:
-  MONO_REPO_ROOT: "."
-  GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
-  JFROG_GRADLE_REPO: "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
+  inputs:
+    epm_demand_project_id_mapped: 
+      default: "No"
+      description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
+      options: ["Yes", "No"]
 
-.set-workdir:
+    test_scope_finalized:
+      default: "No"
+      description: "  The Test Scope should be finalized"
+      options: ["Yes", "No"]
+
+    sit_completed_with_report:
+      default: "No"
+      description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
+      options: ["Yes", "No"]
+
+    sit_execution_evidence_attached:
+      default: ""
+      description: " Execution evidences for successful SIT completion should be attached."
+
+    dedicated_test_env_available:
+      default: "No"
+      description: " A dedicated test environment with relevant build should be available for UAT testing"
+      options: ["Yes", "No"]
+
+    build_hash_shared:
+      default: "No"
+      description: " Hash of the build deployed to be shared with UAT"
+      options: ["Yes", "No"]
+
+    functionality_walkthrough_done:
+      default: "No"
+      description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
+      options: ["Yes", "No"]
+
+    test_data_available:
+      default: "No"
+      description: "  Requisite test data for testing should be made available by IT AO / BU"
+      options: ["Yes", "No"]
+
+    far_access_provided:
+      default: "No"
+      description: " FAR access to the application under test from UAT team IPs for all types of testing required"
+      options: ["Yes", "No"]
+
   before_script:
-    - export CACERT_PATH="${CI_PROJECT_DIR}/cacerts-custom"
-    - !reference [.base_setup_java_gradle, before_script]
-    - echo ">>> Service $SERVICE"
-    - cd "$MONO_REPO_ROOT/$SERVICE"
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
+    - update-ca-trust extract
 
-.service-matrix:
-  parallel:
-    matrix:
-      - SERVICE: ["authentication-service", "encryption-decryption-service", "logging-service", "notification-service", "captcha-service"]
+  when: manual
+  script:
+    - git clone --branch feature_test https://cbs-token:$GITLAB_TOKEN@gitlab.sbi/cb-microservices/cbs_microservices/file-templates.git
+    - ls -la ./file-templates/scripts/
+    - cd file-templates/scripts/
+
+    - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
+    - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
+    - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
+    - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
+    - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
+    - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
+    - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
+    - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
+    - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
+
+    - python3 check_entry_checklist.py
 
 
-build:
-  extends: [.build, .set-workdir, .service-matrix]
 
-test:
-  extends: [.test, .set-workdir, .service-matrix]
 
-publish:
-  extends: [.publish, .set-workdir, .service-matrix]
+
+
+
+
+
+=============================================
+
+
+validate_exit_checklist:
+  stage: UAT-exit-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
+  when: manual
+
+  inputs:
+    all_test_cases_executed: 
+      default: "No"
+      description: " All test cases/scenarios, identified under the scope of testing, have been executed, and each test case produces the expected result"
+      options: ["Yes", "No"]
+    no_outstanding_defects:
+      default: "No"
+      description: " There is no outstanding showstopper, critical, major, or minor defect requiring fixing or retesting"
+      options: ["Yes", "No"]
+    bu_signoff_received:
+      default: "No"
+      description: " Confirmation on test cases/ scenarios advised to Business Units (BUs) for their review and BU sign-offs, wherever applicable, have been received"
+      options: ["Yes", "No"]
+    deviation_approvals:
+      default: "No"
+      description: " Approvals for other deviations like out-of-scope / solution document change / open defects etc. are in place"
+      options: ["Yes", "No"]
+  
+  before_script:
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt 
+    - update-ca-trust extract
+  
+  script:
+    - git clone --branch feature_test https://cbs-token:$GITLAB_TOKEN@gitlab.sbi/cb-microservices/cbs_microservices/file-templates.git
+    - ls -la ./file-templates/scripts/
+    - cd file-templates/scripts/
+
+    - export ALL_TEST_CASES_EXECUTED="${{ job.inputs.all_test_cases_executed }}"
+    - export NO_OUTSTANDING_DEFECTS="${{ job.inputs.no_outstanding_defects }}"
+    - export BU_SIGNOFF_RECEIVED="${{ job.inputs.bu_signoff_received }}"
+    - export DEVIATION_APPROVALS="${{ job.inputs.deviation_approvals }}" 
+
+    - python3 check_exit_checklist.py  
+
+
+
+
+=================================
+
+
+import os, sys
+
+MANDATORY_YES_NO_VARS = {
+    "EPM_DEMAND_PROJECT_ID_MAPPED": "EPM Demand id-Project id mapped to unique CI/CD Epic id",
+    "TEST_SCOPE_FINALIZED": "Test Scope finalized",
+    "SIT_COMPLETED_WITH_REPORT": "SIT completed with QACoE completion report",
+    "DEDICATED_TEST_ENV_AVAILABLE": "Dedicated test environment available for UAT",
+    "BUILD_HASH_SHARED": "Build hash shared with UAT",
+    "FUNCTIONALITY_WALKTHROUGH_DONE": "Functionality walkthrough conducted for UAT team",
+    "TEST_DATA_AVAILABLE": "Requisite test data made available",
+    "FAR_ACCESS_PROVIDED": "FAR access provided from UAT team IPs",
+}
+
+MANDATORY_ATTACHMENT_VARS = {
+    "SIT_EXECUTION_EVIDENCE_ATTACHED": "SIT execution evidence attachment",
+}
+
+failed = [(var, label) for var, label in MANDATORY_YES_NO_VARS.items()
+          if os.environ.get(var, "No") != "Yes"]
+
+failed += [(var, label) for var, label in MANDATORY_ATTACHMENT_VARS.items()
+           if not os.environ.get(var, "").strip()]
+
+if failed:
+    print("UAT Entry checklist validation FAILED. Not satisfied:")
+    for var, label in failed:
+        value = os.environ.get(var, "<not set>")
+        print(f" - {var}: {label} (current value: '{value}')")
+    sys.exit(1)
+
+print("All mandatory UAT entry checklist items confirmed.")
