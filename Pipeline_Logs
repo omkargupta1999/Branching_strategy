@@ -1,147 +1,42 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-Preparing environment
-00:00
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
-Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
-Getting source from Git repository
-00:15
-Gitaly correlation ID: 01KYM6Q5NEYKYR7XEDKF6R9NDB
-Fetching changes...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
-Created fresh repository.
-Checking out 4fc5baa0 as detached HEAD (ref is main)...
-Skipping Git submodules setup
-Executing "step_script" stage of the job script
-00:08
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
-Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
-$ git config --global http.sslVerify false
-$ git config --global --add safe.directory '*'
-$ git config --global user.name "ci"
-$ git config --global user.email "ci.cedge@sbi.co.in"
-$ git remote set-url origin "https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/$CI_PROJECT_PATH.git"
-$ set -eo pipefail # collapsed multi-line command
-========== DEBUG ==========
-SERVICE_NAME=epay_admin_portal_service
-ENV=uat
-VERSION=${VERSION}
-CHART_NAME=$CHART_NAME
-RELEASE_NAME=admin-portal
-===========================
-Updating uat/charts/epay_admin_portal_service/values.yaml → image tag: ${VERSION}
-SERVICE_PATH=uat/charts/epay_admin_portal_service
-total 8.0K
--rw-rw-rw- 1 root root 1.2K Jul 28 11:11 Chart.yaml
--rw-rw-rw- 1 root root 1.8K Jul 28 11:11 values.yaml
-drwxrwxrwx 3 root root  124 Jul 28 11:11 templates
-Switched to a new branch 'main'
-branch 'main' set up to track 'origin/main'.
-From https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment
- * branch                main       -> FETCH_HEAD
-Already up to date.
-[main 4271c08f0] chore: update image tag to ${VERSION} [skip ci]
- 1 file changed, 1 insertion(+), 1 deletion(-)
-remote: 
-remote: ========================================================================        
-remote: 
-remote:    Planned Maintenance for SSL certificate upgrade on below timings.        
-remote:    Please plan your activities accordingly. When: Tuesday , July 28,        
-remote:                        2026 | 22:00 – 22:30 Hrs        
-remote: 
-remote: ========================================================================        
-remote: 
-To https://gitlab.sbi/itepaypg-sbiepay2/infra/devops/deployment.git
-   4fc5baa02..4271c08f0  main -> main
-✅ values.yaml updated: uat/charts/epay_admin_portal_service → ${VERSION}
-# Default values for adminservice.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-replicaCount: 1
-image:
-  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_admin_portal_service
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  #tag: "v-develop-20251203140801"
-  #tag: "v-develop-20251203140801"
-  tag: "${VERSION}"
-imagePullSecrets: 
-  - name: jfrog-pull-secret
-nameOverride: ""
-fullnameOverride: ""
-serviceAccount: {}
-podAnnotations: {}
-podLabels: {}
-podSecurityContext: {}
-securityContext: {}
-service:
-  type: ClusterIP
-  port: 9089
-namespace: uat-admin
-gatewayName: uat-istio-system/uat-gateway
-virtualServiceName: adminportal-adminportalservice
-serviceName: adminportal-adminportalservice
-prefixName:  /api/adminportal/v1
-servicePort: 9089
-gatewayPort: 80
-gatewayHost: "uat.epay.sbi"
-  
-configMap: 
-  additionalLabels:
-    # ...
-  annotations:
-    # ...
-  nameSuffix: "config"
-resources: {}
-ingress: {}
-# readinessProbe: {}
-# livenessProbe: {}
-# Enable health probes for proper HPA functioning
-readinessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/adminportal/v1/actuator/health/readiness"
-    port: 9089
-    scheme: HTTP
-  initialDelaySeconds: 60
-  periodSeconds: 10
-livenessProbe:
-  enabled: true
-  httpGet:
-    path: "/api/adminportal/v1/actuator/health/liveness"
-    port: 9089
-    scheme: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 10
-autoscaling: {}
-# Additional volumes on the output Deployment definition.
-volumes: []
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true#
-nodeSelector: {}
-tolerations: []
-affinity: {}
-#
-Cleaning up project directory and file based variables
-00:00
-Job succeeded
+
+Dockerfile ----------------- epay_admin_service 
+
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+COPY /build/libs/epay_admin_service-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_admin_service-$VERSION.jar"'
+
+
+Dockerfile -----------------  epay_key_managment 
+
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+COPY /build/libs/epay_key_managment-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_key_managment-$VERSION.jar"'
+
+
+Dockerfile -----------------  epay_refund_service 
+
+
+ARG BASE_IMAGE_DEV_ENV
+FROM ${BASE_IMAGE_DEV_ENV}
+ARG ENV
+ARG VERSION
+
+ENV ENV=$ENV
+ENV VERSION=$VERSION
+
+#COPY /tmp
+RUN ls -lrth /tmp/
+COPY /build/libs/epay_refund_service-${VERSION}.jar .
+ENTRYPOINT sh -c 'java -jar "epay_refund_service-$VERSION.jar"'
+
+many more services are their like this only......
