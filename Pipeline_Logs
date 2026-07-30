@@ -42,3 +42,49 @@ $ jf config add \ # collapsed multi-line command
 Cleaning up project directory and file based variables
 00:01
 ERROR: Job failed: exit code 127
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------ Getting above error while running the pipeline for security ...sharing below the configuartion yaml as well .....
+
+please fix and suggest the sulution with minimal changes .........
+
+# ci/security/sca/sca.xray.yml  |  Stage: security
+# JFrog Xray SCA — scans build JAR artifact against Xray watcher policy
+
+.sca_setup:
+  before_script:
+    - |
+      jf config add \
+        --url="$JF_URL" \
+        --xray-url="$JF_XRAY_URL" \
+        --user="$JF_USER" \
+        --access-token="$JF_TOKEN" \
+        --interactive=false \
+        epay-server
+      jf config use epay-server
+      jf rt ping
+
+.sca:
+  stage: security
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/gradle-9.3.0-jdk-21:1.24-2.1776357031
+  tags:
+    - common_runner
+  extends: .sca_setup
+  dependencies:
+    - build
+  allow_failure: true
+  script:
+    - ls build/libs/
+    - jf scan build/libs/${CI_PROJECT_NAME}-${VERSION}.jar --watches=EPAY-WATCHER --fail=true
+
+sca:xray:
+  extends: .sca
