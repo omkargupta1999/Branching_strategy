@@ -1,64 +1,77 @@
-Running with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-Preparing environment
-00:01
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
-Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:02
-Gitaly correlation ID: 01KYSGNFBJ759WJXTWH1G27TK5
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
-Created fresh repository.
-Checking out d428bd1d as detached HEAD (ref is release/minor-DM2026025445-EPAY-consent-management-changes)...
-Skipping Git submodules setup
-Downloading artifacts
-00:02
-Downloading artifacts for build (1327765)...
-Downloading artifacts from coordinator... ok        correlation_id=01KYSGNKX4HQV5Z0ESZM1AMCR4 id=1327765 status=200 token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:07
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
-$ set -e # collapsed multi-line command
-=== cert diagnostics ===
-ARTIFACTORY_CERT path : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service.tmp/ARTIFACTORY_CERT
--rw-rw-rw- 1 root root 1500 Jul 30 12:41 /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service.tmp/ARTIFACTORY_CERT
-cert subject/issuer:
-subject=CN=*.jfrog.sbi
-issuer=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
-========================
-12:41:01 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
-OK
-$ ls build/libs/
-epay_admin_portal_service-release-minor-dm2026025445-epay-consent--d428bd1d-plain.jar
-epay_admin_portal_service-release-minor-dm2026025445-epay-consent--d428bd1d.jar
-$ jf scan build/libs/${CI_PROJECT_NAME}-${VERSION}.jar --watches=EPAY-WATCHER --fail=true
-12:41:04 [Info] JFrog Xray Indexer 3.124.21 is not cached locally. Downloading it now...
-2026/07/30 12:41:06 maxprocs: Leaving GOMAXPROCS=32: CPU quota undefined
-12:41:06 [Info] The downloaded Xray Indexer version is 3.124.21
-12:41:06 [Error] path does not exist: build/libs/epay_admin_portal_service-.jar
-12:41:06 [Info] Xray is processing your scan results...
-12:41:06 [Info] No violations found.
-12:41:06 [Info] Trace ID for JFrog Platform logs: 9ee272d7db558c98
-12:41:06 [Error] path does not exist: build/libs/epay_admin_portal_service-.jar
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+# ci/security/sca/sca.xray.yml  |  Stage: security
+# JFrog Xray SCA — scans build JAR artifact against Xray watcher policy
+
+.sca_setup:
+  before_script:
+    - |
+      set -e
+      echo "=== cert diagnostics ==="
+      echo "ARTIFACTORY_CERT path : ${ARTIFACTORY_CERT:-<unset>}"
+      ls -l "$ARTIFACTORY_CERT" 2>&1 || echo "cert file not readable"
+      echo "cert subject/issuer:"
+      openssl x509 -in "$ARTIFACTORY_CERT" -noout -subject -issuer 2>&1 || echo "(not a PEM cert or openssl missing)"
+      echo "========================"
+
+      # 1) OS trust store (for anything that reads /etc/pki/ca-trust)
+      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+      update-ca-trust extract
+
+      # 2) jf's OWN cert directory — JFrog CLI does NOT rely on the OS trust store.
+      #    It loads extra CAs from <JFROG_CLI_HOME_DIR>/security/certs. This is the
+      #    step that actually fixes 'x509: certificate signed by unknown authority'.
+      #    JFROG_CLI_HOME_DIR is set as a job variable (see .sca).
+      mkdir -p "${JFROG_CLI_HOME_DIR}/security/certs"
+      cp "$ARTIFACTORY_CERT" "${JFROG_CLI_HOME_DIR}/security/certs/artifactory.crt"
+
+      jf config add \
+        --url="$JF_URL" \
+        --xray-url="$JF_XRAY_URL" \
+        --user="$JF_USER" \
+        --access-token="$JF_TOKEN" \
+        --interactive=false \
+        epay-server
+      jf config use epay-server
+      jf rt ping
+
+.sca:
+  stage: security
+  # Uses the JFrog-CLI image (has the 'jf' binary). The Gradle build image does
+  # NOT contain jf, which caused "jf: command not found" (exit 127). This job only
+  # runs 'jf scan' on the JAR pulled via dependencies:[build] — no Gradle needed.
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+    - common_runner
+  variables:
+    # jf's home dir — set here so BOTH before_script (cert install) and script
+    # (jf scan) use the same location where we drop the SBI CA.
+    JFROG_CLI_HOME_DIR: "${CI_PROJECT_DIR}/.jfrog"
+    JFROG_CLI_AVOID_NEW_VERSION_WARNING: "true"
+  extends: .sca_setup
+  dependencies:
+    - build           # the JAR to scan
+    - version         # version.env dotenv → populates $VERSION (JAR filename).
+                      # dependencies: RESTRICTS artifacts to the listed jobs, so
+                      # without 'version' here $VERSION is empty and the path
+                      # resolves to '<name>-.jar' (file not found).
+  allow_failure: true
+  script:
+    - |
+      set -eo pipefail
+      ls -l build/libs/
+      # Prefer the exact VERSION-named JAR; fall back to the single built JAR
+      # (excluding Spring's -plain.jar) so a VERSION hiccup can't break the scan.
+      JAR="build/libs/${CI_PROJECT_NAME}-${VERSION}.jar"
+      if [ ! -f "$JAR" ]; then
+        echo "WARN: '$JAR' not found (VERSION='${VERSION}'). Falling back to glob."
+        JAR=$(ls build/libs/*.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -1)
+      fi
+      if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
+        echo "ERROR: no scannable JAR found in build/libs/." >&2
+        ls -l build/libs/ >&2
+        exit 1
+      fi
+      echo "Scanning: $JAR"
+      jf scan "$JAR" --watches=EPAY-WATCHER --fail=true
+
+sca:xray:
+  extends: .sca
