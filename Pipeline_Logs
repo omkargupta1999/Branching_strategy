@@ -1,34 +1,57 @@
-# ci/security/sca/sca.xray.yml  |  Stage: security
-# JFrog Xray SCA — scans build JAR artifact against Xray watcher policy
-
-.sca_setup:
-  before_script:
-    - |
-      jf config add \
-        --url="$JF_URL" \
-        --xray-url="$JF_XRAY_URL" \
-        --user="$JF_USER" \
-        --access-token="$JF_TOKEN" \
-        --interactive=false \
-        epay-server
-      jf config use epay-server
-      jf rt ping
-
-.sca:
-  stage: security
-  # Uses the JFrog-CLI image (has the 'jf' binary). The Gradle build image does
-  # NOT contain jf, which caused "jf: command not found" (exit 127). This job only
-  # runs 'jf scan' on the JAR pulled via dependencies:[build] — no Gradle needed.
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  tags:
-    - common_runner
-  extends: .sca_setup
-  dependencies:
-    - build
-  allow_failure: true
-  script:
-    - ls build/libs/
-    - jf scan build/libs/${CI_PROJECT_NAME}-${VERSION}.jar --watches=EPAY-WATCHER --fail=true
-
-sca:xray:
-  extends: .sca
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
+Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:02
+Gitaly correlation ID: 01KYSCQ94NBSYYE9TV5Y8XKJTC
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out edf67e42 as detached HEAD (ref is release/minor-DM2026025445-EPAY-consent-management-changes)...
+Skipping Git submodules setup
+Downloading artifacts
+00:03
+Downloading artifacts for build (1326929)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYSCQDFT2QBBY95NE560B7A9 id=1326929 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:01
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ jf config add \ # collapsed multi-line command
+11:32:05 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+11:32:05 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+11:32:05 [Warn] (Attempt 1) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/ping: Get "https://artifactory.jfrog.sbi/artifactory/api/system/ping": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 1) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/version: Get "https://artifactory.jfrog.sbi/artifactory/api/system/version": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 2) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/ping: Get "https://artifactory.jfrog.sbi/artifactory/api/system/ping": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 2) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/version: Get "https://artifactory.jfrog.sbi/artifactory/api/system/version": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 3) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/ping: Get "https://artifactory.jfrog.sbi/artifactory/api/system/ping": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 3) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/version: Get "https://artifactory.jfrog.sbi/artifactory/api/system/version": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Warn] (Attempt 4) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/ping: Get "https://artifactory.jfrog.sbi/artifactory/api/system/ping": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Info] executor timeout after 3 attempts with 0 milliseconds wait intervals
+11:32:05 [Warn] (Attempt 4) - Failure occurred while sending GET request to https://artifactory.jfrog.sbi/artifactory/api/system/version: Get "https://artifactory.jfrog.sbi/artifactory/api/system/version": tls: failed to verify certificate: x509: certificate signed by unknown authority
+11:32:05 [Info] executor timeout after 3 attempts with 0 milliseconds wait intervals
+11:32:05 [Info] Trace ID for JFrog Platform logs: aa7779117d81d7d2
+11:32:05 [Error] Get "https://artifactory.jfrog.sbi/artifactory/api/system/ping": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
