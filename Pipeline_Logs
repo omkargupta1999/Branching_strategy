@@ -1,77 +1,361 @@
-# ci/security/sca/sca.xray.yml  |  Stage: security
-# JFrog Xray SCA — scans build JAR artifact against Xray watcher policy
-
-.sca_setup:
-  before_script:
-    - |
-      set -e
-      echo "=== cert diagnostics ==="
-      echo "ARTIFACTORY_CERT path : ${ARTIFACTORY_CERT:-<unset>}"
-      ls -l "$ARTIFACTORY_CERT" 2>&1 || echo "cert file not readable"
-      echo "cert subject/issuer:"
-      openssl x509 -in "$ARTIFACTORY_CERT" -noout -subject -issuer 2>&1 || echo "(not a PEM cert or openssl missing)"
-      echo "========================"
-
-      # 1) OS trust store (for anything that reads /etc/pki/ca-trust)
-      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
-      update-ca-trust extract
-
-      # 2) jf's OWN cert directory — JFrog CLI does NOT rely on the OS trust store.
-      #    It loads extra CAs from <JFROG_CLI_HOME_DIR>/security/certs. This is the
-      #    step that actually fixes 'x509: certificate signed by unknown authority'.
-      #    JFROG_CLI_HOME_DIR is set as a job variable (see .sca).
-      mkdir -p "${JFROG_CLI_HOME_DIR}/security/certs"
-      cp "$ARTIFACTORY_CERT" "${JFROG_CLI_HOME_DIR}/security/certs/artifactory.crt"
-
-      jf config add \
-        --url="$JF_URL" \
-        --xray-url="$JF_XRAY_URL" \
-        --user="$JF_USER" \
-        --access-token="$JF_TOKEN" \
-        --interactive=false \
-        epay-server
-      jf config use epay-server
-      jf rt ping
-
-.sca:
-  stage: security
-  # Uses the JFrog-CLI image (has the 'jf' binary). The Gradle build image does
-  # NOT contain jf, which caused "jf: command not found" (exit 127). This job only
-  # runs 'jf scan' on the JAR pulled via dependencies:[build] — no Gradle needed.
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
-  tags:
-    - common_runner
-  variables:
-    # jf's home dir — set here so BOTH before_script (cert install) and script
-    # (jf scan) use the same location where we drop the SBI CA.
-    JFROG_CLI_HOME_DIR: "${CI_PROJECT_DIR}/.jfrog"
-    JFROG_CLI_AVOID_NEW_VERSION_WARNING: "true"
-  extends: .sca_setup
-  dependencies:
-    - build           # the JAR to scan
-    - version         # version.env dotenv → populates $VERSION (JAR filename).
-                      # dependencies: RESTRICTS artifacts to the listed jobs, so
-                      # without 'version' here $VERSION is empty and the path
-                      # resolves to '<name>-.jar' (file not found).
-  allow_failure: true
-  script:
-    - |
-      set -eo pipefail
-      ls -l build/libs/
-      # Prefer the exact VERSION-named JAR; fall back to the single built JAR
-      # (excluding Spring's -plain.jar) so a VERSION hiccup can't break the scan.
-      JAR="build/libs/${CI_PROJECT_NAME}-${VERSION}.jar"
-      if [ ! -f "$JAR" ]; then
-        echo "WARN: '$JAR' not found (VERSION='${VERSION}'). Falling back to glob."
-        JAR=$(ls build/libs/*.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -1)
-      fi
-      if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
-        echo "ERROR: no scannable JAR found in build/libs/." >&2
-        ls -l build/libs/ >&2
-        exit 1
-      fi
-      echo "Scanning: $JAR"
-      jf scan "$JAR" --watches=EPAY-WATCHER --fail=true
-
-sca:xray:
-  extends: .sca
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
+Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:01
+Gitaly correlation ID: 01KYSH1TYPSHAEA588EA8K37B8
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out 0fc378f8 as detached HEAD (ref is release/minor-DM2026025445-EPAY-consent-management-changes)...
+Skipping Git submodules setup
+Downloading artifacts
+00:03
+Downloading artifacts for build (1327951)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYSH1Z1VWYBFTQ8BXXAD4AHQ id=1327951 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+00:35
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ set -e # collapsed multi-line command
+=== cert diagnostics ===
+ARTIFACTORY_CERT path : /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service.tmp/ARTIFACTORY_CERT
+-rw-rw-rw- 1 root root 1500 Jul 30 12:47 /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service.tmp/ARTIFACTORY_CERT
+cert subject/issuer:
+subject=CN=*.jfrog.sbi
+issuer=ST=Maharashtra, postalCode=400614, OU=PE-III, O=SBI, C=IN, CN=SBI-CA
+========================
+12:47:45 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+OK
+$ set -eo pipefail # collapsed multi-line command
+total 125768
+-rw-r--r-- 1 1001 root   1568911 Jul 30 12:47 epay_admin_portal_service-release-minor-dm2026025445-epay-consent--0fc378f8-plain.jar
+-rw-r--r-- 1 1001 root 127210589 Jul 30 12:47 epay_admin_portal_service-release-minor-dm2026025445-epay-consent--0fc378f8.jar
+Scanning: build/libs/epay_admin_portal_service-release-minor-dm2026025445-epay-consent--0fc378f8.jar
+12:47:51 [Info] JFrog Xray Indexer 3.124.21 is not cached locally. Downloading it now...
+2026/07/30 12:47:53 maxprocs: Leaving GOMAXPROCS=32: CPU quota undefined
+12:47:53 [Info] The downloaded Xray Indexer version is 3.124.21
+12:47:53 [Info] [Thread 2] Indexing file: build/libs/epay_admin_portal_service-release-minor-dm2026025445-epay-consent--0fc378f8.jar
+12:48:14 [Info] 2026/07/30 12:47:54 maxprocs: Leaving GOMAXPROCS=32: CPU quota undefined
+2026-07-30T12:48:01.992Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding org.apache.logging.log4j:log4j-core to :hibernate-validator: dependency again as already in list
+2026-07-30T12:48:07.593Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ch.qos.logback:logback-core to org.apache.logging.log4j:log4j-to-slf4j:2.23.1 dependency again as already in list
+2026-07-30T12:48:07.629Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding org.slf4j:slf4j-api to :logback-classic: dependency again as already in list
+2026-07-30T12:48:07.629Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ch.qos.logback:logback-core to :logback-classic: dependency again as already in list
+2026-07-30T12:48:08.501Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec: dependency again as already in list
+2026-07-30T12:48:08.572Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-dns: dependency again as already in list
+2026-07-30T12:48:08.604Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-http: dependency again as already in list
+2026-07-30T12:48:08.652Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-http2: dependency again as already in list
+2026-07-30T12:48:08.666Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-socks: dependency again as already in list
+2026-07-30T12:48:08.739Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-handler: dependency again as already in list
+2026-07-30T12:48:08.761Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-handler-proxy: dependency again as already in list
+2026-07-30T12:48:08.845Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-resolver-dns: dependency again as already in list
+12:48:14 [Info] Waiting for scan to complete on JFrog Xray...
+12:48:19 [Info] Xray is processing your scan results...
+12:48:19 [Info] Found 76 violations: [76 SCA]
+Security Violations
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE            | SEVERITY   | DIRECT                    | DIRECT        | AFFECTED                  | AFFECTED      | FIXED           | TYPE  |
+|                |            | PACKAGE                   | PACKAGE       | COMPONENT                 | COMPONENT     | VERSIONS        |       |
+|                |            |                           | VERSION       | NAME                      | VERSION       |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-43515 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.55]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.22]       |       |
+|                |            |                           |               |                           |               | [9.0.118]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-43512 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.55]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.22]       |       |
+|                |            |                           |               |                           |               | [9.0.118]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41293 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.55]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.22]       |       |
+|                |            |                           |               |                           |               | [9.0.118]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42584 | 💀Critical | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42581 | 💀Critical | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42579 | 💀Critical | io.netty:netty-codec-dns  | 4.1.119.Final | io.netty:netty-codec-dns  | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41901 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.5.RELEASE] | maven |
+|                |            | pring6                    |               | pring6                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41901 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.5.RELEASE] | maven |
+|                |            | pring5                    |               | pring5                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41901 | 💀Critical | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | [3.1.5.RELEASE] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40478 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
+|                |            | pring5                    |               | pring5                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40478 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
+|                |            | pring6                    |               | pring6                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40478 | 💀Critical | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40477 | 💀Critical | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40477 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
+|                |            | pring6                    |               | pring6                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40477 | 💀Critical | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE | [3.1.4.RELEASE] | maven |
+|                |            | pring5                    |               | pring5                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-66614 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.50]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.15]       |       |
+|                |            |                           |               |                           |               | [9.0.113]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-31651 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.40]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.6]        |       |
+|                |            |                           |               |                           |               | [9.0.104]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-55276 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.56]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.23]       |       |
+|                |            |                           |               |                           |               | [9.0.119]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-53434 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.56]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.23]       |       |
+|                |            |                           |               |                           |               | [9.0.119]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-47691 | 💀Critical | io.netty:netty-resolver-d | 4.1.119.Final | io.netty:netty-resolver-d | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            | ns                        |               | ns                        |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-45674 | 💀Critical | io.netty:netty-resolver-d | 4.1.119.Final | io.netty:netty-resolver-d | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            | ns                        |               | ns                        |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-22732 | 💀Critical | org.springframework.secur | 6.5.6         | org.springframework.secur | 6.5.6         | [5.7.22]        | maven |
+|                |            | ity:spring-security-web   |               | ity:spring-security-web   |               | [5.8.24]        |       |
+|                |            |                           |               |                           |               | [6.3.15]        |       |
+|                |            |                           |               |                           |               | [6.4.15]        |       |
+|                |            |                           |               |                           |               | [6.5.9]         |       |
+|                |            |                           |               |                           |               | [7.0.4]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-55754 | 💀Critical | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.45]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.11]       |       |
+|                |            |                           |               |                           |               | [9.0.109]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-43513 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.55]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.22]       |       |
+|                |            |                           |               |                           |               | [9.0.118]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41284 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.55]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.22]       |       |
+|                |            |                           |               |                           |               | [9.0.118]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42587 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            | 2                         |               | 2                         |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42587 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42585 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42583 | 🔥High     | io.netty:netty-codec      | 4.1.119.Final | io.netty:netty-codec      | 4.1.119.Final | [4.1.133.Final] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-42578 | 🔥High     | io.netty:netty-handler-pr | 4.1.119.Final | io.netty:netty-handler-pr | 4.1.119.Final | [4.1.133.Final] | maven |
+|                |            | oxy                       |               | oxy                       |               | [4.2.13.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40973 | 🔥High     | org.springframework.boot: | 3.3.10        | org.springframework.boot: | 3.3.10        | [2.7.33]        | maven |
+|                |            | spring-boot               |               | spring-boot               |               | [3.3.19]        |       |
+|                |            |                           |               |                           |               | [3.4.16]        |       |
+|                |            |                           |               |                           |               | [3.5.14]        |       |
+|                |            |                           |               |                           |               | [4.0.6]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-35554 | 🔥High     | org.apache.kafka:kafka-cl | 3.7.2         | org.apache.kafka:kafka-cl | 3.7.2         | [3.9.2]         | maven |
+|                |            | ients                     |               | ients                     |               | [4.0.2]         |       |
+|                |            |                           |               |                           |               | [4.1.2]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-34483 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.54]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.21]       |       |
+|                |            |                           |               |                           |               | [9.0.116]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-24880 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.52]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.20]       |       |
+|                |            |                           |               |                           |               | [9.0.116]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+|                | 🔥High     | tools.jackson.core:jackso | 3.0.1         | tools.jackson.core:jackso | 3.0.1         | [3.1.1]         | maven |
+|                |            | n-core                    |               | n-core                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-33871 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.132.Final] | maven |
+|                |            | 2                         |               | 2                         |               | [4.2.11.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-33870 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.132.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.10.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-24734 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.52]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.18]       |       |
+|                |            |                           |               |                           |               | [9.0.115]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-48989 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.44]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.10]       |       |
+|                |            |                           |               |                           |               | [9.0.108]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-55163 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.124.Final] | maven |
+|                |            | 2                         |               | 2                         |               | [4.2.4.Final]   |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-31650 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.40]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.6]        |       |
+|                |            |                           |               |                           |               | [9.0.104]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-22235 | 🔥High     | org.springframework.boot: | 3.3.10        | org.springframework.boot: | 3.3.10        | [3.3.11]        | maven |
+|                |            | spring-boot               |               | spring-boot               |               | [3.4.5]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-59901 | 🔥High     | io.netty:netty-codec      | 4.1.119.Final | io.netty:netty-codec      | 4.1.119.Final | [4.1.136.Final] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-56819 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.136.Final] | maven |
+|                |            | 2                         |               | 2                         |               | [4.2.16.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-56745 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.136.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.16.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+|                | 🔥High     | com.fasterxml.jackson.cor | 2.17.3        | com.fasterxml.jackson.cor | 2.17.3        | [2.18.8]        | maven |
+|                |            | e:jackson-core            |               | e:jackson-core            |               | [2.21.4]        |       |
+|                |            |                           |               |                           |               | [2.22.1]        |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+|                | 🔥High     | tools.jackson.core:jackso | 3.0.1         | tools.jackson.core:jackso | 3.0.1         | [3.1.4]         | maven |
+|                |            | n-core                    |               | n-core                    |               | [3.2.1]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-47838 | 🔥High     | org.springframework.secur | 6.5.6         | org.springframework.secur | 6.5.6         | [6.5.11]        | maven |
+|                |            | ity:spring-security-web   |               | ity:spring-security-web   |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-53404 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.56]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.23]       |       |
+|                |            |                           |               |                           |               | [9.0.119]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-54513 | 🔥High     | com.fasterxml.jackson.cor | 2.17.3        | com.fasterxml.jackson.cor | 2.17.3        | [2.18.8]        | maven |
+|                |            | e:jackson-databind        |               | e:jackson-databind        |               | [2.21.4]        |       |
+|                |            |                           |               |                           |               | [3.1.4]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-54513 | 🔥High     | tools.jackson.core:jackso | 3.0.1         | tools.jackson.core:jackso | 3.0.1         | [3.1.4]         | maven |
+|                |            | n-databind                |               | n-databind                |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-54512 | 🔥High     | com.fasterxml.jackson.cor | 2.17.3        | com.fasterxml.jackson.cor | 2.17.3        | [2.18.8]        | maven |
+|                |            | e:jackson-databind        |               | e:jackson-databind        |               | [2.21.4]        |       |
+|                |            |                           |               |                           |               | [3.1.4]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-54512 | 🔥High     | tools.jackson.core:jackso | 3.0.1         | tools.jackson.core:jackso | 3.0.1         | [3.1.4]         | maven |
+|                |            | n-databind                |               | n-databind                |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-50010 | 🔥High     | io.netty:netty-handler    | 4.1.119.Final | io.netty:netty-handler    | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41848 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [5.3.49]        | maven |
+|                |            | g-core                    |               | g-core                    |               | [6.1.28]        |       |
+|                |            |                           |               |                           |               | [6.2.19]        |       |
+|                |            |                           |               |                           |               | [7.0.8]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41731 | 🔥High     | org.springframework.kafka | 3.2.8         | org.springframework.kafka | 3.2.8         | [3.3.16]        | maven |
+|                |            | :spring-kafka             |               | :spring-kafka             |               | [4.0.6]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-48043 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            | 2                         |               | 2                         |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41851 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [5.3.49]        | maven |
+|                |            | g-expression              |               | g-expression              |               | [6.1.28]        |       |
+|                |            |                           |               |                           |               | [6.2.19]        |       |
+|                |            |                           |               |                           |               | [7.0.8]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41716 | 🔥High     | org.springframework.data: | 3.3.10        | org.springframework.data: | 3.3.10        | [2.7.20]        | maven |
+|                |            | spring-data-commons       |               | spring-data-commons       |               | [3.3.17]        |       |
+|                |            |                           |               |                           |               | [3.4.15]        |       |
+|                |            |                           |               |                           |               | [3.5.12]        |       |
+|                |            |                           |               |                           |               | [4.0.6]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41842 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [5.3.49]        | maven |
+|                |            | g-webmvc                  |               | g-webmvc                  |               | [6.1.28]        |       |
+|                |            |                           |               |                           |               | [6.2.19]        |       |
+|                |            |                           |               |                           |               | [7.0.8]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41842 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [5.3.49]        | maven |
+|                |            | g-webflux                 |               | g-webflux                 |               | [6.1.28]        |       |
+|                |            |                           |               |                           |               | [6.2.19]        |       |
+|                |            |                           |               |                           |               | [7.0.8]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-45416 | 🔥High     | io.netty:netty-handler    | 4.1.119.Final | io.netty:netty-handler    | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-44249 | 🔥High     | io.netty:netty-handler    | 4.1.119.Final | io.netty:netty-handler    | 4.1.119.Final | [4.1.135.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.15.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-40984 | 🔥High     | io.micrometer:micrometer- | 1.13.12       | io.micrometer:micrometer- | 1.13.12       | [1.13.19]       | maven |
+|                |            | core                      |               | core                      |               | [1.14.16]       |       |
+|                |            |                           |               |                           |               | [1.15.12]       |       |
+|                |            |                           |               |                           |               | [1.16.6]        |       |
+|                |            |                           |               |                           |               | [1.9.18]        |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-29062 | 🔥High     | tools.jackson.core:jackso | 3.0.1         | tools.jackson.core:jackso | 3.0.1         | [3.1.0]         | maven |
+|                |            | n-core                    |               | n-core                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-12183 | 🔥High     | org.lz4:lz4-java          | 1.8.0         | org.lz4:lz4-java          | 1.8.0         | [1.8.1]         | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-55752 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.45]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.11]       |       |
+|                |            |                           |               |                           |               | [9.0.109]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-41249 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [6.2.11]        | maven |
+|                |            | g-core                    |               | g-core                    |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-58056 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.125.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.5.Final]   |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-58057 | 🔥High     | io.netty:netty-codec      | 4.1.119.Final | io.netty:netty-codec      | 4.1.119.Final | [4.1.125.Final] | maven |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-52520 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.43]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.9]        |       |
+|                |            |                           |               |                           |               | [9.0.107]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-48988 | 🔥High     | org.apache.tomcat.embed:t | 10.1.39       | org.apache.tomcat.embed:t | 10.1.39       | [10.1.42]       | maven |
+|                |            | omcat-embed-core          |               | omcat-embed-core          |               | [11.0.8]        |       |
+|                |            |                           |               |                           |               | [9.0.106]       |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2025-27817 | 🔥High     | org.apache.kafka:kafka-cl | 3.7.2         | org.apache.kafka:kafka-cl | 3.7.2         | [3.9.1]         | maven |
+|                |            | ients                     |               | ients                     |               |                 |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-55831 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.136.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.16.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-55833 | 🔥High     | io.netty:netty-codec-http | 4.1.119.Final | io.netty:netty-codec-http | 4.1.119.Final | [4.1.136.Final] | maven |
+|                |            |                           |               |                           |               | [4.2.16.Final]  |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+| CVE-2026-41850 | 🔥High     | org.springframework:sprin | 6.1.18        | org.springframework:sprin | 6.1.18        | [5.3.49]        | maven |
+|                |            | g-expression              |               | g-expression              |               | [6.1.28]        |       |
+|                |            |                           |               |                           |               | [6.2.19]        |       |
+|                |            |                           |               |                           |               | [7.0.8]         |       |
++----------------+------------+---------------------------+---------------+---------------------------+---------------+-----------------+-------+
+License Compliance Violations
++---------------------------------------------+
+| No license compliance violations were found |
++---------------------------------------------+
+Operational Risk Violations
++-------------------------------------------+
+| No operational risk violations were found |
++-------------------------------------------+
+12:48:19 [Info] Scan completed successfully.
+12:48:19 [Info] Trace ID for JFrog Platform logs: 250611c85860ca6c
+12:48:19 [Error] One or more of the detected violations are configured to fail the build that including them
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 3
