@@ -1,91 +1,54 @@
-validate_entry_checklist:
-  stage: UAT-entry-checklist
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
-  allow_failure: false
-
-  # ── UAT APPROVAL GATE (only addition) ──────────────────────────────────
-  # environment: uat ties this job to the Protected Environment "uat".
-  # Configure that env (Settings → CI/CD → Protected Environments) with
-  # Approvals required = 1 and approver group = UAT-Approvers. GitLab then
-  # requires a UAT-Approvers member to approve before this job runs, and
-  # records who approved and when. Nothing else in this job is changed.
-  environment:
-    name: uat
-    action: prepare
-
-  inputs:
-    epm_demand_project_id_mapped: 
-      default: "No"
-      description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
-      options: ["Yes", "No"]
-
-    test_scope_finalized:
-      default: "No"
-      description: "  The Test Scope should be finalized"
-      options: ["Yes", "No"]
-
-    sit_completed_with_report:
-      default: "No"
-      description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
-      options: ["Yes", "No"]
-
-    sit_execution_evidence_attached:
-      default: ""
-      description: " Execution evidences for successful SIT completion should be attached."
-
-    dedicated_test_env_available:
-      default: "No"
-      description: " A dedicated test environment with relevant build should be available for UAT testing"
-      options: ["Yes", "No"]
-
-    build_hash_shared:
-      default: "No"
-      description: " Hash of the build deployed to be shared with UAT"
-      options: ["Yes", "No"]
-
-    functionality_walkthrough_done:
-      default: "No"
-      description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
-      options: ["Yes", "No"]
-
-    test_data_available:
-      default: "No"
-      description: "  Requisite test data for testing should be made available by IT AO / BU"
-      options: ["Yes", "No"]
-
-    far_access_provided:
-      default: "No"
-      description: " FAR access to the application under test from UAT team IPs for all types of testing required"
-      options: ["Yes", "No"]
-
-  before_script:
-    - git config --global http.sslVerify false
-    - mkdir -p /etc/containers/certs.d/gitlab.sbi
-    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
-    - mkdir -p ~/.gitlab/security/certs
-    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
-    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
-    - update-ca-trust extract
-
-  when: manual
-  script:
-    - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
-    - ls -la cicd-templates/ci/checklist/
-    - cd cicd-templates/ci/checklist/
-
-    - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
-    - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
-    - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
-    - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
-    - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
-    - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
-    - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
-    - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
-    - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
-
-    - python3 check_entry_checklist.py
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release\//'
-      when: on_success
-      when: manual
-    - when: never
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_55 Wz1c0kGRX, system ID: s_300da9d7588c
+Resolving secrets
+Preparing the "docker" executor
+00:02
+Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+Preparing environment
+00:00
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:367b33510658f246aa5bff686272dde897576eec01c436f0a0e4ce31a594815e
+Running on runner-wz1c0kgrx-project-2838-concurrent-0 via PE3DSOPGrunners4...
+Getting source from Git repository
+00:14
+Gitaly correlation ID: 01KYRSNSK2XYJWX9BAAPZW0KPW
+Fetching changes...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/infra/devops/deployment/.git/
+Created fresh repository.
+Checking out bcaa692f as detached HEAD (ref is main)...
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+00:05
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_gateway_offline_process_service | ENV=dev | VERSION=mr-feature-egp-02_inb_oinb_upi_pooling_with-develop-61-73573ac0
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=pooling
+SERVICE_NAME=epay_gateway_offline_process_service
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 194 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_gateway_offline_process_service/values.yaml to origin/main
+Deploying with image tag from values.yaml: mr-feature-egp-02_inb_oinb_upi_pooling_with-develop-61-73573ac0
+Release "pooling" does not exist. Installing it now.
+Error: 1 error occurred:
+	* Namespace "dev-" is invalid: [metadata.name: Invalid value: "dev-": a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'), metadata.labels: Invalid value: "dev-": a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')]
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
