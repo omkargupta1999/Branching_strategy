@@ -1,48 +1,560 @@
-# ci/security/sca/sca.xray.yml  |  Stage: security
-# JFrog Xray SCA — scans the build JAR against the Xray watcher policy.
+java.yml -----------
+
+
+
+# templates/ci/backend/java.yml
+# ──────────────────────────────────────────────────────────────────────────────
+# CI orchestrator for Java/Gradle MICROSERVICE repos (build a container image → OCP).
+# For library/utility repos (publish JARs → JFrog), use java.library.yml instead.
 #
-# Reuses the SHARED cert-trust + JFrog-CLI setup (.setup_jfrog_podman) from
-# ci/image/image.podman.setup.yml — the same setup the image scan uses. This
-# removes the duplicated cert/jf-config block that used to live here: one source
-# of truth for certificate trust across all jf-based jobs.
+# App repo .gitlab-ci.yml:
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: txn
+#     CHART_NAME:   transactionservice
 #
-# SCA vs image scan: this scans ONLY the JAR (your Java dependencies). The image
-# scan (ci/image/image.scan.xray.yml) scans the whole container TAR, so it also
-# finds OS/base-image CVEs. Keeping SCA separate gives fast, shift-left feedback
-# at the 'security' stage — it fails before the (slower) image build + scan.
+# ── Active pipeline today ─────────────────────────────────────────────────────
+#   version → build → test → sast(fortify) → image-build → image-push
+#           → release(prod tag on main) → deploy(trigger jobs)
+#
+# SCA, secrets, IaC, license, SBOM, image scanning and image signing are defined
+# in this repo but NOT included below; their stage names are commented out of
+# `stages:` too. Re-enable the include and the stage together.
+#
+# ── Stage matrix (source → target) ────────────────────────────────────────────
+#   Source     Target            MR pipeline                          Post-merge push
+#   ────────── ───────────────── ──────────────────────────────────── ──────────────────────────────
+#   feature/*  develop           version,build,test,sast,             same + deploy-dev (AUTO)
+#                                image-build,image-push,deploy-dev
+#   feature/*  feature/*         version,build,test,sast              same
+#   bugfix/*   feature/*         version,build,test,sast              same
+#   develop    sit-integration   version,build,test,sast,             same + deploy-sit (AUTO)
+#                                image-build,image-push,deploy-sit
+#   feature/*  release/*         version,build,test,sast,             same + uat,int,perf,
+#   bugfix/*   release/*         image-build,image-push,deploy-uat    pre-prod-dc,pre-prod-dr
+#   hotfix/*   main              version,build,test,sast,image-build, same + prod-dc,prod-dr,int
+#                                image-push,pre-prod + pre-prod-dc
+#   release/*  main              version,build,test,sast,image-build, same + prod-dc,prod-dr,int
+#                                image-push,prod-dc,prod-dr,int
+#
+# All deploy jobs are MANUAL except deploy-dev (develop push) and deploy-sit
+# (sit-integration push), which are AUTO. See ci/deploy/deploy.jobs.yml.
+#
+# ── Branch naming (enforced by the GitLab Push Rule, not by CI) ───────────────
+#   main | develop | sit-integration
+#   release/(major|minor)-DM<digits>-EPAY-<desc>
+#   feature|bugfix|hotfix/EPAY-<digits>-<desc>
+# main and sit-integration are protected — MR only, no direct push.
+# ──────────────────────────────────────────────────────────────────────────────
+
+default:
+  tags:
+    - common_runner
 
 include:
-  - local: ci/image/image.podman.setup.yml
+  - local: 'ci/version/semver.yml'
+  - local: 'ci/build/java.gradle.yml'
+  # - local: 'ci/test/java.unit.yml'
+  - local: ci/common/workflow.yml
+  - local: 'ci/image/image.retag.yml'   # main: retag tested image → prod semver
+  # - local: 'ci/security/sast/sast.gitlab.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sca/sca.xray.yml'
+  # - local: 'ci/security/secrets/secrets.detect.yml'
+  # - local: 'ci/security/iac/iac.scan.yml'
+  # - local: 'ci/security/license/license.scan.yml'
+  # - local: 'ci/security/sbom/sbom.generate.yml'
+  - local: 'ci/image/image.build.yml'
+  # - local: 'ci/image/image.scan.trivy.yml'
+  # - local: 'ci/image/image.scan.xray.yml'
+  # - local: 'ci/image/image.scan.rhacs.yml'
+  # - local: 'ci/image/image.sign.yml'
+  # - local: 'ci/image/image.sbom.attest.yml'
+  - local: 'ci/image/image.push.yml'
+  - local: 'ci/release/tag.yml'
+  # - local: 'ci/release/back-merge.yml'
+  - local: 'ci/deploy/trigger.cd.yml'
+  - local: 'ci/deploy/deploy.jobs.yml'
+  - local: 'ci/checklist/validate_entry_checklist.yml'
+  - local: 'ci/checklist/pre_uat_approval.yml'
+  - local: 'ci/checklist/validate_exit_checklist.yml'
+  - local: 'ci/checklist/post_uat_approval.yml'
 
-.sca:
-  extends: .setup_jfrog_podman     # shared image + cert trust + jf config
-  stage: security
+
+stages:
+  - version       # compute VERSION → version.env (semver.yml)
+  - image-retag   # main only: retag tested release/hotfix image → prod semver
+  - build         # gradle compile
+  # - test          # unit tests
+  # - sast          # fortify
+  # - security      # DECLARED BUT EMPTY — no security jobs are included today
+  - image-build   # podman build (local tarball only — no push)
+  # - image-scan    # trivy + xray + rhacs (gate before sign)
+  # - image-attest  # cosign sign + sbom attestation
+  - image-push    # push image to JFrog
+  - release       # create-prod-tag on main (tag.yml); RC tagging is disabled
+  - UAT-entry-checklist
+  - deploy        # trigger jobs → deployment repo CD pipeline
+  - UAT-exit-checklist
+  - deploy-preprod
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST:           "artifactory.jfrog.sbi:443"
+  CI_TEMPLATE_REGISTRY_HOST_PREPROD:   "epaynonprod-registry-quay-quay-enterprise.apps.preprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PREPRODDC: "dc-preprod-registry-quay-quay-enterprise.apps.dcpreprod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDR:    "epayproddr-registry-quay-quay-enterprise.apps.dr.prod.epay.sbi"
+  CI_TEMPLATE_REGISTRY_HOST_PRODDC:    "proddc-registry-route-quay-enterprise.apps.dc.prod.epay.sbi"
+  GIT_STRATEGY: clone
+  RELEASE_NAME: ""
+  CHART_NAME:   ""
+  IMAGE_NAME:   "itepaypg-sbiepay2-docker-local/app/backend/${CI_PROJECT_NAME}"
+  #BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/redhat-baseimage/openjdk-21-runtime:1.23-6.1758133907"
+  #BASE_IMAGE_DEV_ENV:    "artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728"
+  BASE_IMAGE_DEV_ENV:      "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21:1.23-6.1755674728"
+  BASE_IMAGE_HIGHER_ENV: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-virtual/ubi9/openjdk-21-runtime:1.24-2.1776357031"
+
+# ── Shared branch/MR filter ───────────────────────────────────────────────────
+# Applied via `extends` to build, test, sast:fortify and image:build — every job
+# the stage matrix shows on ALL rows.
+#   MR pipeline   → target is main | develop | sit-integration | release/* | feature/*
+#   Branch push   → main | develop | sit-integration | release/* | hotfix/* | bugfix/* | feature/*
+#   anything else → never
+# NOTE: image:push does NOT use this filter — it is narrower (never publishes to
+# a feature target). Its rules live in ci/image/image.push.yml.
+.rules:
+  rules:
+    # main POST-MERGE push runs ONLY version → image-retag → create-prod-tag →
+    # deploy. build/test/sast (and image-build/push) are SKIPPED on main — the
+    # code was already built + tested on the release/hotfix branch; main only
+    # retags the tested image. So exclude main-push from this shared filter.
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+            (
+              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|sit-integration|release)(\/.*)*$/
+              ||
+              $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/
+            )'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix|feature)(\/.*)*$/'
+    - when: never
+
+
+# ── Stage: version ────────────────────────────────────────────────────────────
+# Job defined in ci/version/semver.yml — runs on every pipeline, no override here.
+
+# ── Stage: build ──────────────────────────────────────────────────────────────
+build:
+  extends: [.build, .rules]
+
+# ── Stage: test ───────────────────────────────────────────────────────────────
+# test:
+#   extends: [.test, .rules]
+
+# ── Stage: sast ───────────────────────────────────────────────────────────────
+# Gated by .rules so it runs on the same rows as build/test (stage matrix above).
+# sast:fortify:
+#   extends: [.sast_fortify, .rules]
+
+# sast:gitlab:
+#   extends: [.sast, .rules]
+
+# # ── Stage: security ────────────────────────────────────────────────────────────
+# sca:xray:
+#   extends: [.sca, .rules]
+
+# # GitLab template jobs — override stage and apply rules
+# secret_detection:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# kics-iac-sast:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# license_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# dependency_scanning:
+#   stage: security
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+
+# ── Stage: image-build ────────────────────────────────────────────────────────
+# NOT gated by plain .rules: build/test/sast run on feature branches, but an
+# image must never be built for one. Snapshot rows feature->feature and
+# bugfix->feature stop at sast in BOTH columns (MR raised AND post-merge), so
+# both the MR-target and the branch-push paths exclude feature/*.
+# Keep this exclusion aligned with ci/image/image.push.yml.
+# image:build:
+#   extends: .image_build
+#   rules:
+#     # Any MR targeting a feature branch — no image is built
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+#             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^feature(\/.*)*$/'
+#       when: never
+#     # Post-merge / direct push onto a feature branch — no image is built
+#     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^feature(\/.*)*$/'
+#       when: never
+#     # MR into a long-lived / release target
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+#             $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|sit-integration|release)(\/.*)*$/'
+#       when: on_success
+#     # Branch pushes (feature/* already excluded above)
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|sit-integration|release|hotfix|bugfix)(\/.*)*$/'
+#       when: on_success
+#     - when: never
+
+# # ── Stage: image-scan ──────────────────────────────────────────────────────────
+# Trivy (GitLab template job) — override stage and rules
+# container_scanning:
+#   stage: image-scan
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|develop|release)(\/.*)*$/'
+#     - if: '$CI_COMMIT_BRANCH =~ /^(main|develop|release|hotfix|bugfix|feature)(\/.*)*$/'
+#     - when: never
+# image:scan:xray:
+#   extends: [.image_scan_xray, .rules]
+
+# image:scan:rhacs:
+#   extends: [.image_scan_rhacs, .rules]
+
+# # ── Stage: image-attest ────────────────────────────────────────────────────────
+# image:sign:
+#   extends: [.image_sign, .rules]
+
+# image:sbom:attest:
+#   extends: [.sbom_attest, .rules]
+
+# ── Stage: image-push ─────────────────────────────────────────────────────────
+# image:push is defined as a concrete job in ci/image/image.push.yml and keeps
+# its own rules (never publishes to a feature target; skips feature/bugfix/hotfix
+# pushes). Uncommenting the override below would REPLACE those rules with .rules
+# and start publishing feature-target images — do not.
+# image:push:
+#   extends: [.image_push, .rules]
+
+  
+
+# ── Stage: release ────────────────────────────────────────────────────────────
+# create-prod-tag: auto on push to main (ci/release/tag.yml)
+# create-rc-tag:   disabled — see ci/release/tag.yml
+
+# ── Stage: deploy ─────────────────────────────────────────────────────────────
+# All deploy trigger jobs are defined in ci/deploy/deploy.jobs.yml.
+#   develop push                  : deploy-dev  (AUTO)
+#   sit-integration push          : deploy-sit  (AUTO)
+#   MR feature/* → develop        : deploy-dev  (manual)
+#   MR develop → sit-integration  : deploy-sit  (manual)
+#   MR (feature|bugfix)/* → release/* : deploy-uat (manual)
+#   release/* push                : deploy-uat, int, perf, pre-prod-dc, pre-prod-dr (manual)
+#   MR hotfix/* → main            : deploy-hotfix-preprod-smoke (DR) + -dc (manual)
+#   MR release/* → main           : deploy-prod-dc, deploy-prod-dr, deploy-int (manual)
+#   main push                     : deploy-prod-dc, deploy-prod-dr, deploy-int (manual, Bank only)
+
+
+
+
+
+
+----------------------------------------- deploy.jobs.yml 
+
+
+
+# ci/deploy/deploy.jobs.yml
+# ──────────────────────────────────────────────────────────────────────────────
+# All deploy trigger jobs — tech-stack agnostic.
+# Included by EVERY CI orchestrator template (java, nodejs, php, dotnet, react,
+# html). Each job extends .trigger_cd (ci/deploy/trigger.cd.yml), which fires a
+# multi-project trigger into the deployment repo and waits for its result.
+#
+# These jobs do NOT deploy anything themselves — they hand ENV + VERSION to the
+# deployment repo's pipeline, which performs the actual Helm rollout.
+#
+# ── Deploy matrix (source → target) ───────────────────────────────────────────
+#   Source            Target                MR pipeline          Post-merge push
+#   ───────────────── ───────────────────── ──────────────────── ────────────────────
+#   feature/*         develop               deploy-dev (manual)  deploy-dev  (AUTO)
+#   feature/*         feature/*             —                    —
+#   bugfix/*          feature/*             —                    —
+#   develop           sit-integration       deploy-sit (manual)  deploy-sit  (AUTO)
+#   feature/*         release/*             deploy-uat (manual)  uat,int,perf,
+#   bugfix/*          release/*             deploy-uat (manual)  pre-prod-dc,
+#                                                                pre-prod-dr (manual)
+#   hotfix/*          main                  pre-prod + pre-prod  prod-dc, prod-dr,
+#                                           -dc smoke (manual)   int (manual)
+#   release/*         main                  prod-dc, prod-dr,    prod-dc, prod-dr,
+#                                           int (manual)         int (manual)
+#
+# AUTO  = when: on_success — deploys with no human click (dev and SIT only).
+# All other environments, including every production target, stay MANUAL.
+#
+# ── Release branch gating ─────────────────────────────────────────────────────
+# Deploy rules match on the PREFIX only:  /^release\//
+# The exact release naming (release/(major|minor)-DM<digits>-EPAY-<desc>) is
+# enforced ONCE, by the GitLab Push Rule branch regex — a malformed release
+# branch cannot be created in the first place. Do NOT duplicate that regex here:
+# it would have to stay in lockstep across every rule + the push rule, and a
+# missed edit silently removes a deploy button (this exact drift caused the old
+# release/0.0.0 incident). Push rule = single source of truth for branch names.
+#
+# ── Environment map (ENV → target) ────────────────────────────────────────────
+#   dev          development
+#   sit          system integration test
+#   uat          user acceptance test
+#   int          integration
+#   perf         performance test
+#   pre-prod-dc  pre-production, DC cluster
+#   pre-prod     pre-production, DR cluster
+#   prod-dc      production, DC cluster       (Bank only)
+#   prod-dr      production, DR cluster       (Bank only)
+#
+# ── Protected branches ────────────────────────────────────────────────────────
+# main and sit-integration are protected — MR only, no direct push. Rules below
+# therefore key on the post-merge push pipeline that a merge produces.
+#
+# ── CHART_NAME ────────────────────────────────────────────────────────────────
+# Defined in each APP REPO's .gitlab-ci.yml, not in the orchestrators:
+#
+#   # epay_transaction_service/.gitlab-ci.yml
+#   include:
+#     - project: 'itepaypg-sbiepay2/infra/devops/cicd-templates'
+#       ref: main
+#       file: 'templates/ci/backend/java.yml'
+#   variables:
+#     RELEASE_NAME: epay-txn            # Helm release name (cluster-unique)
+#     CHART_NAME:   transactionservice  # Helm chart name in deployment repo charts/
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── DEV ───────────────────────────────────────────────────────────────────────
+# MR feature/* → develop : manual
+# push to develop        : AUTO (on_success)
+deploy-dev:
+  extends: .trigger_cd
   variables:
-    JFROG_CLI_AVOID_NEW_VERSION_WARNING: "true"
-  dependencies:
-    - build           # the JAR to scan
-    - version         # version.env dotenv → populates $VERSION for the JAR name.
-                      # dependencies: RESTRICTS artifacts to the listed jobs, so
-                      # 'version' must be here or $VERSION is empty.
-  allow_failure: true
-  script:
-    - |
-      set -eo pipefail
-      ls -l build/libs/
-      # Prefer the exact VERSION-named JAR; fall back to the single built JAR
-      # (excluding Spring's -plain.jar) so a VERSION hiccup can't break the scan.
-      JAR="build/libs/${CI_PROJECT_NAME}-${VERSION}.jar"
-      if [ ! -f "$JAR" ]; then
-        echo "WARN: '$JAR' not found (VERSION='${VERSION}'). Falling back to glob."
-        JAR=$(ls build/libs/*.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -1)
-      fi
-      if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
-        echo "ERROR: no scannable JAR found in build/libs/." >&2
-        ls -l build/libs/ >&2
-        exit 1
-      fi
-      echo "Scanning: $JAR"
-      jf scan "$JAR" --watches=EPAY-WATCHER --fail=true
+    ENV:          dev
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+    VERSION: "${VERSION}"
+  rules:
+    # MR opened/updated: feature/* → develop
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature\/.*$/ &&
+           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: manual
+    # Post-merge: push to develop → AUTO deploy
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+    - when: never
 
-sca:xray:
-  extends: .sca
+# ── SIT ───────────────────────────────────────────────────────────────────────
+# MR develop → sit-integration : manual
+# push to sit-integration      : AUTO (on_success)
+# release/* push and MR → release/* : manual (release testing path)
+deploy-sit:
+  extends: .trigger_cd
+  variables:
+    ENV:          sit
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    # MR opened/updated: develop → sit-integration
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+           $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "sit-integration"'
+      when: manual
+      allow_failure: true
+    # Post-merge: push to sit-integration → AUTO deploy
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "sit-integration"'
+      when: on_success
+      allow_failure: true
+    - when: never
+
+# ── UAT — manual, Release Manager ─────────────────────────────────────────────
+# MR (feature/*|bugfix/*) → release/* : manual
+# release/* post-merge push           : manual
+deploy-uat:
+  extends: .trigger_cd
+  needs:
+    - job: pre_uat_approval
+    - job: version
+  variables:
+    ENV:          uat
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── INT — manual, Release Manager ─────────────────────────────────────────────
+# release/* post-merge push : manual
+# main post-merge push      : manual  (ships with the prod-dc/prod-dr set)
+deploy-int:
+  extends: .trigger_cd
+  needs:
+    - job: pre_uat_approval
+    - job: version
+      optional: true
+  variables:
+    ENV:          int
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Performance Testing — manual, Release Manager ─────────────────────────────
+# release/* post-merge push only.
+deploy-perf:
+  extends: .trigger_cd
+  needs:
+    - job: pre_uat_approval
+    - job: version
+  variables:
+    ENV:          perf
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DC — manual, Release Manager ──────────────────────────────────────
+# release/* post-merge push only.
+deploy-preprod-dc:
+  extends: .trigger_cd
+  stage: deploy-preprod
+  allow_failure: true
+  needs:
+    - job: post_uat_approval
+    - job: version
+  variables:
+    ENV:          pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Preprod DR — manual, Release Manager ──────────────────────────────────────
+# release/* post-merge push only.
+# ENV is 'pre-prod' — that is the DR cluster's environment name (preprod DC uses
+# 'pre-prod-dc').
+deploy-preprod-dr:
+  extends: .trigger_cd
+  stage: deploy-preprod
+  allow_failure: true
+  needs:
+    - job: post_uat_approval
+    - job: version
+  variables:
+    ENV:          pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Hotfix preprod smoke (DR) — manual, Release Manager ───────────────────────
+# MR hotfix/* → main only. Exists on the MR pipeline BEFORE the merge lands, so a
+# hotfix can be smoke-tested on preprod DR first. Never on a post-merge pipeline.
+deploy-hotfix-preprod-smoke:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV: pre-prod
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Hotfix preprod smoke (DC) — manual, Release Manager ───────────────────────
+# MR hotfix/* → main only. Same gate as the DR smoke job above, targeting the DC
+# preprod cluster.
+deploy-hotfix-preprod-smoke-dc:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV: pre-prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^hotfix\//'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DC — manual, Bank team only ──────────────────────────────────────────
+# MR release/* → main : manual (pre-merge visibility)
+# main post-merge push : manual
+# Access is gated by the user's role on this project — .trigger_cd defines no
+# environment: key, so GitLab cannot use Protected Environments to gate it.
+deploy-prod-dc:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV:          prod-dc
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+
+# ── Prod DR — manual, Bank team only ──────────────────────────────────────────
+# MR release/* → main : manual (pre-merge visibility)
+# main post-merge push : manual
+deploy-prod-dr:
+  extends: .trigger_cd
+  allow_failure: true
+  variables:
+    ENV:          prod-dr
+    SERVICE_NAME: "$CI_PROJECT_NAME"
+    CHART_NAME:   "$CHART_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+    - when: never
+
+
+
+
+
+
+
+
+
+=================================================== getting below error while running the pipeline  :
+
+
+This GitLab CI configuration is invalid: deploy-uat job: undefined need: pre_uat_approval. Learn more
