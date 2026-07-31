@@ -1,7 +1,6 @@
 java.yml -----------
 
 
-
 # templates/ci/backend/java.yml
 # ──────────────────────────────────────────────────────────────────────────────
 # CI orchestrator for Java/Gradle MICROSERVICE repos (build a container image → OCP).
@@ -269,11 +268,7 @@ build:
 
 
 
-
-
 ----------------------------------------- deploy.jobs.yml 
-
-
 
 # ci/deploy/deploy.jobs.yml
 # ──────────────────────────────────────────────────────────────────────────────
@@ -389,7 +384,7 @@ deploy-sit:
 deploy-uat:
   extends: .trigger_cd
   needs:
-    - job: pre_uat_approval
+    - job: pre-uat-approval
     - job: version
   variables:
     ENV:          uat
@@ -407,7 +402,7 @@ deploy-uat:
 deploy-int:
   extends: .trigger_cd
   needs:
-    - job: pre_uat_approval
+    - job: pre-uat-approval
     - job: version
       optional: true
   variables:
@@ -428,7 +423,7 @@ deploy-int:
 deploy-perf:
   extends: .trigger_cd
   needs:
-    - job: pre_uat_approval
+    - job: pre-uat-approval
     - job: version
   variables:
     ENV:          perf
@@ -447,7 +442,7 @@ deploy-preprod-dc:
   stage: deploy-preprod
   allow_failure: true
   needs:
-    - job: post_uat_approval
+    - job: post-uat-approval
     - job: version
   variables:
     ENV:          pre-prod-dc
@@ -468,7 +463,7 @@ deploy-preprod-dr:
   stage: deploy-preprod
   allow_failure: true
   needs:
-    - job: post_uat_approval
+    - job: post-uat-approval
     - job: version
   variables:
     ENV:          pre-prod
@@ -552,9 +547,316 @@ deploy-prod-dr:
 
 
 
+=================================================== validate_entry_checklist.yml  
 
 
-=================================================== getting below error while running the pipeline  :
+# validate_entry_checklist:
+#   stage: UAT-entry-checklist
+#   image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+#   allow_failure: false
+  
+  
+
+#   inputs:
+#     epm_demand_project_id_mapped: 
+#       default: "No"
+#       description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
+#       options: ["Yes", "No"]
+
+#     test_scope_finalized:
+#       default: "No"
+#       description: "  The Test Scope should be finalized"
+#       options: ["Yes", "No"]
+
+#     sit_completed_with_report:
+#       default: "No"
+#       description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
+#       options: ["Yes", "No"]
+
+#     sit_execution_evidence_attached:
+#       default: ""
+#       description: " Execution evidences for successful SIT completion should be attached."
+
+#     dedicated_test_env_available:
+#       default: "No"
+#       description: " A dedicated test environment with relevant build should be available for UAT testing"
+#       options: ["Yes", "No"]
+
+#     build_hash_shared:
+#       default: "No"
+#       description: " Hash of the build deployed to be shared with UAT"
+#       options: ["Yes", "No"]
+
+#     functionality_walkthrough_done:
+#       default: "No"
+#       description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
+#       options: ["Yes", "No"]
+
+#     test_data_available:
+#       default: "No"
+#       description: "  Requisite test data for testing should be made available by IT AO / BU"
+#       options: ["Yes", "No"]
+
+#     far_access_provided:
+#       default: "No"
+#       description: " FAR access to the application under test from UAT team IPs for all types of testing required"
+#       options: ["Yes", "No"]
+
+#   before_script:
+#     - git config --global http.sslVerify false
+#     - mkdir -p /etc/containers/certs.d/gitlab.sbi
+#     - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+#     - mkdir -p ~/.gitlab/security/certs
+#     - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+#     - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
+#     - update-ca-trust extract
+
+#   when: manual
+#   script:
+#     - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+#     - ls -la cicd-templates/ci/checklist/
+#     - cd cicd-templates/ci/checklist/
+
+#     - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
+#     - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
+#     - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
+#     - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
+#     - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
+#     - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
+#     - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
+#     - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
+#     - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
+
+#     - python3 check_entry_checklist.py
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release\//'
+#       when: on_success
+#       when: manual
+#     - when: never
 
 
-This GitLab CI configuration is invalid: deploy-uat job: undefined need: pre_uat_approval. Learn more
+validate_entry_checklist:
+  stage: UAT-entry-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
+
+  # ── UAT APPROVAL GATE (only addition) ──────────────────────────────────
+  # environment: uat ties this job to the Protected Environment "uat".
+  # Configure that env (Settings → CI/CD → Protected Environments) with
+  # Approvals required = 1 and approver group = UAT-Approvers. GitLab then
+  # requires a UAT-Approvers member to approve before this job runs, and
+  # records who approved and when. Nothing else in this job is changed.
+  environment:
+    name: uat
+    action: prepare
+
+  inputs:
+    epm_demand_project_id_mapped: 
+      default: "No"
+      description: " EPM “Demand id – Project id” is SSOT in Bank. UAT  sign-offs will be provided at Project id levels. Each Project id is unique in ecosystem and should be mapped to a unique CI/CD Epic id or a unique child epic id"
+      options: ["Yes", "No"]
+
+    test_scope_finalized:
+      default: "No"
+      description: "  The Test Scope should be finalized"
+      options: ["Yes", "No"]
+
+    sit_completed_with_report:
+      default: "No"
+      description: " SIT should be successfully completed before commencing UAT. SIT completion report in standard QACoE format should be provided for certifying the conclusion of SIT (zero open defects, 100% test case passed and null values and others error have been appropriately handled"
+      options: ["Yes", "No"]
+
+    sit_execution_evidence_attached:
+      default: ""
+      description: " Execution evidences for successful SIT completion should be attached."
+
+    dedicated_test_env_available:
+      default: "No"
+      description: " A dedicated test environment with relevant build should be available for UAT testing"
+      options: ["Yes", "No"]
+
+    build_hash_shared:
+      default: "No"
+      description: " Hash of the build deployed to be shared with UAT"
+      options: ["Yes", "No"]
+
+    functionality_walkthrough_done:
+      default: "No"
+      description: "  The AO/Development team will organize a document based walkthrough of the functionality for the UAT team"
+      options: ["Yes", "No"]
+
+    test_data_available:
+      default: "No"
+      description: "  Requisite test data for testing should be made available by IT AO / BU"
+      options: ["Yes", "No"]
+
+    far_access_provided:
+      default: "No"
+      description: " FAR access to the application under test from UAT team IPs for all types of testing required"
+      options: ["Yes", "No"]
+
+  before_script:
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt
+    - update-ca-trust extract
+
+  when: manual
+  script:
+    - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+    - ls -la cicd-templates/ci/checklist/
+    - cd cicd-templates/ci/checklist/
+
+    - export EPM_DEMAND_PROJECT_ID_MAPPED="${{ job.inputs.epm_demand_project_id_mapped }}"
+    - export TEST_SCOPE_FINALIZED="${{ job.inputs.test_scope_finalized }}"
+    - export SIT_COMPLETED_WITH_REPORT="${{ job.inputs.sit_completed_with_report }}"
+    - export SIT_EXECUTION_EVIDENCE_ATTACHED="${{ job.inputs.sit_execution_evidence_attached }}"
+    - export DEDICATED_TEST_ENV_AVAILABLE="${{ job.inputs.dedicated_test_env_available }}"
+    - export BUILD_HASH_SHARED="${{ job.inputs.build_hash_shared }}"
+    - export FUNCTIONALITY_WALKTHROUGH_DONE="${{ job.inputs.functionality_walkthrough_done }}"
+    - export TEST_DATA_AVAILABLE="${{ job.inputs.test_data_available }}"
+    - export FAR_ACCESS_PROVIDED="${{ job.inputs.far_access_provided }}" 
+
+    - python3 check_entry_checklist.py
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release\//'
+      when: on_success
+      when: manual
+    - when: never
+
+
+
+
+================================================ pre_uat_approval.yml 
+
+
+pre-uat-approval:
+  stage: UAT-entry-checklist #pre-uat-approval
+  tags:
+    - common_runner
+  allow_failure: false
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - job: version                    # dotenv VERSION for the audit echo
+      artifacts: true
+    - job: validate_entry_checklist   # approval only after the checklist is filled
+  environment:
+    name: uat                         # ← ties this job to the Protected Environment 'uat'
+    action: prepare                   # 'prepare' = gate only, no real deploy happens here
+  script:
+    - |
+      echo "=================================================================="
+      echo " UAT DEPLOYMENT APPROVED"
+      echo " Approved on pipeline : $CI_PIPELINE_ID"
+      echo " Release branch       : $CI_COMMIT_BRANCH"
+      echo " Version              : $VERSION"
+      echo " Approver (GitLab user): $GITLAB_USER_LOGIN"
+      echo "------------------------------------------------------------------"
+      echo " UAT deploys (deploy-uat / deploy-int / deploy-perf) are now unlocked."
+      echo "=================================================================="
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: false
+    - when: never
+
+=================================================================  validate_exit_checklist.yml 
+
+
+validate_exit_checklist:
+  stage: UAT-exit-checklist
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/ubi9-podman-git-python-helm-jinja:1.0
+  allow_failure: false
+  when: manual
+  environment:
+    name: uat
+
+  inputs:
+    all_test_cases_executed: 
+      default: "No"
+      description: " All test cases/scenarios, identified under the scope of testing, have been executed, and each test case produces the expected result"
+      options: ["Yes", "No"]
+    no_outstanding_defects:
+      default: "No"
+      description: " There is no outstanding showstopper, critical, major, or minor defect requiring fixing or retesting"
+      options: ["Yes", "No"]
+    bu_signoff_received:
+      default: "No"
+      description: " Confirmation on test cases/ scenarios advised to Business Units (BUs) for their review and BU sign-offs, wherever applicable, have been received"
+      options: ["Yes", "No"]
+    deviation_approvals:
+      default: "No"
+      description: " Approvals for other deviations like out-of-scope / solution document change / open defects etc. are in place"
+      options: ["Yes", "No"]
+  
+  before_script:
+    - git config --global http.sslVerify false
+    - mkdir -p /etc/containers/certs.d/gitlab.sbi
+    - cp $GITLAB_CERT /etc/containers/certs.d/gitlab.sbi/ca.crt
+    - mkdir -p ~/.gitlab/security/certs
+    - cp "$GITLAB_CERT" ~/.gitlab/security/certs/gitlab.crt
+    - cp "$GITLAB_CERT" /etc/pki/ca-trust/source/anchors/gitlab.crt 
+    - update-ca-trust extract
+  
+  script:
+    - git clone --branch feature/uat-gate-28072026 https://oauth2:$GITLAB_CI_DEPLOY_TOKEN@gitlab.sbi/itepaypg-sbiepay2/infra/devops/cicd-templates.git
+    - ls -la cicd-templates/ci/checklist/
+    - cd cicd-templates/ci/checklist/
+
+    - export ALL_TEST_CASES_EXECUTED="${{ job.inputs.all_test_cases_executed }}"
+    - export NO_OUTSTANDING_DEFECTS="${{ job.inputs.no_outstanding_defects }}"
+    - export BU_SIGNOFF_RECEIVED="${{ job.inputs.bu_signoff_received }}"
+    - export DEVIATION_APPROVALS="${{ job.inputs.deviation_approvals }}" 
+
+    - python3 check_exit_checklist.py
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release\//'
+      when: on_success
+      when: manual
+    - when: never
+
+
+======================================  post_uat_approval.yml 
+
+
+post-uat-approval:
+  stage: UAT-exit-checklist #pre-uat-approval
+  tags:
+    - common_runner
+  allow_failure: false
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - job: version                    # dotenv VERSION for the audit echo
+      artifacts: true
+    - job: validate_exit_checklist   # approval only after the checklist is filled
+  environment:
+    name: uat                         # ← ties this job to the Protected Environment 'uat'
+    action: prepare                   # 'prepare' = gate only, no real deploy happens here
+  script:
+    - |
+      echo "=================================================================="
+      echo " UAT DEPLOYMENT APPROVED"
+      echo " Approved on pipeline : $CI_PIPELINE_ID"
+      echo " Release branch       : $CI_COMMIT_BRANCH"
+      echo " Version              : $VERSION"
+      echo " Approver (GitLab user): $GITLAB_USER_LOGIN"
+      echo "------------------------------------------------------------------"
+      echo " UAT deploys (deploy-uat / deploy-int / deploy-perf) are now unlocked."
+      echo "=================================================================="
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+      allow_failure: false
+    - when: never
+
+
+========================================
+
+
+
+
