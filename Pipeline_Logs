@@ -1,3 +1,124 @@
+
+
+sca.xray.yml --------------------- Configuration :
+
+# ci/security/sca/sca.xray.yml  |  Stage: security
+# JFrog Xray SCA — scans build JAR artifact against Xray watcher policy
+
+.sca_setup:
+  before_script:
+    - |
+      set -e
+      echo "=== cert diagnostics ==="
+      echo "ARTIFACTORY_CERT path : ${ARTIFACTORY_CERT:-<unset>}"
+      ls -l "$ARTIFACTORY_CERT" 2>&1 || echo "cert file not readable"
+      echo "cert subject/issuer:"
+      openssl x509 -in "$ARTIFACTORY_CERT" -noout -subject -issuer 2>&1 || echo "(not a PEM cert or openssl missing)"
+      echo "========================"
+
+      # 1) OS trust store (for anything that reads /etc/pki/ca-trust)
+      cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+      update-ca-trust extract
+
+      # 2) jf's OWN cert directory — JFrog CLI does NOT rely on the OS trust store.
+      #    It loads extra CAs from <JFROG_CLI_HOME_DIR>/security/certs. This is the
+      #    step that actually fixes 'x509: certificate signed by unknown authority'.
+      #    JFROG_CLI_HOME_DIR is set as a job variable (see .sca).
+      mkdir -p "${JFROG_CLI_HOME_DIR}/security/certs"
+      cp "$ARTIFACTORY_CERT" "${JFROG_CLI_HOME_DIR}/security/certs/artifactory.crt"
+
+      jf config add \
+        --url="$JF_URL" \
+        --xray-url="$JF_XRAY_URL" \
+        --user="$JF_USER" \
+        --access-token="$JF_TOKEN" \
+        --interactive=false \
+        epay-server
+      jf config use epay-server
+      jf rt ping
+
+.sca:
+  stage: security
+  # Uses the JFrog-CLI image (has the 'jf' binary). The Gradle build image does
+  # NOT contain jf, which caused "jf: command not found" (exit 127). This job only
+  # runs 'jf scan' on the JAR pulled via dependencies:[build] — no Gradle needed.
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+  tags:
+    - common_runner
+  variables:
+    # jf's home dir — set here so BOTH before_script (cert install) and script
+    # (jf scan) use the same location where we drop the SBI CA.
+    JFROG_CLI_HOME_DIR: "${CI_PROJECT_DIR}/.jfrog"
+    JFROG_CLI_AVOID_NEW_VERSION_WARNING: "true"
+  extends: .sca_setup
+  dependencies:
+    - build           # the JAR to scan
+    - version         # version.env dotenv → populates $VERSION (JAR filename).
+                      # dependencies: RESTRICTS artifacts to the listed jobs, so
+                      # without 'version' here $VERSION is empty and the path
+                      # resolves to '<name>-.jar' (file not found).
+  allow_failure: true
+  script:
+    - |
+      set -eo pipefail
+      ls -l build/libs/
+      # Prefer the exact VERSION-named JAR; fall back to the single built JAR
+      # (excluding Spring's -plain.jar) so a VERSION hiccup can't break the scan.
+      JAR="build/libs/${CI_PROJECT_NAME}-${VERSION}.jar"
+      if [ ! -f "$JAR" ]; then
+        echo "WARN: '$JAR' not found (VERSION='${VERSION}'). Falling back to glob."
+        JAR=$(ls build/libs/*.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -1)
+      fi
+      if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
+        echo "ERROR: no scannable JAR found in build/libs/." >&2
+        ls -l build/libs/ >&2
+        exit 1
+      fi
+      echo "Scanning: $JAR"
+      jf scan "$JAR" --watches=EPAY-WATCHER --fail=true
+
+sca:xray:
+  extends: .sca
+
+
+-------------------------------------------- image.scan.xray.yml  --------------
+
+# ci/image/image.scan.xray.yml  |  Stage: image-scan
+# JFrog Xray image scan — deep CVE + licence scan before push
+
+include:
+  - local: ci/image/image.podman.setup.yml
+
+.image_scan_xray:
+  stage: image-scan
+  extends: .setup_jfrog_podman
+  allow_failure: true
+  script:
+    - |
+      echo "Scanning TAR: $TAR_NAME"
+      jf scan "$TAR_NAME" \
+        --watches=EPAY-WATCHER \
+        --fail=true
+
+image:scan:xray:
+  extends: .image_scan_xray
+
+
+------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+here is the pipeline output : ----------------------
+
+
 Running with gitlab-runner 19.0.2 (02fcb2d7)
   on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
 Resolving secrets
@@ -358,4 +479,1192 @@ Operational Risk Violations
 12:48:19 [Error] One or more of the detected violations are configured to fail the build that including them
 Cleaning up project directory and file based variables
 00:01
+ERROR: Job failed: exit code 3
+
+
+
+
+
+
+
+
+---------------------------------------- here is the image:scan:xray pipeline output ------------------
+
+
+Running with gitlab-runner 19.0.2 (02fcb2d7)
+  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
+Resolving secrets
+Preparing the "docker" executor
+00:01
+Using Docker executor with image artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using locally found image version due to "if-not-present" pull policy
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+Preparing environment
+00:01
+Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
+Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
+Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
+Running on runner-ktjck3d-w-project-2840-concurrent-0 via PE3DSOPGRUNNERS6...
+Getting source from Git repository
+00:03
+Gitaly correlation ID: 01KYSH5D7SSK3W6QJWZC2WMSJ0
+Fetching changes with git depth set to 20...
+Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_admin_portal_service/.git/
+Created fresh repository.
+Checking out 0fc378f8 as detached HEAD (ref is release/minor-DM2026025445-EPAY-consent-management-changes)...
+Skipping Git submodules setup
+Downloading artifacts
+00:07
+Downloading artifacts for build (1327951)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYSH5JJBQP0QXVGJ89Z2FN19 id=1327951 status=200 token=eyJraWQiO
+Downloading artifacts for image:build (1327953)...
+Downloading artifacts from coordinator... ok        correlation_id=01KYSH5MBV10S3EKTXTT646WBN id=1327953 status=200 token=eyJraWQiO
+Executing "step_script" stage of the job script
+01:07
+Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7
+Using docker image sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 for artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf:9.7 with digest artifactory.jfrog.sbi:443/dso-docker-base-images/ubi9/podman-jf@sha256:0c0d6e7946e65ba5dbbd06dc184e9ed4ad09f287caeb1d2f38053d3f8e2c4414 ...
+$ mkdir -p /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}
+$ cp "$ARTIFACTORY_CERT" /etc/containers/certs.d/${CI_TEMPLATE_REGISTRY_HOST}/ca.crt
+$ cp "$ARTIFACTORY_CERT" /etc/pki/ca-trust/source/anchors/artifactory.crt
+$ update-ca-trust extract
+$ mkdir -p ~/.jfrog/security/certs
+$ cp "$ARTIFACTORY_CERT" ~/.jfrog/security/certs/artifactory.crt
+$ podman login "$CI_TEMPLATE_REGISTRY_HOST" -u "$JF_USER" -p "$JF_TOKEN"
+Login Succeeded!
+$ jf config add \ # collapsed multi-line command
+12:49:50 [Warn] failed while trying to check latest JFrog CLI version: couldn't get latest JFrog CLI latest version info from GitHub API: Get "https://api.github.com/repos/jfrog/jfrog-cli/releases/latest": dial tcp: lookup api.github.com on 10.0.2.3:53: no such host
+$ jf config use "$JF_SERVER_ID"
+12:49:50 [Info] Using server ID 'epay-server' (https://artifactory.jfrog.sbi/)
+$ jf config show
+Server ID:			epay-server
+JFrog Platform URL:		https://artifactory.jfrog.sbi/
+Artifactory URL:		https://artifactory.jfrog.sbi/artifactory/
+Distribution URL:		https://artifactory.jfrog.sbi/distribution/
+Xray URL:			https://artifactory.jfrog.sbi/xray/
+Mission Control URL:		https://artifactory.jfrog.sbi/mc/
+Pipelines URL:			https://artifactory.jfrog.sbi/pipelines/
+User:				[MASKED]
+Access token:			***
+Default:			true
+$ echo "Scanning TAR: $TAR_NAME" # collapsed multi-line command
+Scanning TAR: epay_admin_portal_service.tar
+12:49:52 [Info] JFrog Xray Indexer 3.124.21 is not cached locally. Downloading it now...
+2026/07/30 12:50:00 maxprocs: Leaving GOMAXPROCS=32: CPU quota undefined
+12:50:00 [Info] The downloaded Xray Indexer version is 3.124.21
+12:50:00 [Info] [Thread 2] Indexing file: epay_admin_portal_service.tar
+12:50:40 [Info] 2026/07/30 12:50:01 maxprocs: Leaving GOMAXPROCS=32: CPU quota undefined
+2026-07-30T12:50:08.298Z [jfxia] [INFO ] [] [extractor:215                 ] [UnnamedContext                  ] Encountered release info file 'etc/redhat-release'
+2026-07-30T12:50:08.298Z [jfxia] [INFO ] [] [extractor:381                 ] [UnnamedContext                  ] Encountered rpm content manifest file 'root/buildinfo/content_manifests/ubi9-minimal-container-9.6-438.1755672041.json'
+2026-07-30T12:50:08.398Z [jfxia] [INFO ] [] [archive_helper:61             ] [BackgroundContext               ] SPDX license IDs from licenses.json and exceptions.json were loaded successfully
+2026-07-30T12:50:11.215Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: libcrypto.so.3.2.2, size: 5436640, limit: 5242880
+2026-07-30T12:50:22.088Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: magic.mgc, size: 6650688, limit: 5242880
+2026-07-30T12:50:22.108Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: rpmdb.sqlite, size: 9801728, limit: 5242880
+2026-07-30T12:50:23.107Z [jfxia] [INFO ] [] [extractor:381                 ] [UnnamedContext                  ] Encountered rpm content manifest file 'root/buildinfo/content_manifests/openjdk-21-ubi9-container-1.23-6.1755674728.json'
+2026-07-30T12:50:23.464Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: ct.sym, size: 10715134, limit: 5242880
+2026-07-30T12:50:23.527Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: classes.jsa, size: 14606336, limit: 5242880
+2026-07-30T12:50:23.530Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: classes_nocoops.jsa, size: 15007744, limit: 5242880
+2026-07-30T12:50:23.589Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: libjvm.so, size: 27316528, limit: 5242880
+2026-07-30T12:50:26.006Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding org.slf4j:slf4j-api to :slf4j-simple: dependency again as already in list
+2026-07-30T12:50:28.464Z [jfxia] [INFO ] [] [mlmodel_pytorch_archive:25    ] [UnnamedContext                  ] Not a pytorch archive /tmp/jfrog.cli.temp.-1785415800-1255582627/1b8e21ec-7baf-4bec-7662-babb2c6dc3f4/178541582846000989/tzdata.zi: zip: not a valid zip file
+2026-07-30T12:50:28.464Z [jfxia] [WARN ] [] [zip:48                        ] [UnnamedContext                  ] failed to extract. file:/tmp/jfrog.cli.temp.-1785415800-1255582627/1b8e21ec-7baf-4bec-7662-babb2c6dc3f4/178541582846000989/tzdata.zi, err:zone info file found instead of zip
+2026-07-30T12:50:28.465Z [jfxia] [WARN ] [] [archive_mgr:1143              ] [UnnamedContext                  ] large metadata file, skip scanning, file: rpmdb.sqlite, size: 13774848, limit: 5242880
+2026-07-30T12:50:31.197Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding org.apache.logging.log4j:log4j-core to :hibernate-validator: dependency again as already in list
+2026-07-30T12:50:35.007Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ch.qos.logback:logback-core to org.apache.logging.log4j:log4j-to-slf4j:2.23.1 dependency again as already in list
+2026-07-30T12:50:35.040Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding org.slf4j:slf4j-api to :logback-classic: dependency again as already in list
+2026-07-30T12:50:35.040Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ch.qos.logback:logback-core to :logback-classic: dependency again as already in list
+2026-07-30T12:50:35.632Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec: dependency again as already in list
+2026-07-30T12:50:35.671Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-dns: dependency again as already in list
+2026-07-30T12:50:35.698Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-http: dependency again as already in list
+2026-07-30T12:50:35.728Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-http2: dependency again as already in list
+2026-07-30T12:50:35.742Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-codec-socks: dependency again as already in list
+2026-07-30T12:50:35.810Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-handler: dependency again as already in list
+2026-07-30T12:50:35.835Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-handler-proxy: dependency again as already in list
+2026-07-30T12:50:35.893Z [jfxia] [WARN ] [] [maven_extractor:97            ] [UnnamedContext                  ] skipping adding ${project.groupId}:netty-transport to :netty-resolver-dns: dependency again as already in list
+2026-07-30T12:50:40.504Z [jfxia] [INFO ] [] [docker:121                    ] [UnnamedContext                  ] Finished indexing layers of docker /tmp/jfrog.cli.temp.-1785415800-1255582627/1b8e21ec-7baf-4bec-7662-babb2c6dc3f4/178541580790055944/ (sha256:6ee0db79bf89b24b871e78680a00a53cebccbe925f3f5f01ee9220370b8b2179)
+12:50:40 [Info] Waiting for scan to complete on JFrog Xray...
+12:50:53 [Info] Xray is processing your scan results...
+12:50:53 [Info] Found 151 violations: [151 SCA]
+Security Violations
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE            | SEVERITY   | DIRECT                    | DIRECT  | AFFECTED                  | AFFECTED                  | FIXED                     | TYPE  |
+|                |            | PACKAGE                   | PACKAGE | COMPONENT                 | COMPONENT                 | VERSIONS                  |       |
+|                |            |                           | VERSION | NAME                      | VERSION                   |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-43515 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.55]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.22]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.118]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-43512 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.55]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.22]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.118]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41293 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.55]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.22]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.118]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42584 | 💀Critical | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42581 | 💀Critical | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42579 | 💀Critical | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-dns  | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41901 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.5.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring6                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41901 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.5.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring5                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41901 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE             | [3.1.5.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40478 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring5                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40478 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring6                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40478 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40477 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf   | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40477 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring5                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40477 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.thymeleaf:thymeleaf-s | 3.1.3.RELEASE             | [3.1.4.RELEASE]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | pring6                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-66614 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.50]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.15]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.113]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-31651 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.40]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.6]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.104]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-55276 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.56]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.23]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.119]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-53434 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.56]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.23]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.119]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-47691 | 💀Critical | sha256__b2346cf7eebe85298 |         | io.netty:netty-resolver-d | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | ns                        |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-45674 | 💀Critical | sha256__b2346cf7eebe85298 |         | io.netty:netty-resolver-d | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | ns                        |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-22732 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.springframework.secur | 6.5.6                     | [5.7.22]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | ity:spring-security-web   |                           | [5.8.24]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.3.15]                  |       |
+|                |            | r                         |         |                           |                           | [6.4.15]                  |       |
+|                |            |                           |         |                           |                           | [6.5.9]                   |       |
+|                |            |                           |         |                           |                           | [7.0.4]                   |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-55754 | 💀Critical | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.45]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.11]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.109]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-29518 | 🔥High     | sha256__eaf16e5cd2edda16f |         | rsync                     | 0:3.2.5-3.el9             | [0:3.2.5-7.el9_8.2 (RHSA- | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | 2026:26410)]              |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42009 | 🔥High     | sha256__4ede91a79f1cbe507 |         | gnutls                    | 0:3.8.3-6.el9             | [0:3.7.6-21.el9_2.7 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:41921)]             |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.8.10-4.el9_8 (RHSA-2 |       |
+|                |            | r                         |         |                           |                           | 026:20612)]               |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-4.el9_4.6 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:32962)]              |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-6.el9_6.4 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:30004)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-43513 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.55]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.22]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.118]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41284 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.55]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.22]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.118]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42010 | 🔥High     | sha256__4ede91a79f1cbe507 |         | gnutls                    | 0:3.8.3-6.el9             | [0:3.7.6-21.el9_2.7 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:41921)]             |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.8.10-4.el9_8 (RHSA-2 |       |
+|                |            | r                         |         |                           |                           | 026:20612)]               |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-4.el9_4.6 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:32962)]              |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-6.el9_6.4 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:30004)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42587 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | 2                         |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42587 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42585 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42583 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec      | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-42578 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-handler-pr | 4.1.119.Final             | [4.1.133.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | oxy                       |                           | [4.2.13.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-33846 | 🔥High     | sha256__4ede91a79f1cbe507 |         | gnutls                    | 0:3.8.3-6.el9             | [0:3.7.6-21.el9_2.7 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:41921)]             |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.8.10-4.el9_8 (RHSA-2 |       |
+|                |            | r                         |         |                           |                           | 026:20612)]               |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-4.el9_4.6 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:32962)]              |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-6.el9_6.4 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:30004)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-33845 | 🔥High     | sha256__4ede91a79f1cbe507 |         | gnutls                    | 0:3.8.3-6.el9             | [0:3.7.6-21.el9_2.7 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:41921)]             |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.8.10-4.el9_8 (RHSA-2 |       |
+|                |            | r                         |         |                           |                           | 026:20612)]               |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-4.el9_4.6 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:32962)]              |       |
+|                |            |                           |         |                           |                           | [0:3.8.3-6.el9_6.4 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:30004)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40973 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework.boot: | 3.3.10                    | [2.7.33]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | spring-boot               |                           | [3.3.19]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [3.4.16]                  |       |
+|                |            | r                         |         |                           |                           | [3.5.14]                  |       |
+|                |            |                           |         |                           |                           | [4.0.6]                   |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-34282 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-34282 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-22016 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-22016 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41035 | 🔥High     | sha256__eaf16e5cd2edda16f |         | rsync                     | 0:3.2.5-3.el9             | [0:3.2.3-19.el9_2.3 (RHSA | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | -2026:20602)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.2.3-19.el9_4.3 (RHSA |       |
+|                |            | r                         |         |                           |                           | -2026:20604)]             |       |
+|                |            |                           |         |                           |                           | [0:3.2.3-9.el9_0.5 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:20601)]              |       |
+|                |            |                           |         |                           |                           | [0:3.2.5-3.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:20603)]              |       |
+|                |            |                           |         |                           |                           | [0:3.2.5-7.el9_8 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:19368)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4786  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3                   | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.11 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:19571)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.14 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:19570)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.13 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:21682)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.6 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:19576)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.3 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:10949)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4786  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3-libs              | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.11 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:19571)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.14 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:19570)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.13 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:21682)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.6 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:19576)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.3 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:10949)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-6100  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3                   | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.11 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:19571)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.14 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:19570)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.13 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:21682)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.6 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:19576)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.3 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:10949)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-6100  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3-libs              | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.11 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:19571)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.14 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:19570)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.13 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:21682)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.6 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:19576)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.3 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:10949)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-35554 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.kafka:kafka-cl | 3.7.2                     | [3.9.2]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | ients                     |                           | [4.0.2]                   |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [4.1.2]                   |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-34483 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.54]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.21]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.116]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-24880 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.52]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.20]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.116]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+|                | 🔥High     | sha256__b2346cf7eebe85298 |         | tools.jackson.core:jackso | 3.0.1                     | [3.1.1]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | n-core                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | org.codehaus.plexus:plexu | 3.5.1                     | [3.6.1]                   | maven |
+|                |            | 711f60b326387c40f0f33db55 |         | s-utils                   |                           | [4.0.3]                   |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-33871 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.132.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | 2                         |                           | [4.2.11.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-33870 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.132.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.10.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:atinject              | 0:1.0.5-14.module+el9.6.0 | [0:1.0.5-14.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:1.0.5-14.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:google-guice          | 0:5.1.0-23.module+el9.6.0 | [0:5.1.0-23.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:5.1.0-23.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven-lib             | 1:3.9.9-12.module+el9.6.0 | [1:3.9.9-12.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22737+bf78114a           | 0+24382+3f72e30c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [1:3.9.9-13.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-cipher         | 0:2.0-25.module+el9.6.0+2 | [0:2.0-25.module+el9.6.0+ | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 2733+e520f63c             | 22733+e520f63c (RHSA-2026 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | :36012)]                  |       |
+|                |            | r                         |         |                           |                           | [0:2.0-25.module+el9.8.0+ |       |
+|                |            |                           |         |                           |                           | 24092+eb9f67d0 (RHSA-2026 |       |
+|                |            |                           |         |                           |                           | :38500)]                  |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:jakarta-annotations   | 0:1.3.5-38.module+el9.6.0 | [0:1.3.5-38.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:1.3.5-38.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven                 | 1:3.9.9-12.module+el9.6.0 | [1:3.9.9-12.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22737+bf78114a           | 0+24382+3f72e30c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [1:3.9.9-13.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+12:50:53 [Info] Scan completed successfully.
+12:50:53 [Info] Trace ID for JFrog Platform logs: 086b7d91f7dc6a5c
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-classworlds    | 0:2.8.0-9.module+el9.6.0+ | [0:2.8.0-9.module+el9.6.0 | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 22733+e520f63c            | +22733+e520f63c (RHSA-202 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 6:36012)]                 |       |
+|                |            | r                         |         |                           |                           | [0:2.8.0-9.module+el9.8.0 |       |
+|                |            |                           |         |                           |                           | +24092+eb9f67d0 (RHSA-202 |       |
+|                |            |                           |         |                           |                           | 6:38500)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:aopalliance           | 0:1.0-51.module+el9.6.0+2 | [0:1.0-51.module+el9.6.0+ | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 2733+e520f63c             | 22733+e520f63c (RHSA-2026 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | :36012)]                  |       |
+|                |            | r                         |         |                           |                           | [0:1.0-51.module+el9.8.0+ |       |
+|                |            |                           |         |                           |                           | 24092+eb9f67d0 (RHSA-2026 |       |
+|                |            |                           |         |                           |                           | :38500)]                  |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:jsr-305               | 0:3.0.2-36.module+el9.6.0 | [0:3.0.2-36.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:3.0.2-36.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven-openjdk21       | 1:3.9.9-12.module+el9.6.0 | [1:3.9.9-12.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22737+bf78114a           | 0+24382+3f72e30c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [1:3.9.9-13.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:sisu                  | 1:0.9.0~M3-7.module+el9.6 | [1:0.9.0~M3-7.module+el9. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | .0+22733+e520f63c         | 6.0+22733+e520f63c (RHSA- |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 2026:36012)]              |       |
+|                |            | r                         |         |                           |                           | [1:0.9.0~M3-7.module+el9. |       |
+|                |            |                           |         |                           |                           | 8.0+24092+eb9f67d0 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:38500)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven-resolver        | 1:1.9.22-6.module+el9.6.0 | [1:1.9.22-6.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [1:1.9.22-6.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-containers-com | 0:2.2.0-10.module+el9.6.0 | [0:2.2.0-10.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         | ponent-annotations        | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:2.2.0-10.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:apache-commons-io     | 1:2.16.1-9.module+el9.6.0 | [1:2.16.1-9.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [1:2.16.1-9.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven-wagon           | 0:3.5.3-17.module+el9.6.0 | [0:3.5.3-17.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:3.5.3-17.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-interpolation  | 0:1.27-10.module+el9.6.0+ | [0:1.27-10.module+el9.6.0 | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 22733+e520f63c            | +22733+e520f63c (RHSA-202 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 6:36012)]                 |       |
+|                |            | r                         |         |                           |                           | [0:1.27-10.module+el9.8.0 |       |
+|                |            |                           |         |                           |                           | +24092+eb9f67d0 (RHSA-202 |       |
+|                |            |                           |         |                           |                           | 6:38500)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:jansi                 | 0:2.4.1-12.module+el9.6.0 | [0:2.4.1-12.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:2.4.1-12.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:httpcomponents-core   | 0:4.4.16-21.module+el9.6. | [0:4.4.16-21.module+el9.6 | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 0+22733+e520f63c          | .0+22733+e520f63c (RHSA-2 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 026:36012)]               |       |
+|                |            | r                         |         |                           |                           | [0:4.4.16-21.module+el9.8 |       |
+|                |            |                           |         |                           |                           | .0+24092+eb9f67d0 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:38500)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:httpcomponents-client | 0:4.5.14-21.module+el9.6. | [0:4.5.14-21.module+el9.6 | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 0+22733+e520f63c          | .0+22733+e520f63c (RHSA-2 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 026:36012)]               |       |
+|                |            | r                         |         |                           |                           | [0:4.5.14-21.module+el9.8 |       |
+|                |            |                           |         |                           |                           | .0+24092+eb9f67d0 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:38500)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:guava                 | 0:33.3.0-5.module+el9.6.0 | [0:33.3.0-5.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:33.3.0-5.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:jcl-over-slf4j        | 0:1.7.36-9.module+el9.6.0 | [0:1.7.36-9.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:1.7.36-9.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-utils          | 0:3.5.1-17.module+el9.6.0 | [0:3.5.1-17.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+24382+3f72e30c.1 (RHSA- |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 2026:36012)]              |       |
+|                |            | r                         |         |                           |                           | [0:3.5.1-17.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24375+95248a69.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:38500)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:maven-shared-utils    | 0:3.4.2-19.module+el9.6.0 | [0:3.4.2-19.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:3.4.2-19.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:plexus-sec-dispatcher | 0:2.0-28.module+el9.6.0+2 | [0:2.0-28.module+el9.6.0+ | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | 2733+e520f63c             | 22733+e520f63c (RHSA-2026 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | :36012)]                  |       |
+|                |            | r                         |         |                           |                           | [0:2.0-28.module+el9.8.0+ |       |
+|                |            |                           |         |                           |                           | 24092+eb9f67d0 (RHSA-2026 |       |
+|                |            |                           |         |                           |                           | :38500)]                  |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:slf4j                 | 0:1.7.36-9.module+el9.6.0 | [0:1.7.36-9.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:1.7.36-9.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-67030 | 🔥High     | sha256__eaf16e5cd2edda16f |         | 3.9:apache-commons-codec  | 0:1.17.1-8.module+el9.6.0 | [0:1.17.1-8.module+el9.6. | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           | +22733+e520f63c           | 0+22733+e520f63c (RHSA-20 |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | 26:36012)]                |       |
+|                |            | r                         |         |                           |                           | [0:1.17.1-8.module+el9.8. |       |
+|                |            |                           |         |                           |                           | 0+24092+eb9f67d0 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:38500)]                |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4519  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3                   | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.10 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:9261)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.13 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:9262)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.12 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:10101)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.5 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:9354)]              |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.2 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:6766)]              |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4519  | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3-libs              | 0:3.9.21-2.el9_6.1        | [0:3.9.10-4.el9_0.10 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:9261)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:3.9.16-1.el9_2.13 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:9262)]             |       |
+|                |            |                           |         |                           |                           | [0:3.9.18-3.el9_4.12 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:10101)]            |       |
+|                |            |                           |         |                           |                           | [0:3.9.21-2.el9_6.5 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:9354)]              |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-3.el9_7.2 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:6766)]              |       |
+|                |            |                           |         |                           |                           | [0:3.9.25-7.el9_8 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19216)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4424  | 🔥High     | sha256__4ede91a79f1cbe507 |         | libarchive                | 0:3.5.3-6.el9_6           | [0:3.5.3-2.el9_0.4 (RHSA- | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 2026:8867)]               |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.5.3-5.el9_2.2 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2026:8864)]               |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-5.el9_4 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:8873)]                 |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-7.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:8866)]               |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-9.el9_7 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:8510)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-27135 | 🔥High     | sha256__4ede91a79f1cbe507 |         | libnghttp2                | 0:1.43.0-6.el9            | [0:1.43.0-5.el9_0.4 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:8546)]              |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:1.43.0-5.el9_2.4 (RHSA |       |
+|                |            | r                         |         |                           |                           | -2026:8545)]              |       |
+|                |            |                           |         |                           |                           | [0:1.43.0-5.el9_4.4 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:8547)]              |       |
+|                |            |                           |         |                           |                           | [0:1.43.0-6.el9_6.1 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:8548)]              |       |
+|                |            |                           |         |                           |                           | [0:1.43.0-6.el9_7.1 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:7668)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-26740 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-26740 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.11.0.10-1.el9 (RH | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | SA-2026:9689)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.11.0.10-2.el9 (RH |       |
+|                |            | r                         |         |                           |                           | SA-2026:9689)]            |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-24734 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.52]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.18]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.115]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-6176  | 🔥High     | sha256__eaf16e5cd2edda16f |         | libbrotli                 | 0:1.0.9-7.el9_5           | [0:1.0.9-6.el9_0.1 (RHSA- | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | 2026:2226)]               |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:1.0.9-6.el9_2.1 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2026:2228)]               |       |
+|                |            |                           |         |                           |                           | [0:1.0.9-6.el9_4.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:2227)]               |       |
+|                |            |                           |         |                           |                           | [0:1.0.9-7.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:2229)]               |       |
+|                |            |                           |         |                           |                           | [0:1.0.9-9.el9_7 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:2042)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-65018 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-65018 | 🔥High     | sha256__eaf16e5cd2edda16f |         | libpng                    | 2:1.6.37-12.el9           | [2:1.6.37-12.el9_0.1 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0234)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [2:1.6.37-12.el9_2.1 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:0216)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_4.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0211)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_6.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0210)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_7.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0238)]             |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-65018 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-48989 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.44]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.10]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.108]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-55163 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.124.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | 2                         |                           | [4.2.4.Final]             |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-6965  | 🔥High     | sha256__4ede91a79f1cbe507 |         | sqlite-libs               | 0:3.34.1-8.el9_6          | [0:3.34.1-5.el9_0.1 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2025:12522)]             |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.34.1-6.el9_2.2 (RHSA |       |
+|                |            | r                         |         |                           |                           | -2025:12749)]             |       |
+|                |            |                           |         |                           |                           | [0:3.34.1-7.el9_4.1 (RHSA |       |
+|                |            |                           |         |                           |                           | -2025:12036)]             |       |
+|                |            |                           |         |                           |                           | [0:3.34.1-8.el9_6 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 025:11992)]               |       |
+|                |            |                           |         |                           |                           | [0:3.34.1-9.el9_7 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 025:20936)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-31650 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.40]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.6]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.104]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-22235 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework.boot: | 3.3.10                    | [3.3.11]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | spring-boot               |                           | [3.4.5]                   |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-59901 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec      | 4.1.119.Final             | [4.1.136.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-56819 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.136.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | 2                         |                           | [4.2.16.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-56745 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.136.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.16.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-47063 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.12.0.8-1.1.el9 (R | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | HSA-2026:42895)]          |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.12.0.8-1.2.el9 (R |       |
+|                |            | r                         |         |                           |                           | HSA-2026:42895)]          |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-47063 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.12.0.8-1.1.el9 (R | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | HSA-2026:42895)]          |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:21.0.12.0.8-1.2.el9 (R |       |
+|                |            | r                         |         |                           |                           | HSA-2026:42895)]          |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+|                | 🔥High     | sha256__b2346cf7eebe85298 |         | tools.jackson.core:jackso | 3.0.1                     | [3.1.4]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | n-core                    |                           | [3.2.1]                   |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+|                | 🔥High     | sha256__b2346cf7eebe85298 |         | com.fasterxml.jackson.cor | 2.17.3                    | [2.18.8]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | e:jackson-core            |                           | [2.21.4]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [2.22.1]                  |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-15308 | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3                   | 0:3.9.21-2.el9_6.1        | [0:3.9.25-7.el9_8.2 (RHSA | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | -2026:39798)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-15308 | 🔥High     | sha256__eaf16e5cd2edda16f |         | python3-libs              | 0:3.9.21-2.el9_6.1        | [0:3.9.25-7.el9_8.2 (RHSA | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | -2026:39798)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-47838 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework.secur | 6.5.6                     | [6.5.11]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | ity:spring-security-web   |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-58016 | 🔥High     | sha256__4ede91a79f1cbe507 |         | glib2                     | 0:2.68.4-16.el9_6.2       | [0:2.68.4-19.el9_8.2 (RHS | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | A-2026:42089)]            |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-53404 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.56]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.23]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.119]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-54513 | 🔥High     | sha256__b2346cf7eebe85298 |         | tools.jackson.core:jackso | 3.0.1                     | [3.1.4]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | n-databind                |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-54513 | 🔥High     | sha256__b2346cf7eebe85298 |         | com.fasterxml.jackson.cor | 2.17.3                    | [2.18.8]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | e:jackson-databind        |                           | [2.21.4]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [3.1.4]                   |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-54512 | 🔥High     | sha256__b2346cf7eebe85298 |         | tools.jackson.core:jackso | 3.0.1                     | [3.1.4]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | n-databind                |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-54512 | 🔥High     | sha256__b2346cf7eebe85298 |         | com.fasterxml.jackson.cor | 2.17.3                    | [2.18.8]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | e:jackson-databind        |                           | [2.21.4]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [3.1.4]                   |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-50010 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-handler    | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41848 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [5.3.49]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-core                    |                           | [6.1.28]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.2.19]                  |       |
+|                |            | r                         |         |                           |                           | [7.0.8]                   |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41731 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework.kafka | 3.2.8                     | [3.3.16]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | :spring-kafka             |                           | [4.0.6]                   |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-48043 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         | 2                         |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41851 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [5.3.49]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-expression              |                           | [6.1.28]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.2.19]                  |       |
+|                |            | r                         |         |                           |                           | [7.0.8]                   |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41716 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework.data: | 3.3.10                    | [2.7.20]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | spring-data-commons       |                           | [3.3.17]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [3.4.15]                  |       |
+|                |            | r                         |         |                           |                           | [3.5.12]                  |       |
+|                |            |                           |         |                           |                           | [4.0.6]                   |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41842 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [5.3.49]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-webmvc                  |                           | [6.1.28]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.2.19]                  |       |
+|                |            | r                         |         |                           |                           | [7.0.8]                   |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41842 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [5.3.49]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-webflux                 |                           | [6.1.28]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.2.19]                  |       |
+|                |            | r                         |         |                           |                           | [7.0.8]                   |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-45447 | 🔥High     | sha256__4ede91a79f1cbe507 |         | openssl-libs              | 1:3.2.2-6.el9_5.1         | [1:3.5.5-4.el9_8 (RHSA-20 | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 26:25239)]                |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-45416 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-handler    | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-44249 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-handler    | 4.1.119.Final             | [4.1.135.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.15.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-40984 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.micrometer:micrometer- | 1.13.12                   | [1.13.19]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | core                      |                           | [1.14.16]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [1.15.12]                 |       |
+|                |            | r                         |         |                           |                           | [1.16.6]                  |       |
+|                |            |                           |         |                           |                           | [1.9.18]                  |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-43618 | 🔥High     | sha256__eaf16e5cd2edda16f |         | rsync                     | 0:3.2.5-3.el9             | [0:3.2.5-7.el9_8.2 (RHSA- | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | 2026:26410)]              |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-45186 | 🔥High     | sha256__eaf16e5cd2edda16f |         | expat                     | 0:2.5.0-5.el9_6           | [0:2.5.0-6.el9_8.1 (RHSA- | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | 2026:23230)]              |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4878  | 🔥High     | sha256__4ede91a79f1cbe507 |         | libcap                    | 0:2.48-9.el9_2            | [0:2.48-10.el9_7.1 (RHSA- | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 2026:12441)]              |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:2.48-10.el9_8.1 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2026:19346)]              |       |
+|                |            |                           |         |                           |                           | [0:2.48-9.el9_2.1 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:21254)]               |       |
+|                |            |                           |         |                           |                           | [0:2.48-9.el9_4.1 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:20595)]               |       |
+|                |            |                           |         |                           |                           | [0:2.48-9.el9_6.1 (RHSA-2 |       |
+|                |            |                           |         |                           |                           | 026:19458)]               |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-4111  | 🔥High     | sha256__4ede91a79f1cbe507 |         | libarchive                | 0:3.5.3-6.el9_6           | [0:3.5.3-2.el9_0.3 (RHSA- | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 2026:7093)]               |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:3.5.3-4.el9_4.2 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2026:7106)]               |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-5.el9_2.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:6647)]               |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-6.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:7105)]               |       |
+|                |            |                           |         |                           |                           | [0:3.5.3-7.el9_7 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:5080)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-29062 | 🔥High     | sha256__b2346cf7eebe85298 |         | tools.jackson.core:jackso | 3.0.1                     | [3.1.0]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | n-core                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-15467 | 🔥High     | sha256__4ede91a79f1cbe507 |         | openssl-libs              | 1:3.2.2-6.el9_5.1         | [1:3.0.1-46.el9_0.7 (RHSA | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | -2026:1733)]              |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [1:3.0.7-18.el9_2.3 (RHSA |       |
+|                |            | r                         |         |                           |                           | -2026:1594)]              |       |
+|                |            |                           |         |                           |                           | [1:3.0.7-29.el9_4.2 (RHSA |       |
+|                |            |                           |         |                           |                           | -2026:1519)]              |       |
+|                |            |                           |         |                           |                           | [1:3.2.2-7.el9_6.2 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:1503)]               |       |
+|                |            |                           |         |                           |                           | [1:3.5.1-7.el9_7 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:1473)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-21945 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-21945 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-68973 | 🔥High     | sha256__4ede91a79f1cbe507 |         | gnupg2                    | 0:2.3.3-4.el9             | [0:2.3.3-2.el9_0.1 (RHSA- | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 2026:1719)]               |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           | [0:2.3.3-2.el9_2.1 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2026:1705)]               |       |
+|                |            |                           |         |                           |                           | [0:2.3.3-4.el9_4.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:1230)]               |       |
+|                |            |                           |         |                           |                           | [0:2.3.3-4.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2026:1229)]               |       |
+|                |            |                           |         |                           |                           | [0:2.3.3-5.el9_7 (RHSA-20 |       |
+|                |            |                           |         |                           |                           | 26:0719)]                 |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-66293 | 🔥High     | sha256__eaf16e5cd2edda16f |         | libpng                    | 2:1.6.37-12.el9           | [2:1.6.37-12.el9_0.1 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0234)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [2:1.6.37-12.el9_2.1 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:0216)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_4.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0211)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_6.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0210)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_7.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0238)]             |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-12183 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.lz4:lz4-java          | 1.8.0                     | [1.8.1]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-64720 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk           | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-64720 | 🔥High     | sha256__eaf16e5cd2edda16f |         | libpng                    | 2:1.6.37-12.el9           | [2:1.6.37-12.el9_0.1 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0234)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [2:1.6.37-12.el9_2.1 (RHS |       |
+|                |            | r                         |         |                           |                           | A-2026:0216)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_4.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0211)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_6.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0210)]             |       |
+|                |            |                           |         |                           |                           | [2:1.6.37-12.el9_7.1 (RHS |       |
+|                |            |                           |         |                           |                           | A-2026:0238)]             |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-64720 | 🔥High     | sha256__eaf16e5cd2edda16f |         | java-21-openjdk-headless  | 1:21.0.8.0.9-1.el9        | [1:21.0.10.0.7-1.el9 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2026:0928)]             |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-55752 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.45]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.11]                 |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.109]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-41249 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [6.2.11]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-core                    |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-58060 | 🔥High     | sha256__eaf16e5cd2edda16f |         | cups-libs                 | 1:2.3.3op2-33.el9         | [1:2.3.3op2-13.el9_0.4 (R | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | HSA-2025:16590)]          |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [1:2.3.3op2-16.el9_2.4 (R |       |
+|                |            | r                         |         |                           |                           | HSA-2025:16591)]          |       |
+|                |            |                           |         |                           |                           | [1:2.3.3op2-27.el9_4.1 (R |       |
+|                |            |                           |         |                           |                           | HSA-2025:16592)]          |       |
+|                |            |                           |         |                           |                           | [1:2.3.3op2-33.el9_6.1 (R |       |
+|                |            |                           |         |                           |                           | HSA-2025:15700)]          |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-59375 | 🔥High     | sha256__eaf16e5cd2edda16f |         | expat                     | 0:2.5.0-5.el9_6           | [0:2.2.10-12.el9_0.4 (RHS | RPM   |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           | A-2025:22035)]            |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           | [0:2.5.0-1.el9_2.3 (RHSA- |       |
+|                |            | r                         |         |                           |                           | 2025:22034)]              |       |
+|                |            |                           |         |                           |                           | [0:2.5.0-2.el9_4.3 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2025:22033)]              |       |
+|                |            |                           |         |                           |                           | [0:2.5.0-5.el9_6.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2025:21773)]              |       |
+|                |            |                           |         |                           |                           | [0:2.5.0-5.el9_7.1 (RHSA- |       |
+|                |            |                           |         |                           |                           | 2025:22175)]              |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-58056 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.125.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.5.Final]             |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-58057 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec      | 4.1.119.Final             | [4.1.125.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-52520 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.43]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.9]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.107]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-48988 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.tomcat.embed:t | 10.1.39                   | [10.1.42]                 | maven |
+|                |            | e916d957dd67084a0af020216 |         | omcat-embed-core          |                           | [11.0.8]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [9.0.106]                 |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-27817 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.apache.kafka:kafka-cl | 3.7.2                     | [3.9.1]                   | maven |
+|                |            | e916d957dd67084a0af020216 |         | ients                     |                           |                           |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2025-47273 | 🔥High     | sha256__eaf16e5cd2edda16f |         | setuptools                | 53.0.0                    | [78.1.1]                  | pypi  |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           |                           |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2024-6345  | 🔥High     | sha256__eaf16e5cd2edda16f |         | setuptools                | 53.0.0                    | [70.0.0]                  | pypi  |
+|                |            | 711f60b326387c40f0f33db55 |         |                           |                           |                           |       |
+|                |            | 569aee1d289d6bba71ab71.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-55831 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.136.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.16.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-55833 | 🔥High     | sha256__b2346cf7eebe85298 |         | io.netty:netty-codec-http | 4.1.119.Final             | [4.1.136.Final]           | maven |
+|                |            | e916d957dd67084a0af020216 |         |                           |                           | [4.2.16.Final]            |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-54369 | 🔥High     | sha256__4ede91a79f1cbe507 |         | libacl                    | 0:2.3.1-4.el9             | [0:2.4.0-1.el9_8 (RHSA-20 | RPM   |
+|                |            | 838388fffa15bf882eee731c7 |         |                           |                           | 26:42736)]                |       |
+|                |            | ea14be2d7cf941d77c178f.ta |         |                           |                           |                           |       |
+|                |            | r                         |         |                           |                           |                           |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+| CVE-2026-41850 | 🔥High     | sha256__b2346cf7eebe85298 |         | org.springframework:sprin | 6.1.18                    | [5.3.49]                  | maven |
+|                |            | e916d957dd67084a0af020216 |         | g-expression              |                           | [6.1.28]                  |       |
+|                |            | deb8f205707e23494c2b03.ta |         |                           |                           | [6.2.19]                  |       |
+|                |            | r                         |         |                           |                           | [7.0.8]                   |       |
+|                |            |                           |         |                           |                           |                           |       |
++----------------+------------+---------------------------+---------+---------------------------+---------------------------+---------------------------+-------+
+License Compliance Violations
++---------------------------------------------+
+| No license compliance violations were found |
++---------------------------------------------+
+Operational Risk Violations
++-------------------------------------------+
+| No operational risk violations were found |
++-------------------------------------------+
+12:50:53 [Error] One or more of the detected violations are configured to fail the build that including them
+Cleaning up project directory and file based variables
+00:00
 ERROR: Job failed: exit code 3
