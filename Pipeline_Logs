@@ -1,10 +1,45 @@
-echo "=== Routes in front ==="
-oc get route -A | grep -iE "integration|sbiuat"
-echo "=== Gateway TLS spec ==="
-oc get gateway -n int-istio-system int-gateway -o yaml | grep -A20 -iE "tls:|hosts:|port:"
-echo "=== Gateway svc ==="
-oc get svc -n int-istio-system | grep -i gateway
-echo "=== What the wire serves ==="
-echo | openssl s_client -connect integration.sbiepay.sbiuat.bank.in:443 -servername integration.sbiepay.sbiuat.bank.in 2>&1 | openssl x509 -noout -subject -issuer -dates 2>/dev/null
-echo "=== Gateway pod errors ==="
-oc logs -n int-istio-system -l istio=int-gateway --tail=50 | grep -iE "certificate|verify|TLS_error|no healthy|NR|UF|UH"
+[osuser@bastion ~]$ oc get po
+NAME                                             READY   STATUS    RESTARTS   AGE
+integration-integrationservice-577c88dcd-8blbm   2/2     Running   0          12h
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get all
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
+NAME                                                 READY   STATUS    RESTARTS   AGE
+pod/integration-integrationservice-577c88dcd-8blbm   2/2     Running   0          12h
+
+NAME                                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/integration-integrationservice   ClusterIP   172.30.164.240   <none>        9099/TCP   12m
+
+NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/integration-integrationservice   1/1     1            1           6d2h
+
+NAME                                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/integration-integrationservice-577c88dcd    1         1         1       4d19h
+replicaset.apps/integration-integrationservice-667647b9dd   0         0         0       6d2h
+replicaset.apps/integration-integrationservice-6dcf7d4b7c   0         0         0       6d2h
+replicaset.apps/integration-integrationservice-7659ccc6f9   0         0         0       4d20h
+replicaset.apps/integration-integrationservice-864f8447f5   0         0         0       6d2h
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ echo "=== Routes in front ==="
+=== Routes in front ===
+[osuser@bastion ~]$ oc get route -A | grep -iE "integration|sbiuat"
+int-istio-system                     int-istio-gateway-route             integration.sbiepay.sbiuat.bank.in                                                              int-istio-gateway-service                    http2      edge/None              None
+[osuser@bastion ~]$ echo "=== Gateway TLS spec ==="
+=== Gateway TLS spec ===
+[osuser@bastion ~]$ oc get gateway -n int-istio-system int-gateway -o yaml | grep -A20 -iE "tls:|hosts:|port:"
+Error from server (NotFound): gateways.gateway.networking.k8s.io "int-gateway" not found
+[osuser@bastion ~]$ echo "=== Gateway svc ==="
+=== Gateway svc ===
+[osuser@bastion ~]$ oc get svc -n int-istio-system | grep -i gateway
+int-istio-gateway-service   ClusterIP   172.30.172.157   <none>        15021/TCP,8080/TCP,8443/TCP             264d
+[osuser@bastion ~]$ echo "=== What the wire serves ==="
+=== What the wire serves ===
+[osuser@bastion ~]$ echo | openssl s_client -connect integration.sbiepay.sbiuat.bank.in:443 -servername integration.sbiepay.sbiuat.bank.in 2>&1 | openssl x509 -noout -subject -issuer -dates 2>/dev/null
+^C
+[osuser@bastion ~]$ echo "=== Gateway pod errors ==="
+=== Gateway pod errors ===
+[osuser@bastion ~]$ oc logs -n int-istio-system -l istio=int-gateway --tail=50 | grep -iE "certificate|verify|TLS_error|no healthy|NR|UF|UH"
+No resources found in int-istio-system namespace.
+[osuser@bastion ~]$
