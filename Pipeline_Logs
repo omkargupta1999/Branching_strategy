@@ -1,79 +1,86 @@
-Two of my earlier hypotheses are now disproven, and the picture is clearer:
+[osuser@bastion ~]$ oc logs -n int-istio-system -l istio=int-istio-gateway -f --tail=5
+[2026-08-03T09:05:05.020Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 207 696 35 35 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.12.2" "-" "1b498844-e735-4e1a-973e-2627acc8e1be" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:38846 - -
+[2026-08-03T09:05:06.343Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 2 324 28 28 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.12.2" "-" "7111ce0a-5feb-41d3-83c1-b8b538d15854" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:38846 - -
+[2026-08-03T09:05:06.403Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 207 696 33 33 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.12.2" "-" "e70fc0b0-0a0f-482d-8f72-a0691d9b8d46" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:38846 - -
+[2026-08-03T09:05:42.370Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 33 32 "103.78.200.148, 10.189.49.251,10.177.142.145,172.16.6.2" "SBIEpay/v1 JAVASDK/v1 Java/21.0.11" "ae6b114a-6117-4cf2-8632-f12e06c341d0" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.6.2:45484 - -
+[2026-08-03T09:05:42.684Z] "POST /api/transaction/v1/order/create HTTP/1.1" 200 - via_upstream - "-" 491 1072 86 85 "103.78.200.148, 10.189.49.251,10.177.142.145,172.16.6.2" "SBIEpay/v1 JAVASDK/1.0 Java/21.0.11" "61f31f69-12a1-4832-985c-0b36f1caec45" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.6.2:45484 - -
+[2026-08-03T09:05:43.939Z] "GET /ui/assets/redirectTimerView-Bs9wp9I8.js HTTP/1.1" 200 - via_upstream - "-" 0 732 1 1 "103.78.200.229, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "b705f4d9-03fb-44b6-813d-84e46a118ec0" "integration.sbiepay.sbiuat.bank.in" "172.16.34.28:8080" outbound|8080||transactionfe-transaction-frontend.int-frontend.svc.cluster.local 172.16.34.5:42898 172.16.34.5:8080 172.16.12.2:34822 - -
+[2026-08-03T09:05:43.987Z] "GET /ui/assets/404-Cy6TWUOD.png HTTP/1.1" 200 - via_upstream - "-" 0 17899 1 1 "103.78.200.229, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "e2980a54-f94e-4675-bcd6-1ad708c64ce8" "integration.sbiepay.sbiuat.bank.in" "172.16.34.28:8080" outbound|8080||transactionfe-transaction-frontend.int-frontend.svc.cluster.local 172.16.34.5:42904 172.16.34.5:8080 172.16.12.2:34832 - -
+[2026-08-03T09:06:00.633Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 34 33 "10.177.142.19, 10.189.49.251,10.177.142.145,172.16.10.2" "SBIEpay/v1 JAVASDK/v1 Java/25.0.3" "04acf936-8a9b-46a7-bfbe-944403b2a3c4" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.10.2:34134 - -
+[2026-08-03T09:06:00.712Z] "POST /api/transaction/v1/mis/report?page=0 HTTP/1.1" 200 - via_upstream - "-" 159 4548 248 248 "10.177.142.19, 10.189.49.251,10.177.142.145,172.16.10.2" "SBIEpay/v1 JAVASDK/1.0 Java/25.0.3" "14836781-e054-484a-b578-c0ec09af1736" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.10.2:34134 - -
+2026-08-03T09:06:38.167864Z     info    xdsproxy        connected to delta upstream XDS server: istiod-int-istio.int-istio-system.svc:15012     id=459
 
-1. **The route DOES exist.** My "missing route" claim was wrong — the config dump now shows `/api/integration/v1` → `integration-integrationservice...:9099`. The route is present and correct.
-2. **The gateway reference is fine.** Your VS uses `int-istio-system/int-gateway`, and so does the working merchant VS. Same reference, and merchant works. So the gateway name isn't the problem. (`oc get gateway -A` returns nothing because these are the new `gateway.networking.k8s.io` API objects, or istiod-managed — irrelevant since merchant uses the identical ref and works.)
 
-So route ✓, cluster ✓, endpoint healthy ✓, pod certs valid ✓, gateway ref ✓. Everything the gateway needs is in place. Which means the failure is now on the **wire between gateway and pod** — the actual mTLS handshake at request time.
 
-## The one thing that stands out: the workload cert lifetime
 
-Look again at your pod's sidecar certs:
+[2026-08-03T09:06:53.298Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 46 46 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.10.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "bf7af6cb-9e91-4456-b10f-6989724ffd41" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.10.2:41152 - -
+[2026-08-03T09:06:53.465Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 656 47 46 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "2a2ac16f-03bf-4da7-a873-76317451f51f" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:53.811Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 33 33 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "8e129240-cf52-4545-b42b-c14eaab7578b" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:53.899Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 24 23 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "bad2c4fc-a58e-4a60-ac67-47b00469f3dc" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:53.975Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 37 37 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "37dae00a-0d57-4773-a242-768df7521027" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.138Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 33 33 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "3be8d9d4-d8a0-4152-93d5-58c5cf9b2c80" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:53.569Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 25 25 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "a2a83ffd-9622-4ed5-9f8a-5af3ecfbcb17" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:53.647Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 35 34 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "cb633ba8-68d5-4436-991a-bd2f2d872478" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:53.734Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 24 24 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "987771c2-79f2-4630-aeab-6e0d7dc41488" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.066Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 21 20 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "e65bc952-e70a-4083-a82f-5deca3ec7cfa" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.225Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 23 22 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "7f0f1695-6275-4b20-a598-2af4a14693a6" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.299Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 32 32 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "659d80e8-1d45-4dbc-93e8-12a2b5dfa135" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.552Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 23 22 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "bd64f350-0dca-450a-933a-05deab018ad8" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.627Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 36 36 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "741e296a-1e37-4475-a2e6-c4dacb0a903b" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.790Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 32 32 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "d76c554c-ee23-4f60-9caa-b5c9fa242e61" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.949Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 32 31 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "b3ad621b-35dc-4c85-bc31-34c38f78fadd" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:55.119Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 31 30 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "c23568c0-429f-4250-a482-47af54c073d3" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:56336 - -
+[2026-08-03T09:06:54.383Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 25 25 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "4c8c187f-cd34-4ebd-b175-0d6f406a3fe5" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.460Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 151 316 37 36 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/1.0 Java/23" "2b5c33c1-5c63-48fc-b16a-6388250cd3fc" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.715Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 23 23 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "f8693cfc-1108-4d63-9b11-9815bcfcb3ac" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:54.875Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 22 22 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "48cb306c-9362-47a8-9d01-366580144a71" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:06:55.034Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 33 32 "163.223.144.23, 10.189.49.251,10.177.142.145,172.16.12.2" "SBIEpay/v1 JAVASDK/v1 Java/23" "2af4713c-38fe-4603-a48f-83b7231f6bb1" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.12.2:42480 - -
+[2026-08-03T09:07:09.414Z] "GET /api/integration/v1 HTTP/1.1" 503 URX,UF upstream_reset_before_response_started{remote_connection_failure|TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end} - "TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end" 0 239 61 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "8df2c167-2db5-4ad5-9544-79e5276270ab" "integration.sbiepay.sbiuat.bank.in" "172.16.34.39:9099" outbound|9099||integration-integrationservice.int-integration.svc.cluster.local - 172.16.32.20:8080 172.16.10.2:42068 - -
+[2026-08-03T09:07:09.557Z] "GET /favicon.ico HTTP/1.1" 404 NR route_not_found - "-" 0 0 0 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "d340f3ea-ea05-409a-a735-aeb920616308" "integration.sbiepay.sbiuat.bank.in" "-" - - 172.16.32.20:8080 172.16.10.2:42068 - -
+[2026-08-03T09:07:11.469Z] "GET /api/integration/v1 HTTP/1.1" 503 URX,UF upstream_reset_before_response_started{remote_connection_failure|TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end} - "TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end" 0 239 52 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "a09d01b4-9ead-4199-8ecd-26aa23509161" "integration.sbiepay.sbiuat.bank.in" "172.16.34.39:9099" outbound|9099||integration-integrationservice.int-integration.svc.cluster.local - 172.16.32.20:8080 172.16.10.2:42068 - -
+[2026-08-03T09:07:13.464Z] "GET /api/integration/v1 HTTP/1.1" 503 URX,UF upstream_reset_before_response_started{remote_connection_failure|TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end} - "TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end" 0 239 50 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "78484439-ba42-4d9e-b01c-e58ddd1fbf1c" "integration.sbiepay.sbiuat.bank.in" "172.16.34.39:9099" outbound|9099||integration-integrationservice.int-integration.svc.cluster.local - 172.16.32.20:8080 172.16.10.2:42068 - -
+[2026-08-03T09:07:18.160Z] "GET /api/integration/v1 HTTP/1.1" 503 URX,UF upstream_reset_before_response_started{remote_connection_failure|TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end} - "TLS_error:|268435581:SSL_routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end" 0 239 29 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" "eeb5904e-5f73-441e-9a76-4faaddd3ff4d" "integration.sbiepay.sbiuat.bank.in" "172.16.34.39:9099" outbound|9099||integration-integrationservice.int-integration.svc.cluster.local - 172.16.32.20:8080 172.16.10.2:42068 - -
+[2026-08-03T09:07:18.317Z] "GET /favicon.ico HTTP/1.1" 404 NR route_not_found - "-" 0 0 0 - "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.10.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" "908a74f1-4a9d-4b49-99f0-0d6224b36ec5" "integration.sbiepay.sbiuat.bank.in" "-" - - 172.16.32.20:8080 172.16.10.2:42068 - -
+^C
+[osuser@bastion ~]$
 
-```
-"valid_from":       "2026-08-03T08:17:16Z"
-"expiration_time":  "2026-08-04T08:19:16Z"    ← 24-hour cert
-```
 
-That's a **24-hour workload cert issued at 08:17 today**. And `rk5c5` earlier showed `cx_connect_fail::15` / `rq_error::15` against your pod while `gfvnc` showed zeroes. That's a per-connection handshake failure on one replica — consistent with an mTLS trust mismatch, not a routing problem.
 
-## Do the definitive test: reproduce and read the exact failure
 
-Everything static looks healthy, so capture the failure live. Trigger a request and immediately read what the gateway logs:
 
-```bash
-# terminal 1 — watch both gateway replicas
-oc logs -n int-istio-system -l istio=int-istio-gateway -f --tail=5
 
-# terminal 2 — reproduce
-curl -sk https://integration.sbiepay.sbiuat.bank.in/api/integration/v1/actuator/health -v 2>&1 | tail -20
-```
 
-Read the Envoy response flag in the gateway log line — this is the single most important datum:
-- `UF` / `UH` = upstream connection failure / no healthy upstream
-- `UC` = upstream terminated connection (handshake reset)
-- The `TLS_error` / `CERTIFICATE_VERIFY_FAILED` will reappear here if it's mTLS
 
-## Test the gateway→pod path bypassing everything else
 
-Confirm whether the gateway can even open a plain TCP connection to the pod (benign, no `/dev/tcp`):
 
-```bash
-# From the gateway pod, can it reach the pod IP:port at all?
-oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
-  curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://172.16.34.39:9099/api/integration/v1/actuator/health
 
-# And check the gateway's live mTLS handshake stats to your cluster
-oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
-  curl -s localhost:15000/stats | grep -iE "integration.*ssl|integration.*connect_fail|integration.*handshake"
-```
 
-If the plain-HTTP curl to `172.16.34.39:9099` returns a code (even 401/404), the pod is reachable and serving — narrowing it to the mTLS layer. If it times out, the problem is network/CNI reachability from gateway node to pod node.
 
-## Check the pod actually came up healthy on the app side
 
-The app container may be up (`2/2 Running`) but rejecting requests. Check its logs and readiness:
 
-```bash
-oc logs integration-integrationservice-577c88dcd-8blbm -c integrationservice -n int-integration --tail=50 \
-  | grep -iE "error|started|exception|listen|9099|context-path"
 
-# Confirm the app is actually serving on 9099 with the right context path
-oc exec -n int-integration integration-integrationservice-577c88dcd-8blbm -c integrationservice -- \
-  curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://localhost:9099/api/integration/v1/actuator/health
-```
 
-Note from your ConfigMap: the app has `server.servlet.context-path: /api/integration/v1` **and** the VS routes `/api/integration/v1` without rewriting. So the app expects the full path `/api/integration/v1/...` — good, that matches. But confirm the app is actually listening; a Spring Boot app that failed Liquibase migration or Kafka/Oracle init can be "Running" but not serving on 9099.
 
-Given your ConfigMap points at Oracle `epaydbscanuat.sbiepay.sbi:1524` and Kafka `int-kafka-cluster-kafka-bootstrap`, and `liquibase.enabled: true` with `drop-first: false` — if the DB or Kafka is unreachable, the app context may not have fully started, so 9099 accepts TCP (sidecar) but the app returns resets. That would produce `upstream connect error` at the gateway even though everything mesh-side is healthy.
+==============
 
----
+[osuser@bastion ~]$ curl -sk https://integration.sbiepay.sbiuat.bank.in/api/integration/v1/actuator/health -v 2>&1 | tail -20
 
-## Where this points
+^C
+[osuser@bastion ~]$ oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+>   curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://172.16.34.39:9099/api/integration/v1/actuator/health
+404
+[osuser@bastion ~]$ oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+>   curl -s localhost:15000/stats | grep -iE "integration.*ssl|integration.*connect_fail|integration.*handshake"
+[osuser@bastion ~]$ oc logs integration-integrationservice-577c88dcd-8blbm -c integrationservice -n int-integration --tail=50 \
+>   | grep -iE "error|started|exception|listen|9099|context-path"
+2026-08-02 20:19:15.135 INFO | org.springframework.boot.StartupInfoLogger:53 | principal=  | scenario= | operation= | correlation= | logStarting | Starting IntegrationApplication vrelease-minor-dm2025124883-epay-egras-an-d0fc5ac3 using Java 21.0.8 with PID 1 (/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar started by 1000800000 in /home/default)
+2026-08-02 20:19:17.749 INFO | org.springframework.boot.web.embedded.tomcat.TomcatWebServer:111 | principal=  | scenario= | operation= | correlation= | initialize | Tomcat initialized with port 9099 (http)
+INFO: Initializing ProtocolHandler ["http-nio-9099"]
+INFO: Starting ProtocolHandler ["http-nio-9099"]
+2026-08-02 20:19:23.418 INFO | com.epay.integration.externalservice.PaymentPushVerificationClient:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | Tomcat started on port 9099 (http) with context path '/api/integration/v1'
+2026-08-02 20:19:23.430 INFO | com.epay.integration.externalservice.PaymentPushVerificationClient:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | Started IntegrationApplication in 8.988 seconds (process running for 9.785)
+[osuser@bastion ~]$ oc exec -n int-integration integration-integrationservice-577c88dcd-8blbm -c integrationservice -- \
+>   curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://localhost:9099/api/integration/v1/actuator/health
+404
+[osuser@bastion ~]$
 
-Route, cluster, endpoint, gateway ref, and pod certs are all confirmed healthy. That eliminates config/routing. The remaining candidates, in order:
-
-1. **App not actually serving on 9099** (Spring Boot up but context failed on DB/Kafka init) — most likely given the "Running but no hits" symptom. The `localhost:9099/.../actuator/health` exec test settles this instantly.
-2. **mTLS handshake failure gateway→pod** on one replica (`rk5c5` had 15 connect fails) — the live gateway log + `ssl` stats settle this.
-3. **CNI reachability** gateway node → pod node — the gateway-to-podIP curl settles this.
-
-Run the app-container `localhost:9099` health curl and the gateway→podIP curl first — those two commands will tell us whether the app is even serving. Paste both outputs plus the live gateway log line from the reproduce, and I'll pin the exact fix.
