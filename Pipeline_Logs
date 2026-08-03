@@ -1,6 +1,64 @@
+Good — having the Gradle zip on your bastion is exactly what you need for an air-gapped build. Let me first check your repo for the existing custom-image pattern you referenced earlier, so the Dockerfile matches your house style.There's already an `epay-fortify` and an `epay-build-java-gradle` Dockerfile. Let me read both — the fortify one is what you'd extend, and the gradle one shows exactly how your team installs Gradle in air-gapped mode.This is your exact pattern — I'll extend it. Now let me see how `epay-build-java-gradle` installs Gradle from a zip (to match your air-gapped Gradle install method precisely).I have both patterns exactly. Now I can build the combined Dockerfile — Fortify (from `epay-fortify`) + Gradle (from `epay-build-java-gradle`), matching your air-gapped house style precisely.Here's the Dockerfile. The key design choice: **it builds `FROM` your existing working Fortify image and adds only Gradle** — so you inherit the sourceanalyzer, JDK 21, BIRTReportGenerator, FPRUtility, and the SBI CA trust that already work, and change nothing else.
+
+## What it does
+
+```dockerfile
 FROM .../ubi9-java21-fortify-24.4:2.0     # your working Fortify image
 ARG GRADLE_VERSION=9.4.1
 ENV PATH=/opt/gradle/bin:$PATH            # so `command -v gradle` succeeds
 COPY gradle-${GRADLE_VERSION}/ /opt/gradle/   # your pre-extracted zip
 RUN chmod +x /opt/gradle/bin/gradle && gradle --version && sourceanalyzer -version
 USER 1001
+```
+
+That `PATH` line is the whole point — it's what makes your sast job's `command -v gradle` check pass, which flips the translation from **glob** (what you saw) to **build-integration** (full dataflow coverage).
+
+## Build steps on your bastion
+
+Your Gradle zip needs to be **extracted** first (air-gapped rule: no unzip inside the container, matching your `epay-build-java-gradle` pattern):
+
+```bash
+# 1. Extract the zip you already have
+unzip gradle-9.4.1-bin.zip          # → produces folder gradle-9.4.1/
+
+# 2. Build context must contain:
+#    Dockerfile
+#    gradle-9.4.1/
+
+# 3. Build
+podman build --build-arg GRADLE_VERSION=9.4.1 \
+  -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0 .
+
+# 4. Push
+podman push artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
+```
+
+Adjust `9.4.1` to whatever your zip version actually is.
+
+## Then one line in your sast YAML
+
+Change the image in `.sast_fortify`:
+
+```yaml
+.sast_fortify:
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
+```
+
+Your script needs **no other changes** — it already has the build-integration logic (`if command -v gradle ... sourceanalyzer ... gradle compileJava`); it just never fired because gradle was missing. Now it will.
+
+## Two things to verify after the first run
+
+**1. Confirm the mode flipped.** In the new run's log, look for:
+```
+gradle:         /opt/gradle/bin/gradle     ← was MISSING
+TRANSLATE_MODE=build-integration           ← was glob
+```
+If you see those, you've got full dataflow scanning.
+
+**2. Expect more findings.** Build-integration sees dataflow (SQLi, XSS, deserialization) that glob couldn't. Your current 6 high/critical could rise. Since your gate is `allow_failure: true` right now, that won't block the pipeline — but review the new findings before you ever flip the gate to blocking, or you'll suddenly enforce a much stricter bar.
+
+## Two honest caveats
+
+**The base image user.** I set `USER 1001` (the DSO Fortify image runs non-root at uid 1001, matching your `epay-fortify` pattern). If that base image happens to use a different uid, the build's final `USER 1001` might mismatch — the `gradle --version` validation runs as root so it'll still build, but if the CI job later can't read `/opt/gradle`, change `USER 1001` to whatever `id` the base image uses. Quick check: `podman run --rm .../ubi9-java21-fortify-24.4:2.0 id`.
+
+**Gradle needs JFrog access at scan time, not build time.** When build-integration runs `gradle compileJava`, Gradle will resolve dependencies from your JFrog virtual repo — which your sast job *already* handles (the init-script + `JFROG_GRADLE_REPO` + cert logic is all there). So the pieces line up. Just confirm the first real run resolves dependencies cleanly; if it hits a TLS error, that's the cert path in the job, not the image.
