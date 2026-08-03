@@ -1,44 +1,306 @@
-# =============================================================================
-# epay-fortify-gradle — HP Fortify SCA 24.4 + Gradle 9.4.1 (build-integration SAST)
-# =============================================================================
-# Adds ONLY Gradle to the DSO Fortify image. Fortify's session-write location is
-# handled at RUN TIME by the sast job (FORTIFY_HOME → $CI_PROJECT_DIR), NOT by a
-# USER line here — the base image runs as root and there is no 'default' user, so
-# any USER override risks an unwritable $HOME/.fortify (the earlier failure).
+# # ci/security/sast/sast.fortify.yml  |  Stage: sast
+# # HP Fortify SCA — allow_failure:true (informational, non-blocking initially)
+
+# .sast_fortify:
+#   stage: sast
+#   tags:
+#     - common_runner
+#   variables:
+#     FORTIFY_IMAGE: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/fortify_sca_23.1.0:v2-04072025"
+#     FORTIFY_PROJECT: $CI_PROJECT_NAME
+#     SOURCE_ANALYZER: "/opt/Fortify/Fortify_SCA_23.1.0/bin/sourceanalyzer"
+#     BIRTReportGenerator: "/opt/Fortify/Fortify_Apps_and_Tools_23.1.0/bin/BIRTReportGenerator"
+#     FORTIFY_PROJECT_DIR: "."
+#     EXCLUDE_DIRS: "./src/test/**/*"
+#     INCLUDE_DIRS: "./**/*.java"
+#     FORTIFY_MEM: "8G"
+#   image: $FORTIFY_IMAGE
+#   allow_failure: true
+#   script:
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -clean
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT "$INCLUDE_DIRS" -exclude "$EXCLUDE_DIRS" -verbose
+#     - $SOURCE_ANALYZER -b $FORTIFY_PROJECT -scan -format fpr -f "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+#     - $BIRTReportGenerator
+#         -template "Developer Workbook"
+#         -source "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}.fpr"
+#         -format PDF
+#         -output "${FORTIFY_PROJECT_DIR}/${CI_PROJECT_NAME}_report.pdf"
+#         -Xmx${FORTIFY_MEM}
+#   artifacts:
+#     paths:
+#       - "./*.fpr"
+#       - "./*.pdf"
+#     expire_in: 1 week
+
+# sast:fortify:
+#   extends: .sast_fortify
+
+
+#################### +++++++++++++++++++++++++++++++++++++++++++++++
+
+
+# ci/security/sast/sast.fortify.yml  |  Stage: sast
+# HP Fortify SCA 24.4 — Gradle build-integration (auto-fallback to glob translation)
 #
-# ── Air-gap build ─────────────────────────────────────────────────────────────
-#   On bastion:  unzip gradle-9.4.1-bin.zip   → gradle-9.4.1/
-#   podman build --build-arg GRADLE_VERSION=9.4.1 \
-#     -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.2 .
-#   podman tag  ...:1.2  ...itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.2
-#   podman push ...itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.2 --tls-verify=false
-# =============================================================================
+# ── Image ─────────────────────────────────────────────────────────────────────
+# dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 — central DSO image.
+# Provides: sourceanalyzer, BIRTReportGenerator, FPRUtility, JDK 21.
+# Gradle presence NOT guaranteed — script auto-detects and degrades gracefully.
+#
+# ── Translation modes ─────────────────────────────────────────────────────────
+# build-integration : sourceanalyzer wraps `gradle compileJava` — resolves full
+#                     classpath, enables cross-JAR dataflow (SQLi, XSS, deser).
+# glob (fallback)   : parses ./**/*.java directly, no classpath. Matches the
+#                     behaviour of the legacy 23.1 job. Fewer dataflow findings.
+#
+# ── Gradle resolution ─────────────────────────────────────────────────────────
+# Reuses the init-script + truststore pattern from ci/common/base-setup.java.gradle.yml.
+# App repos must NOT declare repositories {} — FAIL_ON_PROJECT_REPOS enforced.
+#
+# ── Gate ──────────────────────────────────────────────────────────────────────
+# FPRUtility queries critical/high. allow_failure:true during rollout — flip to
+# false only after baselining the 23.1 → 24.4 rulepack delta across all repos.
+# ─────────────────────────────────────────────────────────────────────────────
 
-FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+.sast_fortify:
+  stage: sast
+  # Fortify + Gradle image → enables build-integration translation (full classpath
+  # dataflow: SQLi/XSS/deserialization). The stock DSO Fortify image had no Gradle,
+  # so translation fell back to 'glob' (local findings only). Pushed to the app
+  # registry at itepaypg-sbiepay2-docker-local/sast/ — use THAT path (where it lives),
+  # not the dso-docker-base-images build tag.
+  image: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0
+  tags:
+    - common_runner
+  allow_failure: true
 
-LABEL maintainer="itepaypg-sbiepay2-devops@sbi.co.in" \
-      image.name="epay-fortify-gradle" \
-      image.version="1.2" \
-      image.fortify.version="24.4" \
-      image.gradle.version="9.4.1" \
-      image.description="Fortify SCA 24.4 + Gradle 9.4.1 for build-integration SAST" \
-      image.base="dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
+  variables:
+    FORTIFY_BUILD_ID:  "$CI_PROJECT_PATH_SLUG"
+    # Fortify writes its build session to $HOME/.fortify/sca24.4/build/. In CI the
+    # image's $HOME (/home/default) is NOT writable → "IOException: No such file
+    # or directory" on .scasession → 0 files → "Unable to load build session".
+    # Override HOME to the always-writable workspace so the session persists,
+    # regardless of which user the runner uses. (FORTIFY_HOME kept as a backup.)
+    HOME:              "${CI_PROJECT_DIR}"
+    FORTIFY_HOME:      "${CI_PROJECT_DIR}/.fortify-home"
+    FORTIFY_MEM:       "8G"
+    FORTIFY_INCLUDE:   "./**/*.java"
+    FORTIFY_EXCLUDE:   "./src/test/**/*"
+    CACERT_PATH:       "${CI_PROJECT_DIR}/cacerts-custom"
+    JFROG_GRADLE_REPO: "https://artifactory.jfrog.sbi:443/artifactory/itepaypg-sbiepay2-gradle-virtual/"
+    GRADLE_OPTS:       "-Dorg.gradle.daemon=false"
+    GRADLE_USER_HOME:  "${CI_PROJECT_DIR}/.gradle"
 
-ARG GRADLE_VERSION=9.4.1
+  before_script:
+    # ── Toolchain inventory — logged for triage, never fails the job ──────────
+    - java -version
+    - 'echo "sourceanalyzer: $(command -v sourceanalyzer || echo MISSING)"'
+    - 'echo "FPRUtility:     $(command -v FPRUtility || echo MISSING)"'
+    - 'echo "gradle:         $(command -v gradle || echo MISSING)"'
 
-ENV GRADLE_HOME=/opt/gradle \
-    PATH=/opt/gradle/bin:$PATH
+    # ── Trust JFrog internal CA ──────────────────────────────────────────────
+    # ubi9 images run non-root: $JAVA_HOME/.../cacerts is read-only (444).
+    # Copy to writable workspace, chmod 644, then import — keytool must be able
+    # to write the keystore back or it reports success and then errors out.
+    # Cert variable name differs by project scope; accept either.
+    - |
+      CERT_FILE=""
+      [ -n "$JF_ARTIFACTORY_CERT" ] && [ -f "$JF_ARTIFACTORY_CERT" ] && CERT_FILE="$JF_ARTIFACTORY_CERT"
+      [ -z "$CERT_FILE" ] && [ -n "$ARTIFACTORY_CERT" ] && [ -f "$ARTIFACTORY_CERT" ] && CERT_FILE="$ARTIFACTORY_CERT"
+      if [ -n "$CERT_FILE" ]; then
+        cp "$JAVA_HOME/lib/security/cacerts" "$CACERT_PATH"
+        chmod 644 "$CACERT_PATH"
+        keytool -importcert -keystore "$CACERT_PATH" -storepass changeit \
+          -alias jfrog-internal -file "$CERT_FILE" -noprompt
+        keytool -list -keystore "$CACERT_PATH" -storepass changeit -alias jfrog-internal
+        export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -Djavax.net.ssl.trustStore=${CACERT_PATH} -Djavax.net.ssl.trustStorePassword=changeit"
+        echo "Truststore configured: $CACERT_PATH"
+      else
+        echo "WARN: no Artifactory cert variable found — Gradle resolution may fail on TLS"
+      fi
 
-# Gradle pre-extracted on bastion: unzip gradle-9.x.x-bin.zip → gradle-9.x.x/
-COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+    # ── Gradle init script — mirrors ci/common/base-setup.java.gradle.yml ─────
+    # Written only when Gradle exists. Single source of truth stays in the
+    # common base-setup file; this is a scoped copy for the Fortify image,
+    # which cannot `extends:` that job (different image, no sourceanalyzer).
+    - |
+      if command -v gradle >/dev/null 2>&1; then
+        mkdir -p "${GRADLE_USER_HOME}/init.d"
+        cat > "${GRADLE_USER_HOME}/init.d/epay-artifactory.init.gradle" << 'EOF'
+      settingsEvaluated { settings ->
+          settings.pluginManagement {
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+              }
+          }
+          settings.dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  maven {
+                      url System.getenv("JFROG_GRADLE_REPO")
+                      credentials {
+                          username = System.getenv("JF_USER")
+                          password = System.getenv("JF_TOKEN")
+                      }
+                  }
+                  flatDir { dirs "libs" }
+              }
+          }
+      }
+      EOF
+        echo "Gradle init script written to ${GRADLE_USER_HOME}/init.d/"
+      fi
 
-# Build as root (base image default) — validate both tools. NO trailing USER
-# override: the base image already runs as root, and the sast job redirects
-# Fortify's writable home to $CI_PROJECT_DIR at runtime.
-RUN set -eux && \
-    chmod +x /opt/gradle/bin/gradle && \
-    gradle --version && \
-    sourceanalyzer -version
+  script:
+    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
 
-WORKDIR /workspace
-# No USER line, no CMD — GitLab CI Docker executor overrides with the job script
+    # ── Translate ────────────────────────────────────────────────────────────
+    # Prefer build-integration. Fall back to glob if Gradle is absent, the build
+    # fails, OR the build-integration session captured ZERO files (the real bug:
+    # `gradle compileJava` can exit 0 while translating nothing, leaving an empty
+    # session that makes -scan fail with "Unable to load build session").
+    - |
+      TRANSLATE_MODE="glob"
+      if command -v gradle >/dev/null 2>&1 && [ -f build.gradle -o -f build.gradle.kts ]; then
+        echo "Attempting build-integration translation via Gradle"
+        if sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
+             gradle --no-daemon clean compileJava -x test; then
+
+          # ── SESSION CHECK ────────────────────────────────────────────────────
+          # Exit 0 does NOT guarantee files were captured. Ask Fortify how many
+          # files are actually in the session; only trust build-integration if >0.
+          FILES_IN_SESSION=$(sourceanalyzer -b "$FORTIFY_BUILD_ID" -show-files 2>/dev/null | grep -c '\.java$')
+          FILES_IN_SESSION=${FILES_IN_SESSION:-0}
+          echo "Build-integration captured ${FILES_IN_SESSION} .java files in the session"
+          if [ "$FILES_IN_SESSION" -gt 0 ]; then
+            TRANSLATE_MODE="build-integration"
+          else
+            echo "WARN: build-integration session is EMPTY (0 files) — falling back to glob"
+            sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
+          fi
+        else
+          echo "WARN: Gradle build-integration failed (non-zero) — falling back to glob translation"
+          sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
+        fi
+      fi
+      if [ "$TRANSLATE_MODE" = "glob" ]; then
+        echo "Using glob translation (no classpath — dataflow coverage reduced)"
+        sourceanalyzer -b "$FORTIFY_BUILD_ID" -Xmx${FORTIFY_MEM} \
+          "$FORTIFY_INCLUDE" -exclude "$FORTIFY_EXCLUDE"
+      fi
+
+      # ── Final guard: whichever mode ran, confirm the session is non-empty ────
+      # before attempting -scan, so we never hit "Unable to load build session".
+      FINAL_FILES=$(sourceanalyzer -b "$FORTIFY_BUILD_ID" -show-files 2>/dev/null | grep -c '\.java$')
+      FINAL_FILES=${FINAL_FILES:-0}
+      echo "Files staged for scan: ${FINAL_FILES}"
+      if [ "$FINAL_FILES" -eq 0 ]; then
+        echo "ERROR: no .java files translated in either mode — nothing to scan." >&2
+        exit 1
+      fi
+      echo "TRANSLATE_MODE=${TRANSLATE_MODE}" | tee translate.mode
+
+    # ── Scan ─────────────────────────────────────────────────────────────────
+    - sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
+
+    # ── Developer report ─────────────────────────────────────────────────────
+    - BIRTReportGenerator -template "Developer Workbook"
+        -source "${CI_PROJECT_PATH_SLUG}.fpr"
+        -format PDF
+        -output "${CI_PROJECT_PATH_SLUG}_report.pdf"
+        -Xmx${FORTIFY_MEM}
+
+    # ── Quality gate — critical/high ──────────────────────────────────────────
+    - |
+      FPRUtility -information -search \
+        -query "[fortify priority order]:critical OR [fortify priority order]:high" \
+        -project "${CI_PROJECT_PATH_SLUG}.fpr" > sca_gate.txt 2>&1 || true
+      cat sca_gate.txt
+      ISSUES=$(grep -i "matched search query" sca_gate.txt | awk '{print $1}')
+      case "$ISSUES" in ''|*[!0-9]*) ISSUES=0 ;; esac
+      echo "Translation mode: $(cat translate.mode)"
+      if [ "$ISSUES" -gt 0 ]; then
+        echo -e "\e[31m=========================================\e[0m"
+        echo -e "\e[31m QUALITY GATE FAILED\e[0m"
+        echo -e "\e[31m High/Critical Vulnerabilities: $ISSUES\e[0m"
+        echo -e "\e[31m=========================================\e[0m"
+        exit 1
+      fi
+      echo -e "\e[32m=========================================\e[0m"
+      echo -e "\e[32m QUALITY GATE PASSED\e[0m"
+      echo -e "\e[32m High/Critical Vulnerabilities: 0\e[0m"
+      echo -e "\e[32m=========================================\e[0m"
+
+  artifacts:
+    paths:
+      - "${CI_PROJECT_PATH_SLUG}.fpr"
+      - "${CI_PROJECT_PATH_SLUG}_report.pdf"
+      - sca_gate.txt
+      - translate.mode
+    expire_in: 1 day
+    when: always
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FPR → GitLab Vulnerability Report
+# Converts the FPR to gl-sast-report.json so findings surface in the MR widget
+# and Security Dashboard. Requires CLONE_TOKEN (read_repository on the central
+# utility repo) and network policy allowing runner → gitlab.sbi.
+# ─────────────────────────────────────────────────────────────────────────────
+
+.fortify_to_gitlab:
+  stage: sast
+  image: artifactory.jfrog.sbi:443/dso-docker-base-images/py-fortify:0.0.1
+  tags:
+    - common_runner
+  allow_failure: true
+  needs:
+    - job: "sast:fortify"
+      artifacts: true
+  before_script:
+    - git config --global http.sslVerify false
+  script:
+    - test -f "${CI_PROJECT_PATH_SLUG}.fpr" || { echo "No FPR from upstream job — nothing to convert"; exit 0; }
+    - git clone --depth 1 https://oauth2:${CLONE_TOKEN}@gitlab.sbi/centraliseddevsecops/common-utility/utility.git
+    - python3 utility/script/fortify_to_gitlab.py "${CI_PROJECT_PATH_SLUG}.fpr"
+    - ls -lh gl-sast-report.json
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    paths:
+      - gl-sast-report.json
+    expire_in: 1 week
+    when: always
+
+
+sast:fortify:
+  extends: .sast_fortify
+
+sast:fortify:report:
+  extends: .fortify_to_gitlab
+
+
+
+
+
+
+
+
+
+
+
+
+
+=====================================
+
+
+podman build --build-arg GRADLE_VERSION=9.4.1 \
+  -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.2 .
+podman tag ...:1.2 artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.2
+podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.2 --tls-verify=false
