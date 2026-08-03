@@ -1,83 +1,102 @@
-Now I have the real gateway label: `istio=int-istio-gateway`, and there are **two** gateway replicas (`gfvnc`, `rk5c5`). Both need to be checked — stale config on either one causes intermittent-looking failures. Istio version is **1.24.6**.
+No `istioctl` — fine. You can get everything from Envoy's admin API on the gateway pods and from `oc`. Here's the equivalent diagnostic using only `oc exec` into the gateway's Envoy admin endpoint (port 15000).
 
-## Step 1 — Check the gateway's view of your upstream endpoints
+## Step 1 — Does the gateway have healthy endpoints for your service?
 
-Run against **both** gateway pods:
+```bash
+GW=int-istio-gateway-77d47dbb5-gfvnc
+
+oc exec -n int-istio-system $GW -- \
+  curl -s localhost:15000/clusters | grep -i "9099"
+```
+
+Look for a line containing `172.16.34.39:9099` and check its health — Envoy marks bad ones with `health_flags::/failed_active_hc` or `/failed_eds_health`. A healthy endpoint shows `health_flags::healthy` or no failure flag. If your pod IP is missing entirely, the Service recreate left the gateway with no endpoint for this route.
+
+Run it on **both** gateway pods (`gfvnc` and `rk5c5`):
 
 ```bash
 for GW in int-istio-gateway-77d47dbb5-gfvnc int-istio-gateway-77d47dbb5-rk5c5; do
   echo "===== $GW ====="
-  istioctl proxy-config endpoints $GW -n int-istio-system | grep -i 9099
+  oc exec -n int-istio-system $GW -- curl -s localhost:15000/clusters | grep -i 9099
 done
 ```
 
-You want to see `172.16.34.39:9099` listed as `HEALTHY`. If it's missing, STALE, or shows a different IP, that's the stale binding from the Service recreation.
+## Step 2 — Compare the broken cluster against a working one
 
-## Step 2 — Check the route + cluster for your context path
-
-```bash
-GW=int-istio-gateway-77d47dbb5-gfvnc
-
-# Is the route for your host present and pointing at the right cluster?
-istioctl proxy-config routes $GW -n int-istio-system -o json \
-  | grep -iB2 -A10 "integration.sbiepay"
-
-# Inspect the upstream cluster Envoy built for your service
-istioctl proxy-config cluster $GW -n int-istio-system \
-  --fqdn integration-integrationservice.int-integration.svc.cluster.local -o json \
-  | grep -iE "name|tls|sni|subset|transport" | head -30
-```
-
-The `cluster` output tells you the mTLS mode the gateway is using to reach your pod. On a healthy istio mTLS path you'll see a transport socket referencing `istio_mutual` / SPIFFE. If it's empty or plaintext while the pod expects mTLS → that's your `CERTIFICATE_VERIFY_FAILED`.
-
-## Step 3 — Compare with a WORKING context path
-
-This is the highest-value diagnostic since other paths work. Pick a context path that works and diff its cluster/endpoints against yours:
+Pull the full cluster config and find your service vs. a working context path's service:
 
 ```bash
 GW=int-istio-gateway-77d47dbb5-gfvnc
 
-# List all clusters the gateway knows, find working vs broken service
-istioctl proxy-config cluster $GW -n int-istio-system | grep -iE "int-|integration"
+# your (broken) service
+oc exec -n int-istio-system $GW -- \
+  curl -s localhost:15000/config_dump?resource=dynamic_active_clusters \
+  | grep -iA30 "integration-integrationservice.int-integration"
 ```
 
-Compare the row for `integration-integrationservice.int-integration...` against a working service's row. Look for differences in the `SNI`, `mTLS`, or whether the cluster even has endpoints. This will show you *exactly* what's different about the broken path.
+In that block look specifically for the `transport_socket` section — it tells you the mTLS mode the gateway uses to reach your pod:
 
-## Step 4 — Confirm the pod's sidecar mTLS status
+- Healthy istio mTLS: you'll see `transport_socket` with `envoy.transport_sockets.tls` and an SNI like `outbound_.9099_._.integration-integrationservice.int-integration.svc.cluster.local`.
+- Broken: no transport_socket (plaintext) while your pod's sidecar demands mTLS → `CERTIFICATE_VERIFY_FAILED`.
+
+Then do the same grep for a **working** service and compare the two `transport_socket` blocks side by side. The difference is your root cause.
+
+## Step 3 — Is the route for your context path even present?
 
 ```bash
-istioctl proxy-config secret integration-integrationservice-577c88dcd-8blbm -n int-integration
+GW=int-istio-gateway-77d47dbb5-gfvnc
+
+oc exec -n int-istio-system $GW -- \
+  curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
+  | grep -iB3 -A10 "integration.sbiepay"
 ```
 
-Check the workload cert `NOT AFTER` isn't expired and state is `ACTIVE`. If expired/missing, the sidecar can't complete mTLS.
+Confirm the route matches `/api/integration/v1` and its `cluster` field names `outbound|9099||integration-integrationservice.int-integration.svc.cluster.local`. If the route points at a cluster name that doesn't match any active cluster from Step 2, that's a stale-config mismatch from the Service recreate.
 
-## Step 5 — Full authoritative check with istioctl (best single command)
+## Step 4 — Check the pod sidecar's workload cert
 
 ```bash
-istioctl analyze -n int-integration
-istioctl proxy-status | grep -iE "integration|int-istio-gateway"
+oc exec -n int-integration integration-integrationservice-577c88dcd-8blbm -c istio-proxy -- \
+  curl -s localhost:15000/certs \
+  | grep -iE "valid_from|expiration_time|cert_chain"
 ```
 
-`proxy-status` shows whether each proxy (both gateways + your pod) is `SYNCED` with istiod. If your gateway shows `STALE` for RDS/CDS/EDS, that confirms the config didn't propagate after the Service recreate.
+Confirm `expiration_time` is in the future. If expired, the sidecar can't complete mTLS — restart the pod.
+
+## Step 5 — Is the gateway synced with istiod? (proxy-status equivalent)
+
+```bash
+GW=int-istio-gateway-77d47dbb5-gfvnc
+
+oc exec -n int-istio-system $GW -- \
+  curl -s localhost:15000/server_info | grep -iE "state|version"
+
+# Check istiod pushed config recently — look at ADS/EDS on the gateway
+oc exec -n int-istio-system $GW -- \
+  curl -s localhost:15000/stats | grep -iE "cluster_manager.cds|cds.update_rejected|eds.update_rejected|update_failure"
+```
+
+`cds.update_rejected` or `eds.update_rejected` being non-zero means istiod pushed config the gateway refused — a strong sign the Service recreate produced config the gateway couldn't reconcile.
 
 ---
 
-## The fix, based on what you find
+## The fix
 
-**If Step 1 shows endpoint missing/stale, or Step 5 shows STALE sync** → the Service recreation left the gateway with stale endpoint config. Restart your app pod first (re-registers the sidecar against the new Service):
+Based on the near-certain cause (Service recreated 12 min ago under a 12h-old pod, breaking the gateway→endpoint binding), do this in order:
+
+**1. Restart the app pod** — re-registers the sidecar against the new Service and refreshes its workload cert:
 
 ```bash
 oc rollout restart deploy/integration-integrationservice -n int-integration
 oc rollout status deploy/integration-integrationservice -n int-integration
 ```
 
-Recheck Step 1. If the endpoint now shows HEALTHY and curl works — done.
+Re-run Step 1. If `172.16.34.39` (new pod IP) now appears healthy on both gateways and the curl works — done.
 
-**If still broken after pod restart** → force the gateways to re-pull config (do in change window; brief blip on all paths):
+**2. If still broken, restart the gateways** (change window; brief blip on all paths through this gateway) to force a full config re-push from istiod:
 
 ```bash
 oc rollout restart deploy/int-istio-gateway -n int-istio-system
 oc rollout status deploy/int-istio-gateway -n int-istio-system
 ```
 
-Run the Step 1 + Step 2 block, plus `istioctl proxy-status`, and paste the output. The endpoints line for `9099` and the proxy-status sync state will tell us definitively whether it's a stale-binding (fixed by restart) or a genuine cluster/mTLS config difference versus the working paths.
+Start with Step 1 on both gateway pods and Step 2's transport_socket comparison against a working path. Paste the `9099` clusters line and the two transport_socket blocks — that comparison will pin whether it's a stale endpoint (fixed by pod restart) or a genuine mTLS config divergence versus the working paths.
