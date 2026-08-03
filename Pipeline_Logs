@@ -1,65 +1,79 @@
-[osuser@bastion ~]$ # What is istiod rejecting? This names the exact resource + reason
-[osuser@bastion ~]$ oc logs -n int-istio-system istiod-int-istio-76d75c56b-ddrqc --tail=200 \
->   | grep -iE "rejected|NACK|error|integration|Envoy rejected|warn"
-2026-08-03T08:39:16.923008Z     info    delta   RDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:1 removed:0 size:566B cached:1/1 filtered:25
-2026-08-03T08:49:26.085247Z     info    delta   ADS: "172.16.32.5:41960" merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend-7384 terminated
-2026-08-03T08:49:26.326107Z     info    delta   ADS: new delta connection for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend-7405
-2026-08-03T08:49:26.326763Z     info    delta   CDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:42 removed:0 size:48.1kB cached:38/38 filtered:0
-2026-08-03T08:49:26.327007Z     info    delta   EDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:32 removed:0 size:8.9kB empty:0 cached:32/32 filtered:0
-2026-08-03T08:49:26.336404Z     info    delta   LDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:65 removed:0 size:145.7kB filtered:0
-2026-08-03T08:49:26.337225Z     info    delta   RDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:26 removed:0 size:18.7kB cached:26/26 filtered:0
-[osuser@bastion ~]$ # Confirm the route truly isn't there (should return nothing = confirms missing route)
-[osuser@bastion ~]$ oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
->   curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
->   | grep -i "api/integration"
-         "prefix": "/api/integration/v1",
-         "operation": "integration-integrationservice.int-integration.svc.cluster.local:9099/api/integration/v1*"
-[osuser@bastion ~]$ oc get vs integration-integrationservice -n int-integration -o yaml
-Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  annotations:
-    meta.helm.sh/release-name: integration
-    meta.helm.sh/release-namespace: int-integration
-  creationTimestamp: "2026-08-03T08:39:16Z"
-  generation: 1
-  labels:
-    app.kubernetes.io/managed-by: Helm
-  name: integration-integrationservice
-  namespace: int-integration
-  resourceVersion: "918873333"
-  uid: 603c88ab-064a-45e0-a595-c7a63dae41c1
-spec:
-  gateways:
-  - int-istio-system/int-gateway
-  hosts:
-  - integration.sbiepay.sbiuat.bank.in
-  http:
-  - match:
-    - uri:
-        prefix: /api/integration/v1
-    route:
-    - destination:
-        host: integration-integrationservice
-        port:
-          number: 9099
-[osuser@bastion ~]$ oc get gateway -A
-No resources found
-[osuser@bastion ~]$ oc get vs -n int-merchant -o yaml | grep -A3 gateways
-Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
-    gateways:
-    - int-istio-system/int-gateway
-    hosts:
-    - integration.sbiepay.sbiuat.bank.in
---
-    gateways:
-    - int-istio-system/int-gateway
-    hosts:
-    - integration.sbiepay.sbiuat.bank.in
-[osuser@bastion ~]$ oc get vs -n int-integration integration-integrationservice -o yaml | grep -A3 gateways
-Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
-  gateways:
-  - int-istio-system/int-gateway
-  hosts:
-  - integration.sbiepay.sbiuat.bank.in
+Two of my earlier hypotheses are now disproven, and the picture is clearer:
+
+1. **The route DOES exist.** My "missing route" claim was wrong — the config dump now shows `/api/integration/v1` → `integration-integrationservice...:9099`. The route is present and correct.
+2. **The gateway reference is fine.** Your VS uses `int-istio-system/int-gateway`, and so does the working merchant VS. Same reference, and merchant works. So the gateway name isn't the problem. (`oc get gateway -A` returns nothing because these are the new `gateway.networking.k8s.io` API objects, or istiod-managed — irrelevant since merchant uses the identical ref and works.)
+
+So route ✓, cluster ✓, endpoint healthy ✓, pod certs valid ✓, gateway ref ✓. Everything the gateway needs is in place. Which means the failure is now on the **wire between gateway and pod** — the actual mTLS handshake at request time.
+
+## The one thing that stands out: the workload cert lifetime
+
+Look again at your pod's sidecar certs:
+
+```
+"valid_from":       "2026-08-03T08:17:16Z"
+"expiration_time":  "2026-08-04T08:19:16Z"    ← 24-hour cert
+```
+
+That's a **24-hour workload cert issued at 08:17 today**. And `rk5c5` earlier showed `cx_connect_fail::15` / `rq_error::15` against your pod while `gfvnc` showed zeroes. That's a per-connection handshake failure on one replica — consistent with an mTLS trust mismatch, not a routing problem.
+
+## Do the definitive test: reproduce and read the exact failure
+
+Everything static looks healthy, so capture the failure live. Trigger a request and immediately read what the gateway logs:
+
+```bash
+# terminal 1 — watch both gateway replicas
+oc logs -n int-istio-system -l istio=int-istio-gateway -f --tail=5
+
+# terminal 2 — reproduce
+curl -sk https://integration.sbiepay.sbiuat.bank.in/api/integration/v1/actuator/health -v 2>&1 | tail -20
+```
+
+Read the Envoy response flag in the gateway log line — this is the single most important datum:
+- `UF` / `UH` = upstream connection failure / no healthy upstream
+- `UC` = upstream terminated connection (handshake reset)
+- The `TLS_error` / `CERTIFICATE_VERIFY_FAILED` will reappear here if it's mTLS
+
+## Test the gateway→pod path bypassing everything else
+
+Confirm whether the gateway can even open a plain TCP connection to the pod (benign, no `/dev/tcp`):
+
+```bash
+# From the gateway pod, can it reach the pod IP:port at all?
+oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+  curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://172.16.34.39:9099/api/integration/v1/actuator/health
+
+# And check the gateway's live mTLS handshake stats to your cluster
+oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+  curl -s localhost:15000/stats | grep -iE "integration.*ssl|integration.*connect_fail|integration.*handshake"
+```
+
+If the plain-HTTP curl to `172.16.34.39:9099` returns a code (even 401/404), the pod is reachable and serving — narrowing it to the mTLS layer. If it times out, the problem is network/CNI reachability from gateway node to pod node.
+
+## Check the pod actually came up healthy on the app side
+
+The app container may be up (`2/2 Running`) but rejecting requests. Check its logs and readiness:
+
+```bash
+oc logs integration-integrationservice-577c88dcd-8blbm -c integrationservice -n int-integration --tail=50 \
+  | grep -iE "error|started|exception|listen|9099|context-path"
+
+# Confirm the app is actually serving on 9099 with the right context path
+oc exec -n int-integration integration-integrationservice-577c88dcd-8blbm -c integrationservice -- \
+  curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://localhost:9099/api/integration/v1/actuator/health
+```
+
+Note from your ConfigMap: the app has `server.servlet.context-path: /api/integration/v1` **and** the VS routes `/api/integration/v1` without rewriting. So the app expects the full path `/api/integration/v1/...` — good, that matches. But confirm the app is actually listening; a Spring Boot app that failed Liquibase migration or Kafka/Oracle init can be "Running" but not serving on 9099.
+
+Given your ConfigMap points at Oracle `epaydbscanuat.sbiepay.sbi:1524` and Kafka `int-kafka-cluster-kafka-bootstrap`, and `liquibase.enabled: true` with `drop-first: false` — if the DB or Kafka is unreachable, the app context may not have fully started, so 9099 accepts TCP (sidecar) but the app returns resets. That would produce `upstream connect error` at the gateway even though everything mesh-side is healthy.
+
+---
+
+## Where this points
+
+Route, cluster, endpoint, gateway ref, and pod certs are all confirmed healthy. That eliminates config/routing. The remaining candidates, in order:
+
+1. **App not actually serving on 9099** (Spring Boot up but context failed on DB/Kafka init) — most likely given the "Running but no hits" symptom. The `localhost:9099/.../actuator/health` exec test settles this instantly.
+2. **mTLS handshake failure gateway→pod** on one replica (`rk5c5` had 15 connect fails) — the live gateway log + `ssl` stats settle this.
+3. **CNI reachability** gateway node → pod node — the gateway-to-podIP curl settles this.
+
+Run the app-container `localhost:9099` health curl and the gateway→podIP curl first — those two commands will tell us whether the app is even serving. Paste both outputs plus the live gateway log line from the reproduce, and I'll pin the exact fix.
