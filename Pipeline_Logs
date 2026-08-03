@@ -1,46 +1,79 @@
-[osuser@bastion ~]$ oc describe ns int-admin
-Name:         int-admin
-Labels:       dynatrace.com/inject=true
-              env=uat
-              istio-discovery=int-istio
-              istio.io/rev=int-istio
-              kubernetes.io/metadata.name=int-admin
-              pod-security.kubernetes.io/audit=restricted
-              pod-security.kubernetes.io/audit-version=latest
-              pod-security.kubernetes.io/warn=restricted
-              pod-security.kubernetes.io/warn-version=latest
-Annotations:  openshift.io/node-selector: env=int
-              openshift.io/requester: vishnu
-              openshift.io/sa.scc.mcs: s0:c41,c15
-              openshift.io/sa.scc.supplemental-groups: 1001670000/10000
-              openshift.io/sa.scc.uid-range: 1001670000/10000
-              security.openshift.io/MinimallySufficientPodSecurityStandard: restricted
-Status:       Active
+This is a genuinely useful comparison, and it disproves my port-name theory before you spent a change window on it. Good instinct sharing this first.
 
-No resource quota.
+## The difference
 
-No LimitRange resource.
-[osuser@bastion ~]$ oc describe ns int-integration
-Name:         int-integration
-Labels:       env=uat
-              istio-discovery=int-istio
-              istio.io/rev=int-istio
-              kubernetes.io/metadata.name=int-integration
-              pod-security.kubernetes.io/audit=restricted
-              pod-security.kubernetes.io/audit-version=latest
-              pod-security.kubernetes.io/warn=restricted
-              pod-security.kubernetes.io/warn-version=latest
-Annotations:  openshift.io/description:
-              openshift.io/display-name:
-              openshift.io/node-selector: env=int
-              openshift.io/requester: ocpadmin
-              openshift.io/sa.scc.mcs: s0:c28,c22
-              openshift.io/sa.scc.supplemental-groups: 1000800000/10000
-              openshift.io/sa.scc.uid-range: 1000800000/10000
-              security.openshift.io/MinimallySufficientPodSecurityStandard: restricted
-Status:       Active
+The two namespaces are nearly identical for Istio — **same revision** (`istio.io/rev=int-istio`), same discovery, same istio-injection posture. That rules out a namespace-level mesh/injection difference. So both integration and admin pods are injected by the same istiod revision and should behave the same way at the mesh level.
 
-No resource quota.
+But one label differs:
 
-No LimitRange resource.
-[osuser@bastion ~]$
+```
+int-admin:        dynatrace.com/inject=true      ← present
+int-integration:  (no dynatrace label)           ← absent
+```
+
+That's a Dynatrace OneAgent injection difference, not an Istio one. It's worth noting but it does **not** cause `CERTIFICATE_VERIFY_FAILED` on the Istio mTLS handshake — Dynatrace injection wouldn't flip the transport socket. So it's almost certainly a red herring for this specific error.
+
+## What this comparison actually tells us
+
+Since the namespaces are mesh-equivalent, the failure is **not** namespace policy and **not** injection revision. That pushes the root cause back down to the **workload/Service level for integration specifically** — which is consistent with everything we've seen:
+
+- Other services in *other* namespaces (admin `:9094`, transaction `:9092`) work.
+- Integration `:9099` is the only failing upstream.
+- Gateway reaches integration pod fine on **plaintext** (`404`), but **TLS** handshake fails.
+- Integration's Service was **recreated 12 min before** the failure window (v6 Helm release), while its pod is 12h old.
+
+So the mismatch is between what the gateway is told to speak to `outbound|9099|...integration...` (TLS/mTLS) and what that pod actually speaks (plaintext). The trigger was the Service recreation, not the namespace.
+
+## Before changing anything — pin the exact mismatch
+
+Since you (rightly) want confirmation before touching config, run these two read-only comparisons. They'll tell us definitively whether it's the Service port definition or a PeerAuthentication difference:
+
+```bash
+# 1. Port definitions — the thing recreated at 08:39. Compare all three.
+echo "=== integration (broken) ==="
+oc get svc integration-integrationservice -n int-integration -o jsonpath='{.spec.ports[*]}{"\n"}'
+echo "=== admin (working) ==="
+oc get svc admin-adminservice -n int-admin -o jsonpath='{.spec.ports[*]}{"\n"}'
+echo "=== transaction (working) ==="
+oc get svc txn-transactionservice -n int-transaction -o jsonpath='{.spec.ports[*]}{"\n"}'
+```
+
+```bash
+# 2. PeerAuthentication — is mTLS mode different for integration vs working ns?
+echo "=== integration ==="; oc get peerauthentication -n int-integration -o yaml 2>/dev/null | grep -iE "name:|mode:"
+echo "=== admin ==="; oc get peerauthentication -n int-admin -o yaml 2>/dev/null | grep -iE "name:|mode:"
+echo "=== transaction ==="; oc get peerauthentication -n int-transaction -o yaml 2>/dev/null | grep -iE "name:|mode:"
+echo "=== mesh-wide (istio-system) ==="; oc get peerauthentication -n int-istio-system -o yaml 2>/dev/null | grep -iE "name:|mode:"
+```
+
+And one more that directly reads what the gateway decided for each cluster — this is the smoking gun without changing anything:
+
+```bash
+# 3. What transport socket did the gateway build for integration vs admin?
+GW=int-istio-gateway-77d47dbb5-gfvnc
+echo "=== integration cluster transport ==="
+oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+  | grep -A2 -iE "integration-integrationservice.*cluster.local\"" | head; \
+oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(c['cluster']['name'], '->', [m['name'] for m in c['cluster'].get('transport_socket_matches',[{'name':'NONE'}])]) for c in d['configs'] if 'integration-integrationservice' in c['cluster']['name'] or 'admin-adminservice' in c['cluster']['name']]" 2>/dev/null
+```
+
+If command 3's python parsing fails (no python3), just eyeball it:
+
+```bash
+oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+  curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+  | grep -iE "adminservice.int-admin.*cluster.local\"|transport_socket_matches|tlsMode-|raw_buffer" | head -40
+```
+
+Compare the `transport_socket_matches` block for admin (working) against integration (broken). If admin has the same `tlsMode-istio` + `tlsMode-disabled` match set that integration has, then the cluster config is identical and the problem is purely that the integration **pod's advertised endpoint metadata** (`tlsMode=istio`) doesn't match a sidecar that can actually complete mTLS — which a pod restart fixes.
+
+## My read right now
+
+The namespace parity you just showed makes a **stale/broken sidecar mTLS identity on the integration pod the leading candidate again** — not a Service port bug. The pod advertises `tlsMode=istio` (so the gateway originates mTLS), but its workload cert/identity from the botched 08:39 rebuild can't complete verification, while the app underneath only speaks plaintext. The safest, lowest-blast-radius fix remains:
+
+```bash
+oc rollout restart deploy/integration-integrationservice -n int-integration
+```
+
+Run the three read-only checks above first so we confirm cluster config parity (integration vs admin). If the transport_socket_matches are identical, the pod restart is the fix and nothing else needs touching. Paste those three outputs and I'll give you the definitive go/no-go.
