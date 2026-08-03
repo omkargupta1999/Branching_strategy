@@ -1,100 +1,65 @@
-Found it. This is the root cause, and it's not TLS at all.
-
-## Root cause
-
-**The route for `/api/integration/v1` does not exist on the gateway.** The gateway's route config for `integration.sbiepay.sbiuat.bank.in:8080` contains only:
-
-```
-"prefix": "/api/merchant/v1"  →  merchant-merchantservice
-```
-
-There is **no route entry for `/api/integration/v1`**. That's why other context paths work and only this one fails. The cluster exists, the endpoint `172.16.34.39:9099` is `health_flags::healthy`, the pod's mTLS certs are valid — but with no matching route, the gateway never forwards to that healthy cluster. The earlier `CERTIFICATE_VERIFY_FAILED` was a red herring from a different/earlier state; the actual current failure is a missing route.
-
-## Why the route is missing — the real problem
-
-Look at the gateway stats:
-
-```
-cluster_manager.cds.update_attempt:  824
-cluster_manager.cds.update_success:  488
-cluster_manager.cds.update_failure:  335   ← istiod pushes are being REJECTED
-listener_manager.lds.update_failure: 335
-```
-
-335 failed CDS/LDS updates means **istiod is trying to push new config to the gateway and the gateway is rejecting it.** Your VirtualService/Service were recreated at 08:39 (v6 Helm release). The new VirtualService that adds the `/api/integration/v1` route is part of a config push that the gateway won't accept — so the gateway is stuck on the last-good config that predates your integration route.
-
-The two gateway replicas are also **out of sync with each other** — `gfvnc` has the integration cluster, `rk5c5` shows different connection stats (`cx_connect_fail::15`) — classic symptom of partial/rejected config propagation across replicas.
-
-## Confirm the rejected-config cause (2 commands)
-
-```bash
-# What is istiod rejecting? This names the exact resource + reason
-oc logs -n int-istio-system istiod-int-istio-76d75c56b-ddrqc --tail=200 \
-  | grep -iE "rejected|NACK|error|integration|Envoy rejected|warn"
-```
-
-```bash
-# Confirm the route truly isn't there (should return nothing = confirms missing route)
-oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
-  curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
-  | grep -i "api/integration"
-```
-
-The istiod log line will tell you *why* the push is NACK'd — most commonly a malformed VirtualService (bad host, duplicate match, a port/gateway ref that doesn't resolve) introduced in the v6 release.
-
-## Verify your VirtualService is actually correct
-
-```bash
-oc get vs integration-integrationservice -n int-integration -o yaml
-```
-
-Check three things:
-1. `spec.gateways` references the **exact** gateway the route is served by. Your VS says `int-istio-system/int-gateway` — but there is **no Gateway named `int-gateway`** (you confirmed `NotFound` earlier). The working merchant route is on gateway listener `http.8080`. **If your VS points at a non-existent Gateway, istiod can't bind the route — that's very likely the whole problem.**
-2. `spec.hosts` = `integration.sbiepay.sbiuat.bank.in` (correct).
-3. The http match prefix = `/api/integration/v1` (correct).
-
-Find the real gateway name the working routes use:
-
-```bash
-oc get gateway -A
-```
-
-Compare the Gateway name/namespace that merchant's VirtualService references versus what yours references:
-
-```bash
-oc get vs -n int-merchant -o yaml | grep -A3 gateways
-oc get vs -n int-integration integration-integrationservice -o yaml | grep -A3 gateways
-```
-
-## The fix
-
-**Most likely fix — wrong gateway reference in your VirtualService.** If merchant's VS points at (say) `int-istio-system/int-istio-gateway` but yours points at `int-istio-system/int-gateway` (which doesn't exist), istiod silently can't attach your route. Patch your VS to reference the correct Gateway:
-
-```bash
-# after confirming the correct name from the merchant VS
-oc patch vs integration-integrationservice -n int-integration --type=json \
-  -p='[{"op":"replace","path":"/spec/gateways/0","value":"int-istio-system/<correct-gateway-name>"}]'
-```
-
-Then confirm the route appears:
-
-```bash
-oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
-  curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
-  | grep -i "api/integration"
-```
-
-**If the VS is already correct but config is still rejected** (istiod log shows a NACK on some other resource): a single bad resource in the push can block the *entire* batch, including your good VS. Find and fix the rejected resource from the istiod log, or restart istiod to force a clean recompute:
-
-```bash
-oc rollout restart deploy/istiod-int-istio -n int-istio-system
-oc rollout status deploy/istiod-int-istio -n int-istio-system
-```
-
-After istiod is healthy, the `cds.update_failure` counter should stop climbing and both gateways should converge. Recheck the route.
-
----
-
-**Summary of root cause:** Not a certificate problem. The gateway has no route for `/api/integration/v1` because istiod's config pushes are being rejected (335 CDS/LDS failures), so the VirtualService created in the 08:39 Helm release never took effect on the gateway. Prime suspect is your VirtualService referencing a Gateway name that doesn't exist (`int-gateway` returned NotFound), so the route can't bind. Fix the gateway reference (or the rejected resource), and the healthy cluster + endpoint will immediately start receiving traffic.
-
-Run the istiod log grep and the two `oc get vs ... gateways` comparisons — paste them and I'll give you the exact patch value.
+[osuser@bastion ~]$ # What is istiod rejecting? This names the exact resource + reason
+[osuser@bastion ~]$ oc logs -n int-istio-system istiod-int-istio-76d75c56b-ddrqc --tail=200 \
+>   | grep -iE "rejected|NACK|error|integration|Envoy rejected|warn"
+2026-08-03T08:39:16.923008Z     info    delta   RDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:1 removed:0 size:566B cached:1/1 filtered:25
+2026-08-03T08:49:26.085247Z     info    delta   ADS: "172.16.32.5:41960" merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend-7384 terminated
+2026-08-03T08:49:26.326107Z     info    delta   ADS: new delta connection for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend-7405
+2026-08-03T08:49:26.326763Z     info    delta   CDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:42 removed:0 size:48.1kB cached:38/38 filtered:0
+2026-08-03T08:49:26.327007Z     info    delta   EDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:32 removed:0 size:8.9kB empty:0 cached:32/32 filtered:0
+2026-08-03T08:49:26.336404Z     info    delta   LDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:65 removed:0 size:145.7kB filtered:0
+2026-08-03T08:49:26.337225Z     info    delta   RDS: PUSH request for node:merchant-int-epay-merchant-integration-doc-68777d74bf-shjmb.int-frontend resources:26 removed:0 size:18.7kB cached:26/26 filtered:0
+[osuser@bastion ~]$ # Confirm the route truly isn't there (should return nothing = confirms missing route)
+[osuser@bastion ~]$ oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+>   curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
+>   | grep -i "api/integration"
+         "prefix": "/api/integration/v1",
+         "operation": "integration-integrationservice.int-integration.svc.cluster.local:9099/api/integration/v1*"
+[osuser@bastion ~]$ oc get vs integration-integrationservice -n int-integration -o yaml
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  annotations:
+    meta.helm.sh/release-name: integration
+    meta.helm.sh/release-namespace: int-integration
+  creationTimestamp: "2026-08-03T08:39:16Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: integration-integrationservice
+  namespace: int-integration
+  resourceVersion: "918873333"
+  uid: 603c88ab-064a-45e0-a595-c7a63dae41c1
+spec:
+  gateways:
+  - int-istio-system/int-gateway
+  hosts:
+  - integration.sbiepay.sbiuat.bank.in
+  http:
+  - match:
+    - uri:
+        prefix: /api/integration/v1
+    route:
+    - destination:
+        host: integration-integrationservice
+        port:
+          number: 9099
+[osuser@bastion ~]$ oc get gateway -A
+No resources found
+[osuser@bastion ~]$ oc get vs -n int-merchant -o yaml | grep -A3 gateways
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+    gateways:
+    - int-istio-system/int-gateway
+    hosts:
+    - integration.sbiepay.sbiuat.bank.in
+--
+    gateways:
+    - int-istio-system/int-gateway
+    hosts:
+    - integration.sbiepay.sbiuat.bank.in
+[osuser@bastion ~]$ oc get vs -n int-integration integration-integrationservice -o yaml | grep -A3 gateways
+Warning: short name "vs" could also match lower priority resource volumesnapshots.snapshot.storage.k8s.io
+  gateways:
+  - int-istio-system/int-gateway
+  hosts:
+  - integration.sbiepay.sbiuat.bank.in
