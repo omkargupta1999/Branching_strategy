@@ -1,778 +1,100 @@
-[osuser@bastion ~]$ GW=int-istio-gateway-77d47dbb5-gfvnc
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- \
->   curl -s localhost:15000/clusters | grep -i "9099"
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::observability_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local;
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::added_via_api::true
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::eds_service_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_connect_fail::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_total::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_error::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_success::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_timeout::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_total::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::hostname::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::health_flags::healthy
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::weight::1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::region::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::sub_zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::canary::false
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::priority::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::success_rate::-1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::local_origin_success_rate::-1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::observability_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local;
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::added_via_api::true
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::eds_service_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_connect_fail::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_error::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_success::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_timeout::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::hostname::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::health_flags::healthy
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::weight::1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::region::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::sub_zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::canary::false
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::priority::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::success_rate::-1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::local_origin_success_rate::-1
-[osuser@bastion ~]$ for GW in int-istio-gateway-77d47dbb5-gfvnc int-istio-gateway-77d47dbb5-rk5c5; do
->   echo "===== $GW ====="
->   oc exec -n int-istio-system $GW -- curl -s localhost:15000/clusters | grep -i 9099
-> done
-===== int-istio-gateway-77d47dbb5-gfvnc =====
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::observability_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local;
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::added_via_api::true
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::eds_service_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_connect_fail::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_total::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_error::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_success::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_timeout::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_total::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::hostname::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::health_flags::healthy
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::weight::1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::region::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::sub_zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::canary::false
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::priority::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::success_rate::-1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::local_origin_success_rate::-1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::observability_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local;
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::added_via_api::true
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::eds_service_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_connect_fail::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_error::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_success::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_timeout::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::hostname::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::health_flags::healthy
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::weight::1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::region::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::sub_zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::canary::false
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::priority::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::success_rate::-1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::local_origin_success_rate::-1
-===== int-istio-gateway-77d47dbb5-rk5c5 =====
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::observability_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local;
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::added_via_api::true
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::eds_service_name::outbound|9099||stubsservice.int-simulators.svc.cluster.local
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_connect_fail::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::cx_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_active::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_error::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_success::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_timeout::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::rq_total::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::hostname::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::health_flags::healthy
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::weight::1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::region::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::sub_zone::
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::canary::false
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::priority::0
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::success_rate::-1
-outbound|9099||stubsservice.int-simulators.svc.cluster.local::172.16.39.105:9099::local_origin_success_rate::-1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::observability_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local;
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_connections::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_pending_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_requests::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::default_priority::max_retries::4294967295
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_connections::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_pending_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_requests::1024
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::high_priority::max_retries::3
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::added_via_api::true
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::eds_service_name::outbound|9099||integration-integrationservice.int-integration.svc.cluster.local
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_connect_fail::15
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::cx_total::15
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_active::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_error::15
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_success::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_timeout::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::rq_total::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::hostname::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::health_flags::healthy
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::weight::1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::region::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::sub_zone::
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::canary::false
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::priority::0
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::success_rate::-1
-outbound|9099||integration-integrationservice.int-integration.svc.cluster.local::172.16.34.39:9099::local_origin_success_rate::-1
-[osuser@bastion ~]$ GW=int-istio-gateway-77d47dbb5-gfvnc
-[osuser@bastion ~]$
-[osuser@bastion ~]$ # your (broken) service
-[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- \
->   curl -s localhost:15000/config_dump?resource=dynamic_active_clusters \
->   | grep -iA30 "integration-integrationservice.int-integration"
-    "name": "outbound|9099||integration-integrationservice.int-integration.svc.cluster.local",
-    "type": "EDS",
-    "eds_cluster_config": {
-     "eds_config": {
-      "ads": {},
-      "initial_fetch_timeout": "0s",
-      "resource_api_version": "V3"
-     },
-     "service_name": "outbound|9099||integration-integrationservice.int-integration.svc.cluster.local"
-    },
-    "connect_timeout": "10s",
-    "lb_policy": "LEAST_REQUEST",
-    "circuit_breakers": {
-     "thresholds": [
-      {
-       "max_connections": 4294967295,
-       "max_pending_requests": 4294967295,
-       "max_requests": 4294967295,
-       "max_retries": 4294967295,
-       "track_remaining": true
-      }
-     ]
-    },
-    "metadata": {
-     "filter_metadata": {
-      "istio": {
-       "services": [
-        {
-         "name": "integration-integrationservice",
-         "host": "integration-integrationservice.int-integration.svc.cluster.local",
-         "namespace": "int-integration"
-        }
-       ]
-      }
-     }
-    },
-    "common_lb_config": {},
-    "alt_stat_name": "outbound|9099||integration-integrationservice.int-integration.svc.cluster.local;",
-    "filters": [
-     {
-      "name": "istio.metadata_exchange",
-      "typed_config": {
-       "@type": "type.googleapis.com/udpa.type.v1.TypedStruct",
-       "type_url": "type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange",
-       "value": {
-        "protocol": "istio-peer-exchange",
-        "enable_discovery": true
-       }
-      }
-     }
-    ],
-    "transport_socket_matches": [
-     {
-      "name": "tlsMode-istio",
-      "match": {
-       "tlsMode": "istio"
-      },
-      "transport_socket": {
-       "name": "envoy.transport_sockets.tls",
-       "typed_config": {
-        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
-        "common_tls_context": {
-         "tls_params": {
-          "tls_minimum_protocol_version": "TLSv1_2",
-          "tls_maximum_protocol_version": "TLSv1_3"
-         },
-         "alpn_protocols": [
-          "istio-peer-exchange",
---
-        "sni": "outbound_.9099_._.integration-integrationservice.int-integration.svc.cluster.local"
-       }
-      }
-     },
-     {
-      "name": "tlsMode-disabled",
-      "match": {},
-      "transport_socket": {
-       "name": "envoy.transport_sockets.raw_buffer",
-       "typed_config": {
-        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
-       }
-      }
-     }
-    ]
-   },
-   "last_updated": "2026-08-03T08:39:16.913Z"
-  },
-  {
-   "@type": "type.googleapis.com/envoy.admin.v3.ClustersConfigDump.DynamicCluster",
-   "cluster": {
-    "@type": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
-    "name": "outbound|9099||stubsservice.int-simulators.svc.cluster.local",
-    "type": "EDS",
-    "eds_cluster_config": {
-     "eds_config": {
-      "ads": {},
-      "initial_fetch_timeout": "0s",
-      "resource_api_version": "V3"
-     },
-     "service_name": "outbound|9099||stubsservice.int-simulators.svc.cluster.local"
-[osuser@bastion ~]$ GW=int-istio-gateway-77d47dbb5-gfvnc
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- \
->   curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
->   | grep -iB3 -A10 "integration.sbiepay"
-    "name": "http.8080",
-    "virtual_hosts": [
-     {
-      "name": "integration.sbiepay.sbiuat.bank.in:8080",
-      "domains": [
-       "integration.sbiepay.sbiuat.bank.in"
-      ],
-      "routes": [
-       {
-        "match": {
-         "prefix": "/api/merchant/v1",
-         "case_sensitive": true
-        },
-        "route": {
-         "cluster": "outbound|9093||merchant-merchantservice.int-merchant.svc.cluster.local",
-         "timeout": "0s",
-[osuser@bastion ~]$ oc exec -n int-integration integration-integrationservice-577c88dcd-8blbm -c istio-proxy -- \
->   curl -s localhost:15000/certs \
->   | grep -iE "valid_from|expiration_time|cert_chain"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-     "valid_from": "2024-11-26T14:29:55Z",
-     "expiration_time": "2034-11-24T14:29:55Z"
-   "cert_chain": [
-     "valid_from": "2026-08-03T08:17:16Z",
-     "expiration_time": "2026-08-04T08:19:16Z"
-[osuser@bastion ~]$ GW=int-istio-gateway-77d47dbb5-gfvnc
-[osuser@bastion ~]$
-[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- \
->   curl -s localhost:15000/server_info | grep -iE "state|version"
- "version": "cd66a55f9b42862ab16c6f54ed80f51c7596932e/1.32.11/3.0.6/RELEASE/OpenSSL",
- "state": "LIVE",
- "hot_restart_version": "disabled",
-  "local_address_ip_version": "v4",
-   "ISTIO_PROXY_VERSION": "1.24.6",
-   "ISTIO_VERSION": "1.24.6",
-  "user_agent_build_version": {
-   "version": {
-    "ssl.version": "OpenSSL",
-    "name": "envoy.matching.inputs.filter_state",
-     "envoy.extensions.matching.common_inputs.network.v3.FilterStateInput"
-    "name": "envoy.matching.inputs.filter_state",
-     "envoy.extensions.matching.common_inputs.network.v3.FilterStateInput"
-    "name": "envoy.http.stateful_session.cookie",
-    "category": "envoy.http.stateful_session",
-     "envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState"
-    "name": "envoy.http.stateful_session.header",
-    "category": "envoy.http.stateful_session",
-     "envoy.extensions.http.stateful_session.header.v3.HeaderBasedSessionState"
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "category": "filter_state.object",
-    "name": "envoy.http.stateful_header_formatters.preserve_case",
-    "category": "envoy.http.stateful_header_formatters",
-    "category": "envoy.http.stateful_header_formatters",
-    "name": "envoy.filters.network.set_filter_state",
-     "envoy.extensions.filters.network.set_filter_state.v3.Config"
-    "name": "envoy.filters.http.set_filter_state",
-     "envoy.extensions.filters.http.set_filter_state.v3.Config"
-    "name": "envoy.filters.http.stateful_session",
-     "envoy.extensions.filters.http.stateful_session.v3.StatefulSession",
-     "envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute"
-[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- \
->   curl -s localhost:15000/stats | grep -iE "cluster_manager.cds|cds.update_rejected|eds.update_rejected|update_failure"
-cluster_manager.cds.version_text: "2026-08-03T08:39:16Z/165"
-cluster.xds-grpc;.update_failure: 0
-cluster_manager.cds.init_fetch_timeout: 0
-cluster_manager.cds.update_attempt: 824
-cluster_manager.cds.update_failure: 335
-cluster_manager.cds.update_rejected: 0
-cluster_manager.cds.update_success: 488
-cluster_manager.cds.update_time: 1785746356913
-cluster_manager.cds.version: 1263363533101595796
+Found it. This is the root cause, and it's not TLS at all.
+
+## Root cause
+
+**The route for `/api/integration/v1` does not exist on the gateway.** The gateway's route config for `integration.sbiepay.sbiuat.bank.in:8080` contains only:
+
+```
+"prefix": "/api/merchant/v1"  →  merchant-merchantservice
+```
+
+There is **no route entry for `/api/integration/v1`**. That's why other context paths work and only this one fails. The cluster exists, the endpoint `172.16.34.39:9099` is `health_flags::healthy`, the pod's mTLS certs are valid — but with no matching route, the gateway never forwards to that healthy cluster. The earlier `CERTIFICATE_VERIFY_FAILED` was a red herring from a different/earlier state; the actual current failure is a missing route.
+
+## Why the route is missing — the real problem
+
+Look at the gateway stats:
+
+```
+cluster_manager.cds.update_attempt:  824
+cluster_manager.cds.update_success:  488
+cluster_manager.cds.update_failure:  335   ← istiod pushes are being REJECTED
 listener_manager.lds.update_failure: 335
-cluster_manager.cds.update_duration: P0(nan,0) P25(nan,1.0110481586402267) P50(nan,1.0456090651558074) P75(nan,1.0801699716713882) P90(nan,2.0123076923076924) P95(nan,3.014545454545454) P99(nan,7.056) P99.5(nan,8.078) P99.9(nan,56.512) P100(nan,57)
+```
+
+335 failed CDS/LDS updates means **istiod is trying to push new config to the gateway and the gateway is rejecting it.** Your VirtualService/Service were recreated at 08:39 (v6 Helm release). The new VirtualService that adds the `/api/integration/v1` route is part of a config push that the gateway won't accept — so the gateway is stuck on the last-good config that predates your integration route.
+
+The two gateway replicas are also **out of sync with each other** — `gfvnc` has the integration cluster, `rk5c5` shows different connection stats (`cx_connect_fail::15`) — classic symptom of partial/rejected config propagation across replicas.
+
+## Confirm the rejected-config cause (2 commands)
+
+```bash
+# What is istiod rejecting? This names the exact resource + reason
+oc logs -n int-istio-system istiod-int-istio-76d75c56b-ddrqc --tail=200 \
+  | grep -iE "rejected|NACK|error|integration|Envoy rejected|warn"
+```
+
+```bash
+# Confirm the route truly isn't there (should return nothing = confirms missing route)
+oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+  curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
+  | grep -i "api/integration"
+```
+
+The istiod log line will tell you *why* the push is NACK'd — most commonly a malformed VirtualService (bad host, duplicate match, a port/gateway ref that doesn't resolve) introduced in the v6 release.
+
+## Verify your VirtualService is actually correct
+
+```bash
+oc get vs integration-integrationservice -n int-integration -o yaml
+```
+
+Check three things:
+1. `spec.gateways` references the **exact** gateway the route is served by. Your VS says `int-istio-system/int-gateway` — but there is **no Gateway named `int-gateway`** (you confirmed `NotFound` earlier). The working merchant route is on gateway listener `http.8080`. **If your VS points at a non-existent Gateway, istiod can't bind the route — that's very likely the whole problem.**
+2. `spec.hosts` = `integration.sbiepay.sbiuat.bank.in` (correct).
+3. The http match prefix = `/api/integration/v1` (correct).
+
+Find the real gateway name the working routes use:
+
+```bash
+oc get gateway -A
+```
+
+Compare the Gateway name/namespace that merchant's VirtualService references versus what yours references:
+
+```bash
+oc get vs -n int-merchant -o yaml | grep -A3 gateways
+oc get vs -n int-integration integration-integrationservice -o yaml | grep -A3 gateways
+```
+
+## The fix
+
+**Most likely fix — wrong gateway reference in your VirtualService.** If merchant's VS points at (say) `int-istio-system/int-istio-gateway` but yours points at `int-istio-system/int-gateway` (which doesn't exist), istiod silently can't attach your route. Patch your VS to reference the correct Gateway:
+
+```bash
+# after confirming the correct name from the merchant VS
+oc patch vs integration-integrationservice -n int-integration --type=json \
+  -p='[{"op":"replace","path":"/spec/gateways/0","value":"int-istio-system/<correct-gateway-name>"}]'
+```
+
+Then confirm the route appears:
+
+```bash
+oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+  curl -s localhost:15000/config_dump?resource=dynamic_route_configs \
+  | grep -i "api/integration"
+```
+
+**If the VS is already correct but config is still rejected** (istiod log shows a NACK on some other resource): a single bad resource in the push can block the *entire* batch, including your good VS. Find and fix the rejected resource from the istiod log, or restart istiod to force a clean recompute:
+
+```bash
+oc rollout restart deploy/istiod-int-istio -n int-istio-system
+oc rollout status deploy/istiod-int-istio -n int-istio-system
+```
+
+After istiod is healthy, the `cds.update_failure` counter should stop climbing and both gateways should converge. Recheck the route.
+
+---
+
+**Summary of root cause:** Not a certificate problem. The gateway has no route for `/api/integration/v1` because istiod's config pushes are being rejected (335 CDS/LDS failures), so the VirtualService created in the 08:39 Helm release never took effect on the gateway. Prime suspect is your VirtualService referencing a Gateway name that doesn't exist (`int-gateway` returned NotFound), so the route can't bind. Fix the gateway reference (or the rejected resource), and the healthy cluster + endpoint will immediately start receiving traffic.
+
+Run the istiod log grep and the two `oc get vs ... gateways` comparisons — paste them and I'll give you the exact patch value.
