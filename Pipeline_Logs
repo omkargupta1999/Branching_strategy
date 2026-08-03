@@ -1,59 +1,105 @@
-The corrected Dockerfile is already generated and presented in my previous message — it's the `Dockerfile-epay-fortify-gradle` file. Let me display its full contents so you have it clearly.Here's the updated Dockerfile (also attached in my previous message as `Dockerfile-epay-fortify-gradle`):
+[osuser@bastion epay-build-java-gradle]$ vi Dockerfile
+[osuser@bastion epay-build-java-gradle]$ podman build --build-arg GRADLE_VERSION=9.4.1 \
+>   -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 .
+STEP 1/9: FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+STEP 2/9: LABEL maintainer="itepaypg-sbiepay2-devops@sbi.co.in"       image.name="epay-fortify-gradle"       image.version="1.1"       image.fortify.version="24.4"       image.gradle.version="9.4.1"       image.description="Fortify SCA 24.4 + Gradle 9.4.1 for build-integration SAST"       image.base="dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
+--> 03677dc0b03e
+STEP 3/9: ARG GRADLE_VERSION=9.4.1
+--> ba19ea0d8d12
+STEP 4/9: ENV GRADLE_HOME=/opt/gradle     PATH=/opt/gradle/bin:$PATH
+--> 038a81e627d9
+STEP 5/9: COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+--> d1d150c1307c
+STEP 6/9: USER root
+--> c18b08fc1fa4
+STEP 7/9: RUN set -eux &&     chmod +x /opt/gradle/bin/gradle &&     gradle --version &&     sourceanalyzer -version
+WARN[0006] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
++ chmod +x /opt/gradle/bin/gradle
++ gradle --version
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
 
-```dockerfile
-FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+Welcome to Gradle 9.4.1!
 
-LABEL maintainer="itepaypg-sbiepay2-devops@sbi.co.in" \
-      image.name="epay-fortify-gradle" \
-      image.version="1.1" \
-      image.fortify.version="24.4" \
-      image.gradle.version="9.4.1" \
-      image.description="Fortify SCA 24.4 + Gradle 9.4.1 for build-integration SAST" \
-      image.base="dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
+Here are the highlights of this release:
+ - Java 26 support
+ - Non-class-based JVM tests
+ - Enhanced console progress bar
 
-ARG GRADLE_VERSION=9.4.1
+For more details see https://docs.gradle.org/9.4.1/release-notes.html
 
-ENV GRADLE_HOME=/opt/gradle \
-    PATH=/opt/gradle/bin:$PATH
 
-COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+------------------------------------------------------------
+Gradle 9.4.1
+------------------------------------------------------------
 
-USER root
-RUN set -eux && \
-    chmod +x /opt/gradle/bin/gradle && \
-    gradle --version && \
-    sourceanalyzer -version
+Build time:    2026-03-19 08:46:28 UTC
+Revision:      2d6327017519d23b96af35865dc997fcb544fb40
 
-USER default
-WORKDIR /workspace
-```
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.10 (Oracle Corporation 21.0.10+8-LTS-217)
+Daemon JVM:    /usr/lib/jvm/jdk-21.0.10-oracle-x64 (no Daemon JVM specified, using current Java home)
+OS:            Linux 4.18.0-553.139.1.el8_10.x86_64 amd64
 
-## The one change that fixes your error
-
-`USER 1001` → `USER default`
-
-That's the whole fix. `USER 1001` couldn't write to `/home/default/.fortify/` where Fortify stores its session, so every file failed with `IOException: No such file or directory`. Running as `default` (the base image's own user) restores write access.
-
-## Build and push (tag 1.1)
-
-```bash
-unzip gradle-9.4.1-bin.zip          # if gradle-9.4.1/ not already extracted
-
-podman build --build-arg GRADLE_VERSION=9.4.1 \
-  -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 .
-
-podman tag artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 \
-           artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1
-
-podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1 --tls-verify=false
-```
-
-I used **tag `1.1`** deliberately — your runner's `if-not-present` pull policy would otherwise reuse the cached broken `1.0` layer. New tag forces a fresh pull. Remember to update the sast job image to `:1.1` to match.
-
-## One thing to verify while building
-
-If `podman build` fails at the `USER default` line with "user default not found," it means the base image uses a different user name. Quick check:
-```bash
-podman run --rm artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 whoami
-```
-Whatever that prints is the user to put in the `USER` line. The error path in your log (`/home/default/.fortify`) strongly indicates it's `default`, but that one command confirms it for certain.
++ sourceanalyzer -version
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Fortify Static Code Analyzer 24.4.0.0114 (using JRE 17.0.11)
+Modules:
+.NET Frontend 24.4.0.0114
+.NET and ASP.NET Translators 24.4.0.0114
+AngularJS Translator Utils 24.4.0.0114
+Apex Translator 24.4.0.0114
+C/C++ Translator (CTran) 24.4.0.0012
+Flight release_24.4.0!08319_95f4d1f5ca557+00127_9676a526c99e2
+Go Translator 24.4.0.0114 HEAD
+Kotlin Translator 24.4.0.0114
+Legacy Apex Translator 24.4.0.0114
+Legacy Translators 24.4.0.0114
+MSBuild Plugin 24.4.0.0114
+Modified Rhino 24.4.0.0114
+PHP Translator 24.4.0.0114
+Python Translator 24.4.0.0114
+SCA Backend 24.4.0.0114
+SCA Frontend 24.4.0.0114
+SCA Platform 24.4.0.0114
+--> 2102dc67cc56
+STEP 8/9: USER default
+--> 9d7773071149
+STEP 9/9: WORKDIR /workspace
+COMMIT artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1
+--> 87afd2e01758
+Successfully tagged artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1
+87afd2e017587c511e7a10fcfd539cdf41aba1ed0fee9f652497bfab809ee96b
+[osuser@bastion epay-build-java-gradle]$ podman tag artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 \
+>            artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1
+[osuser@bastion epay-build-java-gradle]$ podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1 --tls-verify=false
+Getting image source signatures
+Copying blob 2aa45a5d8db9 skipped: already exists
+Copying blob 5e9153c20efa skipped: already exists
+Copying blob 5f70bf18a086 skipped: already exists
+Copying blob 8e67f82a0d5a skipped: already exists
+Copying blob 587bca3f493a skipped: already exists
+Copying blob d1303c4c1fc0 skipped: already exists
+Copying blob 5f70bf18a086 skipped: already exists
+Copying blob 893d46f98939 skipped: already exists
+Copying blob ba441afe6772 skipped: already exists
+Copying blob d96cb8c6acc2 skipped: already exists
+Copying blob ee9c2b54304d skipped: already exists
+Copying blob 0cf1ec75e580 skipped: already exists
+Copying blob 859023a25d1d skipped: already exists
+Copying blob 515b9d13265c skipped: already exists
+Copying blob 7d2008f9bbb5 skipped: already exists
+Copying blob 4f6615498eff skipped: already exists
+Copying blob b7070bf0ec70 done   |
+Copying blob 57317087d9c0 done   |
+Copying blob ff135aad0829 skipped: already exists
+Copying blob 1533e55d0613 skipped: already exists
+Copying blob 44f3cc68a0e7 skipped: already exists
+Copying blob b0f0bf84bdb3 skipped: already exists
+Copying config 87afd2e017 done   |
+Writing manifest to image destination
+[osuser@bastion epay-build-java-gradle]$ podman run --rm artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 whoami
+WARN[0000] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+root
+[osuser@bastion epay-build-java-gradle]$
