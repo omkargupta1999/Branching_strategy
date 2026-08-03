@@ -1,64 +1,145 @@
-Good — having the Gradle zip on your bastion is exactly what you need for an air-gapped build. Let me first check your repo for the existing custom-image pattern you referenced earlier, so the Dockerfile matches your house style.There's already an `epay-fortify` and an `epay-build-java-gradle` Dockerfile. Let me read both — the fortify one is what you'd extend, and the gradle one shows exactly how your team installs Gradle in air-gapped mode.This is your exact pattern — I'll extend it. Now let me see how `epay-build-java-gradle` installs Gradle from a zip (to match your air-gapped Gradle install method precisely).I have both patterns exactly. Now I can build the combined Dockerfile — Fortify (from `epay-fortify`) + Gradle (from `epay-build-java-gradle`), matching your air-gapped house style precisely.Here's the Dockerfile. The key design choice: **it builds `FROM` your existing working Fortify image and adds only Gradle** — so you inherit the sourceanalyzer, JDK 21, BIRTReportGenerator, FPRUtility, and the SBI CA trust that already work, and change nothing else.
+please verify the below configuration which i did:
 
-## What it does
 
-```dockerfile
-FROM .../ubi9-java21-fortify-24.4:2.0     # your working Fortify image
+[osuser@bastion epay-build-java-gradle]$ podman build --build-arg GRADLE_VERSION=9.4.1 \
+>   -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0 .
+STEP 1/8: FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+STEP 2/8: LABEL maintainer="devops.sbiepay@sbi.co.in"       image.name="epay-build-java-gradle"       image.version="1.0.0"       image.gradle.version="9.4.1"       image.description="Java CI build: OPENJDK 21 + Gradle 9.4.1"       image.base="ubi9/ubi9-java21-fortify-24.4:2.0"
+--> 90ec58771fde
+STEP 3/8: ARG GRADLE_VERSION=9.4.1
+--> f95c0bb62bb2
+STEP 4/8: ENV GRADLE_HOME=/opt/gradle     PATH=/opt/gradle/bin:$PATH
+--> ad7c89b3f86b
+STEP 5/8: COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+--> d4b85ade481f
+STEP 6/8: RUN chmod +x /opt/gradle/bin/gradle && gradle --version && sourceanalyzer -version
+WARN[0008] Failed to mount subscriptions, skipping entry in /usr/share/containers/mounts.conf: getting host subscription data: failed to read subscriptions from "/usr/share/rhel/secrets": open /usr/share/rhel/secrets/redhat.repo: permission denied
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+
+Welcome to Gradle 9.4.1!
+
+Here are the highlights of this release:
+ - Java 26 support
+ - Non-class-based JVM tests
+ - Enhanced console progress bar
+
+For more details see https://docs.gradle.org/9.4.1/release-notes.html
+
+
+------------------------------------------------------------
+Gradle 9.4.1
+------------------------------------------------------------
+
+Build time:    2026-03-19 08:46:28 UTC
+Revision:      2d6327017519d23b96af35865dc997fcb544fb40
+
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.10 (Oracle Corporation 21.0.10+8-LTS-217)
+Daemon JVM:    /usr/lib/jvm/jdk-21.0.10-oracle-x64 (no Daemon JVM specified, using current Java home)
+OS:            Linux 4.18.0-553.139.1.el8_10.x86_64 amd64
+
+Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
+Fortify Static Code Analyzer 24.4.0.0114 (using JRE 17.0.11)
+Modules:
+.NET Frontend 24.4.0.0114
+.NET and ASP.NET Translators 24.4.0.0114
+AngularJS Translator Utils 24.4.0.0114
+Apex Translator 24.4.0.0114
+C/C++ Translator (CTran) 24.4.0.0012
+Flight release_24.4.0!08319_95f4d1f5ca557+00127_9676a526c99e2
+Go Translator 24.4.0.0114 HEAD
+Kotlin Translator 24.4.0.0114
+Legacy Apex Translator 24.4.0.0114
+Legacy Translators 24.4.0.0114
+MSBuild Plugin 24.4.0.0114
+Modified Rhino 24.4.0.0114
+PHP Translator 24.4.0.0114
+Python Translator 24.4.0.0114
+SCA Backend 24.4.0.0114
+SCA Frontend 24.4.0.0114
+SCA Platform 24.4.0.0114
+--> e682af5dc287
+STEP 7/8: WORKDIR /workspace
+--> d5d5289ee3b9
+STEP 8/8: USER 1001
+COMMIT artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
+--> b79cec7aa5f4
+Successfully tagged artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
+b79cec7aa5f451f49a37920c467dd179e1c72fb264dff731ed84a9a9ac98d27e
+
+
+
+[osuser@bastion epay-build-java-gradle]$ podman tag artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0 artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0
+
+[osuser@bastion epay-build-java-gradle]$ podman push  artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0 --tls-verify=false
+Getting image source signatures
+Copying blob 5e9153c20efa skipped: already exists
+Copying blob 5f70bf18a086 skipped: already exists
+Copying blob 7d2008f9bbb5 skipped: already exists
+Copying blob 587bca3f493a skipped: already exists
+Copying blob 893d46f98939 skipped: already exists
+Copying blob d96cb8c6acc2 skipped: already exists
+Copying blob 5f70bf18a086 skipped: already exists
+Copying blob 2aa45a5d8db9 skipped: already exists
+Copying blob ee9c2b54304d skipped: already exists
+Copying blob 0cf1ec75e580 skipped: already exists
+Copying blob 44f3cc68a0e7 skipped: already exists
+Copying blob 515b9d13265c skipped: already exists
+Copying blob 1533e55d0613 skipped: already exists
+Copying blob d1303c4c1fc0 skipped: already exists
+Copying blob ff135aad0829 skipped: already exists
+Copying blob 8bf45af84494 done   |
+Copying blob 4f6615498eff skipped: already exists
+Copying blob e26176de627a done   |
+Copying blob b0f0bf84bdb3 skipped: already exists
+Copying blob ba441afe6772 skipped: already exists
+Copying blob 859023a25d1d skipped: already exists
+Copying blob 8e67f82a0d5a skipped: already exists
+Copying config b79cec7aa5 done   |
+Writing manifest to image destination
+
+
+[osuser@bastion epay-build-java-gradle]$ cat Dockerfile
+# =============================================================================
+# epay-build-java-gradle:1.0.0
+# =============================================================================
+# Purpose : JDK 21 + Gradle 9.4.1
+#           Used by: Java build, test, publish stages
+# Base    : ubi9/openjdk-21 (via JFrog proxy)
+#
+# Pre-download on internet machine, extract on bastion BEFORE docker build:
+# Link to download : https://services.gradle.org/distributions/gradle-9.4.1-bin.zip ( binary only)
+#   gradle-9.x.x-bin.zip → unzip → gradle-9.x.x/ folder
+#   jfrog-chain.crt → will be added in runtime in Gitlab CI to avoid re-generation of dockerfile on jfrog certficate change
+
+FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+
+LABEL maintainer="devops.sbiepay@sbi.co.in" \
+      image.name="epay-build-java-gradle" \
+      image.version="1.0.0" \
+      image.gradle.version="9.4.1" \
+      image.description="Java CI build: OPENJDK 21 + Gradle 9.4.1" \
+      image.base="ubi9/ubi9-java21-fortify-24.4:2.0"
+
 ARG GRADLE_VERSION=9.4.1
-ENV PATH=/opt/gradle/bin:$PATH            # so `command -v gradle` succeeds
-COPY gradle-${GRADLE_VERSION}/ /opt/gradle/   # your pre-extracted zip
+
+ENV GRADLE_HOME=/opt/gradle \
+    PATH=/opt/gradle/bin:$PATH
+
+# Gradle pre-extracted on bastion: unzip gradle-9.x.x-bin.zip → gradle-9.x.x/
+COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+
 RUN chmod +x /opt/gradle/bin/gradle && gradle --version && sourceanalyzer -version
+
+WORKDIR /workspace
+
+# Non-root user for OpenShift/Kubernetes security
 USER 1001
-```
+[osuser@bastion epay-build-java-gradle]$
 
-That `PATH` line is the whole point — it's what makes your sast job's `command -v gradle` check pass, which flips the translation from **glob** (what you saw) to **build-integration** (full dataflow coverage).
 
-## Build steps on your bastion
+================================
 
-Your Gradle zip needs to be **extracted** first (air-gapped rule: no unzip inside the container, matching your `epay-build-java-gradle` pattern):
 
-```bash
-# 1. Extract the zip you already have
-unzip gradle-9.4.1-bin.zip          # → produces folder gradle-9.4.1/
-
-# 2. Build context must contain:
-#    Dockerfile
-#    gradle-9.4.1/
-
-# 3. Build
-podman build --build-arg GRADLE_VERSION=9.4.1 \
-  -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0 .
-
-# 4. Push
-podman push artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
-```
-
-Adjust `9.4.1` to whatever your zip version actually is.
-
-## Then one line in your sast YAML
-
-Change the image in `.sast_fortify`:
-
-```yaml
-.sast_fortify:
-  image: artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.0
-```
-
-Your script needs **no other changes** — it already has the build-integration logic (`if command -v gradle ... sourceanalyzer ... gradle compileJava`); it just never fired because gradle was missing. Now it will.
-
-## Two things to verify after the first run
-
-**1. Confirm the mode flipped.** In the new run's log, look for:
-```
-gradle:         /opt/gradle/bin/gradle     ← was MISSING
-TRANSLATE_MODE=build-integration           ← was glob
-```
-If you see those, you've got full dataflow scanning.
-
-**2. Expect more findings.** Build-integration sees dataflow (SQLi, XSS, deserialization) that glob couldn't. Your current 6 high/critical could rise. Since your gate is `allow_failure: true` right now, that won't block the pipeline — but review the new findings before you ever flip the gate to blocking, or you'll suddenly enforce a much stricter bar.
-
-## Two honest caveats
-
-**The base image user.** I set `USER 1001` (the DSO Fortify image runs non-root at uid 1001, matching your `epay-fortify` pattern). If that base image happens to use a different uid, the build's final `USER 1001` might mismatch — the `gradle --version` validation runs as root so it'll still build, but if the CI job later can't read `/opt/gradle`, change `USER 1001` to whatever `id` the base image uses. Quick check: `podman run --rm .../ubi9-java21-fortify-24.4:2.0 id`.
-
-**Gradle needs JFrog access at scan time, not build time.** When build-integration runs `gradle compileJava`, Gradle will resolve dependencies from your JFrog virtual repo — which your sast job *already* handles (the init-script + `JFROG_GRADLE_REPO` + cert logic is all there). So the pieces line up. Just confirm the first real run resolves dependencies cleanly; if it hits a TLS error, that's the cert path in the job, not the image.
