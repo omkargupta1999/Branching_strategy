@@ -1,23 +1,46 @@
-[osuser@bastion ~]$ oc logs -n int-istio-system -l istio=int-istio-gateway -f --tail=5
-[2026-08-03T09:10:05.161Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 207 696 38 37 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.6.2" "-" "fa24543b-2f39-41ef-9a6c-e6f6592c982e" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.6.2:44582 - -
-[2026-08-03T09:10:06.259Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 2 324 31 30 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.6.2" "-" "296db4ff-c8fc-4d6e-a0ab-b0bce4446c1b" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:42990 172.16.34.5:8080 172.16.6.2:44588 - -
-[2026-08-03T09:10:06.318Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 207 696 39 39 "61.14.206.144, 10.189.49.251,10.177.142.145,172.16.6.2" "-" "936b49d4-0c4b-4fe4-9da9-283c512bc9d8" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:42990 172.16.34.5:8080 172.16.6.2:44588 - -
-[2026-08-03T09:10:24.551Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 23 23 "174.141.238.60, 10.189.49.251,10.177.142.145,172.16.10.2" "python-requests/2.31.0" "79c12a5f-4b51-4f2a-a730-57f4101dfc3b" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.10.2:60716 - -
-[2026-08-03T09:10:24.693Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 148 300 32 32 "174.141.238.60, 10.189.49.251,10.177.142.145,172.16.10.2" "python-requests/2.31.0" "b023d15b-27d9-4a26-b1ed-37776eaf4f32" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:46418 172.16.34.5:8080 172.16.10.2:60732 - -
-[2026-08-03T09:10:23.541Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 144 300 32 32 "174.141.238.60, 10.189.49.251,10.177.142.145,172.16.10.2" "python-requests/2.31.0" "80ce1b68-bed9-4ed7-90bc-bdb8e87720cd" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:40102 172.16.32.20:8080 172.16.10.2:37154 - -
-[2026-08-03T09:10:23.969Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 22 22 "174.141.238.60, 10.189.49.251,10.177.142.145,172.16.6.2" "python-requests/2.31.0" "e9541d7b-da12-4e59-b808-5b002972e911" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:40102 172.16.32.20:8080 172.16.6.2:41998 - -
-[2026-08-03T09:10:24.099Z] "POST /api/transaction/v1/order/status HTTP/1.1" 200 - via_upstream - "-" 144 300 35 35 "174.141.238.60, 10.189.49.251,10.177.142.145,172.16.12.2" "python-requests/2.31.0" "988b15fb-49cb-44e2-9ff9-8db5a7e039d7" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:34970 172.16.32.20:8080 172.16.12.2:59182 - -
-[2026-08-03T09:10:52.523Z] "GET /api/admin/v1 HTTP/1.1" 302 - via_upstream - "-" 0 0 15 14 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "daa41451-fbbe-41fc-be18-95fd5f3d8d61" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58394 172.16.32.20:8080 172.16.12.2:39878 - -
-[2026-08-03T09:10:52.638Z] "GET /api/admin/v1/ HTTP/1.1" 202 - via_upstream - "-" 0 94 28 27 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "51d6e7e4-8a05-4ad5-af72-899603909172" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58400 172.16.32.20:8080 172.16.12.2:39892 - -
+[osuser@bastion ~]$ oc describe ns int-admin
+Name:         int-admin
+Labels:       dynatrace.com/inject=true
+              env=uat
+              istio-discovery=int-istio
+              istio.io/rev=int-istio
+              kubernetes.io/metadata.name=int-admin
+              pod-security.kubernetes.io/audit=restricted
+              pod-security.kubernetes.io/audit-version=latest
+              pod-security.kubernetes.io/warn=restricted
+              pod-security.kubernetes.io/warn-version=latest
+Annotations:  openshift.io/node-selector: env=int
+              openshift.io/requester: vishnu
+              openshift.io/sa.scc.mcs: s0:c41,c15
+              openshift.io/sa.scc.supplemental-groups: 1001670000/10000
+              openshift.io/sa.scc.uid-range: 1001670000/10000
+              security.openshift.io/MinimallySufficientPodSecurityStandard: restricted
+Status:       Active
 
+No resource quota.
 
+No LimitRange resource.
+[osuser@bastion ~]$ oc describe ns int-integration
+Name:         int-integration
+Labels:       env=uat
+              istio-discovery=int-istio
+              istio.io/rev=int-istio
+              kubernetes.io/metadata.name=int-integration
+              pod-security.kubernetes.io/audit=restricted
+              pod-security.kubernetes.io/audit-version=latest
+              pod-security.kubernetes.io/warn=restricted
+              pod-security.kubernetes.io/warn-version=latest
+Annotations:  openshift.io/description:
+              openshift.io/display-name:
+              openshift.io/node-selector: env=int
+              openshift.io/requester: ocpadmin
+              openshift.io/sa.scc.mcs: s0:c28,c22
+              openshift.io/sa.scc.supplemental-groups: 1000800000/10000
+              openshift.io/sa.scc.uid-range: 1000800000/10000
+              security.openshift.io/MinimallySufficientPodSecurityStandard: restricted
+Status:       Active
 
+No resource quota.
 
-[2026-08-03T09:11:06.514Z] "GET /api/admin/v1/ HTTP/1.1" 202 - via_upstream - "-" 0 94 6 6 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "68e43b37-baec-405e-bca1-217ef59af129" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58400 172.16.32.20:8080 172.16.12.2:39892 - -
-[2026-08-03T09:11:09.612Z] "GET /api/admin/v1/ HTTP/1.1" 202 - via_upstream - "-" 0 94 3 3 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "d31fadd6-7233-49fa-a613-13c58a85f51c" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58400 172.16.32.20:8080 172.16.12.2:39892 - -
-[2026-08-03T09:11:11.321Z] "GET /api/admin/v1/ HTTP/1.1" 202 - via_upstream - "-" 0 94 3 3 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "1e0beaab-11e7-4148-bd6c-d2f08679c412" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58400 172.16.32.20:8080 172.16.12.2:39892 - -
-[2026-08-03T09:11:15.653Z] "GET /api/admin/v1/ HTTP/1.1" 202 - via_upstream - "-" 0 94 2 2 "10.191.191.196, 10.189.49.251,10.177.142.145,172.16.12.2" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36" "f194e4dc-e5fb-482a-90e7-45e6146d8274" "integration.sbiepay.sbiuat.bank.in" "172.16.32.41:9094" outbound|9094||admin-adminservice.int-admin.svc.cluster.local 172.16.32.20:58400 172.16.32.20:8080 172.16.12.2:39892 - -
-[2026-08-03T09:11:17.701Z] "POST /api/transaction/v1/token/access HTTP/1.1" 200 - via_upstream - "-" 0 324 50 50 "164.100.192.184, 10.189.49.251,10.177.142.145,172.16.10.2" "-" "fb286db1-60cd-4023-a5a6-e394ae462273" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.32.20:40102 172.16.32.20:8080 172.16.10.2:53874 - -
-[2026-08-03T09:11:18.140Z] "POST /api/transaction/v1/order/create HTTP/1.1" 200 - via_upstream - "-" 563 1460 134 134 "164.100.192.184, 10.189.49.251,10.177.142.145,172.16.12.2" "-" "de29f5e2-8a56-43b8-8360-9929bb720dc6" "integration.sbiepay.sbiuat.bank.in" "172.16.39.99:9092" outbound|9092||txn-transactionservice.int-transaction.svc.cluster.local 172.16.34.5:42990 172.16.34.5:8080 172.16.12.2:59540 - -
-^C
+No LimitRange resource.
 [osuser@bastion ~]$
