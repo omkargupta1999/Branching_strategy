@@ -1,212 +1,59 @@
-unning with gitlab-runner 19.0.2 (02fcb2d7)
-  on dc_runner_80 KtJCK3d-w, system ID: s_37748334dac5
-Resolving secrets
-Preparing the "docker" executor
-00:01
-Using Docker executor with image artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0
-Using locally found image version due to "if-not-present" pull policy
-Using docker image sha256:81750f3c2e563f5f5e8a22d895a5a32449b722ff1708375d7d500bb5e8324daa for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle@sha256:81750f3c2e563f5f5e8a22d895a5a32449b722ff1708375d7d500bb5e8324daa ...
-Preparing environment
-00:02
-Using helper image:  artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.0.2 )
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2
-Using docker image sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 for artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper:x86_64-v19.0.2 with digest artifactory.jfrog.sbi:443/dso-base-image/gitlab/gitlab-runner-helper@sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682 ...
-Using effective pull policy of [if-not-present] for container sha256:660e3634504b66e0ae3ad165131d9fc3fd05b2ac31ebf332b7fa8d93f4ed9682
-Running on runner-ktjck3d-w-project-3102-concurrent-0 via PE3DSOPGRUNNERS6...
-Getting source from Git repository
-00:08
-Gitaly correlation ID: 01KZ3MT491NTZMSSFMX4X72FM1
-Fetching changes with git depth set to 20...
-Initialized empty Git repository in /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/.git/
-Created fresh repository.
-Checking out 3b67fd8e as detached HEAD (ref is bugfix/EPAY-000-test)...
-Skipping Git submodules setup
-Downloading artifacts
-00:09
-Downloading artifacts for build (1350878)...
-Downloading artifacts from coordinator... ok        correlation_id=01KZ3MTKRFZWSJRXX21RAFS924 id=1350878 status=200 token=eyJraWQiO
-Downloading artifacts for test (1350879)...
-Downloading artifacts from coordinator... ok        correlation_id=01KZ3MTQBRTZPQHWQ8KBC2DX7R id=1350879 status=200 token=eyJraWQiO
-Executing "step_script" stage of the job script
-00:40
-Using effective pull policy of [if-not-present] for container artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0
-Using docker image sha256:81750f3c2e563f5f5e8a22d895a5a32449b722ff1708375d7d500bb5e8324daa for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle@sha256:81750f3c2e563f5f5e8a22d895a5a32449b722ff1708375d7d500bb5e8324daa ...
-$ java -version
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
-java version "21.0.10" 2026-01-20 LTS
-Java(TM) SE Runtime Environment (build 21.0.10+8-LTS-217)
-Java HotSpot(TM) 64-Bit Server VM (build 21.0.10+8-LTS-217, mixed mode, sharing)
-$ echo "sourceanalyzer: $(command -v sourceanalyzer || echo MISSING)"
-sourceanalyzer: /opt/Fortify/bin/sourceanalyzer
-$ echo "FPRUtility:     $(command -v FPRUtility || echo MISSING)"
-FPRUtility:     /opt/Fortify/bin/FPRUtility
-$ echo "gradle:         $(command -v gradle || echo MISSING)"
-gradle:         /opt/gradle/bin/gradle
-$ CERT_FILE="" # collapsed multi-line command
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
-Certificate was added to keystore
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
-jfrog-internal, Aug 3, 2026, trustedCertEntry, 
-Certificate fingerprint (SHA-256): 95:A7:28:EE:11:00:19:F7:94:F4:B5:F7:98:0A:D5:C6:17:5D:8A:6B:F6:97:46:8E:00:CC:CB:D2:56:35:5E:66
-Truststore configured: /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom
-$ if command -v gradle >/dev/null 2>&1; then # collapsed multi-line command
-Gradle init script written to /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/.gradle/init.d/
-$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -clean
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-$ TRANSLATE_MODE="glob" # collapsed multi-line command
-Attempting build-integration translation via Gradle
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-/usr/bin/bash: line 312: [: 0
-0: integer expression expected
-Build-integration captured 0
-0 .java files in the session
-WARN: build-integration session is EMPTY (0 files) — falling back to glob
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-Using glob translation (no classpath — dataflow coverage reduced)
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/EpayAdminPortalServiceApplication.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/actuator/MasterDataController.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/client/ApiClient.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/APIConfig.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/AdminPortalConfig.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/CaptchaConfig.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/CorsConfig.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/JacksonConfig.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: Unexpected exception while parsing file /builds/itepaypg-sbiepay2/application/backend/epay_test_backend/src/main/java/com/epay/admin/portal/config/S3Config.java
-java.io.IOException: No such file or directory
-	at java.base/java.io.UnixFileSystem.createFileExclusively(Native Method) ~[?:?]
-	at java.base/java.io.File.createNewFile(File.java:1043) ~[?:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.getCopiedFileName(JavaFrontEnd.java:912) ~[fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.copySourceAndGenerateLombok(JavaFrontEnd.java:859) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runParseTranslate(JavaFrontEnd.java:810) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.ParsingFrontEnd.runParseTranslateResolve(ParsingFrontEnd.java:191) [sca-platform-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.translateJavaFiles(JavaFrontEnd.java:711) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.javaJSP.JavaFrontEnd.runTranslator(JavaFrontEnd.java:350) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runSingleFrontEnd(FrontEndSession.java:339) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.frontend.FrontEndSession.runFrontEnd(FrontEndSession.java:191) [fortify-sca-24.4.0.0114.jar:?]
-	at com.fortify.sca.Main$Sourceanalyzer.run(Main.java:526) [fortify-sca-24.4.0.0114.jar:?]
-[error]: An error was encountered while writing to file /home/default/.fortify/sca24.4/build/itepaypg-sbiepay2-application-backend-epay-test-backend.scasession
-[error]: An error was encountered while writing to file /home/default/.fortify/sca24.4/build/itepaypg-sbiepay2-application-backend-epay-test-backend.scasession.increment
-Files staged for scan: 0
-0
-/usr/bin/bash: line 333: [: 0
-0: integer expression expected
-TRANSLATE_MODE=glob
-$ sourceanalyzer -b "$FORTIFY_BUILD_ID" -scan -Xmx${FORTIFY_MEM} -f "${CI_PROJECT_PATH_SLUG}.fpr"
-Picked up JAVA_TOOL_OPTIONS: -Djava.awt.headless=true -Djavax.net.ssl.trustStore=/builds/itepaypg-sbiepay2/application/backend/epay_test_backend/cacerts-custom -Djavax.net.ssl.trustStorePassword=changeit
-[error]: Unable to load build session with ID "itepaypg-sbiepay2-application-backend-epay-test-backend". See log file for more details.
-Uploading artifacts for failed job
-00:02
-Uploading artifacts...
-WARNING: itepaypg-sbiepay2-application-backend-epay-test-backend.fpr: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_test_backend) 
-WARNING: itepaypg-sbiepay2-application-backend-epay-test-backend_report.pdf: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_test_backend) 
-WARNING: sca_gate.txt: no matching files. Ensure that the artifact path is relative to the working directory (/builds/itepaypg-sbiepay2/application/backend/epay_test_backend) 
-translate.mode: found 1 matching artifact files and directories 
-Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=01KZ3MW0K7TDCVRPZ6DZXZMHWA id=1350880 status=201 token=eyJraWQiO
-Cleaning up project directory and file based variables
-00:01
-ERROR: Job failed: exit code 1
+The corrected Dockerfile is already generated and presented in my previous message — it's the `Dockerfile-epay-fortify-gradle` file. Let me display its full contents so you have it clearly.Here's the updated Dockerfile (also attached in my previous message as `Dockerfile-epay-fortify-gradle`):
+
+```dockerfile
+FROM artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0
+
+LABEL maintainer="itepaypg-sbiepay2-devops@sbi.co.in" \
+      image.name="epay-fortify-gradle" \
+      image.version="1.1" \
+      image.fortify.version="24.4" \
+      image.gradle.version="9.4.1" \
+      image.description="Fortify SCA 24.4 + Gradle 9.4.1 for build-integration SAST" \
+      image.base="dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0"
+
+ARG GRADLE_VERSION=9.4.1
+
+ENV GRADLE_HOME=/opt/gradle \
+    PATH=/opt/gradle/bin:$PATH
+
+COPY gradle-${GRADLE_VERSION}/ /opt/gradle/
+
+USER root
+RUN set -eux && \
+    chmod +x /opt/gradle/bin/gradle && \
+    gradle --version && \
+    sourceanalyzer -version
+
+USER default
+WORKDIR /workspace
+```
+
+## The one change that fixes your error
+
+`USER 1001` → `USER default`
+
+That's the whole fix. `USER 1001` couldn't write to `/home/default/.fortify/` where Fortify stores its session, so every file failed with `IOException: No such file or directory`. Running as `default` (the base image's own user) restores write access.
+
+## Build and push (tag 1.1)
+
+```bash
+unzip gradle-9.4.1-bin.zip          # if gradle-9.4.1/ not already extracted
+
+podman build --build-arg GRADLE_VERSION=9.4.1 \
+  -t artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 .
+
+podman tag artifactory.jfrog.sbi:443/dso-docker-base-images/epay-fortify-gradle:1.1 \
+           artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1
+
+podman push artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/sast/epay-fortify-gradle:1.1 --tls-verify=false
+```
+
+I used **tag `1.1`** deliberately — your runner's `if-not-present` pull policy would otherwise reuse the cached broken `1.0` layer. New tag forces a fresh pull. Remember to update the sast job image to `:1.1` to match.
+
+## One thing to verify while building
+
+If `podman build` fails at the `USER default` line with "user default not found," it means the base image uses a different user name. Quick check:
+```bash
+podman run --rm artifactory.jfrog.sbi:443/dso-base-image/ubi9/ubi9-java21-fortify-24.4:2.0 whoami
+```
+Whatever that prints is the user to put in the `USER` line. The error path in your log (`/home/default/.fortify`) strongly indicates it's `default`, but that one command confirms it for certain.
