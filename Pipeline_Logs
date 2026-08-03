@@ -1,79 +1,350 @@
-This is a genuinely useful comparison, and it disproves my port-name theory before you spent a change window on it. Good instinct sharing this first.
+here is the output :
 
-## The difference
+[osuser@bastion ~]$ # 1. Port definitions — the thing recreated at 08:39. Compare all three.
+[osuser@bastion ~]$ echo "=== integration (broken) ==="
+=== integration (broken) ===
+[osuser@bastion ~]$ oc get svc integration-integrationservice -n int-integration -o jsonpath='{.spec.ports[*]}{"\n"}'
+{"name":"9099-tcp","port":9099,"protocol":"TCP","targetPort":9099}
+[osuser@bastion ~]$ echo "=== admin (working) ==="
+=== admin (working) ===
+[osuser@bastion ~]$ oc get svc admin-adminservice -n int-admin -o jsonpath='{.spec.ports[*]}{"\n"}'
+{"name":"9094-tcp","port":9094,"protocol":"TCP","targetPort":9094}
+[osuser@bastion ~]$ echo "=== transaction (working) ==="
+=== transaction (working) ===
+[osuser@bastion ~]$ oc get svc txn-transactionservice -n int-transaction -o jsonpath='{.spec.ports[*]}{"\n"}'
+{"name":"9092-tcp","port":9092,"protocol":"TCP","targetPort":9092}
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ # 2. PeerAuthentication — is mTLS mode different for integration vs working ns?
+[osuser@bastion ~]$ echo "=== integration ==="; oc get peerauthentication -n int-integration -o yaml 2>/dev/null | grep -iE "name:|mode:"
+=== integration ===
+[osuser@bastion ~]$ echo "=== admin ==="; oc get peerauthentication -n int-admin -o yaml 2>/dev/null | grep -iE "name:|mode:"
+=== admin ===
+[osuser@bastion ~]$ echo "=== transaction ==="; oc get peerauthentication -n int-transaction -o yaml 2>/dev/null | grep -iE "name:|mode:"
+=== transaction ===
+[osuser@bastion ~]$ echo "=== mesh-wide (istio-system) ==="; oc get peerauthentication -n int-istio-system -o yaml 2>/dev/null | grep -iE "name:|mode:"
+=== mesh-wide (istio-system) ===
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$
+[osuser@bastion ~]$ GW=int-istio-gateway-77d47dbb5-gfvnc
+[osuser@bastion ~]$ echo "=== integration cluster transport ==="
+=== integration cluster transport ===
+[osuser@bastion ~]$ oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+>   | grep -A2 -iE "integration-integrationservice.*cluster.local\"" | head; \
+> oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+>   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(c['cluster']['name'], '->', [m['name'] for m in c['cluster'].get('transport_socket_matches',[{'name':'NONE'}])]) for c in d['configs'] if 'integration-integrationservice' in c['cluster']['name'] or 'admin-adminservice' in c['cluster']['name']]" 2>/dev/null
+    "name": "outbound|9099||integration-integrationservice.int-integration.svc.cluster.local",
+    "type": "EDS",
+    "eds_cluster_config": {
+--
+     "service_name": "outbound|9099||integration-integrationservice.int-integration.svc.cluster.local"
+    },
+    "connect_timeout": "10s",
+--
+         "host": "integration-integrationservice.int-integration.svc.cluster.local",
+         "namespace": "int-integration"
+outbound|9094||admin-adminservice.int-admin.svc.cluster.local -> ['tlsMode-istio', 'tlsMode-disabled']
+outbound|9099||integration-integrationservice.int-integration.svc.cluster.local -> ['tlsMode-istio', 'tlsMode-disabled']
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
+>   curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
+>   | grep -iE "adminservice.int-admin.*cluster.local\"|transport_socket_matches|tlsMode-|raw_buffer" | head -40
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+    "transport_socket_matches": [
+      "name": "tlsMode-istio",
+      "name": "tlsMode-disabled",
+       "name": "envoy.transport_sockets.raw_buffer",
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer"
+[osuser@bastion ~]$ oc rollout restart deploy/integration-integrationservice -n int-integration
+deployment.apps/integration-integrationservice restarted
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc get po -n int-integration
+NAME                                              READY   STATUS    RESTARTS   AGE
+integration-integrationservice-6bfcb47594-dspm6   2/2     Running   0          113s
+[osuser@bastion ~]$
+[osuser@bastion ~]$ oc logs -f integration-integrationservice-6bfcb47594-dspm6 -n int-integration
+09:18:47,446 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.5.22
+09:18:47,449 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - Here is a list of configurators discovered as a service, by rank:
+09:18:47,449 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc -   org.springframework.boot.logging.logback.RootLogLevelConfigurator
+09:18:47,449 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - They will be invoked in order until ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY is returned.
+09:18:47,449 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - Constructed configurator of type class org.springframework.boot.logging.logback.RootLogLevelConfigurator
+09:18:47,456 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - org.springframework.boot.logging.logback.RootLogLevelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+09:18:47,456 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:18:47,457 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:18:47,458 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+09:18:47,459 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:nested:/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar/!BOOT-INF/classes/!/logback.xml]
+09:18:47,460 |-WARN in ch.qos.logback.classic.util.DefaultJoranConfigurator@6150c3ec - Resource [logback.xml] occurs multiple times on the classpath.
+09:18:47,461 |-WARN in ch.qos.logback.classic.util.DefaultJoranConfigurator@6150c3ec - Resource [logback.xml] occurs at [jar:nested:/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar/!BOOT-INF/lib/logging-service-0.1.0.jar!/logback.xml]
+09:18:47,461 |-WARN in ch.qos.logback.classic.util.DefaultJoranConfigurator@6150c3ec - Resource [logback.xml] occurs at [jar:nested:/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar/!BOOT-INF/classes/!/logback.xml]
+09:18:47,473 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@44c03695 - URL [jar:nested:/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar/!BOOT-INF/classes/!/logback.xml] is not of type file
+09:18:47,534 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 2
+09:18:47,534 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 3
+09:18:47,534 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 4
+09:18:47,609 |-INFO in ch.qos.logback.core.model.processor.ConversionRuleModelHandler - registering conversion word methodOrMDC with class [com.sbi.epay.logging.converter.MethodOrMDCConverter]
+09:18:47,610 |-INFO in ch.qos.logback.core.model.processor.ConversionRuleModelHandler - registering conversion word classOrMDC with class [com.sbi.epay.logging.converter.ClassOrMDCConverter]
+09:18:47,610 |-INFO in ch.qos.logback.core.model.processor.ConversionRuleModelHandler - registering conversion word lineOrMDC with class [com.sbi.epay.logging.converter.LineOrMDCConverter]
+09:18:47,610 |-INFO in ch.qos.logback.classic.model.processor.ConfigurationModelHandlerFull - Main configuration file URL: jar:nested:/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar/!BOOT-INF/classes/!/logback.xml
+09:18:47,611 |-INFO in ch.qos.logback.classic.model.processor.ConfigurationModelHandlerFull - FileWatchList= {}
+09:18:47,611 |-INFO in ch.qos.logback.classic.model.processor.ConfigurationModelHandlerFull - URLWatchList= {}
+09:18:47,618 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CONSOLE]
+09:18:47,618 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:18:47,626 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+09:18:47,674 |-INFO in ch.qos.logback.core.ConsoleAppender[CONSOLE] - NOTE: Writing to the console can be slow. Try to avoid logging to the
+09:18:47,674 |-INFO in ch.qos.logback.core.ConsoleAppender[CONSOLE] - console in production environments, especially in high volume systems.
+09:18:47,674 |-INFO in ch.qos.logback.core.ConsoleAppender[CONSOLE] - See also https://logback.qos.ch/codes.html#slowConsole
+09:18:47,676 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [FILE] not referenced. Skipping further processing.
+09:18:47,676 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [JSON_FILE] not referenced. Skipping further processing.
+09:18:47,676 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [Logstash] not referenced. Skipping further processing.
+09:18:47,676 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+09:18:47,676 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CONSOLE] to Logger[ROOT]
+09:18:47,677 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7e6f74c - End of configuration.
+09:18:47,677 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@dd05255 - Registering current configuration as safe fallback point
+09:18:47,677 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1573f9fc - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 220 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
 
-The two namespaces are nearly identical for Istio — **same revision** (`istio.io/rev=int-istio`), same discovery, same istio-injection posture. That rules out a namespace-level mesh/injection difference. So both integration and admin pods are injected by the same istiod revision and should behave the same way at the mesh level.
+09:18:48,300 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 2
+09:18:48,300 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 3
+09:18:48,300 |-WARN in ch.qos.logback.core.joran.action.ConversionRuleAction - [converterClass] attribute is deprecated and replaced by [class]. See element [conversionRule] near line 4
+09:18:48,306 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [FILE] not referenced. Skipping further processing.
+09:18:48,306 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [JSON_FILE] not referenced. Skipping further processing.
+09:18:48,306 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [Logstash] not referenced. Skipping further processing.
 
-But one label differs:
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
 
-```
-int-admin:        dynatrace.com/inject=true      ← present
-int-integration:  (no dynatrace label)           ← absent
-```
+ :: Spring Boot ::                (v3.5.9)
 
-That's a Dynatrace OneAgent injection difference, not an Istio one. It's worth noting but it does **not** cause `CERTIFICATE_VERIFY_FAILED` on the Istio mTLS handshake — Dynatrace injection wouldn't flip the transport socket. So it's almost certainly a red herring for this specific error.
+2026-08-03 09:18:48.356 INFO | org.hibernate.validator.internal.util.Version:21 | principal=  | scenario= | operation= | correlation= | <clinit> | HV000001: Hibernate Validator 8.0.3.Final
+2026-08-03 09:18:48.452 INFO | org.springframework.boot.StartupInfoLogger:53 | principal=  | scenario= | operation= | correlation= | logStarting | Starting IntegrationApplication vrelease-minor-dm2025124883-epay-egras-an-d0fc5ac3 using Java 21.0.8 with PID 1 (/home/default/epay_integration_service-release-minor-dm2025124883-epay-egras-an-d0fc5ac3.jar started by 1000800000 in /home/default)
+2026-08-03 09:18:48.452 DEBUG | org.springframework.boot.StartupInfoLogger:54 | principal=  | scenario= | operation= | correlation= | logStarting | Running with Spring Boot v3.5.9, Spring v6.2.15
+2026-08-03 09:18:48.453 INFO | org.springframework.boot.SpringApplication:658 | principal=  | scenario= | operation= | correlation= | logStartupProfileInfo | The following 3 profiles are active: "dev", "eGras", "standard"
+2026-08-03 09:18:49.405 INFO | org.springframework.data.repository.config.RepositoryConfigurationDelegate:145 | principal=  | scenario= | operation= | correlation= | registerRepositoriesIn | Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-03 09:18:49.591 INFO | org.springframework.data.repository.config.RepositoryConfigurationDelegate:213 | principal=  | scenario= | operation= | correlation= | registerRepositoriesIn | Finished Spring Data repository scanning in 170 ms. Found 5 JPA repository interfaces.
+2026-08-03 09:18:50.939 INFO | org.springframework.boot.web.embedded.tomcat.TomcatWebServer:111 | principal=  | scenario= | operation= | correlation= | initialize | Tomcat initialized with port 9099 (http)
+Aug 03, 2026 9:18:50 AM org.apache.coyote.AbstractProtocol init
+INFO: Initializing ProtocolHandler ["http-nio-9099"]
+Aug 03, 2026 9:18:50 AM org.apache.catalina.core.StandardService startInternal
+INFO: Starting service [Tomcat]
+Aug 03, 2026 9:18:50 AM org.apache.catalina.core.StandardEngine startInternal
+INFO: Starting Servlet engine: [Apache Tomcat/10.1.50]
+Aug 03, 2026 9:18:51 AM org.apache.catalina.core.ApplicationContext log
+INFO: Initializing Spring embedded WebApplicationContext
+2026-08-03 09:18:51.015 INFO | org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext:301 | principal=  | scenario= | operation= | correlation= | prepareWebApplicationContext | Root WebApplicationContext: initialization completed in 2470 ms
+2026-08-03 09:18:51.334 INFO | com.zaxxer.hikari.HikariDataSource:109 | principal=  | scenario= | operation= | correlation= | getConnection | HikariPool-1 - Starting...
+2026-08-03 09:18:52.033 INFO | com.zaxxer.hikari.pool.HikariPool:580 | principal=  | scenario= | operation= | correlation= | checkFailFast | HikariPool-1 - Added connection oracle.jdbc.driver.T4CConnection@70d687b8
+2026-08-03 09:18:52.036 INFO | com.zaxxer.hikari.HikariDataSource:122 | principal=  | scenario= | operation= | correlation= | getConnection | HikariPool-1 - Start completed.
+2026-08-03 09:18:52.091 INFO | org.hibernate.jpa.internal.util.LogHelper:31 | principal=  | scenario= | operation= | correlation= | logPersistenceUnitInformation | HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-08-03 09:18:52.169 INFO | org.hibernate.Version:44 | principal=  | scenario= | operation= | correlation= | logVersion | HHH000412: Hibernate ORM core version 6.6.39.Final
+2026-08-03 09:18:52.218 INFO | org.hibernate.cache.internal.RegionFactoryInitiator:50 | principal=  | scenario= | operation= | correlation= | initiateService | HHH000026: Second-level cache disabled
+2026-08-03 09:18:52.404 INFO | org.hibernate.envers.boot.internal.EnversServiceImpl:76 | principal=  | scenario= | operation= | correlation= | configure | Envers integration enabled? : true
+2026-08-03 09:18:52.618 INFO | org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo:87 | principal=  | scenario= | operation= | correlation= | addTransformer | No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-03 09:18:53.014 INFO | org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator:163 | principal=  | scenario= | operation= | correlation= | logConnectionInfo | HHH10001005: Database info:
+        Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+        Database driver: undefined/unknown
+        Database version: 19.31
+        Autocommit mode: undefined/unknown
+        Isolation level: undefined/unknown
+        Minimum pool size: undefined/unknown
+        Maximum pool size: undefined/unknown
+2026-08-03 09:18:54.197 INFO | org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator:59 | principal=  | scenario= | operation= | correlation= | initiateService | HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-08-03 09:18:54.201 INFO | org.springframework.orm.jpa.AbstractEntityManagerFactoryBean:447 | principal=  | scenario= | operation= | correlation= | buildNativeEntityManagerFactory | Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-03 09:18:55.324 INFO | com.epay.integration.config.kafka.KafkaProducerConfig:70 | principal=  | scenario= | operation= | correlation= | producerConfigs | SSL flag : true
+2026-08-03 09:18:55.324 INFO | com.epay.integration.config.kafka.KafkaProducerConfig:72 | principal=  | scenario= | operation= | correlation= | producerConfigs | Inside kafka producer SSL
+2026-08-03 09:18:55.325 DEBUG | com.epay.integration.config.kafka.KafkaProducerConfig:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | props: {acks=all, batch.size=1000, ssl.keystore.location=/home/default, bootstrap.servers=int-kafka-cluster-kafka-bootstrap.int-kafka.svc.cluster.local:9092, buffer.memory=33554432, key.serializer=class org.apache.kafka.common.serialization.StringSerializer, ssl.truststore.type=, security.protocol=, ssl.keystore.type=, retries=3, value.serializer=class org.apache.kafka.common.serialization.StringSerializer, ssl.truststore.location=/home/default, ssl.keystore.password=, ssl.truststore.password=, linger.ms=1, client.id=integration-producer-dbabc6be-1722-4886-962d-099f05efa3d7}
+2026-08-03 09:18:55.813 WARN | com.epay.integration.externalservice.PaymentPushVerificationClient:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+Aug 03, 2026 9:18:56 AM org.apache.coyote.AbstractProtocol start
+INFO: Starting ProtocolHandler ["http-nio-9099"]
+2026-08-03 09:18:56.549 INFO | com.epay.integration.externalservice.PaymentPushVerificationClient:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | Tomcat started on port 9099 (http) with context path '/api/integration/v1'
+2026-08-03 09:18:56.560 INFO | com.epay.integration.externalservice.PaymentPushVerificationClient:82 | principal=  | scenario= | operation= | correlation= | producerConfigs | Started IntegrationApplication in 8.775 seconds (process running for 9.517)
+Aug 03, 2026 9:19:07 AM org.apache.catalina.core.ApplicationContext log
+INFO: Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-03 09:19:07.791 INFO | org.springframework.web.servlet.FrameworkServlet:532 | principal=  | scenario= | operation= | correlation= | initServletBean | Initializing Servlet 'dispatcherServlet'
+2026-08-03 09:19:07.794 INFO | org.springframework.web.servlet.FrameworkServlet:554 | principal=  | scenario= | operation= | correlation= | initServletBean | Completed initialization in 2 ms
+2026-08-03 09:19:58.712 INFO | com.epay.integration.controller.EGrasOrderController:53 | principal=  | scenario= | operation= | correlation= | createOrder | Form Posting initiated for create order request:
+2026-08-03 09:19:58.713 INFO | com.epay.integration.service.OrderService:61 | principal=  | scenario= | operation= | correlation= | createOrder | Creating Order
+2026-08-03 09:19:58.713 INFO | com.epay.integration.service.OrderService:64 | principal=  | scenario= | operation= | correlation= | createOrder | Decrypting encrypted request.
+2026-08-03 09:19:58.714 INFO | com.epay.integration.egras.service.EGrasDecryptionService:23 | principal=  | scenario= | operation= | correlation= | decrypt | Starting core decryption logic.
+2026-08-03 09:19:58.714 INFO | com.epay.integration.egras.service.EGrasDecryptionService:26 | principal=  | scenario= | operation= | correlation= | decrypt | Base64 decoded combined data.
+2026-08-03 09:19:58.714 INFO | com.epay.integration.egras.service.EGrasDecryptionService:34 | principal=  | scenario= | operation= | correlation= | decrypt | Extracted encrypted symmetric key.
+2026-08-03 09:19:58.714 INFO | com.epay.integration.egras.service.EGrasDecryptionService:39 | principal=  | scenario= | operation= | correlation= | decrypt | Extracted IV.
+2026-08-03 09:19:58.714 INFO | com.epay.integration.egras.service.EGrasDecryptionService:44 | principal=  | scenario= | operation= | correlation= | decrypt | Extracted encrypted plain data.
+2026-08-03 09:19:58.715 INFO | com.epay.integration.egras.utils.PemFileReader:43 | principal=  | scenario= | operation= | correlation= | getPrivateKeyFromPEM | fetching private key from PEM
+2026-08-03 09:19:58.715 INFO | com.epay.integration.egras.utils.PemFileReader:58 | principal=  | scenario= | operation= | correlation= | getDecodedKeyFromPEM | reading PEM File
+2026-08-03 09:19:58.728 INFO | com.epay.integration.egras.service.EGrasDecryptionService:51 | principal=  | scenario= | operation= | correlation= | decrypt | Symmetric key decrypted using RSA private key.
+2026-08-03 09:19:58.730 INFO | com.epay.integration.egras.service.EGrasDecryptionService:58 | principal=  | scenario= | operation= | correlation= | decrypt | Main data decrypted using AES/GCM.
+2026-08-03 09:19:58.730 DEBUG | com.epay.integration.service.OrderService:73 | principal=  | scenario= | operation= | correlation= | createOrder | Decrypted request is: TotalAmount=1|GRN=GjCKtBm2o92mqH3|MultiTransfer=N
+2026-08-03 09:19:58.730 INFO | com.epay.integration.service.OrderService:76 | principal=  | scenario= | operation= | correlation= | createOrder | Mapping to merchant order request object.
+2026-08-03 09:19:58.730 INFO | com.epay.integration.egras.service.EGrasOrderProcessingService:112 | principal=  | scenario= | operation= | correlation= | buildMerchantOrderRequest | Converting pipe separated request to JSON request TotalAmount=1|GRN=GjCKtBm2o92mqH3|MultiTransfer=N##
+2026-08-03 09:19:58.731 INFO | com.epay.integration.egras.service.MappingService:43 | principal=  | scenario= | operation= | correlation= | convertRequestToJson | pair and keyValueSeparatorRegex : TotalAmount=1, =
+2026-08-03 09:19:58.731 INFO | com.epay.integration.egras.service.MappingService:43 | principal=  | scenario= | operation= | correlation= | convertRequestToJson | pair and keyValueSeparatorRegex : GRN=GjCKtBm2o92mqH3, =
+2026-08-03 09:19:58.731 INFO | com.epay.integration.egras.service.MappingService:43 | principal=  | scenario= | operation= | correlation= | convertRequestToJson | pair and keyValueSeparatorRegex : MultiTransfer=N##, =
+2026-08-03 09:19:58.750 INFO | com.epay.integration.egras.service.EGrasOrderProcessingService:114 | principal=  | scenario= | operation= | correlation= | buildMerchantOrderRequest | Converted pipe separated request to JSON request {"GRN":"GjCKtBm2o92mqH3","MultiTransfer":"N##","TotalAmount":"1"},
+2026-08-03 09:19:58.822 DEBUG | com.epay.integration.service.OrderService:78 | principal=  | scenario= | operation= | correlation= | createOrder | Mapped merchant order request is: EGrasOrderRequest(totalTreasuryAmount=null, pid=null, grn=GjCKtBm2o92mqH3, payeeName=null, fromDate=null, toDate=null, dept=null, treasuryName=null, officeName=null, accountHead=null, receiptType=null, formId=null, object1=null, objectAmt1=null, object2=null, objectAmt2=null, object3=null, objectAmt3=null, object4=null, objectAmt4=null, object5=null, objectAmt5=null, object6=null, objectAmt6=null, object7=null, objectAmt7=null, object8=null, objectAmt8=null, object9=null, objectAmt9=null, multiTransfer=N##, accountCodesMT=null, amountsMT=null, totalAmountMT=null, totalAmount=1, taxId=null, panNo=null, address1=null, address2=null, address3=null, address4=null, address5=null, pin=null, remarks=null, challanInitiationDate=null, userId=null, offCode=null)
+2026-08-03 09:19:58.832 INFO | com.epay.integration.service.OrderService:81 | principal=  | scenario= | operation= | correlation= | createOrder | Validating merchant order request.
+2026-08-03 09:19:58.839 ERROR | com.epay.integration.service.OrderService:108 | principal=  | scenario= | operation= | correlation= | createOrder | ValidationException occurred
+2026-08-03 09:19:58.839 INFO | com.epay.integration.dao.IntegrationAPILogDao:37 | principal=  | scenario= | operation= | correlation= | save | Saving Details in Request Response History
+Hibernate: insert into integration_api_log (api_path,created_at,failure_merchant_url,merchant_id,order_ref_number,remark,request_payload_decrypted,request_payload_encrypted,request_time,response_payload_decrypted,response_payload_encrypted,response_time,sbi_order_ref_number,status,success_merchant_url,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+2026-08-03 09:19:58.989 INFO | com.epay.integration.dao.IntegrationAPILogDao:37 | principal=  | scenario= | operation= | correlation= | save | HHH100503: On release of batch it still contained JDBC statements
+2026-08-03 09:19:58.990 WARN | com.epay.integration.dao.IntegrationAPILogDao:37 | principal=  | scenario= | operation= | correlation= | save | SQL Error: 942, SQLState: 42000
+2026-08-03 09:19:58.990 ERROR | com.epay.integration.dao.IntegrationAPILogDao:37 | principal=  | scenario= | operation= | correlation= | save | ORA-00942: table or view does not exist
 
-## What this comparison actually tells us
+https://docs.oracle.com/error-help/db/ora-00942/
+Aug 03, 2026 9:19:59 AM org.apache.catalina.core.StandardWrapperValve invoke
+SEVERE: Servlet.service() for servlet [dispatcherServlet] in context with path [/api/integration/v1] threw exception [Request processing failed: org.springframework.dao.InvalidDataAccessResourceUsageException: could not execute batch [ORA-00942: table or view does not exist
 
-Since the namespaces are mesh-equivalent, the failure is **not** namespace policy and **not** injection revision. That pushes the root cause back down to the **workload/Service level for integration specifically** — which is consistent with everything we've seen:
+https://docs.oracle.com/error-help/db/ora-00942/] [insert into integration_api_log (api_path,created_at,failure_merchant_url,merchant_id,order_ref_number,remark,request_payload_decrypted,request_payload_encrypted,request_time,response_payload_decrypted,response_payload_encrypted,response_time,sbi_order_ref_number,status,success_merchant_url,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]; SQL [insert into integration_api_log (api_path,created_at,failure_merchant_url,merchant_id,order_ref_number,remark,request_payload_decrypted,request_payload_encrypted,request_time,response_payload_decrypted,response_payload_encrypted,response_time,sbi_order_ref_number,status,success_merchant_url,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]] with root cause
+java.sql.BatchUpdateException: ORA-00942: table or view does not exist
 
-- Other services in *other* namespaces (admin `:9094`, transaction `:9092`) work.
-- Integration `:9099` is the only failing upstream.
-- Gateway reaches integration pod fine on **plaintext** (`404`), but **TLS** handshake fails.
-- Integration's Service was **recreated 12 min before** the failure window (v6 Helm release), while its pod is 12h old.
+https://docs.oracle.com/error-help/db/ora-00942/
+        at oracle.jdbc.driver.OraclePreparedStatement.generateBatchUpdateException(OraclePreparedStatement.java:11377)
+        at oracle.jdbc.driver.OraclePreparedStatement.executeBatchWithoutQueue(OraclePreparedStatement.java:10703)
+        at oracle.jdbc.driver.OraclePreparedStatement.executeLargeBatch(OraclePreparedStatement.java:10407)
+        at oracle.jdbc.driver.OracleStatement.executeBatch(OracleStatement.java:5658)
+        at oracle.jdbc.driver.OracleStatementWrapper.executeBatch(OracleStatementWrapper.java:291)
+        at com.zaxxer.hikari.pool.ProxyStatement.executeBatch(ProxyStatement.java:128)
+        at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeBatch(HikariProxyPreparedStatement.java)
+        at org.hibernate.engine.jdbc.batch.internal.BatchImpl.lambda$performExecution$2(BatchImpl.java:279)
+        at org.hibernate.engine.jdbc.mutation.internal.PreparedStatementGroupSingleTable.forEachStatement(PreparedStatementGroupSingleTable.java:67)
+        at org.hibernate.engine.jdbc.batch.internal.BatchImpl.performExecution(BatchImpl.java:264)
+        at org.hibernate.engine.jdbc.batch.internal.BatchImpl.execute(BatchImpl.java:242)
+        at org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl.executeBatch(JdbcCoordinatorImpl.java:188)
+        at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:674)
+        at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:511)
+        at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:414)
+        at org.hibernate.event.internal.DefaultFlushEventListener.onFlush(DefaultFlushEventListener.java:41)
+        at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:127)
+        at org.hibernate.internal.SessionImpl.doFlush(SessionImpl.java:1429)
+        at org.hibernate.internal.SessionImpl.managedFlush(SessionImpl.java:491)
+        at org.hibernate.internal.SessionImpl.flushBeforeTransactionCompletion(SessionImpl.java:2354)
+        at org.hibernate.internal.SessionImpl.beforeTransactionCompletion(SessionImpl.java:1978)
+        at org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl.beforeTransactionCompletion(JdbcCoordinatorImpl.java:439)
+        at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl.beforeCompletionCallback(JdbcResourceLocalTransactionCoordinatorImpl.java:169)
+        at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commit(JdbcResourceLocalTransactionCoordinatorImpl.java:267)
+        at org.hibernate.engine.transaction.internal.TransactionImpl.commit(TransactionImpl.java:101)
+        at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:563)
+        at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:795)
+        at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:758)
+        at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:698)
+        at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:416)
+        at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:165)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223)
+        at jdk.proxy2/jdk.proxy2.$Proxy155.save(Unknown Source)
+        at com.epay.integration.dao.IntegrationAPILogDao.save(IntegrationAPILogDao.java:40)
+        at com.epay.integration.service.OrderService.saveFailLogs(OrderService.java:194)
+        at com.epay.integration.service.OrderService.createOrder(OrderService.java:109)
+        at com.epay.integration.controller.EGrasOrderController.createOrder(EGrasOrderController.java:58)
+        at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+        at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:258)
+        at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:191)
+        at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:991)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:896)
+        at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+        at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+        at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+        at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+        at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+        at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+        at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+        at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+        at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+        at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+        at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+        at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+        at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+        at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+        at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+        at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83)
+        at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+        at org.apache.catalina.valves.RemoteIpValve.invoke(RemoteIpValve.java:733)
+        at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+        at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+        at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+        at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+        at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1774)
+        at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+        at java.base/java.lang.Thread.run(Thread.java:1583)
 
-So the mismatch is between what the gateway is told to speak to `outbound|9099|...integration...` (TLS/mTLS) and what that pod actually speaks (plaintext). The trigger was the Service recreation, not the namespace.
+^C
+[osuser@bastion ~]$
 
-## Before changing anything — pin the exact mismatch
 
-Since you (rightly) want confirmation before touching config, run these two read-only comparisons. They'll tell us definitively whether it's the Service port definition or a PeerAuthentication difference:
 
-```bash
-# 1. Port definitions — the thing recreated at 08:39. Compare all three.
-echo "=== integration (broken) ==="
-oc get svc integration-integrationservice -n int-integration -o jsonpath='{.spec.ports[*]}{"\n"}'
-echo "=== admin (working) ==="
-oc get svc admin-adminservice -n int-admin -o jsonpath='{.spec.ports[*]}{"\n"}'
-echo "=== transaction (working) ==="
-oc get svc txn-transactionservice -n int-transaction -o jsonpath='{.spec.ports[*]}{"\n"}'
-```
 
-```bash
-# 2. PeerAuthentication — is mTLS mode different for integration vs working ns?
-echo "=== integration ==="; oc get peerauthentication -n int-integration -o yaml 2>/dev/null | grep -iE "name:|mode:"
-echo "=== admin ==="; oc get peerauthentication -n int-admin -o yaml 2>/dev/null | grep -iE "name:|mode:"
-echo "=== transaction ==="; oc get peerauthentication -n int-transaction -o yaml 2>/dev/null | grep -iE "name:|mode:"
-echo "=== mesh-wide (istio-system) ==="; oc get peerauthentication -n int-istio-system -o yaml 2>/dev/null | grep -iE "name:|mode:"
-```
 
-And one more that directly reads what the gateway decided for each cluster — this is the smoking gun without changing anything:
 
-```bash
-# 3. What transport socket did the gateway build for integration vs admin?
-GW=int-istio-gateway-77d47dbb5-gfvnc
-echo "=== integration cluster transport ==="
-oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
-  | grep -A2 -iE "integration-integrationservice.*cluster.local\"" | head; \
-oc exec -n int-istio-system $GW -- curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(c['cluster']['name'], '->', [m['name'] for m in c['cluster'].get('transport_socket_matches',[{'name':'NONE'}])]) for c in d['configs'] if 'integration-integrationservice' in c['cluster']['name'] or 'admin-adminservice' in c['cluster']['name']]" 2>/dev/null
-```
 
-If command 3's python parsing fails (no python3), just eyeball it:
 
-```bash
-oc exec -n int-istio-system int-istio-gateway-77d47dbb5-gfvnc -- \
-  curl -s "localhost:15000/config_dump?resource=dynamic_active_clusters" \
-  | grep -iE "adminservice.int-admin.*cluster.local\"|transport_socket_matches|tlsMode-|raw_buffer" | head -40
-```
+Now i am getting below error while accessing the page :
 
-Compare the `transport_socket_matches` block for admin (working) against integration (broken). If admin has the same `tlsMode-istio` + `tlsMode-disabled` match set that integration has, then the cluster config is identical and the problem is purely that the integration **pod's advertised endpoint metadata** (`tlsMode=istio`) doesn't match a sidecar that can actually complete mTLS — which a pod restart fixes.
+Whitelabel Error Page
+This application has no explicit mapping for /error, so you are seeing this as a fallback.
 
-## My read right now
+Mon Aug 03 09:19:53 UTC 2026
+There was an unexpected error (type=Not Found, status=404).
 
-The namespace parity you just showed makes a **stale/broken sidecar mTLS identity on the integration pod the leading candidate again** — not a Service port bug. The pod advertises `tlsMode=istio` (so the gateway originates mTLS), but its workload cert/identity from the botched 08:39 rebuild can't complete verification, while the app underneath only speaks plaintext. The safest, lowest-blast-radius fix remains:
 
-```bash
-oc rollout restart deploy/integration-integrationservice -n int-integration
-```
 
-Run the three read-only checks above first so we confirm cluster config parity (integration vs admin). If the transport_socket_matches are identical, the pod restart is the fix and nothing else needs touching. Paste those three outputs and I'll give you the definitive go/no-go.
+Please let me know what was the issue:
+
