@@ -57,7 +57,7 @@ include:
   - local: ci/common/workflow.yml
   - local: 'ci/image/image.retag.yml'   # main: retag tested image → prod semver
   # - local: 'ci/security/sast/sast.gitlab.yml'
-  - local: 'ci/security/sast/sast.fortify.yml'
+  # - local: 'ci/security/sast/sast.fortify.yml'   # DISABLED for frontend (Java/Gradle-specific, won't scan JS)
   # - local: 'ci/security/sca/sca.xray.yml'   # Java/JAR-only — N/A for frontend (no JAR)
   # - local: 'ci/security/secrets/secrets.detect.yml'
   # - local: 'ci/security/iac/iac.scan.yml'
@@ -80,7 +80,7 @@ stages:
   - image-retag   # main only: retag tested release/hotfix image → prod semver
   - build         # gradle compile
  # - test          # unit tests
-  - sast          # fortify
+  # - sast          # DISABLED for frontend
   - security      # DECLARED BUT EMPTY — no security jobs are included today
   - image-build   # podman build (local tarball only — no push)
   - image-scan    # xray image scan
@@ -143,8 +143,8 @@ build:
 
 # ── Stage: sast ───────────────────────────────────────────────────────────────
 # Gated by .rules so it runs on the same rows as build/test (stage matrix above).
-sast:fortify:
-  extends: [.sast_fortify, .rules]
+# sast:fortify:  # DISABLED for frontend — Fortify job is Java/Gradle-specific
+#   extends: [.sast_fortify, .rules]
 
 # sast:gitlab:
 #   extends: [.sast, .rules]
