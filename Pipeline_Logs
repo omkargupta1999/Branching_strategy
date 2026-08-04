@@ -1,305 +1,110 @@
-[osuser@bastion ~]$ oc logs -f txn-job-transactionjobservice-7df947d7c8-cwfb9 --tail=300
-io.netty.channel.unix.Errors$NativeIoException: recvAddress(..) failed with error(-104): Connection reset by peer
-2026-08-04 08:49:25.479 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [25c4fee6, L:/172.16.16.186:38454 ! R:dev.epay.sbi/10.191.199.96:443] Channel closed, now: 0 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:25.479 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [911a7967] Connecting to [dev.epay.sbi/10.191.199.96:443].
-2026-08-04 08:49:25.479 WARN | reactor.util.Loggers$Slf4JLogger:304 | principal=  | scenario= | operation= | correlation= | warn | [25c4fee6, L:/172.16.16.186:38454 ! R:dev.epay.sbi/10.191.199.96:443] The connection observed an error
-java.nio.channels.ClosedChannelException
-        at io.netty.handler.ssl.SslHandler.channelInactive(SslHandler.java:1173)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:303)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelInactive(AbstractChannelHandlerContext.java:274)
-        at io.netty.channel.DefaultChannelPipeline$HeadContext.channelInactive(DefaultChannelPipeline.java:1352)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:301)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.DefaultChannelPipeline.fireChannelInactive(DefaultChannelPipeline.java:850)
-        at io.netty.channel.AbstractChannel$AbstractUnsafe$7.run(AbstractChannel.java:811)
-        at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
-        at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
-        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
-        at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:405)
-        at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
-        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-        at java.base/java.lang.Thread.run(Thread.java:1583)
-        Suppressed: io.netty.handler.ssl.StacklessSSLHandshakeException: Connection closed while SSL/TLS handshake was in progress
-                at io.netty.handler.ssl.SslHandler.channelInactive(Unknown Source)
-2026-08-04 08:49:25.480 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [25c4fee6, L:/172.16.16.186:38454 ! R:dev.epay.sbi/10.191.199.96:443] onStateChange(PooledConnection{channel=[id: 0x25c4fee6, L:/172.16.16.186:38454 ! R:dev.epay.sbi/10.191.199.96:443]}, [disconnecting])
-2026-08-04 08:49:25.480 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [911a7967, L:/172.16.16.186:54462 - R:dev.epay.sbi/10.191.199.96:443] Registering pool release on close event for channel
-2026-08-04 08:49:25.480 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [911a7967, L:/172.16.16.186:54462 - R:dev.epay.sbi/10.191.199.96:443] Channel connected, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:25.909 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833365909; nextExpiration=1785833365908; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:26.910 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833366910; nextExpiration=1785833366909; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:27.022 DEBUG | com.zaxxer.hikari.pool.HikariPool$KeepaliveTask:888 | principal=  | scenario= | operation= | correlation= | run | HikariPool-1 - keepalive: connection oracle.jdbc.driver.T4CConnection@361513b6 is alive
-2026-08-04 08:49:27.911 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833367911; nextExpiration=1785833367910; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:28.912 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833368912; nextExpiration=1785833368911; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:29.913 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833369913; nextExpiration=1785833369912; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:30.914 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833370914; nextExpiration=1785833370913; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:31.915 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833371915; nextExpiration=1785833371914; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:32.916 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833372916; nextExpiration=1785833372915; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:33.917 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833373917; nextExpiration=1785833373916; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:34.918 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833374918; nextExpiration=1785833374917; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:35.482 WARN | reactor.util.Loggers$Slf4JLogger:304 | principal=  | scenario= | operation= | correlation= | warn | [911a7967, L:/172.16.16.186:54462 - R:dev.epay.sbi/10.191.199.96:443] The connection observed an error
-io.netty.channel.unix.Errors$NativeIoException: recvAddress(..) failed with error(-104): Connection reset by peer
-2026-08-04 08:49:35.482 ERROR | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:94 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=47a0c954-8a9e-4969-aab8-5b51fb78b664 | postPaymentPushVerification | WebClientRequestException while creating ApiClient for: https://dev.epay.sbi/api/javasimulator/v1/crypto/push, error msg: recvAddress(..) failed with error(-104): Connection reset by peer
-2026-08-04 08:49:35.482 ERROR | com.epay.transaction.jobs.service.PaymentPushVerificationService:113 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=47a0c954-8a9e-4969-aab8-5b51fb78b664 | encryptAndSendToMerchant | Error encrypting and sending payment push verification: [2101 : org.springframework.web.reactive.function.client.WebClientRequestException: recvAddress(..) failed with error(-104): Connection reset by peer service is currently unavailable. Please try again later.]
-2026-08-04 08:49:35.482 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [911a7967, L:/172.16.16.186:54462 ! R:dev.epay.sbi/10.191.199.96:443] Channel closed, now: 0 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.482 WARN | reactor.util.Loggers$Slf4JLogger:304 | principal=  | scenario= | operation= | correlation= | warn | [911a7967, L:/172.16.16.186:54462 ! R:dev.epay.sbi/10.191.199.96:443] The connection observed an error
-java.nio.channels.ClosedChannelException
-        at io.netty.handler.ssl.SslHandler.channelInactive(SslHandler.java:1173)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:303)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelInactive(AbstractChannelHandlerContext.java:274)
-        at io.netty.channel.DefaultChannelPipeline$HeadContext.channelInactive(DefaultChannelPipeline.java:1352)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:301)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.DefaultChannelPipeline.fireChannelInactive(DefaultChannelPipeline.java:850)
-        at io.netty.channel.AbstractChannel$AbstractUnsafe$7.run(AbstractChannel.java:811)
-        at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
-        at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
-        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
-        at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:405)
-        at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
-        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-        at java.base/java.lang.Thread.run(Thread.java:1583)
-        Suppressed: io.netty.handler.ssl.StacklessSSLHandshakeException: Connection closed while SSL/TLS handshake was in progress
-                at io.netty.handler.ssl.SslHandler.channelInactive(Unknown Source)
-2026-08-04 08:49:35.482 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [911a7967, L:/172.16.16.186:54462 ! R:dev.epay.sbi/10.191.199.96:443] onStateChange(PooledConnection{channel=[id: 0x911a7967, L:/172.16.16.186:54462 ! R:dev.epay.sbi/10.191.199.96:443]}, [disconnecting])
-2026-08-04 08:49:35.492 TRACE | com.epay.transaction.jobs.service.PaymentPushVerificationService:113 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=47a0c954-8a9e-4969-aab8-5b51fb78b664 | encryptAndSendToMerchant | NoOp observation used with SimpleScope
-2026-08-04 08:49:35.493 INFO | com.epay.transaction.jobs.etl.listener.PaymentPushVerificationListener:35 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=47a0c954-8a9e-4969-aab8-5b51fb78b664 | paymentPushVerification | Push verification request received for key: paymentPushVerification.PaymentVerification.251873286B5F44FEB609 and value: {"mId":"1000003","sbiOrderRefNumber":"251873286B5F44FEB609"}
-2026-08-04 08:49:35.493 INFO | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Fetching data from transaction and order table.251873286B5F44FEB609 : P
-2026-08-04 08:49:35.493 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Opening Hibernate Session.  tenant=null
-2026-08-04 08:49:35.493 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Opened Session [a1e7cc0c-1167-464c-991d-5057c88f76d7] at timestamp: 1785833375493
-2026-08-04 08:49:35.493 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | QueryPlan#resolveHqlInterpretation( `Select o FROM Order o left JOIN FETCH o.merchantOrderPayments t where o.sbiOrderRefNumber = :sbiOrderRefNumber AND o.pushResponse = :pushResponse AND o.status NOT IN (com.epay.transaction.jobs.util.enums.OrderStatus.CREATED, com.epay.transaction.jobs.util.enums.OrderStatus.ATTEMPTED)` )
-2026-08-04 08:49:35.494 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | QueryPlan#getSelectQueryPlan(org.hibernate.query.sqm.internal.SqmInterpretationsKey@3d3a43a4)
-2026-08-04 08:49:35.494 DEBUG | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Skipping reading Query result cache data: cache-enabled = false, cache-mode = NORMAL
-2026-08-04 08:49:35.494 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Executing query to retrieve ResultSet : select o1_0.sbi_order_ref_number,o1_0.created_by,o1_0.created_date,o1_0.currency_code,o1_0.customer_id,o1_0.expiry,o1_0.merchant_id,mop1_0.sbi_order_ref_number,mop1_0.atrn_num,mop1_0.available_refund_amount,mop1_0.bank_reference_number,mop1_0.cancellation_status,mop1_0.channel_bank,mop1_0.chargeback_amount,mop1_0.chargeback_status,mop1_0.cin,mop1_0.created_by,mop1_0.created_date,mop1_0.currency_code,mop1_0.debit_amt,mop1_0.fail_reason,mop1_0.gtw_issue_mecode,mop1_0.gst_in,mop1_0.merchant_id,mop1_0.old_bank_reference_number,mop1_0.order_amount,mop1_0.order_ref_number,mop1_0.pay_mode,mop1_0.pay_proc_id,mop1_0.payment_status,mop1_0.payment_success_date,mop1_0.pay_proc_type,mop1_0.gtw_map_id,mop1_0.push_response,mop1_0.push_status,mop1_0.refund_status,mop1_0.rf_id,mop1_0.settlement_status,mop1_0.settlement_time,mop1_0.transaction_status,mop1_0.updated_by,mop1_0.updated_date,o1_0.multi_accounts,o1_0.order_amount,o1_0.order_hash,o1_0.order_ref_number,o1_0.order_retry_count,o1_0.other_details,o1_0.payment_mode,o1_0.push_response,o1_0.return_url,o1_0.status,o1_0.third_party_details,o1_0.updated_by,o1_0.updated_date from merchant_orders o1_0 left join merchant_order_payments mop1_0 on o1_0.sbi_order_ref_number=mop1_0.sbi_order_ref_number where o1_0.sbi_order_ref_number=? and o1_0.push_response=? and o1_0.status not in ('CREATED','ATTEMPTED')
-2026-08-04 08:49:35.494 DEBUG | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | select o1_0.sbi_order_ref_number,o1_0.created_by,o1_0.created_date,o1_0.currency_code,o1_0.customer_id,o1_0.expiry,o1_0.merchant_id,mop1_0.sbi_order_ref_number,mop1_0.atrn_num,mop1_0.available_refund_amount,mop1_0.bank_reference_number,mop1_0.cancellation_status,mop1_0.channel_bank,mop1_0.chargeback_amount,mop1_0.chargeback_status,mop1_0.cin,mop1_0.created_by,mop1_0.created_date,mop1_0.currency_code,mop1_0.debit_amt,mop1_0.fail_reason,mop1_0.gtw_issue_mecode,mop1_0.gst_in,mop1_0.merchant_id,mop1_0.old_bank_reference_number,mop1_0.order_amount,mop1_0.order_ref_number,mop1_0.pay_mode,mop1_0.pay_proc_id,mop1_0.payment_status,mop1_0.payment_success_date,mop1_0.pay_proc_type,mop1_0.gtw_map_id,mop1_0.push_response,mop1_0.push_status,mop1_0.refund_status,mop1_0.rf_id,mop1_0.settlement_status,mop1_0.settlement_time,mop1_0.transaction_status,mop1_0.updated_by,mop1_0.updated_date,o1_0.multi_accounts,o1_0.order_amount,o1_0.order_hash,o1_0.order_ref_number,o1_0.order_retry_count,o1_0.other_details,o1_0.payment_mode,o1_0.push_response,o1_0.return_url,o1_0.status,o1_0.third_party_details,o1_0.updated_by,o1_0.updated_date from merchant_orders o1_0 left join merchant_order_payments mop1_0 on o1_0.sbi_order_ref_number=mop1_0.sbi_order_ref_number where o1_0.sbi_order_ref_number=? and o1_0.push_response=? and o1_0.status not in ('CREATED','ATTEMPTED')
-Hibernate: select o1_0.sbi_order_ref_number,o1_0.created_by,o1_0.created_date,o1_0.currency_code,o1_0.customer_id,o1_0.expiry,o1_0.merchant_id,mop1_0.sbi_order_ref_number,mop1_0.atrn_num,mop1_0.available_refund_amount,mop1_0.bank_reference_number,mop1_0.cancellation_status,mop1_0.channel_bank,mop1_0.chargeback_amount,mop1_0.chargeback_status,mop1_0.cin,mop1_0.created_by,mop1_0.created_date,mop1_0.currency_code,mop1_0.debit_amt,mop1_0.fail_reason,mop1_0.gtw_issue_mecode,mop1_0.gst_in,mop1_0.merchant_id,mop1_0.old_bank_reference_number,mop1_0.order_amount,mop1_0.order_ref_number,mop1_0.pay_mode,mop1_0.pay_proc_id,mop1_0.payment_status,mop1_0.payment_success_date,mop1_0.pay_proc_type,mop1_0.gtw_map_id,mop1_0.push_response,mop1_0.push_status,mop1_0.refund_status,mop1_0.rf_id,mop1_0.settlement_status,mop1_0.settlement_time,mop1_0.transaction_status,mop1_0.updated_by,mop1_0.updated_date,o1_0.multi_accounts,o1_0.order_amount,o1_0.order_hash,o1_0.order_ref_number,o1_0.order_retry_count,o1_0.other_details,o1_0.payment_mode,o1_0.push_response,o1_0.return_url,o1_0.status,o1_0.third_party_details,o1_0.updated_by,o1_0.updated_date from merchant_orders o1_0 left join merchant_order_payments mop1_0 on o1_0.sbi_order_ref_number=mop1_0.sbi_order_ref_number where o1_0.sbi_order_ref_number=? and o1_0.push_response=? and o1_0.status not in ('CREATED','ATTEMPTED')
-2026-08-04 08:49:35.500 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Registering statement [HikariProxyPreparedStatement@1812620745 wrapping oracle.jdbc.driver.OraclePreparedStatementWrapper@6de4658a]
-2026-08-04 08:49:35.500 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Registering last query statement [HikariProxyPreparedStatement@1812620745 wrapping oracle.jdbc.driver.OraclePreparedStatementWrapper@6de4658a]
-2026-08-04 08:49:35.500 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | binding parameter (1:VARCHAR) <- [251873286B5F44FEB609]
-2026-08-04 08:49:35.500 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | binding parameter (2:VARCHAR) <- [P]
-2026-08-04 08:49:35.512 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Registering result set [HikariProxyResultSet@1531639245 wrapping oracle.jdbc.driver.ForwardOnlyResultSet@6c466be2]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (1:VARCHAR) -> [251873286B5F44FEB609]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (8:VARCHAR) -> [null]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (2:VARCHAR) -> [1000003]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (3:BIGINT) -> [1785760657551]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (4:VARCHAR) -> [INR]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (5:VARCHAR) -> [null]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (6:BIGINT) -> [1785762457550]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (7:VARCHAR) -> [1000003]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (43:VARCHAR) -> [null]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (44:NUMERIC) -> [1]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (45:VARCHAR) -> [2IlWvE1fpAXmIt8aaVd60q7TZiU1QMltzgL1Ph8yI6ZCSqxnhDOWjw3BSqtshhQ3PEW8Mx97TT7ncCEqDGQ]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (46:VARCHAR) -> [xN5pp]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (47:INTEGER) -> [3]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (48:VARCHAR) -> [null]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (49:VARCHAR) -> [NB]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (50:VARCHAR) -> [P]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (51:VARCHAR) -> [https://dev.epay.sbi/demo/transaction-status]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (52:VARCHAR) -> [CANCEL]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (53:VARCHAR) -> [null]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (54:VARCHAR) -> [251873286B5F44FEB609]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | extracted value (55:BIGINT) -> [1785761336090]
-2026-08-04 08:49:35.513 DEBUG | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Collection fully initialized: [com.epay.transaction.jobs.entity.Order.merchantOrderPayments#251873286B5F44FEB609]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Releasing result set [HikariProxyResultSet@1531639245 wrapping oracle.jdbc.driver.ForwardOnlyResultSet@6c466be2]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Closing result set [HikariProxyResultSet@1531639245 wrapping oracle.jdbc.driver.ForwardOnlyResultSet@6c466be2]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Releasing statement [HikariProxyPreparedStatement@1812620745 wrapping oracle.jdbc.driver.OraclePreparedStatementWrapper@6de4658a]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Closing prepared statement [HikariProxyPreparedStatement@1812620745 wrapping oracle.jdbc.driver.OraclePreparedStatementWrapper@6de4658a]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Starting after statement execution processing [ON_CLOSE]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Initializing non-lazy collections
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | LogicalConnection#afterTransaction
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Releasing JDBC resources
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Closing session [a1e7cc0c-1167-464c-991d-5057c88f76d7]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Closing JDBC container [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl@11b3fc92]
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Releasing JDBC resources
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Closing logical connection
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Releasing JDBC resources
-2026-08-04 08:49:35.513 TRACE | com.epay.transaction.jobs.dao.OrderDao:36 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getTransactionAndOrderDetail | Logical connection closed
-2026-08-04 08:49:35.513 INFO | com.epay.transaction.jobs.service.PaymentPushVerificationService:136 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | buildPaymentVerificationResponse |  Retrieve the record from object[]
-2026-08-04 08:49:35.513 INFO | com.epay.transaction.jobs.externalservice.AdminServicesClient:54 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getMerchantNotification | Inside getMerchantNotification: 1000003
-2026-08-04 08:49:35.514 INFO | com.epay.transaction.jobs.client.ApiClient:76 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | post | Calling uri: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1/merchant/notification/1000003
-2026-08-04 08:49:35.514 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Channel acquired, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.514 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Handler is being applied: {uri=http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1/merchant/notification/1000003, method=POST}
-2026-08-04 08:49:35.514 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] onStateChange(POST{uri=/api/admin/v1/merchant/notification/1000003, connection=PooledConnection{channel=[id: 0x3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094]}}, [request_prepared])
-2026-08-04 08:49:35.514 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] onStateChange(POST{uri=/api/admin/v1/merchant/notification/1000003, connection=PooledConnection{channel=[id: 0x3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094]}}, [request_sent])
-2026-08-04 08:49:35.534 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Received response (auto-read:false) : RESPONSE(decodeResult: success, version: HTTP/1.1)
-HTTP/1.1 200 OK
-vary: <filtered>
-access-control-allow-origin: <filtered>
-content-type: <filtered>
-date: <filtered>
-x-envoy-upstream-service-time: <filtered>
-server: <filtered>
-transfer-encoding: <filtered>
-2026-08-04 08:49:35.534 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] onStateChange(POST{uri=/api/admin/v1/merchant/notification/1000003, connection=PooledConnection{channel=[id: 0x3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094]}}, [response_received])
-2026-08-04 08:49:35.534 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] [terminated=false, cancelled=false, pending=0, error=null]: subscribing inbound receiver
-2026-08-04 08:49:35.535 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [3607f638-916, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Received last HTTP packet
-2026-08-04 08:49:35.535 TRACE | reactor.util.Loggers$Slf4JLogger:244 | principal=  | scenario= | operation= | correlation= | trace | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Disposing ChannelOperation from a channel
-java.lang.Exception: ChannelOperation terminal stack
-        at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:510)
-        at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:928)
-        at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:115)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-        at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436)
-        at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:361)
-        at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:325)
-        at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-        at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1357)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:868)
-        at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:805)
-        at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501)
-        at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399)
-        at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
-        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-        at java.base/java.lang.Thread.run(Thread.java:1583)
-2026-08-04 08:49:35.535 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] onStateChange(POST{uri=/api/admin/v1/merchant/notification/1000003, connection=PooledConnection{channel=[id: 0x3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094]}}, [response_completed])
-2026-08-04 08:49:35.535 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] onStateChange(POST{uri=/api/admin/v1/merchant/notification/1000003, connection=PooledConnection{channel=[id: 0x3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094]}}, [disconnecting])
-2026-08-04 08:49:35.535 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Releasing channel
-2026-08-04 08:49:35.535 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [3607f638, L:/172.16.16.186:57890 - R:admin-adminservice.dev-admin.svc.cluster.local/172.30.162.114:9094] Channel cleaned, now: 0 active connections, 1 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.535 INFO | com.epay.transaction.jobs.service.PaymentPushVerificationService:120 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | sendNotificationToMerchant | Fetching encryption key for Merchant ID: 1000003
-2026-08-04 08:49:35.535 INFO | com.epay.transaction.jobs.externalservice.KmsServicesClient:45 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | getEncryptionKeys | Fetching encryption keys for Merchant ID: 1000003
-2026-08-04 08:49:35.535 INFO | com.epay.transaction.jobs.client.ApiClient:111 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | get | Calling uri: http://kms-kmsservice.dev-kms.svc.cluster.local:9093/api/kms/v1/key/encryption/1000003
-2026-08-04 08:49:35.536 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Channel acquired, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.536 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Handler is being applied: {uri=http://kms-kmsservice.dev-kms.svc.cluster.local:9093/api/kms/v1/key/encryption/1000003, method=GET}
-2026-08-04 08:49:35.536 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] onStateChange(GET{uri=/api/kms/v1/key/encryption/1000003, connection=PooledConnection{channel=[id: 0x0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093]}}, [request_prepared])
-2026-08-04 08:49:35.536 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] No sendHeaders() called before complete, sending zero-length header
-2026-08-04 08:49:35.536 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] onStateChange(GET{uri=/api/kms/v1/key/encryption/1000003, connection=PooledConnection{channel=[id: 0x0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093]}}, [request_sent])
-2026-08-04 08:49:35.777 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Received response (auto-read:false) : RESPONSE(decodeResult: success, version: HTTP/1.1)
-HTTP/1.1 200 OK
-vary: <filtered>
-access-control-allow-origin: <filtered>
-content-type: <filtered>
-date: <filtered>
-x-envoy-upstream-service-time: <filtered>
-server: <filtered>
-transfer-encoding: <filtered>
-2026-08-04 08:49:35.777 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] onStateChange(GET{uri=/api/kms/v1/key/encryption/1000003, connection=PooledConnection{channel=[id: 0x0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093]}}, [response_received])
-2026-08-04 08:49:35.778 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] [terminated=false, cancelled=false, pending=0, error=null]: subscribing inbound receiver
-2026-08-04 08:49:35.778 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2-831, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Received last HTTP packet
-2026-08-04 08:49:35.778 TRACE | reactor.util.Loggers$Slf4JLogger:244 | principal=  | scenario= | operation= | correlation= | trace | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Disposing ChannelOperation from a channel
-java.lang.Exception: ChannelOperation terminal stack
-        at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:510)
-        at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:928)
-        at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:115)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-        at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436)
-        at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:361)
-        at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:325)
-        at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-        at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1357)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-        at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:868)
-        at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:805)
-        at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501)
-        at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399)
-        at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
-        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-        at java.base/java.lang.Thread.run(Thread.java:1583)
-2026-08-04 08:49:35.778 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] onStateChange(GET{uri=/api/kms/v1/key/encryption/1000003, connection=PooledConnection{channel=[id: 0x0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093]}}, [response_completed])
-2026-08-04 08:49:35.779 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] onStateChange(GET{uri=/api/kms/v1/key/encryption/1000003, connection=PooledConnection{channel=[id: 0x0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093]}}, [disconnecting])
-2026-08-04 08:49:35.779 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Releasing channel
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.util.EncryptionDecryptionUtil:57 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValue | Decrypting value with provided key using AES-GCM algorithm.
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:50 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValueByStringKey | Decryption Service ::  key : BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=, value : s5Ex5aHo55DicEanjm5C6E9AbArlp6/1Pwq0IRUi3kRRANC/O5V5ZQvc3Fqxx/SNtsx02IZuSruPHtDx9BchPm/uM4zP7KvOfT0v/Q==, algorithm : AES_GCM_NO_PADDING, gcmIvLength : MAXIMUM, gcmTagLength : STANDARD
-2026-08-04 08:49:35.779 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [0c69aac2, L:/172.16.16.186:44724 - R:kms-kmsservice.dev-kms.svc.cluster.local/172.30.19.146:9093] Channel cleaned, now: 0 active connections, 1 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:83 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decodedValue | DecryptionService :: decodedSecretKey key BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:65 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValueBySecretKey | Decryption Service ::  key : javax.crypto.spec.SecretKeySpec@fffe97c4, value : s5Ex5aHo55DicEanjm5C6E9AbArlp6/1Pwq0IRUi3kRRANC/O5V5ZQvc3Fqxx/SNtsx02IZuSruPHtDx9BchPm/uM4zP7KvOfT0v/Q==, algorithm : AES_GCM_NO_PADDING, gcmIvLength : MAXIMUM, gcmTagLength : STANDARD
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:89 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValue | DecryptionService :: decryptKeK key javax.crypto.spec.SecretKeySpec@fffe97c4, value s5Ex5aHo55DicEanjm5C6E9AbArlp6/1Pwq0IRUi3kRRANC/O5V5ZQvc3Fqxx/SNtsx02IZuSruPHtDx9BchPm/uM4zP7KvOfT0v/Q==, algorithm AES_GCM_NO_PADDING, gcmIvLength MAXIMUM, gcmTagLength STANDARD
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.util.EncryptionDecryptionUtil:57 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValue | Decrypting value with provided key using AES-GCM algorithm.
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:50 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValueByStringKey | Decryption Service ::  key : bu11YRSHFB/+sEC9K54sq4dU2sEO4RtuOgdKfJwviUg=, value : 3lg+aD48wqIVPDsSouUpdMQ89mDCMUz+rP4oYmGZmbGKLj+b7hmtPTuIP+4lRWeomHbTbxB/ofYVkw0+giJsFjW9xcnU4WxiHxh93A==, algorithm : AES_GCM_NO_PADDING, gcmIvLength : MAXIMUM, gcmTagLength : STANDARD
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:83 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decodedValue | DecryptionService :: decodedSecretKey key bu11YRSHFB/+sEC9K54sq4dU2sEO4RtuOgdKfJwviUg=
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:65 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValueBySecretKey | Decryption Service ::  key : javax.crypto.spec.SecretKeySpec@1710f, value : 3lg+aD48wqIVPDsSouUpdMQ89mDCMUz+rP4oYmGZmbGKLj+b7hmtPTuIP+4lRWeomHbTbxB/ofYVkw0+giJsFjW9xcnU4WxiHxh93A==, algorithm : AES_GCM_NO_PADDING, gcmIvLength : MAXIMUM, gcmTagLength : STANDARD
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.DecryptionService:89 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decryptValue | DecryptionService :: decryptKeK key javax.crypto.spec.SecretKeySpec@1710f, value 3lg+aD48wqIVPDsSouUpdMQ89mDCMUz+rP4oYmGZmbGKLj+b7hmtPTuIP+4lRWeomHbTbxB/ofYVkw0+giJsFjW9xcnU4WxiHxh93A==, algorithm AES_GCM_NO_PADDING, gcmIvLength MAXIMUM, gcmTagLength STANDARD
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.util.EncryptionDecryptionUtil:71 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | encryptValue | Encrypting value with provided key using AES-GCM algorithm.
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.EncryptionService:46 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | encryptValueByStringKey | EncryptionService encryptValueByStringKey key : dlgKlchjWG+BZHqbhRKKRu7roYeJa1TvDLfan1njUt0= keyToEncrypt: [{"orderInfo":{"sbiOrderRefNumber":"251873286B5F44FEB609","orderRefNumber":"xN5pp","orderStatus":"CANCEL","currencyCode":"INR","otherDetails":null},"paymentInfo":[]}]
-2026-08-04 08:49:35.779 INFO | com.sbi.epay.encryptdecrypt.service.EncryptionService:79 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | decodedValue | EncryptionService :: decodedSecretKey
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.EncryptionService:62 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | encryptValueBySecretKey | EncryptionService :: encryptValueBySecretKey  key : javax.crypto.spec.SecretKeySpec@fffe901f, value : [{"orderInfo":{"sbiOrderRefNumber":"251873286B5F44FEB609","orderRefNumber":"xN5pp","orderStatus":"CANCEL","currencyCode":"INR","otherDetails":null},"paymentInfo":[]}], algorithm : AES_GCM_NO_PADDING, gcmIvLength : MAXIMUM, gcmTagLength : STANDARD
-2026-08-04 08:49:35.779 DEBUG | com.sbi.epay.encryptdecrypt.service.EncryptionService:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | encrypt | EncryptionService ::  value [{"orderInfo":{"sbiOrderRefNumber":"251873286B5F44FEB609","orderRefNumber":"xN5pp","orderStatus":"CANCEL","currencyCode":"INR","otherDetails":null},"paymentInfo":[]}], algorithm AES_GCM_NO_PADDING, gcmIvLength MAXIMUM, gcmTagLength STANDARD
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:54 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | Merchant push verification Url: UeWiT9M5ta8m47a6hHOZ+UDlopF7Re+isuCzAv0Yt6/S1LyD5J3IaSuL/LSDNM9v6HDd6J2vq5gXcFbM8q+0/gHgCT54W3hRjoHP9fTOCHwYlcNd1JVTOg50R24en7vl+Oon1hFMvGFOM6lCAX7uGyA6d5gwRKvoKDgtDvlS4dU0xndV6LAy8LX4CfYY6ft6aiP6goWOaiIASY7Lf4RCHjBaxVWOIQSyw50+o/J/7eKxo7Kce/vm6WM3oJOmtNacSQGV4EvH and Encrypt Request https://dev.epay.sbi/api/javasimulator/v1/crypto/push
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:84 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | proxyUrl:http://javasimulator-javautilityapisimulator.dev-simulators.svc.cluster.local:8086/api/javasimulator/v1/crypto/push
-2026-08-04 08:49:35.779 INFO | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | proxyUrl:http://javasimulator-javautilityapisimulator.dev-simulators.svc.cluster.local:8086/api/javasimulator/v1/crypto/push
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | START -> SCHEME_OR_PATH, index=0, componentIndex=0
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | scheme set to 'https'
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | SCHEME_OR_PATH -> START, index=5, componentIndex=0
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | START -> HOST_OR_PATH, index=6, componentIndex=6
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | host set to ''
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | HOST_OR_PATH -> HOST, index=7, componentIndex=8
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | host set to 'dev.epay.sbi'
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | HOST -> PATH, index=20, componentIndex=20
-2026-08-04 08:49:35.780 TRACE | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | path set to '/api/javasimulator/v1/crypto/push'
-2026-08-04 08:49:35.780 DEBUG | com.epay.transaction.jobs.externalservice.PaymentPushVerificationClient:85 | principal=  | scenario=PaymentPushVerificationListener | operation=paymentPushVerification | correlation=16b73b30-93f9-4a9e-9dab-92c85fefa99b | postPaymentPushVerification | Creating a new [http] client pool [PoolFactory{evictionInterval=PT0S, leasingStrategy=fifo, maxConnections=500, maxIdleTime=-1, maxLifeTime=-1, metricsEnabled=false, pendingAcquireMaxCount=1000, pendingAcquireTimeout=45000}] for [dev.epay.sbi/<unresolved>:443]
-2026-08-04 08:49:35.780 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [373e406a] Created a new pooled channel, now: 0 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.781 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [373e406a] SSL enabled using engine SSLEngine[hostname=dev.epay.sbi, port=443, Session(1785833375780|SSL_NULL_WITH_NULL_NULL)] and SNI dev.epay.sbi/<unresolved>:443
-2026-08-04 08:49:35.781 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [373e406a] Initialized pipeline DefaultChannelPipeline{(reactor.left.sslHandler = io.netty.handler.ssl.SslHandler), (reactor.left.sslReader = reactor.netty.tcp.SslProvider$SslReadHandler), (reactor.left.httpCodec = io.netty.handler.codec.http.HttpClientCodec), (reactor.right.reactiveBridge = reactor.netty.channel.ChannelOperationsHandler)}
-2026-08-04 08:49:35.781 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [373e406a] Connecting to [dev.epay.sbi/10.191.199.96:443].
-2026-08-04 08:49:35.782 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [373e406a, L:/172.16.16.186:59804 - R:dev.epay.sbi/10.191.199.96:443] Registering pool release on close event for channel
-2026-08-04 08:49:35.782 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [373e406a, L:/172.16.16.186:59804 - R:dev.epay.sbi/10.191.199.96:443] Channel connected, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:35.858 DEBUG | com.zaxxer.hikari.pool.HikariPool:422 | principal=  | scenario= | operation= | correlation= | logPoolState | HikariPool-1 - Before cleanup stats (total=5/10, idle=5/5, active=0, waiting=0)
-2026-08-04 08:49:35.859 DEBUG | com.zaxxer.hikari.pool.HikariPool:422 | principal=  | scenario= | operation= | correlation= | logPoolState | HikariPool-1 - After  cleanup stats (total=5/10, idle=5/5, active=0, waiting=0)
-2026-08-04 08:49:35.859 DEBUG | com.zaxxer.hikari.pool.HikariPool:536 | principal=  | scenario= | operation= | correlation= | fillPool | HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
-2026-08-04 08:49:35.919 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833375919; nextExpiration=1785833375918; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:36.920 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833376920; nextExpiration=1785833376919; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:37.921 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833377921; nextExpiration=1785833377920; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:38.922 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833378922; nextExpiration=1785833378921; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:39.923 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833379923; nextExpiration=1785833379922; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:40.924 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833380924; nextExpiration=1785833380923; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:41.925 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833381925; nextExpiration=1785833381924; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:42.926 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833382926; nextExpiration=1785833382925; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:43.927 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833383927; nextExpiration=1785833383926; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:44.928 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833384928; nextExpiration=1785833384927; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:45.550 DEBUG | com.zaxxer.hikari.pool.HikariPool$KeepaliveTask:888 | principal=  | scenario= | operation= | correlation= | run | HikariPool-1 - keepalive: connection oracle.jdbc.driver.T4CConnection@69c4a099 is alive
-2026-08-04 08:49:45.784 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff] Created a new pooled channel, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:45.785 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff] SSL enabled using engine SSLEngine[hostname=dev.epay.sbi, port=443, Session(1785833385784|SSL_NULL_WITH_NULL_NULL)] and SNI dev.epay.sbi/<unresolved>:443
-2026-08-04 08:49:45.785 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff] Initialized pipeline DefaultChannelPipeline{(reactor.left.sslHandler = io.netty.handler.ssl.SslHandler), (reactor.left.sslReader = reactor.netty.tcp.SslProvider$SslReadHandler), (reactor.left.httpCodec = io.netty.handler.codec.http.HttpClientCodec), (reactor.right.reactiveBridge = reactor.netty.channel.ChannelOperationsHandler)}
-2026-08-04 08:49:45.785 WARN | reactor.util.Loggers$Slf4JLogger:304 | principal=  | scenario= | operation= | correlation= | warn | [373e406a, L:/172.16.16.186:59804 - R:dev.epay.sbi/10.191.199.96:443] The connection observed an error
-io.netty.channel.unix.Errors$NativeIoException: recvAddress(..) failed with error(-104): Connection reset by peer
-2026-08-04 08:49:45.785 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [373e406a, L:/172.16.16.186:59804 ! R:dev.epay.sbi/10.191.199.96:443] Channel closed, now: 0 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:45.786 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff] Connecting to [dev.epay.sbi/10.191.199.96:443].
-2026-08-04 08:49:45.786 WARN | reactor.util.Loggers$Slf4JLogger:304 | principal=  | scenario= | operation= | correlation= | warn | [373e406a, L:/172.16.16.186:59804 ! R:dev.epay.sbi/10.191.199.96:443] The connection observed an error
-java.nio.channels.ClosedChannelException
-        at io.netty.handler.ssl.SslHandler.channelInactive(SslHandler.java:1173)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:303)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.AbstractChannelHandlerContext.fireChannelInactive(AbstractChannelHandlerContext.java:274)
-        at io.netty.channel.DefaultChannelPipeline$HeadContext.channelInactive(DefaultChannelPipeline.java:1352)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:301)
-        at io.netty.channel.AbstractChannelHandlerContext.invokeChannelInactive(AbstractChannelHandlerContext.java:281)
-        at io.netty.channel.DefaultChannelPipeline.fireChannelInactive(DefaultChannelPipeline.java:850)
-        at io.netty.channel.AbstractChannel$AbstractUnsafe$7.run(AbstractChannel.java:811)
-        at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
-        at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
-        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
-        at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:405)
-        at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
-        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-        at java.base/java.lang.Thread.run(Thread.java:1583)
-        Suppressed: io.netty.handler.ssl.StacklessSSLHandshakeException: Connection closed while SSL/TLS handshake was in progress
-                at io.netty.handler.ssl.SslHandler.channelInactive(Unknown Source)
-2026-08-04 08:49:45.786 DEBUG | reactor.util.Loggers$Slf4JLogger:259 | principal=  | scenario= | operation= | correlation= | debug | [373e406a, L:/172.16.16.186:59804 ! R:dev.epay.sbi/10.191.199.96:443] onStateChange(PooledConnection{channel=[id: 0x373e406a, L:/172.16.16.186:59804 ! R:dev.epay.sbi/10.191.199.96:443]}, [disconnecting])
-2026-08-04 08:49:45.786 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff, L:/172.16.16.186:40926 - R:dev.epay.sbi/10.191.199.96:443] Registering pool release on close event for channel
-2026-08-04 08:49:45.786 DEBUG | reactor.util.Loggers$Slf4JLogger:254 | principal=  | scenario= | operation= | correlation= | debug | [96d458ff, L:/172.16.16.186:40926 - R:dev.epay.sbi/10.191.199.96:443] Channel connected, now: 1 active connections, 0 inactive connections 0 pending acquire requests.
-2026-08-04 08:49:45.929 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833385929; nextExpiration=1785833385928; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:46.929 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833386929; nextExpiration=1785833386929; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:47.931 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833387931; nextExpiration=1785833387929; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:48.932 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833388932; nextExpiration=1785833388931; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:49.933 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833389933; nextExpiration=1785833389932; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:50.934 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833390934; nextExpiration=1785833390933; keyCount=0; hasEvents=false; eval=false
-2026-08-04 08:49:51.935 DEBUG | org.apache.juli.logging.DirectJDKLog:168 | principal=  | scenario= | operation= | correlation= | log | timeout completed: keys processed=0; now=1785833391935; nextExpiration=1785833391934; keyCount=0; hasEvents=false; eval=false
-^C
-[osuser@bastion ~]$
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ include "Epay_Key_Managment.labels" . | nindent 4 }}
+{{ if $.Values.configMap.additionalLabels }}
+    {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
+{{ end }}
+{{ if $.Values.configMap.annotations }}
+  annotations:
+    {{ toYaml $.Values.configMap.annotations | nindent 4 }}
+{{ end }}
+data:
+  application.yml: |
+    server:
+      port: 9093
+
+      servlet:
+        context-path: /api/kms/v1
+
+    spring:
+      application:
+        name: KMSApplication
+
+      datasource:
+        url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+        username: ${DB_USERNAME}
+        password: ${DB_PASSWORD}
+        driver-class-name: oracle.jdbc.OracleDriver
+
+      jpa:
+        show-sql: true
+
+      liquibase:
+        change-log: classpath:db/changelog/db.changelog-master.xml
+        enabled: true
+        drop-first: false
+
+    security:
+      cors:
+        allowed:
+          origins: "https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093"
+
+      whitelist:
+        urls: "/api/transaction/v1/actuator/health/**, /actuator/health/**"
+
+    external:
+      api:
+        admin:
+          services:
+            base:
+              path: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
+
+    scheduler:
+      cron:
+        expression:
+          api: "0 */5 * * * ?"
+          encryption: "0 */5 * * * ?"
+
+    key:
+      aek: BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+
+    logging:
+      level:
+        liquibase: DEBUG
+        com.epay.sbi: INFO
+        com.epay.kms: INFO
+        org.apache.kafka: ERROR
+        org.apache.geode: ERROR
+        org.springframework: ERROR
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+================================
+
+
+getting below error:
+
+
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_key_managment | ENV=dev | VERSION=
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=kms
+SERVICE_NAME=epay_key_managment
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 194 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_key_managment/values.yaml to origin/main
+Deploying with image tag from values.yaml: dev-8fb7a6d4
+Error: UPGRADE FAILED: error validating "": error validating data: [apiVersion not set, kind not set]
+Cleaning up project directory and file based variables
+00:00
+ERROR: Job failed: exit code 1
