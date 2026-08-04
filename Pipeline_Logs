@@ -1,4 +1,23 @@
-curl -X POST \
+Logs :
+
+2026-08-04 08:40:24.806 INFO | com.neo.client.project.controller.CryptoController:45 | principal=  | scenario=/api/javasimulator/v1/crypto/push | operation=POST | correlation=a948b7d7-a062-4de2-9706-81c8bad44e67 | methodName=decryptVerification | Push verification Decrypt Response: PushVerificationRequest(encryptedPaymentPushResponse=null, mId=null)
+2026-08-04 08:42:11.945 INFO | com.neo.client.project.controller.CryptoController:45 | principal=  | scenario=/api/javasimulator/v1/crypto/push | operation=POST | correlation=a867ad49-566d-434b-841d-eb49e3211424 | methodName=decryptVerification | Push verification Decrypt Response: PushVerificationRequest(encryptedPaymentPushResponse=ppppppppppppppp, mId=1000003)
+
+
+Commands:
+
+sh-5.1$ curl -X POST \
 -H "Content-Type: application/json" \
 -d '{}' \
 http://javasimulator-javautilityapisimulator.dev-simulators.svc.cluster.local:8086/api/javasimulator/v1/crypto/push
+Successsh-5.1$
+sh-5.1$
+sh-5.1$
+sh-5.1$ curl -X POST \
+-H "Content-Type: application/json" \
+-d '{
+"encryptedPaymentPushResponse":"ppppppppppppppp",
+"mId": "1000003"
+}' \
+http://javasimulator-javautilityapisimulator.dev-simulators.svc.cluster.local:8086/api/javasimulator/v1/crypto/push
+Successsh-5.1$
