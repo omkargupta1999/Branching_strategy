@@ -1,72 +1,175 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "Epay_Key_Managment.labels" . | nindent 4 }}
-    {{- if $.Values.configMap.additionalLabels }}
-    {{- toYaml $.Values.configMap.additionalLabels | nindent 4 }}
-    {{- end }}
-  {{- if $.Values.configMap.annotations }}
+Still getting the same error :
+
+
+Using docker image sha256:db06a3e48eaa4339a92d53be57a37a699ba188fed41652c6c3c6c07bb86cb6f0 for artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm:1.0 with digest artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/custom-ci/rhelgit-oc-helm@sha256:65605f26e63ed7624e4711cdd933caf6577f9d309f240d48a295f1d2c790c4d9 ...
+$ set -eo pipefail # collapsed multi-line command
+Service=epay_key_managment | ENV=dev | VERSION=
+$ echo "RELEASE_NAME=$RELEASE_NAME" # collapsed multi-line command
+RELEASE_NAME=kms
+SERVICE_NAME=epay_key_managment
+ENV=dev
+WARNING: Using insecure TLS client config. Setting this option is not supported!
+Logged into "https://api.dev.sbiepay.sbi:6443" as "system:serviceaccount:dev-sbiepay:cicd-sa" using the token provided.
+You have access to 194 projects, the list has been suppressed. You can list all projects with 'oc projects'
+Using project "default".
+Welcome! See 'oc help' to get started.
+Synced dev/charts/epay_key_managment/values.yaml to origin/main
+Deploying with image tag from values.yaml: dev-8fb7a6d4
+Error: UPGRADE FAILED: error validating "": error validating data: [apiVersion not set, kind not set]
+Cleaning up project directory and file based variables
+00:01
+ERROR: Job failed: exit code 1
+
+
+
+Sharing the valyes.yml ------------
+
+
+# Default values for epaykeymanagmentv1.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+virtualService:
+  enabled: true
+
+image:
+  repository: artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_key_managment
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "dev-8fb7a6d4"
+
+imagePullSecrets: 
+  - name: jfrog-pull-secret
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount: {}
+  # Specifies whether a service account should be created
+  #create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  #automount: true
+  # Annotations to add to the service account
+ # annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  #name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+configMap: 
+  additionalLabels:
+    # ...
   annotations:
-    {{- toYaml $.Values.configMap.annotations | nindent 4 }}
-  {{- end }}
-data:
-  application.yml: |
-    server:
-      port: 9093
+    # ...
+  nameSuffix: "config"
+  
+podSecurityContext: {}
+  # fsGroup: 2000
 
-      servlet:
-        context-path: /api/kms/v1
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
 
-    spring:
-      application:
-        name: KMSApplication
+service:
+  type: ClusterIP
+  port: 9093
 
-      datasource:
-        url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-        username: ${DB_USERNAME}
-        password: ${DB_PASSWORD}
-        driver-class-name: oracle.jdbc.OracleDriver
+namespace: dev-kms
+gatewayName: dev-istio-system/dev-gateway
+virtualServiceName: kms-kmsservice
+serviceName: kms-kmsservice
+prefixName:  /api/kms/v1
+servicePort: 9093
+gatewayPort: 80
+gatewayHost: "dev.epay.sbi"
 
-      jpa:
-        show-sql: true
+ingress: {}
+#  enabled: false
+#  className: ""
+#  annotations: {}
+#     kubernetes.io/ingress.class: nginx
+#     kubernetes.io/tls-acme: "true"
+#   hosts:
+#     - host: dev.epay.sbi
+#      paths:
+#        - path: /key
+#         pathType: ImplementationSpecific
+#  tls: []
+#    - secretName: chart-example-tls
+#      hosts:
+#        - chart-example.local
 
-      liquibase:
-        change-log: classpath:db/changelog/db.changelog-master.xml
-        enabled: true
-        drop-first: false
+# Enable health probes for proper HPA functioning
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/kms/v1/actuator/health/readiness"
+    port: 9093
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
 
-    security:
-      cors:
-        allowed:
-          origins: "https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093"
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/api/kms/v1/actuator/health/liveness"
+    port: 9093
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
 
-      whitelist:
-        urls: "/api/transaction/v1/actuator/health/**, /actuator/health/**"
+resources:
+  requests:
+    cpu: "2"
+    memory: "250Mi"
+  limits:
+    cpu: "4"
+    memory: "500Mi"
 
-    external:
-      api:
-        admin:
-          services:
-            base:
-              path: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
 
-    scheduler:
-      cron:
-        expression:
-          api: "0 */5 * * * ?"
-          encryption: "0 */5 * * * ?"
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  #
 
-    key:
-      aek: BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+#
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
 
-    logging:
-      level:
-        liquibase: DEBUG
-        com.epay.sbi: INFO
-        com.epay.kms: INFO
-        org.apache.kafka: ERROR
-        org.apache.geode: ERROR
-        org.springframework: ERROR
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+#
