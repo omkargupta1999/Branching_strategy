@@ -13,35 +13,49 @@ metadata:
     {{ toYaml $.Values.configMap.annotations | nindent 4 }}
 {{ end }}
 data:
-  application.properties: |
-    spring.application.name=KMSApplication
-    server.port=9093
-    server.servlet.context-path=/api/kms/v1
-    spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
-    #spring.datasource.username=PAYAGGKMS
-    #spring.datasource.password=SIA#2025
-    spring.datasource.username=${DB_USERNAME}
-    spring.datasource.password=${DB_PASSWORD}
-    spring.datasource.driverClassName=oracle.jdbc.OracleDriver
-    spring.jpa.show-sql=true
-
-    #aek=BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
-    # Liquibase Properties
-    spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml
-    spring.liquibase.enabled=true
-    spring.liquibase.drop-first=false
-    logging.level.liquibase=DEBUG
-    
-    external.api.admin.services.base.path=http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
-    scheduler.cron.expression.api=0 */5 * * * ?
-    scheduler.cron.expression.encryption=0 */5 * * * ?
-    key.aek=BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
-
-    security.cors.allowed.origins=https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093
-    security.whitelist.urls=/api/transaction/v1/actuator/health/**, /actuator/health/**
-
-    logging.level.com.epay.sbi=INFO
-    logging.level.org.apache.kafka=ERROR
-    logging.level.org.apache.geode=ERROR
-    logging.level.com.epay.kms=INFO
-    logging.level.org.springframework=ERROR
+  application.yml: |
+    spring:
+      application:
+        name: KMSApplication
+      datasource:
+        url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+        username: ${DB_USERNAME}
+        password: ${DB_PASSWORD}
+        driver-class-name: oracle.jdbc.OracleDriver
+      jpa:
+        show-sql: true
+      liquibase:
+        change-log: classpath:db/changelog/db.changelog-master.xml
+        enabled: true
+        drop-first: false
+    server:
+      port: 9093
+      servlet:
+        context-path: /api/kms/v1
+    external:
+      api:
+        admin:
+          services:
+            base:
+              path: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
+    scheduler:
+      cron:
+        expression:
+          api: "0 */5 * * * ?"
+          encryption: "0 */5 * * * ?"
+    key:
+      aek: BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+    security:
+      cors:
+        allowed:
+          origins: "https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093"
+      whitelist:
+        urls: "/api/transaction/v1/actuator/health/**, /actuator/health/**"
+    logging:
+      level:
+        liquibase: DEBUG
+        com.epay.sbi: INFO
+        com.epay.kms: INFO
+        org.apache.kafka: ERROR
+        org.apache.geode: ERROR
+        org.springframework: ERROR
