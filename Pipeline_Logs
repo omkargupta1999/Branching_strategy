@@ -14,48 +14,56 @@ metadata:
 {{ end }}
 data:
   application.yml: |
+    server:
+      port: 9093
+
+      servlet:
+        context-path: /api/kms/v1
+
     spring:
       application:
         name: KMSApplication
+
       datasource:
         url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
         driver-class-name: oracle.jdbc.OracleDriver
+
       jpa:
         show-sql: true
+
       liquibase:
         change-log: classpath:db/changelog/db.changelog-master.xml
         enabled: true
         drop-first: false
-    server:
-      port: 9093
-      servlet:
-        context-path: /api/kms/v1
+
+    security:
+      cors:
+        allowed:
+          origins: https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093
+
+      whitelist:
+        urls: /api/transaction/v1/actuator/health/**, /actuator/health/**
+
     external:
       api:
         admin:
           services:
             base:
               path: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
+
     scheduler:
       cron:
         expression:
-          api: "0 */5 * * * ?"
-          encryption: "0 */5 * * * ?"
+          api: 0 */5 * * * *
+          encryption: 0 */5 * * * *
+
     key:
       aek: BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
-    security:
-      cors:
-        allowed:
-          origins: "https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093"
-      whitelist:
-        urls: "/api/transaction/v1/actuator/health/**, /actuator/health/**"
+
     logging:
       level:
-        liquibase: DEBUG
         com.epay.sbi: INFO
         com.epay.kms: INFO
-        org.apache.kafka: ERROR
-        org.apache.geode: ERROR
         org.springframework: ERROR
