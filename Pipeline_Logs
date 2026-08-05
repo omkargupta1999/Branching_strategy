@@ -1,69 +1,286 @@
+$ set -eo pipefail # collapsed multi-line command
+Detected SERVICE_NAME=epay_key_managment
+Detected ENV=dev
+RAW NAMESPACE=dev-kms
+FINAL VALUES:
+SERVICE_NAME=epay_key_managment
+ENV=dev
+RELEASE_NAME=kms
+NAMESPACE=dev-kms
+Synced dev/charts/epay_key_managment/values.yaml to origin/main
+==> Linting dev/charts/epay_key_managment/
+[INFO] Chart.yaml: icon is recommended
+[WARNING] templates/configmap.yaml: object name does not conform to Kubernetes naming requirements: "": metadata.name: Invalid value: "": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+1 chart(s) linted, 0 chart(s) failed
+Validating with image tag from values.yaml: dev-8fb7a6d4
+---
+# Source: kmsservice/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kms-kmsservice
+  labels:
+    helm.sh/chart: kmsservice-0.1.0
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9093
+      targetPort: 
+      protocol: TCP
+      name: 9093-tcp
+  selector:
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+---
+# Source: kmsservice/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kms-kmsservice
+  labels:
+    helm.sh/chart: kmsservice-0.1.0
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kmsservice
+      app.kubernetes.io/instance: kms
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: 7e9532c9d0f4116fa87ea3055eb56275739e755b89e38bc8da25d59cd815c163
+      labels:
+        helm.sh/chart: kmsservice-0.1.0
+        app.kubernetes.io/name: kmsservice
+        app.kubernetes.io/instance: kms
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      imagePullSecrets:
+        - name: jfrog-pull-secret
+      serviceAccountName: default
+      securityContext:
+        {}
+      containers:
+        - name: kmsservice
+          securityContext:
+            {}
+          image: "artifactory.jfrog.sbi:443/itepaypg-sbiepay2-docker-local/app/backend/epay_key_managment:dev-8fb7a6d4"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9093
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "4"
+              memory: 500Mi
+            requests:
+              cpu: "2"
+              memory: 250Mi   
+          env:
+          - name: SPRING_CONFIG_LOCATION
+            value: file:/opt/gradle/
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-kms-service-secret
+                key: DB_USERNAME
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: my-secrets-kms-service-secret
+                key: DB_PASSWORD
+          readinessProbe:
+            httpGet:
+              # path: /api/kms/v1/actuator/health
+              # port: 9093
+              path: /api/kms/v1/actuator/health/readiness
+              port: 9093
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              # path: /api/kms/v1/actuator/health
+              # port: 9093
+              path: /api/kms/v1/actuator/health/liveness
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
+            failureThreshold: 6
+            successThreshold: 1                
+          volumeMounts:
+            - name: config
+              mountPath: "/opt/gradle"
+      volumes:
+        - name: config
+          configMap:
+            name: kms-config
+---
+# Source: kmsservice/templates/configmap.yaml
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: kms-config
+#   namespace: default
+#   labels:
+#     
+    helm.sh/chart: kmsservice-0.1.0
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+# 
+# 
+# data:
+#   application.properties: |
+#     spring.application.name=KMSApplication
+#     server.port=9093
+#     server.servlet.context-path=/api/kms/v1
+#     spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA= (SERVER=DEDICATED) (SERVICE_NAME=epaydbdev.sbiepay.sbi)))
+#     #spring.datasource.username=PAYAGGKMS
+#     #spring.datasource.password=SIA#2025
+#     spring.datasource.username=${DB_USERNAME}
+#     spring.datasource.password=${DB_PASSWORD}
+#     spring.datasource.driverClassName=oracle.jdbc.OracleDriver
+#     spring.jpa.show-sql=true
+#     #aek=BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+#     # Liquibase Properties
+#     spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml
+#     spring.liquibase.enabled=true
+#     spring.liquibase.drop-first=false
+#     logging.level.liquibase=DEBUG
+    
+#     external.api.admin.services.base.path=http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
+#     scheduler.cron.expression.api=0 */5 * * * ?
+#     scheduler.cron.expression.encryption=0 */5 * * * ?
+#     key.aek=BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
+#     security.cors.allowed.origins=https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093
+#     security.whitelist.urls=/api/transaction/v1/actuator/health/**, /actuator/health/**
+#     logging.level.com.epay.sbi=INFO
+#     logging.level.org.apache.kafka=ERROR
+#     logging.level.org.apache.geode=ERROR
+#     logging.level.com.epay.kms=INFO
+#     logging.level.org.springframework=ERROR
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-{{ .Values.configMap.nameSuffix }}
-  namespace: {{ .Release.Namespace }}
+  name: kms-config
+  namespace: default
   labels:
-    {{ include "Epay_Key_Managment.labels" . | nindent 4 }}
-{{ if $.Values.configMap.additionalLabels }}
-    {{ toYaml $.Values.configMap.additionalLabels | nindent 4 }}
-{{ end }}
-{{ if $.Values.configMap.annotations }}
-  annotations:
-    {{ toYaml $.Values.configMap.annotations | nindent 4 }}
-{{ end }}
+    
+    helm.sh/chart: kmsservice-0.1.0
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
 data:
   application.yml: |
     server:
       port: 9093
-
       servlet:
         context-path: /api/kms/v1
-
     spring:
       application:
         name: KMSApplication
-
       datasource:
         url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=epaydbscandev.sbiepay.sbi)(PORT=1524))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=epaydbdev.sbiepay.sbi)))
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
         driver-class-name: oracle.jdbc.OracleDriver
-
       jpa:
         show-sql: true
-
       liquibase:
         change-log: classpath:db/changelog/db.changelog-master.xml
         enabled: true
         drop-first: false
-
     security:
       cors:
         allowed:
           origins: https://dev.epay.sbi, http://kms-kmsservice.dev-kms.svc.cluster.local:9093
-
       whitelist:
         urls: /api/transaction/v1/actuator/health/**, /actuator/health/**
-
     external:
       api:
         admin:
           services:
             base:
               path: http://admin-adminservice.dev-admin.svc.cluster.local:9094/api/admin/v1
-
     scheduler:
       cron:
         expression:
           api: 0 */5 * * * *
           encryption: 0 */5 * * * *
-
     key:
       aek: BiIZ5feKr16Td3XSpVywqXlwRNfSy9Gtis04WqEbD/0=
-
     logging:
       level:
         com.epay.sbi: INFO
         com.epay.kms: INFO
         org.springframework: ERROR
+---
+# Source: kmsservice/templates/serviceaccount.yaml
+# ServiceAccount definition
+---
+# Source: kmsservice/templates/isto-vs.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kms-kmsservice
+  namespace: dev-kms
+spec:
+  # hosts:
+  # - "dev.epay.sbi"
+  # gateways:
+  # - dev-istio-system/dev-gateway  
+  http:
+  - match:
+    - uri:
+        prefix: /api/kms/v1
+    route:
+    - destination:
+        host: kms-kmsservice
+        port:
+          number: 9093
+---
+# Source: kmsservice/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "kms-kmsservice-test-connection"
+  labels:
+    helm.sh/chart: kmsservice-0.1.0
+    app.kubernetes.io/name: kmsservice
+    app.kubernetes.io/instance: kms
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['kms-kmsservice:9093']
+  restartPolicy: Never
+✅ Validation passed
+Uploading artifacts for successful job
+00:01
+Uploading artifacts...
+build.env: found 1 matching artifact files and directories 
+Uploading artifacts as "dotenv" to coordinator... 201 Created  correlation_id=01KZ8WQH2ATH0XKZQRBD97DXDC id=1370304 status=201 token=eyJraWQiO
+Cleaning up project directory and file based variables
+00:00
+Job succeeded
